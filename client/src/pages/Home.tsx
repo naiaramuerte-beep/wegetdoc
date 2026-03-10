@@ -1,13 +1,11 @@
 /* =============================================================
    PDFPro Home Page — Deep Navy Pro design
-   Sections: Hero, Tools, How it works, Features, FAQ, CTA
+   Hero integrates the real PdfEditor component
    ============================================================= */
 
 import { useState } from "react";
-import { toast } from "sonner";
 import {
   FileText,
-  Layers,
   PenTool,
   Share2,
   MessageSquare,
@@ -20,15 +18,13 @@ import {
   Upload,
   Download,
   Edit3,
-  RefreshCw,
   Scissors,
-  Merge,
+  Layers,
   Minimize2,
-  Shield,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import UploadZone from "@/components/UploadZone";
+import PdfEditor from "@/components/PdfEditor";
 
 // ─── Tool definitions ─────────────────────────────────────────
 const editAndSignTools = [
@@ -137,13 +133,16 @@ export default function Home() {
 
   const activeCategory = allToolsCategories.find((c) => c.id === activeTab)!;
 
+  const scrollToEditor = () => {
+    document.getElementById("editor-section")?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "oklch(0.98 0.005 250)" }}>
       <Navbar />
 
       {/* ── HERO ───────────────────────────────────────────── */}
-      <section className="relative py-16 md:py-24 overflow-hidden">
-        {/* Background glow */}
+      <section className="relative py-12 md:py-20 overflow-hidden">
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -153,7 +152,7 @@ export default function Home() {
         />
 
         <div className="container relative z-10">
-          <div className="text-center max-w-3xl mx-auto mb-10">
+          <div className="text-center max-w-3xl mx-auto mb-8">
             <h1
               className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-4"
               style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
@@ -174,13 +173,13 @@ export default function Home() {
               className="text-lg md:text-xl"
               style={{ color: "oklch(0.45 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
             >
-              Convierte, edita y firma tus PDFs fácilmente desde cualquier dispositivo.
+              Sube tu PDF y edítalo ahora mismo — sin instalar nada
             </p>
           </div>
 
-          {/* Upload Zone */}
-          <div className="max-w-2xl mx-auto">
-            <UploadZone />
+          {/* ── REAL PDF EDITOR ── */}
+          <div id="editor-section" className="max-w-4xl mx-auto">
+            <PdfEditor />
           </div>
         </div>
       </section>
@@ -239,7 +238,7 @@ export default function Home() {
             {activeCategory.tools.map((tool, i) => (
               <button
                 key={i}
-                className="feature-card flex flex-col items-center gap-3 p-4 rounded-xl text-center transition-all duration-200"
+                className="flex flex-col items-center gap-3 p-4 rounded-xl text-center transition-all duration-200"
                 style={{
                   backgroundColor: "oklch(1 0 0)",
                   border: "1px solid oklch(0.90 0.01 250)",
@@ -255,7 +254,7 @@ export default function Home() {
                   e.currentTarget.style.boxShadow = "none";
                   e.currentTarget.style.transform = "translateY(0)";
                 }}
-                onClick={() => toast.info("Sube un archivo PDF para comenzar")}
+                onClick={scrollToEditor}
               >
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center"
@@ -276,7 +275,6 @@ export default function Home() {
             ))}
           </div>
 
-          {/* CTA Button */}
           <div className="text-center">
             <button
               className="inline-flex items-center gap-2 px-8 py-3 rounded-lg text-white font-semibold text-sm transition-all duration-200"
@@ -290,10 +288,10 @@ export default function Home() {
               onMouseLeave={(e) =>
                 (e.currentTarget.style.backgroundColor = "oklch(0.18 0.04 250)")
               }
-              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              onClick={scrollToEditor}
             >
               <Upload className="w-4 h-4" />
-              Subir PDF para convertir
+              Subir PDF para editar
             </button>
           </div>
         </div>
@@ -347,7 +345,6 @@ export default function Home() {
                   boxShadow: "0 2px 12px oklch(0.18 0.04 250 / 0.04)",
                 }}
               >
-                {/* Step number + icon */}
                 <div className="flex items-center gap-3">
                   <div
                     className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
@@ -405,10 +402,10 @@ export default function Home() {
               onMouseLeave={(e) =>
                 (e.currentTarget.style.backgroundColor = "oklch(0.18 0.04 250)")
               }
-              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              onClick={scrollToEditor}
             >
               <Upload className="w-4 h-4" />
-              Subir PDF para convertir
+              Subir PDF para editar
             </button>
           </div>
         </div>
@@ -444,7 +441,6 @@ export default function Home() {
                 } gap-8 items-center py-10 border-b`}
                 style={{ borderColor: "oklch(0.88 0.01 250)" }}
               >
-                {/* Text */}
                 <div className="flex-1">
                   <h3
                     className="text-xl font-bold mb-2"
@@ -475,7 +471,6 @@ export default function Home() {
                   </p>
                 </div>
 
-                {/* Image */}
                 <div
                   className="flex-shrink-0 w-full md:w-64 h-48 rounded-2xl overflow-hidden"
                   style={{
@@ -608,10 +603,10 @@ export default function Home() {
             onMouseLeave={(e) =>
               (e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)")
             }
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            onClick={scrollToEditor}
           >
             <Upload className="w-4 h-4" />
-            Subir PDF para convertir
+            Subir PDF para editar
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
