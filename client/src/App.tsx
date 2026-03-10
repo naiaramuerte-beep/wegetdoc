@@ -14,8 +14,9 @@ import Pricing from "./pages/Pricing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Tools from "./pages/Tools";
-
+import PaymentSuccess from "./pages/PaymentSuccess";
 function Router() {
+  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path="/" component={Home} />
@@ -23,6 +24,8 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/tools" component={Tools} />
+      <Route path="/precios" component={Pricing} />
+      <Route path="/payment/success" component={PaymentSuccess} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

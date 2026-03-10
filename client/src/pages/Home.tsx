@@ -4,6 +4,7 @@
    ============================================================= */
 
 import { useState } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import {
   FileText,
   PenTool,
@@ -128,6 +129,10 @@ const features = [
 
 // ─── Component ─────────────────────────────────────────────────
 export default function Home() {
+  // The userAuth hooks provides authentication state
+  // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
+  let { user, loading, error, isAuthenticated, logout } = useAuth();
+
   const [activeTab, setActiveTab] = useState("editAndSign");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 

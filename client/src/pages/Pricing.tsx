@@ -4,10 +4,13 @@
    ============================================================= */
 
 import { useState } from "react";
-import { Check, X, ChevronDown, ChevronUp, Zap, Crown } from "lucide-react";
+import { Check, X, ChevronDown, ChevronUp, Zap, Crown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 
 const features = [
   { name: "Convertir sin límites", trial: false, monthly: true },
@@ -54,6 +57,31 @@ const pricingFaqs = [
 
 export default function Pricing() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const { isAuthenticated } = useAuth();
+  const createCheckout = trpc.subscription.createCheckout.useMutation();
+
+  const handleSubscribe = async (plan: "trial" | "monthly") => {
+    if (!isAuthenticated) {
+      window.location.href = getLoginUrl();
+      return;
+    }
+    setLoadingPlan(plan);
+    try {
+      const result = await createCheckout.mutateAsync({
+        plan,
+        origin: window.location.origin,
+      });
+      if (result.url) {
+        toast.info("Redirigiendo al pago seguro...");
+        window.open(result.url, "_blank");
+      }
+    } catch {
+      toast.error("Error al procesar el pago. Inténtalo de nuevo.");
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "oklch(0.98 0.005 250)" }}>
@@ -154,9 +182,10 @@ export default function Pricing() {
                 onMouseLeave={(e) =>
                   (e.currentTarget.style.backgroundColor = "oklch(0.18 0.04 250)")
                 }
-                onClick={() => toast.success("Iniciando período de prueba...")}
+                onClick={() => handleSubscribe("trial")}
+                disabled={loadingPlan === "trial"}
               >
-                Iniciar prueba
+                {loadingPlan === "trial" ? <><Loader2 className="w-4 h-4 animate-spin" /> Procesando...</> : "Iniciar prueba por 0,99 €"}
               </button>
             </div>
 
@@ -228,9 +257,10 @@ export default function Pricing() {
                   e.currentTarget.style.backgroundColor = "transparent";
                   e.currentTarget.style.color = "oklch(0.18 0.04 250)";
                 }}
-                onClick={() => toast.success("Procesando tu suscripción...")}
+                onClick={() => handleSubscribe("monthly")}
+                disabled={loadingPlan === "monthly"}
               >
-                Comprar ahora
+                {loadingPlan === "monthly" ? <><Loader2 className="w-4 h-4 animate-spin" /> Procesando...</> : "Suscribirse por 9,99 €/mes"}
               </button>
             </div>
           </div>

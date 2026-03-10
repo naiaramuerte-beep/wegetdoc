@@ -25,9 +25,12 @@ import {
   Check,
   Upload,
   FileText,
+  Lock,
 } from "lucide-react";
 import PdfViewer from "./PdfViewer";
 import { usePdfEditor, PdfTool } from "@/hooks/usePdfEditor";
+import { trpc } from "@/lib/trpc";
+import PaywallModal from "./PaywallModal";
 
 // ── Signature canvas component ────────────────────────────────
 function SignatureCanvas({ onSave, onCancel }: { onSave: (dataUrl: string) => void; onCancel: () => void }) {
@@ -372,7 +375,26 @@ export default function PdfEditor() {
   const [showSignature, setShowSignature] = useState(false);
   const [showMerge, setShowMerge] = useState(false);
   const [showSplit, setShowSplit] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [paywallAction, setPaywallAction] = useState("descargar");
   const mergeInputRef = useRef<HTMLInputElement>(null);
+
+  // Subscription status
+  const { data: subData } = trpc.subscription.status.useQuery(undefined, {
+    retry: false,
+    // Don't throw on unauthenticated
+    onError: () => {},
+  } as any);
+  const isPremium = subData?.isPremium ?? false;
+
+  const requirePremium = (action: string, fn: () => void) => {
+    if (isPremium) {
+      fn();
+    } else {
+      setPaywallAction(action);
+      setShowPaywall(true);
+    }
+  };
 
   const handleFileSelect = useCallback(async (file: File) => {
     try {
@@ -636,9 +658,9 @@ export default function PdfEditor() {
 
         <div className="w-px h-8 mx-1" style={{ backgroundColor: "oklch(0.88 0.01 250)" }} />
 
-        {/* Download */}
+        {/* Download — requires premium */}
         <button
-          onClick={downloadCurrent}
+          onClick={() => requirePremium("descargar el PDF", downloadCurrent)}
           className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold text-white transition-colors"
           style={{ backgroundColor: "oklch(0.55 0.22 260)", fontFamily: "'DM Sans', sans-serif" }}
           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.48 0.22 260)")}
@@ -646,6 +668,7 @@ export default function PdfEditor() {
         >
           <Download className="w-3.5 h-3.5" />
           Descargar
+          {!isPremium && <Lock className="w-3 h-3 ml-0.5 opacity-70" />}
         </button>
 
         {/* New file */}
@@ -773,6 +796,13 @@ export default function PdfEditor() {
           onCancel={() => setShowMerge(false)}
         />
       )}
+
+      {/* Paywall Modal */}
+      <PaywallModal
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        action={paywallAction}
+      />
     </div>
   );
 }
