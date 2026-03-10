@@ -1,49 +1,93 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { AlertCircle, Home } from "lucide-react";
-import { useLocation } from "wouter";
+import { Link } from "wouter";
+import { FileText, Home, ArrowLeft } from "lucide-react";
 
 export default function NotFound() {
-  const [, setLocation] = useLocation();
-
-  const handleGoHome = () => {
-    setLocation("/");
-  };
-
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-      <Card className="w-full max-w-lg mx-4 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-        <CardContent className="pt-8 pb-8 text-center">
-          <div className="flex justify-center mb-6">
-            <div className="relative">
-              <div className="absolute inset-0 bg-red-100 rounded-full animate-pulse" />
-              <AlertCircle className="relative h-16 w-16 text-red-500" />
-            </div>
-          </div>
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-4 text-center"
+      style={{ backgroundColor: "oklch(0.18 0.04 250)" }}
+    >
+      <div className="flex items-center gap-2 mb-12">
+        <div
+          className="w-8 h-8 rounded-lg flex items-center justify-center"
+          style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
+        >
+          <FileText className="w-4 h-4 text-white" />
+        </div>
+        <span
+          className="text-xl font-bold tracking-tight text-white"
+          style={{ fontFamily: "'Sora', sans-serif" }}
+        >
+          PDF<span style={{ color: "oklch(0.55 0.22 260)" }}>Pro</span>
+        </span>
+      </div>
 
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">404</h1>
+      <h1
+        className="text-8xl md:text-9xl font-extrabold mb-6"
+        style={{
+          fontFamily: "'Sora', sans-serif",
+          background: "linear-gradient(135deg, oklch(0.55 0.22 260), oklch(0.62 0.18 280))",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          backgroundClip: "text",
+        }}
+      >
+        404
+      </h1>
 
-          <h2 className="text-xl font-semibold text-slate-700 mb-4">
-            Page Not Found
-          </h2>
+      <h2
+        className="text-2xl font-bold text-white mb-3"
+        style={{ fontFamily: "'Sora', sans-serif" }}
+      >
+        Página no encontrada
+      </h2>
+      <p
+        className="text-sm mb-8 max-w-md"
+        style={{ color: "oklch(0.60 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+      >
+        La página que estás buscando no existe o no está disponible. Verifica la URL o regresa al inicio.
+      </p>
 
-          <p className="text-slate-600 mb-8 leading-relaxed">
-            Sorry, the page you are looking for doesn't exist.
-            <br />
-            It may have been moved or deleted.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button
-              onClick={handleGoHome}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
-            >
-              <Home className="w-4 h-4 mr-2" />
-              Go Home
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => window.history.back()}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
+          style={{
+            border: "1px solid oklch(0.35 0.04 250)",
+            color: "oklch(0.75 0.02 250)",
+            fontFamily: "'DM Sans', sans-serif",
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.backgroundColor = "oklch(0.25 0.04 250)";
+            (e.currentTarget as HTMLButtonElement).style.color = "white";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent";
+            (e.currentTarget as HTMLButtonElement).style.color = "oklch(0.75 0.02 250)";
+          }}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Volver
+        </button>
+        <Link href="/">
+          <button
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-all duration-200"
+            style={{
+              backgroundColor: "oklch(0.55 0.22 260)",
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+            onMouseEnter={(e) =>
+              ((e.currentTarget as HTMLButtonElement).style.backgroundColor = "oklch(0.48 0.22 260)")
+            }
+            onMouseLeave={(e) =>
+              ((e.currentTarget as HTMLButtonElement).style.backgroundColor = "oklch(0.55 0.22 260)")
+            }
+          >
+            <Home className="w-4 h-4" />
+            Ir al inicio
+          </button>
+        </Link>
+      </div>
     </div>
   );
 }
