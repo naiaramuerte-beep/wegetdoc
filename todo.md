@@ -113,3 +113,13 @@
 - [x] Resaltado: arrastrar para crear rectángulo de resaltado sobre el PDF
 - [x] Pincel: dibujo libre a mano alzada con color y grosor
 - [x] Verificar resto de herramientas (formas, notas, puntero, mover)
+
+## Bugs Editor (v2)
+- [ ] Resize de anotaciones (notas, imágenes, texto, formas) no funciona — el handle de esquina no responde
+- [x] Barra de acciones (Deshacer / Borrar último / Borrar todo) en panel lateral de TODAS las herramientas
+
+## Modelo de pago Trial (pdfe.com style)
+- [x] Stripe: checkout con trial_period_days=7 y 49,95€/mes (subscription mode)
+- [x] PaywallModal: mostrar "0€ hoy, luego 49,95€/mes" con texto legal del trial
+- [x] Checkout: primer cobro 0€ con tarjeta requerida
+- [x] Barra de acciones (Deshacer/Borrar último/Borrar todo) en paneles del editor

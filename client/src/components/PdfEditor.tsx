@@ -419,6 +419,25 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
     setSelectedId(null);
   }, [selectedId, pushHistory]);
 
+  const deleteLastAnnotation = useCallback(() => {
+    setAnnotations(prev => {
+      if (prev.length === 0) return prev;
+      const updated = prev.slice(0, -1);
+      pushHistory(updated);
+      return updated;
+    });
+    setSelectedId(null);
+  }, [pushHistory]);
+
+  const deleteAllPageAnnotations = useCallback(() => {
+    setAnnotations(prev => {
+      const updated = prev.filter(a => a.page !== currentPage);
+      pushHistory(updated);
+      return updated;
+    });
+    setSelectedId(null);
+  }, [currentPage, pushHistory]);
+
   // ── Signature canvas ──────────────────────────────────────────
   const startSign = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const c = signCanvasRef.current!;
@@ -921,10 +940,47 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
 
   // ── Tool panel content ────────────────────────────────────────
   const renderToolPanel = () => {
+    // Shared action bar shown at the top of every tool panel (except pointer/default)
+    const showActionBar = activeTool !== "pointer" && activeTool !== "compress" && activeTool !== "protect" && activeTool !== "find";
+    const pageAnnCount = annotations.filter(a => a.page === currentPage).length;
+    const ActionBar = showActionBar ? (
+      <div className="flex gap-1.5 p-3 border-b" style={{ borderColor: "oklch(0.90 0.01 250)", backgroundColor: "oklch(0.97 0.005 250)" }}>
+        <button
+          onClick={undo}
+          disabled={historyIndex <= 0}
+          title="Deshacer (Ctrl+Z)"
+          className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-medium border transition-all disabled:opacity-40"
+          style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.35 0.02 250)", backgroundColor: "#fff" }}
+        >
+          <Undo2 className="w-3 h-3" />Deshacer
+        </button>
+        <button
+          onClick={deleteLastAnnotation}
+          disabled={pageAnnCount === 0}
+          title="Borrar último elemento"
+          className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-medium border transition-all disabled:opacity-40"
+          style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.35 0.02 250)", backgroundColor: "#fff" }}
+        >
+          <Trash2 className="w-3 h-3" />Último
+        </button>
+        <button
+          onClick={deleteAllPageAnnotations}
+          disabled={pageAnnCount === 0}
+          title="Borrar todo en esta página"
+          className="flex items-center justify-center gap-1 py-1.5 px-2 rounded text-xs font-medium border transition-all disabled:opacity-40"
+          style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.55 0.20 15)", backgroundColor: "#fff" }}
+        >
+          <Trash2 className="w-3 h-3" />Todo
+        </button>
+      </div>
+    ) : null;
+
     switch (activeTool) {
       case "sign":
         return (
-          <div className="p-4 flex flex-col gap-3">
+          <div className="flex flex-col">
+            {ActionBar}
+            <div className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Añadir firma</h3>
             <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Dibuja tu firma con el ratón o dedo:</p>
             <canvas
@@ -939,11 +995,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
               <button onClick={clearSign} className="flex-1 py-1.5 rounded text-xs border" style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.40 0.02 250)" }}>Limpiar</button>
               <button onClick={placeSignature} className="flex-1 py-1.5 rounded text-xs text-white font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>Insertar firma</button>
             </div>
+            </div>
           </div>
         );
       case "text":
         return (
-          <div className="p-4 flex flex-col gap-3">
+          <div className="flex flex-col">
+            {ActionBar}
+            <div className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Añadir texto</h3>
             <textarea
               value={textInput} onChange={e => setTextInput(e.target.value)}
@@ -990,11 +1049,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
                 Centro
               </button>
             </div>
+            </div>
           </div>
         );
       case "highlight":
         return (
-          <div className="p-4 flex flex-col gap-3">
+          <div className="flex flex-col">
+            {ActionBar}
+            <div className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Resaltador</h3>
             <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Elige un color y arrastra sobre el PDF para resaltar texto:</p>
             <div className="flex gap-2 flex-wrap">
@@ -1005,11 +1067,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
             <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: highlightColor + "33", color: "oklch(0.30 0.02 250)" }}>
               <strong>Cómo usar:</strong> Haz clic y arrastra sobre el PDF para crear un resaltado del tamaño que quieras.
             </div>
+            </div>
           </div>
         );
       case "notes":
         return (
-          <div className="p-4 flex flex-col gap-3">
+          <div className="flex flex-col">
+            {ActionBar}
+            <div className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Añadir nota</h3>
             <textarea
               value={noteText} onChange={e => setNoteText(e.target.value)}
@@ -1019,11 +1084,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
               style={{ borderColor: "oklch(0.80 0.05 260)" }}
             />
             <button onClick={placeNote} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>Insertar nota</button>
+            </div>
           </div>
         );
       case "image":
         return (
-          <div className="p-4 flex flex-col gap-3">
+          <div className="flex flex-col">
+            {ActionBar}
+            <div className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Insertar imagen</h3>
             <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Sube una imagen JPG o PNG para insertarla en el PDF:</p>
             <label className="flex flex-col items-center gap-2 py-4 border-2 border-dashed rounded-lg cursor-pointer" style={{ borderColor: "oklch(0.75 0.10 260)" }}>
@@ -1038,11 +1106,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
                 <input type="file" accept="image/*" className="hidden" onChange={convertImageToPdf} />
               </label>
             </div>
+            </div>
           </div>
         );
       case "shapes":
         return (
-          <div className="p-4 flex flex-col gap-3">
+          <div className="flex flex-col">
+            {ActionBar}
+            <div className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Formas</h3>
             <div className="flex gap-2">
               {(["rect", "circle", "line"] as const).map(s => (
@@ -1056,6 +1127,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
               <input type="color" value={shapeColor} onChange={e => setShapeColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0" />
             </div>
             <button onClick={placeShape} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>Insertar forma</button>
+            </div>
           </div>
         );
       case "protect":
@@ -1142,7 +1214,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
         );
       case "eraser":
         return (
-          <div className="p-4 flex flex-col gap-3">
+          <div className="flex flex-col">
+            {ActionBar}
+            <div className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Borrador</h3>
             <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Arrastra sobre el PDF para crear un rectángulo blanco que cubra el contenido:</p>
             <div>
@@ -1153,11 +1227,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
             <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.95 0.01 250)", color: "oklch(0.30 0.02 250)" }}>
               <strong>Cómo usar:</strong> Haz clic y arrastra sobre el área que quieres borrar. Se creará un rectángulo blanco sobre ese contenido.
             </div>
+            </div>
           </div>
         );
       case "brush":
         return (
-          <div className="p-4 flex flex-col gap-3">
+          <div className="flex flex-col">
+            {ActionBar}
+            <div className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Pincel</h3>
             <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Dibuja libremente sobre el PDF:</p>
             <div className="flex gap-2 items-center">
@@ -1174,11 +1251,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
             <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.95 0.01 250)", color: "oklch(0.30 0.02 250)" }}>
               <strong>Cómo usar:</strong> Haz clic y arrastra sobre el PDF para dibujar a mano alzada.
             </div>
+            </div>
           </div>
         );
       case "edit-text":
         return (
-          <div className="p-4 flex flex-col gap-3">
+          <div className="flex flex-col">
+            {ActionBar}
+            <div className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Editar texto</h3>
             <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Haz clic en cualquier anotación de texto del PDF para editarla:</p>
             <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.95 0.01 250)", color: "oklch(0.30 0.02 250)" }}>
@@ -1187,6 +1267,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
             <button onClick={() => setActiveTool("pointer")} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>
               Ir al puntero
             </button>
+            </div>
           </div>
         );
       default:

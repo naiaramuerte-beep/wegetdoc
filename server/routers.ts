@@ -234,45 +234,52 @@ export const appRouter = router({
         const { plan, origin } = input;
         const user = ctx.user;
 
-        const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] =
-          plan === "trial"
-            ? [
-                {
-                  price_data: {
-                    currency: "eur",
-                    product_data: {
-                      name: "PDFPro — Prueba 7 días",
-                      description: "Acceso completo a todas las herramientas PDF durante 7 días",
-                    },
-                    unit_amount: 99,
-                  },
-                  quantity: 1,
-                },
-              ]
-            : [
-                {
-                  price_data: {
-                    currency: "eur",
-                    product_data: {
-                      name: "PDFPro — Plan Mensual",
-                      description: "Acceso ilimitado a todas las herramientas PDF",
-                    },
-                    unit_amount: 999,
-                    recurring: { interval: "month" },
-                  },
-                  quantity: 1,
-                },
-              ];
+        // Both plans use subscription mode with 49.95€/month
+        // "trial" plan includes a 7-day free trial (0€ today, card required)
+        const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
+          {
+            price_data: {
+              currency: "eur",
+              product_data: {
+                name: plan === "trial" ? "PDFPro — Prueba gratuita 7 días" : "PDFPro — Plan Mensual",
+                description: plan === "trial"
+                  ? "7 días gratis, luego 49,95€/mes. Cancela cuando quieras."
+                  : "Acceso ilimitado a todas las herramientas PDF por 49,95€/mes",
+              },
+              unit_amount: 4995, // 49.95€ in cents
+              recurring: { interval: "month" },
+            },
+            quantity: 1,
+          },
+        ];
 
-        const mode: Stripe.Checkout.SessionCreateParams.Mode =
-          plan === "monthly" ? "subscription" : "payment";
+        const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData =
+          plan === "trial"
+            ? {
+                trial_period_days: 7,
+                trial_settings: {
+                  end_behavior: { missing_payment_method: "cancel" },
+                },
+                metadata: {
+                  user_id: user.id.toString(),
+                  plan,
+                },
+              }
+            : {
+                metadata: {
+                  user_id: user.id.toString(),
+                  plan,
+                },
+              };
 
         const session = await stripe.checkout.sessions.create({
-          mode,
+          mode: "subscription",
           line_items: lineItems,
+          subscription_data: subscriptionData,
           customer_email: user.email || undefined,
           allow_promotion_codes: true,
           client_reference_id: user.id.toString(),
+          payment_method_collection: plan === "trial" ? "always" : "always",
           metadata: {
             user_id: user.id.toString(),
             plan,

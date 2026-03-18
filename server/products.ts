@@ -1,29 +1,32 @@
 /**
  * PDFPro — Stripe Products & Prices
- * Define all subscription plans here.
+ * Model: 7-day free trial (0€) → 49.95€/month subscription
+ * Stripe collects card details upfront but charges 0€ today.
+ * After the trial period, the subscription renews automatically.
  */
 
 export const PLANS = {
+  /** Free trial: 7 days at 0€, then 49.95€/month */
   trial: {
     id: "trial",
-    name: "Prueba 7 días",
-    description: "Acceso completo durante 7 días",
-    price: 0.99,
+    name: "Prueba gratuita 7 días",
+    description: "Acceso completo durante 7 días, luego 49,95€/mes",
+    trialPrice: 0,
+    monthlyPrice: 49.95,
     currency: "eur",
-    interval: null as null,
+    interval: "month" as const,
     trialDays: 7,
-    // Stripe price ID — set via environment variable or create in Stripe dashboard
-    stripePriceId: process.env.STRIPE_PRICE_TRIAL || "",
   },
+  /** Direct monthly subscription without trial */
   monthly: {
     id: "monthly",
     name: "Plan Mensual",
     description: "Acceso ilimitado mensual",
-    price: 9.99,
+    trialPrice: null,
+    monthlyPrice: 49.95,
     currency: "eur",
     interval: "month" as const,
     trialDays: 0,
-    stripePriceId: process.env.STRIPE_PRICE_MONTHLY || "",
   },
 } as const;
 
