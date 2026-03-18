@@ -99,7 +99,7 @@ function ToolBtn({
 }
 
 // ── Main component ─────────────────────────────────────────────
-export default function PdfEditor({ initialTool, initialFile, fullscreen }: { initialTool?: string; initialFile?: File; fullscreen?: boolean }) {
+export default function PdfEditor({ initialTool, initialFile, fullscreen, initialOpenPaywall, onPaywallOpened }: { initialTool?: string; initialFile?: File; fullscreen?: boolean; initialOpenPaywall?: boolean; onPaywallOpened?: () => void }) {
   const [file, setFile] = useState<File | null>(null);
   const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null); // eslint-disable-line
@@ -113,6 +113,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [showPaywall, setShowPaywall] = useState(false);
+  const paywallOpenedRef = useRef(false);
   const [pdfDataForPaywall, setPdfDataForPaywall] = useState<{ base64: string; name: string; size: number } | undefined>(undefined);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
@@ -124,6 +125,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
   // Sign tool state
   const [isSignDrawing, setIsSignDrawing] = useState(false);
   const signCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [signTab, setSignTab] = useState<"draw" | "name">("draw"); // draw or type name
+  const [signName, setSignName] = useState(""); // name for auto-generated signature
 
   // Text tool state
   const [textInput, setTextInput] = useState("");
@@ -163,6 +166,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
   // Shape state
   const [shapeType, setShapeType] = useState<"rect" | "circle" | "line">("rect");
   const [shapeColor, setShapeColor] = useState("#2563EB");
+  const [shapeFilled, setShapeFilled] = useState(false); // false = only border, true = filled
 
   // Note state
   const [noteText, setNoteText] = useState("");
@@ -238,6 +242,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialFile]);
+
+  // Open paywall automatically after login redirect (when initialOpenPaywall is true)
+  useEffect(() => {
+    if (initialOpenPaywall && pdfDoc && !paywallOpenedRef.current) {
+      paywallOpenedRef.current = true;
+      setShowPaywall(true);
+      onPaywallOpened?.();
+    }
+  }, [initialOpenPaywall, pdfDoc, onPaywallOpened]);
 
   // Handle file drop / select
   const handleFile = useCallback((f: File) => {
@@ -481,7 +494,31 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
     const dataUrl = c.toDataURL();
     addAnnotation({ type: "signature", dataUrl, x: 100, y: 100, width: 200, height: 80, page: currentPage });
     toast.success("Firma añadida. Arrástrala a la posición deseada.");
-    setActiveTool("pointer");
+    // Keep sign tool active so user can add multiple signatures
+  };
+  // Generate a cursive-style signature from a typed name using canvas
+  const placeNameSignature = () => {
+    if (!signName.trim()) { toast.error("Escribe tu nombre primero"); return; }
+    const c = document.createElement("canvas");
+    const fontSize = 42;
+    c.width = Math.max(200, signName.length * 28);
+    c.height = 80;
+    const ctx = c.getContext("2d")!;
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.font = `italic ${fontSize}px 'Dancing Script', 'Brush Script MT', cursive`;
+    ctx.fillStyle = "#1a237e";
+    ctx.textBaseline = "middle";
+    // Draw a subtle underline
+    ctx.beginPath();
+    ctx.moveTo(4, 68);
+    ctx.lineTo(c.width - 4, 68);
+    ctx.strokeStyle = "#1a237e";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillText(signName, 8, 42);
+    const dataUrl = c.toDataURL();
+    addAnnotation({ type: "signature", dataUrl, x: 100, y: 100, width: Math.max(200, signName.length * 28), height: 80, page: currentPage });
+    toast.success("Firma añadida. Arrástrala a la posición deseada.");
   };
 
   // ── Add text ──────────────────────────────────────────────────
@@ -495,7 +532,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
     });
     setTextInput("");
     toast.success("Texto añadido. Arrástralo a la posición deseada.");
-    setActiveTool("pointer");
+    // Keep text tool active so user can add more text
   };
 
   const activateTextPlace = () => {
@@ -513,7 +550,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
     });
     setNoteText("");
     toast.success("Nota añadida.");
-    setActiveTool("pointer");
+    // Keep notes tool active
   };
 
   // ── Add image ─────────────────────────────────────────────────
@@ -529,18 +566,18 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
       toast.success("Imagen añadida. Arrástrala a la posición deseada.");
     };
     reader.readAsDataURL(f);
-    setActiveTool("pointer");
+    // Keep image tool active
   };
-
-  // ── Add shape ─────────────────────────────────────────────────
+  // ── Add shapee ─────────────────────────────────────────────────
   const placeShape = () => {
     addAnnotation({
       type: "shape", x: 100, y: 100, width: 150, height: 80,
       page: currentPage, color: shapeColor,
-      text: shapeType,
+      // Encode fill info in the text field: "rect", "circle", "line", "rect-filled", "circle-filled"
+      text: shapeFilled ? `${shapeType}-filled` : shapeType,
     });
     toast.success("Forma añadida. Arrástrala a la posición deseada.");
-    setActiveTool("pointer");
+    // Keep shapes tool active so user can add multiple shapes
   };
 
   // ── Dragging annotations ──────────────────────────────────────
@@ -573,7 +610,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
 
   // ── Click to place text on PDF ────────────────────────────────
   const handleOverlayClick = (e: React.MouseEvent) => {
-    if (activeTool === "pointer") { setSelectedId(null); return; }
+    // Only deselect if clicking directly on the overlay background (not on an annotation)
+    if (activeTool === "pointer") {
+      // e.target is the overlay div itself (not a child annotation)
+      if (e.target === e.currentTarget) setSelectedId(null);
+      return;
+    }
     if (activeTool === "text" && clickToPlaceText && textInput.trim()) {
       const overlay = overlayRef.current!.getBoundingClientRect();
       const x = e.clientX - overlay.left;
@@ -1044,19 +1086,54 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
             {ActionBar}
             <div className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Añadir firma</h3>
-            <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Dibuja tu firma con el ratón o dedo:</p>
-            <canvas
-              ref={signCanvasRef}
-              width={220} height={100}
-              className="border rounded-lg cursor-crosshair"
-              style={{ borderColor: "oklch(0.80 0.05 260)", backgroundColor: "#fff" }}
-              onMouseDown={startSign} onMouseMove={drawSign}
-              onMouseUp={endSign} onMouseLeave={endSign}
-            />
-            <div className="flex gap-2">
-              <button onClick={clearSign} className="flex-1 py-1.5 rounded text-xs border" style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.40 0.02 250)" }}>Limpiar</button>
-              <button onClick={placeSignature} className="flex-1 py-1.5 rounded text-xs text-white font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>Insertar firma</button>
+            {/* Tabs: Dibujar / Nombre */}
+            <div className="flex gap-1 p-1 rounded-lg" style={{ backgroundColor: "oklch(0.93 0.01 250)" }}>
+              <button
+                onClick={() => setSignTab("draw")}
+                className="flex-1 py-1.5 rounded text-xs font-medium transition-all"
+                style={{ backgroundColor: signTab === "draw" ? "#fff" : "transparent", color: signTab === "draw" ? "oklch(0.15 0.03 250)" : "oklch(0.50 0.02 250)", boxShadow: signTab === "draw" ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}
+              >Dibujar</button>
+              <button
+                onClick={() => setSignTab("name")}
+                className="flex-1 py-1.5 rounded text-xs font-medium transition-all"
+                style={{ backgroundColor: signTab === "name" ? "#fff" : "transparent", color: signTab === "name" ? "oklch(0.15 0.03 250)" : "oklch(0.50 0.02 250)", boxShadow: signTab === "name" ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}
+              >Nombre</button>
             </div>
+            {signTab === "draw" ? (
+              <>
+                <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Dibuja tu firma con el ratón o dedo:</p>
+                <canvas
+                  ref={signCanvasRef}
+                  width={220} height={100}
+                  className="border rounded-lg cursor-crosshair"
+                  style={{ borderColor: "oklch(0.80 0.05 260)", backgroundColor: "#fff" }}
+                  onMouseDown={startSign} onMouseMove={drawSign}
+                  onMouseUp={endSign} onMouseLeave={endSign}
+                />
+                <div className="flex gap-2">
+                  <button onClick={clearSign} className="flex-1 py-1.5 rounded text-xs border" style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.40 0.02 250)" }}>Limpiar</button>
+                  <button onClick={placeSignature} className="flex-1 py-1.5 rounded text-xs text-white font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>Insertar firma</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Escribe tu nombre y generaremos una firma estilo cursiva:</p>
+                <input
+                  type="text"
+                  value={signName}
+                  onChange={e => setSignName(e.target.value)}
+                  placeholder="Ej: Juan García"
+                  className="w-full border rounded px-3 py-2 text-sm"
+                  style={{ borderColor: "oklch(0.80 0.05 260)", fontFamily: "'Dancing Script', cursive", fontSize: 22, color: "#1a237e" }}
+                />
+                {signName.trim() && (
+                  <div className="rounded border p-3 text-center" style={{ borderColor: "oklch(0.88 0.02 250)", fontFamily: "'Dancing Script', cursive", fontSize: 28, color: "#1a237e", borderBottom: "2px solid #1a237e", backgroundColor: "#fafafa" }}>
+                    {signName}
+                  </div>
+                )}
+                <button onClick={placeNameSignature} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>Insertar firma</button>
+              </>
+            )}
             </div>
           </div>
         );
@@ -1184,9 +1261,26 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
                 </button>
               ))}
             </div>
+            {/* Fill toggle */}
+            {shapeType !== "line" && (
+              <div className="flex gap-1 p-1 rounded-lg" style={{ backgroundColor: "oklch(0.93 0.01 250)" }}>
+                <button
+                  onClick={() => setShapeFilled(false)}
+                  className="flex-1 py-1.5 rounded text-xs font-medium transition-all"
+                  style={{ backgroundColor: !shapeFilled ? "#fff" : "transparent", color: !shapeFilled ? "oklch(0.15 0.03 250)" : "oklch(0.50 0.02 250)", boxShadow: !shapeFilled ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}
+                >Solo borde</button>
+                <button
+                  onClick={() => setShapeFilled(true)}
+                  className="flex-1 py-1.5 rounded text-xs font-medium transition-all"
+                  style={{ backgroundColor: shapeFilled ? "#fff" : "transparent", color: shapeFilled ? "oklch(0.15 0.03 250)" : "oklch(0.50 0.02 250)", boxShadow: shapeFilled ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}
+                >Relleno</button>
+              </div>
+            )}
             <div className="flex gap-2 items-center">
               <label className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Color</label>
               <input type="color" value={shapeColor} onChange={e => setShapeColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0" />
+              {/* Preview */}
+              <div style={{ width: 40, height: 28, border: `2px solid ${shapeColor}`, borderRadius: shapeType === "circle" ? "50%" : 3, backgroundColor: shapeFilled ? shapeColor : "transparent", flexShrink: 0 }} />
             </div>
             <button onClick={placeShape} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>Insertar forma</button>
             </div>
@@ -1682,6 +1776,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
                       userSelect: "none",
                     }}
                     onMouseDown={(e) => startDrag(e, ann.id)}
+                    onClick={(e) => { e.stopPropagation(); setSelectedId(ann.id); }}
                   >
                     {ann.type === "signature" && ann.dataUrl && (
                       <img src={ann.dataUrl} alt="firma" style={{ width: "100%", height: "100%", objectFit: "contain" }} draggable={false} />
@@ -1706,8 +1801,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
                       <div style={{
                         width: "100%", height: "100%",
                         border: `2px solid ${ann.color ?? "#2563EB"}`,
-                        backgroundColor: `${ann.color ?? "#2563EB"}22`,
-                        borderRadius: ann.text === "circle" ? "50%" : 0,
+                        backgroundColor: (ann.text === "rect-filled" || ann.text === "circle-filled")
+                          ? `${ann.color ?? "#2563EB"}` 
+                          : (ann.text === "line" ? "transparent" : `${ann.color ?? "#2563EB"}22`),
+                        borderRadius: (ann.text === "circle" || ann.text === "circle-filled") ? "50%" : 0,
+                        // Line: thin horizontal bar
+                        ...(ann.text === "line" ? { height: 2, marginTop: "50%" } : {}),
                       }} />
                     )}
                     {/* Resize handle */}

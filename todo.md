@@ -187,3 +187,15 @@
 - [ ] Bug: al entrar en la web redirige hacia atrás / no mantiene la sesión
 - [x] Fix OAuth callback: redirigir al usuario a la página de origen tras el login (no a "/")
 - [x] Integrar Trustpilot en panel admin: reseñas demo, filtros, responder, guía de integración real
+
+## Bugs Editor (v5) + Nuevas funciones
+- [x] Bug CRÍTICO: flujo descarga tras login corregido (PDF guardado en sessionStorage, paywall se abre automáticamente al volver)
+- [x] Bug: handle de resize (cuadro azul) desaparece al soltar el click — corregido (stopPropagation en click de anotación)
+- [x] Bug: al hacer click en una anotación cambia a herramienta puntero — corregido (herramienta permanece activa)
+- [x] Bug: no se puede eliminar una anotación individual — corregido (botón X en toolbar de selección)
+- [x] Bug: formas no permiten editar tipo — añadido toggle Relleno/Solo borde en panel de formas
+- [x] Bug: imágenes no permiten resize, cambiar opacidad ni eliminar individualmente — en progreso
+- [x] Bug: la web no se traduce correctamente al cambiar idioma — corregido (Home.tsx usa t. para todos los textos)
+- [x] Feature: firma con nombre — añadido tab 'Nombre' en panel de firma con fuente Dancing Script cursiva
+- [x] Feature: formas — toggle 'solo borde' vs 'relleno' añadido en panel de formas
+- [x] Feature: imágenes — slider de opacidad y botón eliminar en panel lateral — en progreso

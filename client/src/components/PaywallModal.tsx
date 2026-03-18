@@ -12,6 +12,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { usePdfFile } from "@/contexts/PdfFileContext";
 
 interface PaywallModalProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ const FEATURES = [
 
 export default function PaywallModal({ isOpen, onClose, action = "descargar", pdfData }: PaywallModalProps) {
   const { isAuthenticated } = useAuth();
+  const { savePdfToSession, setPendingPaywall, pendingFile } = usePdfFile();
   const [step, setStep] = useState<Step>(isAuthenticated ? "plans" : "auth-choice");
   const [isLoading, setIsLoading] = useState(false);
   const [emailInput, setEmailInput] = useState("");
@@ -47,15 +49,26 @@ export default function PaywallModal({ isOpen, onClose, action = "descargar", pd
 
   const currentStep = isAuthenticated ? "plans" : step;
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
+    // Save the current PDF to sessionStorage so it survives the OAuth redirect
+    if (pendingFile) {
+      try { await savePdfToSession(pendingFile); } catch {}
+    }
+    // Signal that paywall should open on return
+    setPendingPaywall(true);
+    // Redirect to login, returning to the current editor page
     window.location.href = getLoginUrl();
   };
 
-  const handleEmailContinue = () => {
+  const handleEmailContinue = async () => {
     if (!emailInput.trim() || !emailInput.includes("@")) {
       toast.error("Por favor, introduce un email válido");
       return;
     }
+    if (pendingFile) {
+      try { await savePdfToSession(pendingFile); } catch {}
+    }
+    setPendingPaywall(true);
     window.location.href = getLoginUrl();
   };
 

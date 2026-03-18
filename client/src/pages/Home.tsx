@@ -20,113 +20,19 @@ import {
   Upload,
   Download,
   Edit3,
-  Scissors,
   Layers,
-  Minimize2,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { usePdfFile } from "@/contexts/PdfFileContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-// ─── Tool definitions ─────────────────────────────────────────
-const editAndSignTools = [
-  { icon: Type, label: "Editar texto", tool: "text" },
-  { icon: PenTool, label: "Añadir firma", tool: "sign" },
-  { icon: MessageSquare, label: "Anotar y comentar", tool: "notes" },
-  { icon: Image, label: "Modificar imágenes", tool: "image" },
-  { icon: Lock, label: "Proteger con contraseña", tool: "protect" },
-  { icon: Share2, label: "Compartir documentos", tool: "share" },
-];
-
-const convertFromPdfTools = [
-  { icon: FileText, label: "PDF a Word", tool: "convert-word" },
-  { icon: FileText, label: "PDF a Excel", tool: "convert-excel" },
-  { icon: FileText, label: "PDF a PowerPoint", tool: "convert-ppt" },
-  { icon: Image, label: "PDF a JPG", tool: "convert-jpg" },
-  { icon: Image, label: "PDF a PNG", tool: "convert-png" },
-  { icon: FileText, label: "PDF a HTML", tool: "convert-html" },
-];
-
-const convertToPdfTools = [
-  { icon: FileText, label: "Word a PDF", tool: "word-to-pdf" },
-  { icon: FileText, label: "Excel a PDF", tool: "excel-to-pdf" },
-  { icon: FileText, label: "PowerPoint a PDF", tool: "ppt-to-pdf" },
-  { icon: Image, label: "JPG a PDF", tool: "jpg-to-pdf" },
-  { icon: Image, label: "PNG a PDF", tool: "png-to-pdf" },
-  { icon: Layers, label: "Fusionar PDFs", tool: "merge" },
-];
-
-const allToolsCategories = [
-  { id: "editAndSign", label: "Editar y firmar", tools: editAndSignTools },
-  { id: "convertFromPdf", label: "Convertir desde PDF", tools: convertFromPdfTools },
-  { id: "convertToPdf", label: "Convertir a PDF", tools: convertToPdfTools },
-];
-
-// ─── FAQ data ─────────────────────────────────────────────────
-const faqs = [
-  {
-    question: "¿Qué herramientas puedo usar para editar un PDF online gratis?",
-    answer:
-      "Con editPDF puedes editar texto, añadir imágenes, insertar firmas digitales, anotar documentos, reorganizar páginas, proteger con contraseña y mucho más. Todo desde tu navegador, sin instalar ningún software.",
-  },
-  {
-    question: "¿Cómo puedo compartir un PDF una vez editado?",
-    answer:
-      "Después de editar tu PDF, puedes descargarlo directamente o compartirlo mediante un enlace o por correo electrónico. También puedes invitar a colaboradores para que revisen y editen el documento.",
-  },
-  {
-    question: "¿Cómo editar un PDF online sin instalar ningún software?",
-    answer:
-      "Simplemente sube tu archivo PDF a editPDF desde tu navegador. No necesitas instalar ninguna aplicación. Nuestro editor funciona directamente en Chrome, Firefox, Safari y Edge.",
-  },
-  {
-    question: "¿Puedo editar un PDF usando Google Chrome?",
-    answer:
-      "Sí, editPDF funciona perfectamente en Google Chrome y en cualquier navegador moderno. Solo tienes que acceder a nuestra web, subir tu PDF y empezar a editarlo.",
-  },
-  {
-    question: "¿Cómo hacer que un archivo PDF sea editable?",
-    answer:
-      "Sube tu PDF a editPDF y utiliza nuestras herramientas de edición de texto para modificar el contenido directamente. Puedes reemplazar, añadir o eliminar texto con total libertad.",
-  },
-  {
-    question: "¿Cómo editar un PDF gratis online?",
-    answer:
-      "Accede a editPDF, arrastra tu archivo PDF al área de carga o haz clic en 'Subir PDF'. Luego usa las herramientas disponibles para editar tu documento y descárgalo cuando termines.",
-  },
-];
-
-// ─── Features data ─────────────────────────────────────────────
-const features = [
-  {
-    title: "Convierte archivos sin complicaciones",
-    subtitle: "Cambia entre Word, Excel, PowerPoint, imágenes y PDF fácilmente.",
-    description:
-      "Mantén el formato y la calidad en cada conversión, asegurando que tus archivos se vean exactamente como necesitas. Convierte PDF a Word, transforma presentaciones de PowerPoint a PDF o exporta hojas de cálculo de Excel sin perder el diseño original. También puedes convertir imágenes JPG a PDF y consolidar todo en un único archivo profesional.",
-    image: "https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/feature-convert-Y6dwg9Ks6AU4LrQ4QETGwk.webp",
-  },
-  {
-    title: "Edita texto con facilidad",
-    subtitle: "Reemplaza o añade texto con fuentes y estilos totalmente personalizables.",
-    description:
-      "Ajusta la alineación, el tamaño y el color para que coincida perfectamente con el diseño de tu documento. Edita texto en archivos PDF directamente desde tu navegador, sin necesidad de descargar ningún software. Nuestro editor de PDF online te permite personalizar contenido, corregir errores o actualizar datos en segundos.",
-    image: "https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/feature-edit-XgUdhi72HBbaZEcMtbCduV.webp",
-  },
-  {
-    title: "Firma documentos de forma segura",
-    subtitle: "Firma un PDF online con tu cursor, escribiendo tu nombre o subiendo una imagen.",
-    description:
-      "Añadir una firma electrónica a un archivo PDF sin imprimir ni escanear nunca ha sido tan fácil. Con nuestro editor, puedes firmar y compartir documentos digitalmente desde cualquier dispositivo. Ya sean contratos, acuerdos, formularios o cualquier otro archivo PDF, puedes firmarlos online en segundos.",
-    image: "https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/feature-sign-mNewCdtWeXAwH4MKY3HS7g.webp",
-  },
-  {
-    title: "Colabora en documentos",
-    subtitle: "Permite que otros usuarios revisen y editen PDFs compartidos sin instalar software.",
-    description:
-      "Puedes compartir un PDF online por correo electrónico o enlace, añadir comentarios y notas a tus PDFs, y permitir que otros editen el archivo cuando lo necesiten. Colabora en PDFs desde cualquier dispositivo, accede al contenido actualizado y edita documentos online sin perder el formato original.",
-    image: "https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/feature-collaborate-Xc5uwDNsachsgLjEBvw7Qp.webp",
-  },
+// Feature images (CDN)
+const FEATURE_IMAGES = [
+  "https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/feature-convert-Y6dwg9Ks6AU4LrQ4QETGwk.webp",
+  "https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/feature-edit-XgUdhi72HBbaZEcMtbCduV.webp",
+  "https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/feature-sign-mNewCdtWeXAwH4MKY3HS7g.webp",
+  "https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/feature-collaborate-Xc5uwDNsachsgLjEBvw7Qp.webp",
 ];
 
 // ─── Component ─────────────────────────────────────────────────
@@ -137,12 +43,64 @@ export default function Home() {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { setPendingFile, setPendingTool } = usePdfFile();
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const [, navigate] = useLocation();
+
+  // ─── Tool definitions (inside component to use t.) ─────────
+  const editAndSignTools = [
+    { icon: Type, label: t.tool_edit_text, tool: "text" },
+    { icon: PenTool, label: t.tool_add_sign, tool: "sign" },
+    { icon: MessageSquare, label: t.tool_annotate, tool: "notes" },
+    { icon: Image, label: t.tool_images, tool: "image" },
+    { icon: Lock, label: t.tool_protect, tool: "protect" },
+    { icon: Share2, label: t.tool_share, tool: "share" },
+  ];
+
+  const convertFromPdfTools = [
+    { icon: FileText, label: t.tool_pdf_word, tool: "convert-word" },
+    { icon: FileText, label: t.tool_pdf_excel, tool: "convert-excel" },
+    { icon: FileText, label: t.tool_pdf_ppt, tool: "convert-ppt" },
+    { icon: Image, label: t.tool_pdf_jpg, tool: "convert-jpg" },
+    { icon: Image, label: t.tool_pdf_png, tool: "convert-png" },
+    { icon: FileText, label: t.tool_pdf_html, tool: "convert-html" },
+  ];
+
+  const convertToPdfTools = [
+    { icon: FileText, label: t.tool_word_pdf, tool: "word-to-pdf" },
+    { icon: FileText, label: t.tool_excel_pdf, tool: "excel-to-pdf" },
+    { icon: FileText, label: t.tool_ppt_pdf, tool: "ppt-to-pdf" },
+    { icon: Image, label: t.tool_jpg_pdf, tool: "jpg-to-pdf" },
+    { icon: Image, label: t.tool_png_pdf, tool: "png-to-pdf" },
+    { icon: Layers, label: t.tool_merge, tool: "merge" },
+  ];
+
+  const allToolsCategories = [
+    { id: "editAndSign", label: t.tools_tab_edit, tools: editAndSignTools },
+    { id: "convertFromPdf", label: t.tools_tab_from_pdf, tools: convertFromPdfTools },
+    { id: "convertToPdf", label: t.tools_tab_to_pdf, tools: convertToPdfTools },
+  ];
+
+  // ─── FAQ data (inside component to use t.) ─────────────────
+  const faqs = [
+    { question: t.faq_q1, answer: t.faq_a1 },
+    { question: t.faq_q2, answer: t.faq_a2 },
+    { question: t.faq_q3, answer: t.faq_a3 },
+    { question: t.faq_q4, answer: t.faq_a4 },
+    { question: t.faq_q5, answer: t.faq_a5 },
+    { question: t.faq_q6, answer: t.faq_a6 },
+  ];
+
+  // ─── Features data (inside component to use t.) ────────────
+  const features = [
+    { title: t.feature1_title, subtitle: t.feature1_subtitle, description: t.feature1_desc, image: FEATURE_IMAGES[0] },
+    { title: t.feature2_title, subtitle: t.feature2_subtitle, description: t.feature2_desc, image: FEATURE_IMAGES[1] },
+    { title: t.feature3_title, subtitle: t.feature3_subtitle, description: t.feature3_desc, image: FEATURE_IMAGES[2] },
+    { title: t.feature4_title, subtitle: t.feature4_subtitle, description: t.feature4_desc, image: FEATURE_IMAGES[3] },
+  ];
+
   const activeCategory = allToolsCategories.find((c) => c.id === activeTab)!;
 
   const openEditor = useCallback((file: File, tool?: string) => {
-    // Accept any file — PDF is loaded directly, others will be converted in the editor
     setPendingFile(file);
     if (tool) setPendingTool(tool);
     navigate(`/${lang}/editor`);
@@ -167,10 +125,8 @@ export default function Home() {
     if (tool) {
       setPendingTool(tool);
       if (FILE_FREE_TOOLS.includes(tool)) {
-        // Navigate directly to editor without needing a PDF file
         navigate(`/${lang}/editor`);
       } else {
-        // Open file picker with tool pre-selected
         fileInputRef.current?.click();
       }
     } else {
@@ -198,7 +154,7 @@ export default function Home() {
               className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-4"
               style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
             >
-              Editor de PDF Online{" "}
+              {t.hero_title_1}{" "}
               <span
                 style={{
                   background: "linear-gradient(135deg, oklch(0.55 0.22 260), oklch(0.62 0.18 280))",
@@ -207,14 +163,14 @@ export default function Home() {
                   backgroundClip: "text",
                 }}
               >
-                Gratuito
+                {t.hero_title_2}
               </span>
             </h1>
             <p
               className="text-lg md:text-xl"
               style={{ color: "oklch(0.45 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
             >
-              Sube tu PDF y edítalo ahora mismo — sin instalar nada
+              {t.hero_subtitle}
             </p>
           </div>
 
@@ -232,10 +188,13 @@ export default function Home() {
               onDragLeave={() => setIsDraggingOver(false)}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className="cursor-pointer rounded-2xl border-2 border-dashed transition-all duration-200 flex flex-col items-center justify-center gap-4 py-12 px-8"
+              className="cursor-pointer rounded-3xl flex flex-col items-center justify-center gap-4 py-12 px-8 transition-all duration-200"
               style={{
-                borderColor: isDraggingOver ? "oklch(0.55 0.22 260)" : "oklch(0.75 0.06 250)",
-                backgroundColor: isDraggingOver ? "oklch(0.55 0.22 260 / 0.06)" : "white",
+                border: `2px dashed ${isDraggingOver ? "oklch(0.55 0.22 260)" : "oklch(0.80 0.05 260)"}`,
+                backgroundColor: isDraggingOver
+                  ? "oklch(0.55 0.22 260 / 0.06)"
+                  : "oklch(1 0 0)",
+                boxShadow: "0 4px 32px oklch(0.18 0.04 250 / 0.06)",
               }}
             >
               <div
@@ -246,9 +205,9 @@ export default function Home() {
               </div>
               <div className="text-center">
                 <p className="font-semibold text-lg" style={{ color: "oklch(0.55 0.22 260)" }}>
-                  Arrastra cualquier archivo aquí
+                  {t.hero_drag_here}
                 </p>
-                <p className="text-sm mt-1" style={{ color: "oklch(0.55 0.05 250)" }}>o</p>
+                <p className="text-sm mt-1" style={{ color: "oklch(0.55 0.05 250)" }}>{t.hero_or}</p>
               </div>
               <button
                 className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white transition-all"
@@ -257,18 +216,16 @@ export default function Home() {
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.18 0.04 250)")}
               >
                 <Upload className="w-4 h-4" />
-                Subir archivo
+                {t.hero_upload_btn}
               </button>
               {/* Mensaje de conversión */}
               <div
                 className="flex items-start gap-2 rounded-xl px-4 py-3 text-sm max-w-sm text-center"
                 style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.07)", color: "oklch(0.40 0.10 260)" }}
               >
-                <span>
-                  ✨ <strong>Word, Excel, JPG, PNG, HTML…</strong> cualquier archivo se convierte automáticamente a PDF al cargarlo.
-                </span>
+                <span>✨ {t.hero_any_file}</span>
               </div>
-              <p className="text-xs" style={{ color: "oklch(0.6 0.02 250)" }}>Hasta 100 MB · PDF, Word, Excel, PowerPoint, JPG, PNG y más</p>
+              <p className="text-xs" style={{ color: "oklch(0.6 0.02 250)" }}>{t.hero_max_size_detail}</p>
             </div>
           </div>
         </div>
@@ -282,13 +239,13 @@ export default function Home() {
               className="text-3xl md:text-4xl font-bold mb-3"
               style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
             >
-              Todas las herramientas que necesitas para editar PDFs
+              {t.tools_title}
             </h2>
             <p
               className="text-base"
               style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
             >
-              Desde convertir archivos hasta firmar y proteger tus PDFs, todo está aquí:
+              {t.tools_subtitle}
             </p>
           </div>
 
@@ -381,7 +338,7 @@ export default function Home() {
               onClick={() => scrollToEditor()}
             >
               <Upload className="w-4 h-4" />
-              Subir PDF para editar
+              {t.tools_cta}
             </button>
           </div>
         </div>
@@ -395,13 +352,13 @@ export default function Home() {
               className="text-3xl md:text-4xl font-bold mb-3"
               style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
             >
-              Cómo editar PDFs online en 3 sencillos pasos
+              {t.how_title}
             </h2>
             <p
               className="text-base"
               style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
             >
-              Sigue estos pasos rápidos para editar tus archivos PDF:
+              {t.how_subtitle}
             </p>
           </div>
 
@@ -410,20 +367,20 @@ export default function Home() {
               {
                 step: "1",
                 icon: Upload,
-                title: "Sube tu archivo",
-                desc: "Arrastra y suelta tu PDF o selecciónalo desde tu dispositivo.",
+                title: t.how_step1_title,
+                desc: t.how_step1_desc,
               },
               {
                 step: "2",
                 icon: Edit3,
-                title: "Realiza ediciones",
-                desc: "Edita el texto, añade tu firma o convierte tu PDF a un formato diferente.",
+                title: t.how_step2_title,
+                desc: t.how_step2_desc,
               },
               {
                 step: "3",
                 icon: Download,
-                title: "Descarga tu PDF",
-                desc: "Obtén tu archivo actualizado al instante, listo para imprimir o compartir.",
+                title: t.how_step3_title,
+                desc: t.how_step3_desc,
               },
             ].map((item, i) => (
               <div
@@ -495,7 +452,7 @@ export default function Home() {
               onClick={() => scrollToEditor()}
             >
               <Upload className="w-4 h-4" />
-              Subir PDF para editar
+              {t.how_cta}
             </button>
           </div>
         </div>
@@ -512,13 +469,13 @@ export default function Home() {
               className="text-3xl md:text-4xl font-bold mb-3"
               style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
             >
-              ¿Por qué elegir nuestro Editor de PDF?
+              {t.features_why_title}
             </h2>
             <p
               className="text-base"
               style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
             >
-              Descubre por qué somos la mejor opción para editar PDFs:
+              {t.features_why_subtitle}
             </p>
           </div>
 
@@ -588,24 +545,8 @@ export default function Home() {
               className="text-3xl md:text-4xl font-bold mb-3"
               style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
             >
-              ¿Tienes preguntas?{" "}
-              <span
-                style={{
-                  background: "linear-gradient(135deg, oklch(0.55 0.22 260), oklch(0.62 0.18 280))",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-              >
-                Tenemos respuestas
-              </span>
+              {t.faq_title}
             </h2>
-            <p
-              className="text-base"
-              style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
-            >
-              Aprende más sobre cómo editar PDFs y usar nuestras funciones de forma efectiva
-            </p>
           </div>
 
           <div className="space-y-3">
@@ -672,13 +613,13 @@ export default function Home() {
             className="text-3xl md:text-4xl font-bold text-white mb-4"
             style={{ fontFamily: "'Sora', sans-serif" }}
           >
-            Empieza a editar tus PDFs ahora
+            {t.cta_title}
           </h2>
           <p
             className="text-base mb-8 max-w-xl mx-auto"
             style={{ color: "oklch(0.70 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
           >
-            Únete a millones de usuarios que confían en editPDF para gestionar sus documentos.
+            {t.cta_subtitle}
           </p>
           <button
             className="inline-flex items-center gap-2 px-8 py-3 rounded-lg font-semibold text-sm transition-all duration-200"
@@ -696,7 +637,7 @@ export default function Home() {
             onClick={() => scrollToEditor()}
           >
             <Upload className="w-4 h-4" />
-            Subir PDF para editar
+            {t.cta_btn}
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

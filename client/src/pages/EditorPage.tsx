@@ -11,7 +11,7 @@ import Navbar from "@/components/Navbar";
 const FILE_FREE_TOOLS = ["jpg-to-pdf", "png-to-pdf", "word-to-pdf", "excel-to-pdf", "ppt-to-pdf"];
 
 export default function EditorPage() {
-  const { pendingFile, pendingTool } = usePdfFile();
+  const { pendingFile, pendingTool, pendingPaywall, setPendingPaywall } = usePdfFile();
   const [, navigate] = useLocation();
 
   const isFileFree = pendingTool ? FILE_FREE_TOOLS.includes(pendingTool) : false;
@@ -34,6 +34,8 @@ export default function EditorPage() {
         <PdfEditor
           initialFile={pendingFile ?? undefined}
           initialTool={pendingTool ?? undefined}
+          initialOpenPaywall={pendingPaywall}
+          onPaywallOpened={() => setPendingPaywall(false)}
           fullscreen
         />
       </div>
