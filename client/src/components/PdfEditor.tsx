@@ -1600,8 +1600,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         : { height: "85vh", borderColor: "oklch(0.88 0.02 250)", backgroundColor: "oklch(0.97 0.005 250)" }
       }
     >
-      {/* ── TOP TOOLBAR ── */}
-      <div className="flex items-center gap-1 px-3 py-1.5 border-b overflow-x-auto" style={{ backgroundColor: "oklch(1 0 0)", borderColor: "oklch(0.90 0.01 250)" }}>
+      {/* ── TOP TOOLBAR — desktop only ── */}
+      <div className="hidden md:flex items-center gap-1 px-3 py-1.5 border-b overflow-x-auto" style={{ backgroundColor: "oklch(1 0 0)", borderColor: "oklch(0.90 0.01 250)" }}>
         {/* Undo / Redo */}
         <button title={t.editor_undo + " (Ctrl+Z)"} onClick={undo} disabled={historyIndex <= 0} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
           <Undo2 className="w-4 h-4" style={{ color: "oklch(0.35 0.02 250)" }} />
@@ -1842,7 +1842,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           </div>
         </div>
 
-        {/* RIGHT: Tool panel — drawer on mobile, sidebar on desktop */}
+        {/* RIGHT: Tool panel — bottom sheet on mobile, sidebar on desktop */}
         {/* Mobile overlay backdrop */}
         {showMobilePanel && (
           <div
@@ -1850,28 +1850,96 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             onClick={() => setShowMobilePanel(false)}
           />
         )}
+        {/* Desktop sidebar */}
         <div
-          className={[
-            "border-l overflow-y-auto flex flex-col",
-            // Desktop: always visible sidebar
-            "md:w-[260px] md:relative md:translate-x-0 md:z-auto md:flex",
-            // Mobile: fixed drawer from right
-            "fixed right-0 top-0 bottom-0 w-[280px] z-40 transition-transform duration-300",
-            showMobilePanel ? "translate-x-0" : "translate-x-full md:translate-x-0",
-          ].join(" ")}
+          className="hidden md:flex border-l overflow-y-auto flex-col md:w-[260px]"
           style={{ backgroundColor: "oklch(1 0 0)", borderColor: "oklch(0.90 0.01 250)" }}
         >
-          {/* Mobile close button */}
-          <div className="flex items-center justify-between px-3 py-2 border-b md:hidden" style={{ borderColor: "oklch(0.90 0.01 250)" }}>
-            <span className="text-sm font-semibold" style={{ color: "oklch(0.15 0.03 250)" }}>Herramienta</span>
+          {renderToolPanel()}
+        </div>
+        {/* Mobile bottom sheet */}
+        <div
+          className={[
+            "fixed left-0 right-0 bottom-[112px] z-40 md:hidden transition-transform duration-300 rounded-t-2xl overflow-hidden",
+            showMobilePanel ? "translate-y-0" : "translate-y-full",
+          ].join(" ")}
+          style={{ backgroundColor: "oklch(1 0 0)", boxShadow: "0 -4px 24px oklch(0.18 0.04 250 / 0.18)", maxHeight: "60vh", overflowY: "auto" }}
+        >
+          {/* Sheet handle + close */}
+          <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-white z-10" style={{ borderColor: "oklch(0.90 0.01 250)" }}>
+            <div className="w-10 h-1 rounded-full mx-auto" style={{ backgroundColor: "oklch(0.80 0.02 250)" }} />
             <button
               onClick={() => setShowMobilePanel(false)}
-              className="p-1.5 rounded hover:bg-gray-100 transition-colors"
+              className="absolute right-3 top-2.5 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
             >
               <X className="w-4 h-4" style={{ color: "oklch(0.45 0.02 250)" }} />
             </button>
           </div>
           {renderToolPanel()}
+        </div>
+      </div>
+
+      {/* ── MOBILE BOTTOM BAR ── */}
+      <div className="md:hidden flex flex-col border-t" style={{ backgroundColor: "oklch(1 0 0)", borderColor: "oklch(0.90 0.01 250)" }}>
+        {/* Tools row — horizontal scroll */}
+        <div className="flex items-center overflow-x-auto gap-0 px-1 py-1" style={{ scrollbarWidth: "none" }}>
+          {[
+            { id: "notes" as ToolName, icon: StickyNote, label: t.editor_notes },
+            { id: "move" as ToolName, icon: Move, label: t.editor_move },
+            { id: "sign" as ToolName, icon: PenTool, label: t.editor_sign },
+            { id: "text" as ToolName, icon: Type, label: t.editor_add_text },
+            { id: "edit-text" as ToolName, icon: Type, label: t.editor_edit_text },
+            { id: "highlight" as ToolName, icon: Highlighter, label: t.editor_highlight },
+            { id: "brush" as ToolName, icon: Brush, label: t.editor_brush },
+            { id: "eraser" as ToolName, icon: Eraser, label: t.editor_eraser },
+            { id: "image" as ToolName, icon: ImageIcon, label: t.editor_image },
+            { id: "shapes" as ToolName, icon: Shapes, label: t.editor_shapes },
+            { id: "find" as ToolName, icon: Search, label: t.editor_find },
+            { id: "protect" as ToolName, icon: Shield, label: t.editor_protect },
+            { id: "compress" as ToolName, icon: Minimize2, label: t.editor_compress },
+          ].map(({ id, icon: Icon, label }) => (
+            <button
+              key={id}
+              onClick={() => { setActiveTool(id); setShowMobilePanel(true); }}
+              className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg shrink-0 transition-all"
+              style={{
+                color: activeTool === id ? "oklch(0.55 0.22 260)" : "oklch(0.35 0.02 250)",
+                backgroundColor: activeTool === id ? "oklch(0.55 0.22 260 / 0.10)" : "transparent",
+                minWidth: 56,
+              }}
+            >
+              <Icon className="w-5 h-5" />
+              <span style={{ fontSize: 10, whiteSpace: "nowrap" }}>{label}</span>
+            </button>
+          ))}
+        </div>
+        {/* Download row */}
+        <div className="flex items-center gap-2 px-3 pb-3 pt-1">
+          {/* Share button */}
+          <button
+            onClick={() => {
+              if (navigator.share && file) {
+                navigator.share({ title: file.name, text: "Edited PDF" }).catch(() => {});
+              } else {
+                toast.info("Share not supported on this browser");
+              }
+            }}
+            className="flex items-center justify-center w-12 h-12 rounded-xl border shrink-0 transition-all"
+            style={{ borderColor: "oklch(0.85 0.02 250)", color: "oklch(0.35 0.02 250)" }}
+          >
+            <Upload className="w-5 h-5" />
+          </button>
+          {/* Download button */}
+          <button
+            onClick={downloadPdf}
+            className="flex-1 flex items-center justify-center gap-2 h-12 rounded-xl text-white font-bold text-base transition-all"
+            style={{ backgroundColor: "oklch(0.18 0.04 250)" }}
+            onTouchStart={e => e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)"}
+            onTouchEnd={e => e.currentTarget.style.backgroundColor = "oklch(0.18 0.04 250)"}
+          >
+            <Download className="w-5 h-5" />
+            {t.editor_download}
+          </button>
         </div>
       </div>
 

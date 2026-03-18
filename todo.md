@@ -199,3 +199,10 @@
 - [x] Feature: firma con nombre — añadido tab 'Nombre' en panel de firma con fuente Dancing Script cursiva
 - [x] Feature: formas — toggle 'solo borde' vs 'relleno' añadido en panel de formas
 - [x] Feature: imágenes — slider de opacidad y botón eliminar en panel lateral — en progreso
+
+## Editor Móvil (estilo pdfe.com)
+- [x] Barra de herramientas horizontal fija en la parte inferior (scroll horizontal) en móvil
+- [x] Botón Download grande fijo en la parte inferior en móvil
+- [x] Botón compartir a la izquierda del Download en móvil
+- [x] PDF ocupa toda la pantalla en móvil (sin panel lateral)
+- [x] Panel de opciones de herramienta como bottom sheet desde abajo en móvil
