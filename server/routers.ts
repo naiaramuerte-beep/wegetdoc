@@ -329,6 +329,98 @@ export const appRouter = router({
       return { success: true };
     }),
 
+    // ── Stripe Elements: create SetupIntent for inline card form ──────────────
+    createSetupIntent: protectedProcedure.mutation(async ({ ctx }) => {
+      const stripe = getStripe();
+      const user = ctx.user;
+
+      // Find or create Stripe customer
+      let customerId: string | undefined;
+      const existingSub = await getActiveSubscription(user.id);
+      if (existingSub?.stripeCustomerId) {
+        customerId = existingSub.stripeCustomerId;
+      } else {
+        const customer = await stripe.customers.create({
+          email: user.email || undefined,
+          name: user.name || undefined,
+          metadata: { user_id: user.id.toString() },
+        });
+        customerId = customer.id;
+      }
+
+      const setupIntent = await stripe.setupIntents.create({
+        customer: customerId,
+        payment_method_types: ["card"],
+        usage: "off_session",
+        metadata: { user_id: user.id.toString() },
+      });
+
+      return {
+        clientSecret: setupIntent.client_secret!,
+        customerId,
+      };
+    }),
+
+    // ── Stripe Elements: confirm subscription after card setup ──────────────
+    confirmSubscription: protectedProcedure
+      .input(z.object({
+        paymentMethodId: z.string(),
+        customerId: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const stripe = getStripe();
+        const user = ctx.user;
+
+        // Attach payment method to customer
+        await stripe.paymentMethods.attach(input.paymentMethodId, {
+          customer: input.customerId,
+        });
+
+        // Set as default payment method
+        await stripe.customers.update(input.customerId, {
+          invoice_settings: { default_payment_method: input.paymentMethodId },
+        });
+
+        // Create price (49.95€/month) - first create a product+price, then subscribe
+        // For subscriptions, we need a recurring Price object
+        const price = await stripe.prices.create({
+          currency: "eur",
+          unit_amount: 4995,
+          recurring: { interval: "month" },
+          product_data: {
+            name: "editPDF — Plan Mensual",
+          },
+        });
+
+        const subscription = await stripe.subscriptions.create({
+          customer: input.customerId,
+          items: [{ price: price.id }],
+          trial_period_days: 7,
+          default_payment_method: input.paymentMethodId,
+          metadata: {
+            user_id: user.id.toString(),
+            plan: "trial",
+          },
+          expand: ["latest_invoice.payment_intent"],
+        });
+
+        const now = new Date();
+        const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+        await upsertSubscription({
+          userId: user.id,
+          stripeCustomerId: input.customerId,
+          stripeSubscriptionId: subscription.id,
+          plan: "trial",
+          status: "active",
+          currentPeriodStart: now,
+          currentPeriodEnd: trialEnd,
+          cancelAtPeriodEnd: false,
+        });
+
+        return { success: true, subscriptionId: subscription.id };
+      }),
+
     verifySession: protectedProcedure
       .input(z.object({ sessionId: z.string() }))
       .mutation(async ({ ctx, input }) => {

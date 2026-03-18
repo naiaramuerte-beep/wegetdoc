@@ -125,8 +125,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // Sign tool state
   const [isSignDrawing, setIsSignDrawing] = useState(false);
   const signCanvasRef = useRef<HTMLCanvasElement>(null);
-  const [signTab, setSignTab] = useState<"draw" | "name">("draw"); // draw or type name
+  const [signTab, setSignTab] = useState<"draw" | "name" | "esign">("draw"); // draw, name, or esign
   const [signName, setSignName] = useState(""); // name for auto-generated signature
+  const [eSignName, setESignName] = useState(""); // full name for electronic signature
+  const [eSignEmail, setESignEmail] = useState(""); // email for electronic signature
 
   // Text tool state
   const [textInput, setTextInput] = useState("");
@@ -477,27 +479,65 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     setSelectedId(null);
   }, [currentPage, pushHistory]);
 
-  // ── Signature canvas ──────────────────────────────────────────
+  // ── Signature canvas ─────────────────────────────────────────────
+  // Helper: get canvas coordinates accounting for CSS scaling
+  const getSignCoords = (clientX: number, clientY: number) => {
+    const c = signCanvasRef.current!;
+    const r = c.getBoundingClientRect();
+    const scaleX = c.width / r.width;
+    const scaleY = c.height / r.height;
+    return { x: (clientX - r.left) * scaleX, y: (clientY - r.top) * scaleY };
+  };
   const startSign = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const c = signCanvasRef.current!;
     const ctx = c.getContext("2d")!;
-    const r = c.getBoundingClientRect();
+    const { x, y } = getSignCoords(e.clientX, e.clientY);
     ctx.beginPath();
-    ctx.moveTo(e.clientX - r.left, e.clientY - r.top);
+    ctx.moveTo(x, y);
     setIsSignDrawing(true);
   };
   const drawSign = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isSignDrawing) return;
     const c = signCanvasRef.current!;
     const ctx = c.getContext("2d")!;
-    const r = c.getBoundingClientRect();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = "#000";
+    const { x, y } = getSignCoords(e.clientX, e.clientY);
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = "#1a237e";
     ctx.lineCap = "round";
-    ctx.lineTo(e.clientX - r.left, e.clientY - r.top);
+    ctx.lineJoin = "round";
+    ctx.lineTo(x, y);
     ctx.stroke();
   };
   const endSign = () => setIsSignDrawing(false);
+  // Touch handlers for mobile signature drawing
+  const startSignTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const c = signCanvasRef.current!;
+    const ctx = c.getContext("2d")!;
+    const { x, y } = getSignCoords(touch.clientX, touch.clientY);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    setIsSignDrawing(true);
+  };
+  const drawSignTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    if (!isSignDrawing) return;
+    const touch = e.touches[0];
+    const c = signCanvasRef.current!;
+    const ctx = c.getContext("2d")!;
+    const { x, y } = getSignCoords(touch.clientX, touch.clientY);
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = "#1a237e";
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+  const endSignTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    setIsSignDrawing(false);
+  };
   const clearSign = () => {
     const c = signCanvasRef.current!;
     c.getContext("2d")!.clearRect(0, 0, c.width, c.height);
@@ -534,7 +574,53 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     toast.success("Firma añadida. Arrástrala a la posición deseada.");
   };
 
-  // ── Add text ──────────────────────────────────────────────────
+  // Generate electronic signature block (name + date + legal text rendered to canvas)
+  const placeESign = () => {
+    if (!eSignName.trim()) { toast.error("Escribe tu nombre completo"); return; }
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" });
+    const timeStr = now.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+    const c = document.createElement("canvas");
+    c.width = 320;
+    c.height = 110;
+    const ctx = c.getContext("2d")!;
+    // Background
+    ctx.fillStyle = "#f0f4ff";
+    ctx.roundRect(0, 0, c.width, c.height, 8);
+    ctx.fill();
+    // Border
+    ctx.strokeStyle = "#3b5bdb";
+    ctx.lineWidth = 1.5;
+    ctx.roundRect(0, 0, c.width, c.height, 8);
+    ctx.stroke();
+    // Signature name in cursive
+    ctx.font = "italic 30px 'Dancing Script', cursive";
+    ctx.fillStyle = "#1a237e";
+    ctx.fillText(eSignName, 12, 42);
+    // Underline
+    ctx.beginPath();
+    ctx.moveTo(12, 50);
+    ctx.lineTo(c.width - 12, 50);
+    ctx.strokeStyle = "#1a237e";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // Date and email
+    ctx.font = "11px Arial, sans-serif";
+    ctx.fillStyle = "#374151";
+    ctx.fillText(`Firmado electrónicamente el ${dateStr} a las ${timeStr}`, 12, 68);
+    if (eSignEmail.trim()) {
+      ctx.fillText(`Email: ${eSignEmail}`, 12, 84);
+    }
+    // Legal note
+    ctx.font = "9px Arial, sans-serif";
+    ctx.fillStyle = "#6b7280";
+    ctx.fillText("Firma electrónica válida bajo Reglamento eIDAS (UE 910/2014)", 12, 100);
+    const dataUrl = c.toDataURL();
+    addAnnotation({ type: "signature", dataUrl, x: 80, y: 100, width: 320, height: 110, page: currentPage });
+    toast.success("✓ Firma electrónica insertada. Arrástrala a la posición deseada.");
+  };
+
+  // ── Add text ────────────────────────────────────────────
   const placeText = () => {
     if (!textInput.trim()) { toast.error("Escribe el texto primero"); return; }
     addAnnotation({
@@ -1118,9 +1204,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   ref={signCanvasRef}
                   width={220} height={100}
                   className="border rounded-lg cursor-crosshair"
-                  style={{ borderColor: "oklch(0.80 0.05 260)", backgroundColor: "#fff" }}
+                  style={{ borderColor: "oklch(0.80 0.05 260)", backgroundColor: "#fff", touchAction: "none" }}
                   onMouseDown={startSign} onMouseMove={drawSign}
                   onMouseUp={endSign} onMouseLeave={endSign}
+                  onTouchStart={startSignTouch} onTouchMove={drawSignTouch}
+                  onTouchEnd={endSignTouch}
                 />
                 <div className="flex gap-2">
                   <button onClick={clearSign} className="flex-1 py-1.5 rounded text-xs border" style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.40 0.02 250)" }}>Limpiar</button>
@@ -1985,7 +2073,30 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       </div>
 
       {/* Paywall modal */}
-      <PaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} pdfData={pdfDataForPaywall} />
+      <PaywallModal
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        pdfData={pdfDataForPaywall}
+        onPaymentSuccess={async () => {
+          // After successful payment, trigger the actual download
+          setShowPaywall(false);
+          if (!pdfBytes) return;
+          toast.loading("Preparando descarga...", { id: "dl-post-payment" });
+          try {
+            const out = await buildAnnotatedPdf();
+            if (!out) throw new Error("Failed to build PDF");
+            const blob = new Blob([Buffer.from(out)], { type: "application/pdf" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a"); a.href = url;
+            a.download = file?.name ?? "document.pdf";
+            a.click(); URL.revokeObjectURL(url);
+            toast.success("PDF descargado correctamente", { id: "dl-post-payment" });
+          } catch (err) {
+            console.error(err);
+            toast.error("Error al generar el PDF", { id: "dl-post-payment" });
+          }
+        }}
+      />
     </div>
   );
 }

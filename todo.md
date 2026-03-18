@@ -215,3 +215,13 @@
 - [x] Bug móvil: barra herramientas y botón descargar ahora fixed en bottom — siempre visible
 - [x] Móvil: PDF encuadrado con márgenes grises, escala automática al ancho de pantalla
 - [x] Móvil: indicador visual de scroll horizontal en barra de herramientas (gradiente fade derecho)
+- [ ] Bug: dibujo de firma en canvas no funciona
+- [ ] Feature: firma electrónica (eSign) con nombre, fecha, IP y certificado
+
+## Stripe Elements - Pago embebido en modal (pdfe.com style)
+- [x] Instalar @stripe/react-stripe-js y @stripe/stripe-js
+- [x] Backend: endpoint createSetupIntent (crea customer + SetupIntent para capturar tarjeta)
+- [x] Backend: endpoint confirmSubscription (adjunta tarjeta + crea suscripción con trial 7 días)
+- [x] Frontend: reemplazar redirect a Stripe Checkout por formulario CardElement embebido en PaywallModal
+- [x] Frontend: flujo completo: SetupIntent → confirmCardSetup → confirmSubscription → descarga automática
+- [x] onPaymentSuccess callback en PdfEditor para descargar PDF tras pago exitoso
