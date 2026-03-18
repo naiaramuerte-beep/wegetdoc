@@ -123,3 +123,14 @@
 - [x] PaywallModal: mostrar "0€ hoy, luego 49,95€/mes" con texto legal del trial
 - [x] Checkout: primer cobro 0€ con tarjeta requerida
 - [x] Barra de acciones (Deshacer/Borrar último/Borrar todo) en paneles del editor
+
+## Entrega PDF tras pago
+- [ ] Subir PDF editado a S3 antes de abrir el checkout, guardar URL en metadata de Stripe
+- [ ] Página /payment/success: descargar PDF automáticamente y guardarlo en documentos del usuario
+- [ ] Webhook: cuando suscripción se activa, marcar documento como entregado
+- [ ] Panel de documentos muestra el PDF entregado con enlace de descarga
+
+## Panel de Usuario - Restricción de Descarga
+- [x] Panel documentos: mostrar botón de descarga solo si suscripción activa
+- [x] Si no tiene suscripción: mostrar PaywallModal al intentar descargar (icono corona dorada)
+- [x] Indicador visual en el panel que muestra el estado de la suscripción (badge verde/ámbar)

@@ -18,6 +18,8 @@ interface PaywallModalProps {
   onClose: () => void;
   /** Context: what action triggered the paywall */
   action?: string;
+  /** PDF data to upload before checkout */
+  pdfData?: { base64: string; name: string; size: number };
 }
 
 type Step = "auth-choice" | "email-form" | "plans";
@@ -31,7 +33,7 @@ const FEATURES = [
   "Cancelación en cualquier momento",
 ];
 
-export default function PaywallModal({ isOpen, onClose, action = "descargar" }: PaywallModalProps) {
+export default function PaywallModal({ isOpen, onClose, action = "descargar", pdfData }: PaywallModalProps) {
   const { isAuthenticated } = useAuth();
   const [step, setStep] = useState<Step>(isAuthenticated ? "plans" : "auth-choice");
   const [isLoading, setIsLoading] = useState(false);
@@ -39,6 +41,7 @@ export default function PaywallModal({ isOpen, onClose, action = "descargar" }: 
   const [agreed, setAgreed] = useState(false);
 
   const createCheckout = trpc.subscription.createCheckout.useMutation();
+  const uploadDocument = trpc.documents.upload.useMutation();
 
   if (!isOpen) return null;
 
@@ -67,6 +70,26 @@ export default function PaywallModal({ isOpen, onClose, action = "descargar" }: 
     }
     setIsLoading(true);
     try {
+      // Upload PDF to S3 before checkout so we can deliver it after payment
+      if (pdfData && isAuthenticated) {
+        try {
+          const doc = await uploadDocument.mutateAsync({
+            name: pdfData.name,
+            base64: pdfData.base64,
+            size: pdfData.size,
+          });
+          // Save document ID so PaymentSuccess can trigger download
+          if (doc) {
+            localStorage.setItem("pdfpro_pending_doc_id", String(doc.id));
+            localStorage.setItem("pdfpro_pending_doc_name", pdfData.name);
+            localStorage.setItem("pdfpro_pending_doc_url", doc.fileUrl ?? "");
+          }
+        } catch (uploadErr) {
+          console.error("Failed to upload PDF before checkout:", uploadErr);
+          // Continue to checkout even if upload fails
+        }
+      }
+
       const result = await createCheckout.mutateAsync({
         plan: "trial",
         origin: window.location.origin,

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import PaywallModal from "@/components/PaywallModal";
 import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
 
@@ -252,13 +253,16 @@ function AccountTab({ user }: { user: any }) {
   );
 }
 
-// ─── Documents Tab ────────────────────────────────────────────
+// ─── Documents Tab ────────────────────────────────────────────────────────
 function DocumentsTab() {
   const { data: docs, isLoading } = trpc.documents.list.useQuery();
   const { data: folders } = trpc.folders.list.useQuery();
+  const { data: subData } = trpc.subscription.status.useQuery();
+  const isPremium = subData?.isPremium ?? false;
   const utils = trpc.useUtils();
   const [newFolderName, setNewFolderName] = useState("");
   const [showNewFolder, setShowNewFolder] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   const deleteMutation = trpc.documents.delete.useMutation({
     onSuccess: () => { utils.documents.list.invalidate(); toast.success("Documento eliminado"); },
@@ -335,7 +339,23 @@ function DocumentsTab() {
 
       {/* Documents */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-        <h2 className="text-lg font-semibold text-slate-800 mb-4">Mis documentos</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-slate-800">Mis documentos</h2>
+          {isPremium ? (
+            <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
+              <Crown size={12} className="text-emerald-600" />
+              Descarga activa
+            </span>
+          ) : (
+            <button
+              onClick={() => setShowPaywall(true)}
+              className="flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full hover:bg-amber-100 transition-colors"
+            >
+              <Crown size={12} className="text-amber-600" />
+              Suscríbete para descargar
+            </button>
+          )}
+        </div>
         {docs && docs.length > 0 ? (
           <div className="space-y-2">
             {docs.map((doc: any) => (
@@ -354,11 +374,23 @@ function DocumentsTab() {
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   {doc.fileUrl && (
-                    <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
-                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                        <Download size={14} />
+                    isPremium ? (
+                      <a href={doc.fileUrl} download={doc.name} target="_blank" rel="noopener noreferrer">
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Descargar">
+                          <Download size={14} />
+                        </Button>
+                      </a>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 text-amber-500"
+                        title="Requiere suscripción activa"
+                        onClick={() => setShowPaywall(true)}
+                      >
+                        <Crown size={14} />
                       </Button>
-                    </a>
+                    )
                   )}
                   <Button
                     size="sm"
@@ -380,11 +412,14 @@ function DocumentsTab() {
           </div>
         )}
       </div>
+
+      {/* Paywall: shown when user tries to download without subscription */}
+      <PaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} action="descargar" />
     </div>
   );
 }
 
-// ─── Team Tab ─────────────────────────────────────────────────
+// ─── Team Tab ────────────────────────────────────────────────────────
 function TeamTab() {
   const { data: team, isLoading } = trpc.team.list.useQuery();
   const utils = trpc.useUtils();
