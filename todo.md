@@ -134,3 +134,9 @@
 - [x] Panel documentos: mostrar botón de descarga solo si suscripción activa
 - [x] Si no tiene suscripción: mostrar PaywallModal al intentar descargar (icono corona dorada)
 - [x] Indicador visual en el panel que muestra el estado de la suscripción (badge verde/ámbar)
+
+## Editor PDF - Bugs Móvil
+- [x] Panel lateral como drawer overlay en móvil con botón X para cerrar
+- [x] Thumbnails ocultos en móvil (hidden md:flex) para más espacio al canvas
+- [x] Herramienta "Buscar texto" implementada con pdf.js getTextContent(), resultados con página y snippet
+- [x] Al seleccionar herramienta en móvil, el panel se abre automáticamente

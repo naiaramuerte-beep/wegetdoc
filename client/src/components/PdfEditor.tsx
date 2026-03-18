@@ -147,6 +147,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
 
   // Find state
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<{ page: number; text: string }[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  // Mobile panel state
+  const [showMobilePanel, setShowMobilePanel] = useState(false);
 
   // Compress state
   const [compressQuality, setCompressQuality] = useState(70);
@@ -843,7 +848,46 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
     return doc.save();
   };
 
-  // ── Download with annotations ─────────────────────────────────
+  // ── Search text in PDF ──────────────────────────────────────────────────────
+  const searchInPdf = async () => {
+    if (!pdfDoc || !searchQuery.trim()) {
+      toast.error("Escribe algo para buscar");
+      return;
+    }
+    setIsSearching(true);
+    setSearchResults([]);
+    const query = searchQuery.toLowerCase();
+    const results: { page: number; text: string }[] = [];
+    try {
+      for (let i = 1; i <= pdfDoc.numPages; i++) {
+        const page = await pdfDoc.getPage(i);
+        const content = await page.getTextContent();
+        const pageText = content.items
+          .map((item: any) => item.str || "")
+          .join(" ");
+        if (pageText.toLowerCase().includes(query)) {
+          // Extract a snippet around the match
+          const idx = pageText.toLowerCase().indexOf(query);
+          const start = Math.max(0, idx - 40);
+          const end = Math.min(pageText.length, idx + query.length + 40);
+          const snippet = (start > 0 ? "..." : "") + pageText.slice(start, end) + (end < pageText.length ? "..." : "");
+          results.push({ page: i, text: snippet });
+        }
+      }
+      setSearchResults(results);
+      if (results.length === 0) {
+        toast.info(`No se encontró "${searchQuery}" en el documento`);
+      } else {
+        toast.success(`${results.length} resultado${results.length > 1 ? "s" : ""} encontrado${results.length > 1 ? "s" : ""}`);
+      }
+    } catch {
+      toast.error("Error al buscar en el PDF");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // ── Download with annotations ──────────────────────────────────────────────────────
   const downloadPdf = async () => {
     if (!isPremium) {
       // Build PDF and pass to paywall so it can be uploaded to S3 before checkout
@@ -1200,14 +1244,43 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
           <div className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Buscar texto</h3>
             <input
-              type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+              type="text" value={searchQuery}
+              onChange={e => { setSearchQuery(e.target.value); setSearchResults([]); }}
+              onKeyDown={e => e.key === "Enter" && searchInPdf()}
               placeholder="Buscar en el PDF..."
               className="w-full border rounded px-3 py-2 text-sm"
               style={{ borderColor: "oklch(0.80 0.05 260)" }}
             />
-            <button onClick={() => toast.info("Búsqueda en texto nativo del PDF disponible próximamente")} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>
-              <Search className="w-4 h-4 inline mr-1" />Buscar
+            <button
+              onClick={searchInPdf}
+              disabled={isSearching || !searchQuery.trim()}
+              className="py-2 rounded text-white text-sm font-semibold disabled:opacity-50"
+              style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
+            >
+              <Search className="w-4 h-4 inline mr-1" />
+              {isSearching ? "Buscando..." : "Buscar"}
             </button>
+            {searchResults.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <p className="text-xs font-medium" style={{ color: "oklch(0.40 0.02 250)" }}>
+                  {searchResults.length} resultado{searchResults.length > 1 ? "s" : ""} encontrado{searchResults.length > 1 ? "s" : ""}
+                </p>
+                <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
+                  {searchResults.map((r, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentPage(r.page)}
+                      className="text-left p-2 rounded text-xs hover:bg-blue-50 transition-colors"
+                      style={{ backgroundColor: "oklch(0.97 0.005 250)", color: "oklch(0.35 0.02 250)" }}
+                    >
+                      <span className="font-semibold" style={{ color: "oklch(0.55 0.22 260)" }}>Pág. {r.page}</span>
+                      {" "}—{" "}
+                      <span>{r.text}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         );
       case "eraser":
@@ -1320,7 +1393,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
             { id: "move" as ToolName, icon: Move, label: t.editor_move },
             { id: "notes" as ToolName, icon: StickyNote, label: t.editor_notes },
           ].map(({ id, icon, label }) => (
-            <ToolBtn key={id} icon={icon} label={label} active={activeTool === id} onClick={() => setActiveTool(id)} />
+            <ToolBtn key={id} icon={icon} label={label} active={activeTool === id} onClick={() => { setActiveTool(id); setShowMobilePanel(true); }} />
           ))}
         </div>
         {/* Page actions */}
@@ -1348,9 +1421,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
         </button>
       </div>
             {/* ── BODY: thumbnails + viewer + tool panel ── */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* LEFT: Page thumbnails — compact style like pdfe.com */}
-        <div className="w-[150px] border-r overflow-y-auto flex flex-col gap-3 py-3 px-2" style={{ backgroundColor: "oklch(0.96 0.005 250)", borderColor: "oklch(0.90 0.01 250)" }}>
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* LEFT: Page thumbnails — hidden on mobile */}
+        <div className="hidden md:flex w-[150px] border-r overflow-y-auto flex-col gap-3 py-3 px-2" style={{ backgroundColor: "oklch(0.96 0.005 250)", borderColor: "oklch(0.90 0.01 250)" }}>
           {/* Page count */}
           <div className="flex items-center justify-between px-1">
             <span className="text-xs font-semibold" style={{ color: "oklch(0.40 0.02 250)" }}>{totalPages}</span>
@@ -1521,8 +1594,35 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
           </div>
         </div>
 
-        {/* RIGHT: Tool panel */}
-        <div className="w-[260px] border-l overflow-y-auto flex flex-col" style={{ backgroundColor: "oklch(1 0 0)", borderColor: "oklch(0.90 0.01 250)" }}>
+        {/* RIGHT: Tool panel — drawer on mobile, sidebar on desktop */}
+        {/* Mobile overlay backdrop */}
+        {showMobilePanel && (
+          <div
+            className="fixed inset-0 bg-black/40 z-30 md:hidden"
+            onClick={() => setShowMobilePanel(false)}
+          />
+        )}
+        <div
+          className={[
+            "border-l overflow-y-auto flex flex-col",
+            // Desktop: always visible sidebar
+            "md:w-[260px] md:relative md:translate-x-0 md:z-auto md:flex",
+            // Mobile: fixed drawer from right
+            "fixed right-0 top-0 bottom-0 w-[280px] z-40 transition-transform duration-300",
+            showMobilePanel ? "translate-x-0" : "translate-x-full md:translate-x-0",
+          ].join(" ")}
+          style={{ backgroundColor: "oklch(1 0 0)", borderColor: "oklch(0.90 0.01 250)" }}
+        >
+          {/* Mobile close button */}
+          <div className="flex items-center justify-between px-3 py-2 border-b md:hidden" style={{ borderColor: "oklch(0.90 0.01 250)" }}>
+            <span className="text-sm font-semibold" style={{ color: "oklch(0.15 0.03 250)" }}>Herramienta</span>
+            <button
+              onClick={() => setShowMobilePanel(false)}
+              className="p-1.5 rounded hover:bg-gray-100 transition-colors"
+            >
+              <X className="w-4 h-4" style={{ color: "oklch(0.45 0.02 250)" }} />
+            </button>
+          </div>
           {renderToolPanel()}
         </div>
       </div>
