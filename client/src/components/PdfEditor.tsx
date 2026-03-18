@@ -19,7 +19,7 @@ import * as pdfjsLib from "pdfjs-dist";
 import { PDFDocument, rgb, StandardFonts, degrees } from "pdf-lib";
 
 // Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 // ── Types ─────────────────────────────────────────────────────
 type ToolName =
@@ -164,7 +164,7 @@ export default function PdfEditor({ initialTool }: { initialTool?: string }) {
       const c = document.createElement("canvas");
       c.width = vp.width; c.height = vp.height;
       const ctx = c.getContext("2d")!;
-      await page.render({ canvasContext: ctx, viewport: vp }).promise;
+      await page.render({ canvas: c, viewport: vp } as any).promise;
       thumbs.push(c.toDataURL());
     }
     setThumbnails(thumbs);
@@ -179,7 +179,7 @@ export default function PdfEditor({ initialTool }: { initialTool?: string }) {
     canvas.width = vp.width;
     canvas.height = vp.height;
     const ctx = canvas.getContext("2d")!;
-    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    await page.render({ canvas, viewport: vp } as any).promise;
   }, [pdfDoc, scale]);
 
   useEffect(() => { renderPage(currentPage); }, [renderPage, currentPage]);
@@ -364,7 +364,7 @@ export default function PdfEditor({ initialTool }: { initialTool?: string }) {
     try {
       const doc = await PDFDocument.load(pdfBytes as Uint8Array);
       const compressed = await doc.save({ useObjectStreams: true });
-      const blob = new Blob([compressed], { type: "application/pdf" });
+      const blob = new Blob([Buffer.from(compressed)], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a"); a.href = url;
       a.download = `compressed_${file?.name ?? "document.pdf"}`;
@@ -399,7 +399,7 @@ export default function PdfEditor({ initialTool }: { initialTool?: string }) {
       const vp = page.getViewport({ scale: 2 });
       const c = document.createElement("canvas");
       c.width = vp.width; c.height = vp.height;
-      await page.render({ canvasContext: c.getContext("2d")!, viewport: vp }).promise;
+      await page.render({ canvas: c, viewport: vp } as any).promise;
       const mimeType = format === "jpg" ? "image/jpeg" : "image/png";
       c.toBlob((blob) => {
         if (!blob) return;
@@ -425,7 +425,7 @@ export default function PdfEditor({ initialTool }: { initialTool?: string }) {
         const vp = page.getViewport({ scale: 2 });
         const c = document.createElement("canvas");
         c.width = vp.width; c.height = vp.height;
-        await page.render({ canvasContext: c.getContext("2d")!, viewport: vp }).promise;
+        await page.render({ canvas: c, viewport: vp } as any).promise;
         await new Promise<void>((res) => {
           c.toBlob((blob) => {
             if (!blob) { res(); return; }
@@ -457,7 +457,7 @@ export default function PdfEditor({ initialTool }: { initialTool?: string }) {
       const page = doc.addPage([img.width, img.height]);
       page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
       const pdfOut = await doc.save();
-      const blob = new Blob([pdfOut], { type: "application/pdf" });
+      const blob = new Blob([Buffer.from(pdfOut)], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a"); a.href = url;
       a.download = f.name.replace(/\.[^.]+$/, "") + ".pdf";
@@ -488,7 +488,7 @@ export default function PdfEditor({ initialTool }: { initialTool?: string }) {
         pages.forEach(p => merged.addPage(p));
       }
       const out = await merged.save();
-      const blob = new Blob([out], { type: "application/pdf" });
+      const blob = new Blob([Buffer.from(out)], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a"); a.href = url;
       a.download = "merged.pdf"; a.click(); URL.revokeObjectURL(url);
@@ -513,7 +513,7 @@ export default function PdfEditor({ initialTool }: { initialTool?: string }) {
       pages2.forEach(p => part2.addPage(p));
       for (const [i, doc] of [[1, part1], [2, part2]] as [number, PDFDocument][]) {
         const out = await doc.save();
-        const blob = new Blob([out], { type: "application/pdf" });
+        const blob = new Blob([Buffer.from(out)], { type: "application/pdf" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a"); a.href = url;
         a.download = `part${i}_${file?.name ?? "document.pdf"}`; a.click();
@@ -625,7 +625,7 @@ export default function PdfEditor({ initialTool }: { initialTool?: string }) {
       }
 
       const out = await doc.save();
-      const blob = new Blob([out], { type: "application/pdf" });
+      const blob = new Blob([Buffer.from(out)], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a"); a.href = url;
       a.download = file?.name ?? "document.pdf";
@@ -1116,7 +1116,7 @@ export default function PdfEditor({ initialTool }: { initialTool?: string }) {
       </div>
 
       {/* Paywall modal */}
-      <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} />
+      <PaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} />
     </div>
   );
 }

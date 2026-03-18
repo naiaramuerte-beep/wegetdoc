@@ -385,3 +385,185 @@ export async function getAdminStats() {
     unreadMessages: Number(unreadMsgRes[0]?.count ?? 0),
   };
 }
+
+// ─── Own Auth helpers ─────────────────────────────────────────
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  return result[0] ?? undefined;
+}
+
+export async function getUserByGoogleId(googleId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.googleId, googleId)).limit(1);
+  return result[0] ?? undefined;
+}
+
+export async function getUserByResetToken(token: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.resetToken, token)).limit(1);
+  return result[0] ?? undefined;
+}
+
+export async function createOwnUser(data: {
+  email: string;
+  name?: string;
+  passwordHash?: string;
+  googleId?: string;
+  loginMethod: string;
+  role?: "user" | "admin";
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  // Generate a unique openId for own-auth users
+  const openId = `own_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  await db.insert(users).values({
+    openId,
+    email: data.email,
+    name: data.name ?? null,
+    passwordHash: data.passwordHash ?? null,
+    googleId: data.googleId ?? null,
+    loginMethod: data.loginMethod,
+    role: data.role ?? "user",
+    emailVerified: !!data.googleId,
+    lastSignedIn: new Date(),
+  });
+  return getUserByEmail(data.email);
+}
+
+export async function updateUserPassword(userId: number, passwordHash: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ passwordHash, updatedAt: new Date() }).where(eq(users.id, userId));
+}
+
+export async function setResetToken(userId: number, token: string, expiry: Date) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ resetToken: token, resetTokenExpiry: expiry }).where(eq(users.id, userId));
+}
+
+export async function clearResetToken(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ resetToken: null, resetTokenExpiry: null }).where(eq(users.id, userId));
+}
+
+export async function setGoogleId(userId: number, googleId: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ googleId, emailVerified: true, loginMethod: "google" }).where(eq(users.id, userId));
+}
+
+// ─── MRR & Billing Stats ──────────────────────────────────────
+export async function getBillingStats() {
+  const db = await getDb();
+  if (!db) return null;
+
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfWeek = new Date(startOfDay);
+  startOfWeek.setDate(startOfDay.getDate() - startOfDay.getDay());
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+
+  const [
+    allActiveSubs,
+    allCanceledSubs,
+    subsThisMonth,
+    subsThisWeek,
+    subsToday,
+    totalUsers,
+    newUsersToday,
+    newUsersWeek,
+    newUsersMonth,
+  ] = await Promise.all([
+    db.select().from(subscriptions).where(
+      sql`${subscriptions.status} IN ('active', 'trialing')`
+    ),
+    db.select({ count: sql<number>`count(*)` }).from(subscriptions).where(
+      eq(subscriptions.status, "canceled")
+    ),
+    db.select({ count: sql<number>`count(*)` }).from(subscriptions).where(
+      sql`${subscriptions.createdAt} >= ${startOfMonth} AND ${subscriptions.status} IN ('active', 'trialing')`
+    ),
+    db.select({ count: sql<number>`count(*)` }).from(subscriptions).where(
+      sql`${subscriptions.createdAt} >= ${startOfWeek} AND ${subscriptions.status} IN ('active', 'trialing')`
+    ),
+    db.select({ count: sql<number>`count(*)` }).from(subscriptions).where(
+      sql`${subscriptions.createdAt} >= ${startOfDay} AND ${subscriptions.status} IN ('active', 'trialing')`
+    ),
+    db.select({ count: sql<number>`count(*)` }).from(users),
+    db.select({ count: sql<number>`count(*)` }).from(users).where(sql`${users.createdAt} >= ${startOfDay}`),
+    db.select({ count: sql<number>`count(*)` }).from(users).where(sql`${users.createdAt} >= ${startOfWeek}`),
+    db.select({ count: sql<number>`count(*)` }).from(users).where(sql`${users.createdAt} >= ${startOfMonth}`),
+  ]);
+
+  // Calculate MRR: trial = 0.99€, monthly = 9.99€, annual = 99€/12
+  let mrr = 0;
+  for (const sub of allActiveSubs) {
+    if (sub.plan === "trial") mrr += 0.99;
+    else if (sub.plan === "monthly") mrr += 9.99;
+    else if (sub.plan === "annual") mrr += 99 / 12;
+  }
+
+  // Monthly revenue breakdown (last 12 months)
+  const monthlyRevenue: { month: string; revenue: number; subs: number }[] = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+    const monthSubs = await db.select().from(subscriptions).where(
+      sql`${subscriptions.createdAt} >= ${d} AND ${subscriptions.createdAt} < ${end} AND ${subscriptions.status} IN ('active', 'trialing', 'canceled')`
+    );
+    let rev = 0;
+    for (const s of monthSubs) {
+      if (s.plan === "trial") rev += 0.99;
+      else if (s.plan === "monthly") rev += 9.99;
+      else if (s.plan === "annual") rev += 99;
+    }
+    monthlyRevenue.push({
+      month: d.toLocaleString("es-ES", { month: "short", year: "2-digit" }),
+      revenue: Math.round(rev * 100) / 100,
+      subs: monthSubs.length,
+    });
+  }
+
+  return {
+    mrr: Math.round(mrr * 100) / 100,
+    arr: Math.round(mrr * 12 * 100) / 100,
+    activeSubscriptions: allActiveSubs.length,
+    canceledSubscriptions: Number(allCanceledSubs[0]?.count ?? 0),
+    newSubsToday: Number(subsToday[0]?.count ?? 0),
+    newSubsWeek: Number(subsThisWeek[0]?.count ?? 0),
+    newSubsMonth: Number(subsThisMonth[0]?.count ?? 0),
+    totalUsers: Number(totalUsers[0]?.count ?? 0),
+    newUsersToday: Number(newUsersToday[0]?.count ?? 0),
+    newUsersWeek: Number(newUsersWeek[0]?.count ?? 0),
+    newUsersMonth: Number(newUsersMonth[0]?.count ?? 0),
+    monthlyRevenue,
+    churnRate: allActiveSubs.length > 0
+      ? Math.round((Number(allCanceledSubs[0]?.count ?? 0) / (allActiveSubs.length + Number(allCanceledSubs[0]?.count ?? 0))) * 100 * 10) / 10
+      : 0,
+  };
+}
+
+export async function getCanceledSubscriptions() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: users.id,
+    name: users.name,
+    email: users.email,
+    country: users.country,
+    subStatus: subscriptions.status,
+    plan: subscriptions.plan,
+    canceledAt: subscriptions.updatedAt,
+    stripeCustomerId: subscriptions.stripeCustomerId,
+  }).from(users)
+    .innerJoin(subscriptions, eq(users.id, subscriptions.userId))
+    .where(eq(subscriptions.status, "canceled"))
+    .orderBy(desc(subscriptions.updatedAt));
+}

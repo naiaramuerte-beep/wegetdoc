@@ -1,547 +1,840 @@
 /* =============================================================
-   PDFPro — Panel de Administración
-   Pestañas: Estadísticas | Usuarios | Mensajes | Páginas legales | Ajustes
+   PDFPro Admin Panel — Dashboard completo
+   MRR, ARR, estadísticas de facturación, usuarios, Stripe, legal
    ============================================================= */
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
-  BarChart3, Users, MessageSquare, FileText, Settings,
-  Trash2, UserX, Search, Crown, Mail, Check, X,
-  TrendingUp, CreditCard, Globe, Shield,
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+} from "recharts";
+import {
+  Users, DollarSign, TrendingUp, TrendingDown, MessageSquare, FileText,
+  Search, Trash2, ShieldCheck, ShieldOff, Mail, ChevronDown, ChevronUp,
+  CreditCard, Settings, BookOpen, BarChart2, UserX, RefreshCw, Eye, EyeOff,
+  ArrowLeft, Crown,
 } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import { useLocation } from "wouter";
 
-type AdminTab = "stats" | "users" | "messages" | "legal" | "settings";
+type AdminTab = "overview" | "billing" | "users" | "canceled" | "messages" | "legal" | "settings";
 
 export default function Admin() {
-  const { user, isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
-  const [activeTab, setActiveTab] = useState<AdminTab>("stats");
+  const { user, isAuthenticated, loading } = useAuth();
+  const [tab, setTab] = useState<AdminTab>("overview");
+  const [userSearch, setUserSearch] = useState("");
+  const [expandedMsg, setExpandedMsg] = useState<number | null>(null);
+  const [editingLegal, setEditingLegal] = useState<string | null>(null);
+  const [legalTitle, setLegalTitle] = useState("");
+  const [legalContent, setLegalContent] = useState("");
+  const [showStripeKeys, setShowStripeKeys] = useState(false);
 
+  // Queries
+  const statsQ = trpc.admin.stats.useQuery(undefined, { enabled: !!user && user.role === "admin" });
+  const billingQ = trpc.admin.billingStats.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "billing" });
+  const usersQ = trpc.admin.users.useQuery({ search: userSearch }, { enabled: !!user && user.role === "admin" && tab === "users" });
+  const canceledQ = trpc.admin.canceledSubscriptions.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "canceled" });
+  const messagesQ = trpc.admin.contactMessages.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "messages" });
+  const legalQ = trpc.admin.legalPages.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "legal" });
+  const settingsQ = trpc.admin.settings.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "settings" });
+
+  const utils = trpc.useUtils();
+
+  const deleteUserMut = trpc.admin.deleteUser.useMutation({
+    onSuccess: () => { toast.success("Usuario eliminado"); utils.admin.users.invalidate(); },
+    onError: () => toast.error("Error al eliminar usuario"),
+  });
+
+  const promoteUserMut = trpc.admin.promoteUser.useMutation({
+    onSuccess: () => { toast.success("Rol actualizado"); utils.admin.users.invalidate(); },
+    onError: () => toast.error("Error al actualizar rol"),
+  });
+
+  const markReadMut = trpc.admin.markMessageRead.useMutation({
+    onSuccess: () => utils.admin.contactMessages.invalidate(),
+  });
+
+  const saveLegalMut = trpc.admin.saveLegalPage.useMutation({
+    onSuccess: () => {
+      toast.success("Página legal guardada");
+      setEditingLegal(null);
+      utils.admin.legalPages.invalidate();
+    },
+    onError: () => toast.error("Error al guardar"),
+  });
+
+  const saveSettingMut = trpc.admin.saveSetting.useMutation({
+    onSuccess: () => { toast.success("Ajuste guardado"); utils.admin.settings.invalidate(); },
+  });
+
+  // Auth guard
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#0f1117" }}>
+        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (!isAuthenticated || user?.role !== "admin") {
-    navigate("/");
-    return null;
-  }
-
-  const tabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
-    { id: "stats", label: "Estadísticas", icon: BarChart3 },
-    { id: "users", label: "Usuarios", icon: Users },
-    { id: "messages", label: "Mensajes", icon: MessageSquare },
-    { id: "legal", label: "Páginas legales", icon: FileText },
-    { id: "settings", label: "Ajustes", icon: Settings },
-  ];
-
-  return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar />
-      <div className="flex-1 container max-w-7xl py-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-800">Panel de Administración</h1>
-          <p className="text-slate-500 text-sm mt-1">Gestiona usuarios, contenido y configuración de PDFPro</p>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1 bg-white rounded-xl p-1 shadow-sm border border-slate-100 mb-6 overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                activeTab === tab.id
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              <tab.icon size={15} />
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Content */}
-        {activeTab === "stats" && <StatsTab />}
-        {activeTab === "users" && <UsersTab />}
-        {activeTab === "messages" && <MessagesTab />}
-        {activeTab === "legal" && <LegalTab />}
-        {activeTab === "settings" && <SettingsTab />}
-      </div>
-      <Footer />
-    </div>
-  );
-}
-
-// ─── Stats Tab ────────────────────────────────────────────────
-function StatsTab() {
-  const { data: stats, isLoading } = trpc.admin.stats.useQuery();
-
-  if (isLoading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-28 bg-white rounded-2xl animate-pulse border border-slate-100" />
-        ))}
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ backgroundColor: "#0f1117" }}>
+        <p className="text-white text-lg">Acceso restringido a administradores</p>
+        <button
+          onClick={() => navigate("/")}
+          className="px-4 py-2 rounded-lg text-sm font-medium text-white"
+          style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
+        >
+          Volver al inicio
+        </button>
       </div>
     );
   }
 
-  const cards = [
-    { label: "Total usuarios", value: stats?.totalUsers ?? 0, icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
-    { label: "Suscriptores activos", value: stats?.activeSubscriptions ?? 0, icon: Crown, color: "text-yellow-600", bg: "bg-yellow-50" },
-    { label: "Documentos subidos", value: stats?.totalDocuments ?? 0, icon: FileText, color: "text-green-600", bg: "bg-green-50" },
-    { label: "Mensajes sin leer", value: stats?.unreadMessages ?? 0, icon: MessageSquare, color: "text-purple-600", bg: "bg-purple-50" },
+  const stats = statsQ.data;
+  const billing = billingQ.data;
+
+  const tabs: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
+    { id: "overview", label: "Resumen", icon: <BarChart2 size={16} /> },
+    { id: "billing", label: "Facturación & MRR", icon: <DollarSign size={16} /> },
+    { id: "users", label: "Usuarios", icon: <Users size={16} /> },
+    { id: "canceled", label: "Bajas", icon: <UserX size={16} /> },
+    { id: "messages", label: "Mensajes", icon: <MessageSquare size={16} /> },
+    { id: "legal", label: "Páginas legales", icon: <BookOpen size={16} /> },
+    { id: "settings", label: "Ajustes", icon: <Settings size={16} /> },
   ];
 
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {cards.map((card) => (
-          <div key={card.label} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
-            <div className={`w-10 h-10 ${card.bg} rounded-xl flex items-center justify-center mb-3`}>
-              <card.icon size={18} className={card.color} />
-            </div>
-            <p className="text-2xl font-bold text-slate-800">{card.value.toLocaleString()}</p>
-            <p className="text-sm text-slate-500 mt-0.5">{card.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Subscribed users */}
-      <SubscribedUsersPanel />
-    </div>
-  );
-}
-
-function SubscribedUsersPanel() {
-  const { data: subs, isLoading } = trpc.admin.subscribedUsers.useQuery();
+  const formatEur = (n: number) =>
+    `€${n.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-      <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
-        <Crown size={16} className="text-yellow-500" />
-        Usuarios con suscripción activa
-      </h3>
-      {isLoading ? (
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => <div key={i} className="h-12 bg-slate-100 rounded-xl animate-pulse" />)}
-        </div>
-      ) : subs && subs.length > 0 ? (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100">
-                <th className="text-left py-2 px-3 text-slate-500 font-medium">Usuario</th>
-                <th className="text-left py-2 px-3 text-slate-500 font-medium">Plan</th>
-                <th className="text-left py-2 px-3 text-slate-500 font-medium">Estado</th>
-                <th className="text-left py-2 px-3 text-slate-500 font-medium">Vence</th>
-              </tr>
-            </thead>
-            <tbody>
-              {subs.map((sub: any) => (
-                <tr key={sub.id} className="border-b border-slate-50 hover:bg-slate-50">
-                  <td className="py-2.5 px-3">
-                    <p className="font-medium text-slate-800">{sub.name ?? "—"}</p>
-                    <p className="text-xs text-slate-400">{sub.email}</p>
-                  </td>
-                  <td className="py-2.5 px-3">
-                    <Badge variant="outline" className="text-xs capitalize">{sub.plan}</Badge>
-                  </td>
-                  <td className="py-2.5 px-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      sub.status === "active" ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-600"
-                    }`}>
-                      {sub.status}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-3 text-slate-500 text-xs">
-                    {sub.currentPeriodEnd ? new Date(sub.currentPeriodEnd).toLocaleDateString("es-ES") : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <p className="text-slate-400 text-sm text-center py-4">Sin suscriptores activos</p>
-      )}
-    </div>
-  );
-}
-
-// ─── Users Tab ────────────────────────────────────────────────
-function UsersTab() {
-  const [search, setSearch] = useState("");
-  const { data: users, isLoading, refetch } = trpc.admin.users.useQuery({ search: search || undefined });
-  const deactivateMutation = trpc.admin.deactivateUser.useMutation({
-    onSuccess: () => { refetch(); toast.success("Usuario desactivado"); },
-  });
-  const deleteMutation = trpc.admin.deleteUser.useMutation({
-    onSuccess: () => { refetch(); toast.success("Usuario eliminado"); },
-  });
-
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-slate-800">Todos los usuarios</h3>
-        <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por email..."
-            className="pl-8 w-56"
-          />
-        </div>
-      </div>
-
-      {isLoading ? (
-        <div className="space-y-2">
-          {[1, 2, 3, 4, 5].map((i) => <div key={i} className="h-14 bg-slate-100 rounded-xl animate-pulse" />)}
-        </div>
-      ) : users && users.length > 0 ? (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100">
-                <th className="text-left py-2 px-3 text-slate-500 font-medium">Usuario</th>
-                <th className="text-left py-2 px-3 text-slate-500 font-medium">Rol</th>
-                <th className="text-left py-2 px-3 text-slate-500 font-medium">Registro</th>
-                <th className="text-right py-2 px-3 text-slate-500 font-medium">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u: any) => (
-                <tr key={u.id} className="border-b border-slate-50 hover:bg-slate-50 group">
-                  <td className="py-2.5 px-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                        {(u.name ?? u.email ?? "?").charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-medium text-slate-800">{u.name ?? "—"}</p>
-                        <p className="text-xs text-slate-400">{u.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-2.5 px-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      u.role === "admin" ? "bg-purple-100 text-purple-700" : "bg-slate-100 text-slate-600"
-                    }`}>
-                      {u.role}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-3 text-slate-500 text-xs">
-                    {new Date(u.createdAt).toLocaleDateString("es-ES")}
-                  </td>
-                  <td className="py-2.5 px-3">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 px-2 text-xs hover:text-orange-600"
-                        onClick={() => deactivateMutation.mutate({ userId: u.id })}
-                        title="Desactivar"
-                      >
-                        <UserX size={13} />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 px-2 text-xs hover:text-red-600"
-                        onClick={() => {
-                          if (confirm(`¿Eliminar usuario ${u.email}?`)) {
-                            deleteMutation.mutate({ userId: u.id });
-                          }
-                        }}
-                        title="Eliminar"
-                      >
-                        <Trash2 size={13} />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <p className="text-slate-400 text-sm text-center py-8">No se encontraron usuarios</p>
-      )}
-    </div>
-  );
-}
-
-// ─── Messages Tab ─────────────────────────────────────────────
-function MessagesTab() {
-  const { data: messages, isLoading, refetch } = trpc.admin.contactMessages.useQuery();
-  const [selected, setSelected] = useState<any | null>(null);
-  const markReadMutation = trpc.admin.markMessageRead.useMutation({
-    onSuccess: () => refetch(),
-  });
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {/* List */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
-        <h3 className="font-semibold text-slate-800 mb-3">Mensajes de contacto</h3>
-        {isLoading ? (
-          <div className="space-y-2">
-            {[1, 2, 3].map((i) => <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />)}
-          </div>
-        ) : messages && messages.length > 0 ? (
-          <div className="space-y-1.5 max-h-[500px] overflow-y-auto">
-            {messages.map((msg: any) => (
-              <div
-                key={msg.id}
-                onClick={() => { setSelected(msg); if (!msg.isRead) markReadMutation.mutate({ id: msg.id }); }}
-                className={`p-3 rounded-xl cursor-pointer border transition-colors ${
-                  selected?.id === msg.id
-                    ? "border-blue-300 bg-blue-50"
-                    : msg.isRead
-                    ? "border-slate-100 hover:bg-slate-50"
-                    : "border-blue-100 bg-blue-50/50 hover:bg-blue-50"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className={`text-sm truncate ${msg.isRead ? "text-slate-700" : "font-semibold text-slate-800"}`}>
-                      {msg.subject}
-                    </p>
-                    <p className="text-xs text-slate-400 truncate">{msg.email}</p>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    {!msg.isRead && <div className="w-2 h-2 rounded-full bg-blue-500" />}
-                    <span className="text-xs text-slate-400">
-                      {new Date(msg.createdAt).toLocaleDateString("es-ES")}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-slate-400 text-sm text-center py-8">Sin mensajes</p>
-        )}
-      </div>
-
-      {/* Detail */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
-        {selected ? (
+    <div className="min-h-screen" style={{ backgroundColor: "#0f1117", color: "#e2e8f0" }}>
+      {/* Header */}
+      <div
+        className="border-b px-6 py-4 flex items-center justify-between"
+        style={{ borderColor: "#1e2433", backgroundColor: "#0a0d14" }}
+      >
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate("/")} className="text-gray-400 hover:text-white transition-colors">
+            <ArrowLeft size={18} />
+          </button>
           <div>
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h3 className="font-semibold text-slate-800">{selected.subject}</h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  De: <strong>{selected.name}</strong> &lt;{selected.email}&gt;
+            <h1 className="text-xl font-bold text-white">Panel de Administración</h1>
+            <p className="text-xs text-gray-400">PDFPro — {user.email}</p>
+          </div>
+        </div>
+        <button
+          onClick={() => { utils.admin.stats.invalidate(); utils.admin.billingStats.invalidate(); }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:text-white transition-colors"
+          style={{ backgroundColor: "#1e2433" }}
+        >
+          <RefreshCw size={13} />
+          Actualizar
+        </button>
+      </div>
+
+      <div className="flex">
+        {/* Sidebar */}
+        <aside
+          className="w-52 min-h-[calc(100vh-64px)] border-r flex-shrink-0"
+          style={{ borderColor: "#1e2433", backgroundColor: "#0a0d14" }}
+        >
+          <nav className="p-3 flex flex-col gap-1">
+            {tabs.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-left transition-colors w-full"
+                style={{
+                  backgroundColor: tab === t.id ? "oklch(0.28 0.08 260)" : "transparent",
+                  color: tab === t.id ? "white" : "#94a3b8",
+                }}
+                onMouseEnter={(e) => { if (tab !== t.id) e.currentTarget.style.backgroundColor = "#1e2433"; }}
+                onMouseLeave={(e) => { if (tab !== t.id) e.currentTarget.style.backgroundColor = "transparent"; }}
+              >
+                {t.icon}
+                {t.label}
+              </button>
+            ))}
+          </nav>
+        </aside>
+
+        {/* Main content */}
+        <main className="flex-1 p-6 overflow-auto">
+
+          {/* ── OVERVIEW ── */}
+          {tab === "overview" && (
+            <div className="space-y-6">
+              <h2 className="text-lg font-semibold text-white">Resumen general</h2>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  { label: "Total usuarios", value: stats?.totalUsers ?? "—", icon: <Users size={20} />, color: "#3b82f6" },
+                  { label: "Suscripciones activas", value: stats?.activeSubscriptions ?? "—", icon: <CreditCard size={20} />, color: "#10b981" },
+                  { label: "Documentos", value: stats?.totalDocuments ?? "—", icon: <FileText size={20} />, color: "#8b5cf6" },
+                  { label: "Mensajes sin leer", value: stats?.unreadMessages ?? "—", icon: <MessageSquare size={20} />, color: "#f59e0b" },
+                ].map((card) => (
+                  <div
+                    key={card.label}
+                    className="rounded-xl p-4 border"
+                    style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-400">{card.label}</p>
+                      <div
+                        className="w-8 h-8 rounded-lg flex items-center justify-center"
+                        style={{ backgroundColor: card.color + "20", color: card.color }}
+                      >
+                        {card.icon}
+                      </div>
+                    </div>
+                    <p className="text-2xl font-bold text-white">{card.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div
+                className="rounded-xl p-5 border"
+                style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
+              >
+                <p className="text-sm font-semibold text-white mb-1">Estadísticas de facturación</p>
+                <p className="text-xs text-gray-400 mb-4">
+                  Accede a la pestaña "Facturación &amp; MRR" para el análisis completo con gráficas.
                 </p>
-                {selected.reason && (
-                  <Badge variant="outline" className="text-xs mt-1">{selected.reason}</Badge>
+                <button
+                  onClick={() => setTab("billing")}
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors"
+                  style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
+                >
+                  Ver estadísticas de facturación →
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── BILLING & MRR ── */}
+          {tab === "billing" && (
+            <div className="space-y-6">
+              <h2 className="text-lg font-semibold text-white">Facturación &amp; MRR</h2>
+
+              {billingQ.isLoading ? (
+                <div className="flex items-center justify-center h-40">
+                  <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : billing ? (
+                <>
+                  {/* Top KPIs */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      {
+                        label: "MRR",
+                        value: formatEur(billing.mrr),
+                        sub: "Ingresos mensuales recurrentes",
+                        icon: <TrendingUp size={18} />,
+                        color: "#10b981",
+                      },
+                      {
+                        label: "ARR",
+                        value: formatEur(billing.arr),
+                        sub: "Ingresos anuales recurrentes",
+                        icon: <DollarSign size={18} />,
+                        color: "#3b82f6",
+                      },
+                      {
+                        label: "Suscripciones activas",
+                        value: billing.activeSubscriptions,
+                        sub: `${billing.newSubsMonth} nuevas este mes`,
+                        icon: <CreditCard size={18} />,
+                        color: "#8b5cf6",
+                      },
+                      {
+                        label: "Churn rate",
+                        value: `${billing.churnRate}%`,
+                        sub: `${billing.canceledSubscriptions} canceladas total`,
+                        icon: <TrendingDown size={18} />,
+                        color: "#ef4444",
+                      },
+                    ].map((card) => (
+                      <div
+                        key={card.label}
+                        className="rounded-xl p-4 border"
+                        style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs text-gray-400">{card.label}</p>
+                          <div
+                            className="w-7 h-7 rounded-lg flex items-center justify-center"
+                            style={{ backgroundColor: card.color + "20", color: card.color }}
+                          >
+                            {card.icon}
+                          </div>
+                        </div>
+                        <p className="text-2xl font-bold text-white">{card.value}</p>
+                        <p className="text-xs text-gray-500 mt-1">{card.sub}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Period stats */}
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[
+                      { label: "Nuevas suscripciones hoy", value: billing.newSubsToday },
+                      { label: "Nuevas suscripciones esta semana", value: billing.newSubsWeek },
+                      { label: "Nuevas suscripciones este mes", value: billing.newSubsMonth },
+                      { label: "Nuevos usuarios hoy", value: billing.newUsersToday },
+                      { label: "Nuevos usuarios esta semana", value: billing.newUsersWeek },
+                      { label: "Nuevos usuarios este mes", value: billing.newUsersMonth },
+                    ].map((s) => (
+                      <div
+                        key={s.label}
+                        className="rounded-xl p-4 border"
+                        style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
+                      >
+                        <p className="text-xs text-gray-400 mb-1">{s.label}</p>
+                        <p className="text-2xl font-bold text-white">{s.value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Revenue chart */}
+                  <div
+                    className="rounded-xl p-5 border"
+                    style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
+                  >
+                    <p className="text-sm font-semibold text-white mb-4">
+                      Ingresos mensuales (últimos 12 meses)
+                    </p>
+                    <ResponsiveContainer width="100%" height={220}>
+                      <AreaChart data={billing.monthlyRevenue}>
+                        <defs>
+                          <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1e2433" />
+                        <XAxis dataKey="month" tick={{ fill: "#64748b", fontSize: 11 }} />
+                        <YAxis
+                          tick={{ fill: "#64748b", fontSize: 11 }}
+                          tickFormatter={(v) => `€${v}`}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#1e2433",
+                            border: "1px solid #334155",
+                            borderRadius: "8px",
+                            color: "#e2e8f0",
+                          }}
+                          formatter={(v: number) => [`€${v.toFixed(2)}`, "Ingresos"]}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="revenue"
+                          stroke="#3b82f6"
+                          fill="url(#revGrad)"
+                          strokeWidth={2}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Subscriptions chart */}
+                  <div
+                    className="rounded-xl p-5 border"
+                    style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
+                  >
+                    <p className="text-sm font-semibold text-white mb-4">
+                      Nuevas suscripciones por mes
+                    </p>
+                    <ResponsiveContainer width="100%" height={180}>
+                      <BarChart data={billing.monthlyRevenue}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1e2433" />
+                        <XAxis dataKey="month" tick={{ fill: "#64748b", fontSize: 11 }} />
+                        <YAxis tick={{ fill: "#64748b", fontSize: 11 }} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#1e2433",
+                            border: "1px solid #334155",
+                            borderRadius: "8px",
+                            color: "#e2e8f0",
+                          }}
+                        />
+                        <Bar dataKey="subs" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </>
+              ) : (
+                <p className="text-gray-400">No hay datos disponibles</p>
+              )}
+            </div>
+          )}
+
+          {/* ── USERS ── */}
+          {tab === "users" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-white">Gestión de usuarios</h2>
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar por email..."
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    className="pl-8 pr-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#131720" }}
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#1e2433" }}>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ backgroundColor: "#0a0d14" }}>
+                      {["ID", "Nombre", "Email", "Rol", "Registro", "Último acceso", "Acciones"].map((h) => (
+                        <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-400">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usersQ.isLoading ? (
+                      <tr>
+                        <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
+                          Cargando...
+                        </td>
+                      </tr>
+                    ) : (usersQ.data ?? []).map((u, i) => (
+                      <tr
+                        key={u.id}
+                        style={{
+                          backgroundColor: i % 2 === 0 ? "#131720" : "#0f1117",
+                          borderTop: "1px solid #1e2433",
+                        }}
+                      >
+                        <td className="px-4 py-3 text-gray-400 text-xs">{u.id}</td>
+                        <td className="px-4 py-3 text-white font-medium">{u.name ?? "—"}</td>
+                        <td className="px-4 py-3 text-gray-300">{u.email ?? "—"}</td>
+                        <td className="px-4 py-3">
+                          <span
+                            className="px-2 py-0.5 rounded text-xs font-medium"
+                            style={{
+                              backgroundColor: u.role === "admin" ? "#7c3aed20" : "#1e2433",
+                              color: u.role === "admin" ? "#a78bfa" : "#94a3b8",
+                            }}
+                          >
+                            {u.role}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-400 text-xs">
+                          {new Date(u.createdAt).toLocaleDateString("es-ES")}
+                        </td>
+                        <td className="px-4 py-3 text-gray-400 text-xs">
+                          {new Date(u.lastSignedIn).toLocaleDateString("es-ES")}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() =>
+                                promoteUserMut.mutate({
+                                  userId: u.id,
+                                  role: u.role === "admin" ? "user" : "admin",
+                                })
+                              }
+                              title={u.role === "admin" ? "Quitar admin" : "Hacer admin"}
+                              className="p-1.5 rounded transition-colors hover:bg-gray-700"
+                              style={{ color: u.role === "admin" ? "#f59e0b" : "#64748b" }}
+                            >
+                              {u.role === "admin" ? <ShieldOff size={14} /> : <ShieldCheck size={14} />}
+                            </button>
+                            {u.email && (
+                              <a
+                                href={`mailto:${u.email}`}
+                                className="p-1.5 rounded transition-colors hover:bg-gray-700 text-gray-400 hover:text-blue-400"
+                              >
+                                <Mail size={14} />
+                              </a>
+                            )}
+                            <button
+                              onClick={() => {
+                                if (confirm(`¿Eliminar usuario ${u.email}?`)) {
+                                  deleteUserMut.mutate({ userId: u.id });
+                                }
+                              }}
+                              className="p-1.5 rounded transition-colors hover:bg-gray-700 text-gray-400 hover:text-red-400"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ── CANCELED ── */}
+          {tab === "canceled" && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold text-white">Usuarios que se han dado de baja</h2>
+              <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#1e2433" }}>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ backgroundColor: "#0a0d14" }}>
+                      {["Nombre", "Email", "Plan", "Fecha baja", "País", "Stripe ID"].map((h) => (
+                        <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-400">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {canceledQ.isLoading ? (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                          Cargando...
+                        </td>
+                      </tr>
+                    ) : (canceledQ.data ?? []).length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                          No hay bajas registradas
+                        </td>
+                      </tr>
+                    ) : (canceledQ.data ?? []).map((u, i) => (
+                      <tr
+                        key={u.id}
+                        style={{
+                          backgroundColor: i % 2 === 0 ? "#131720" : "#0f1117",
+                          borderTop: "1px solid #1e2433",
+                        }}
+                      >
+                        <td className="px-4 py-3 text-white">{u.name ?? "—"}</td>
+                        <td className="px-4 py-3 text-gray-300">{u.email ?? "—"}</td>
+                        <td className="px-4 py-3">
+                          <span
+                            className="px-2 py-0.5 rounded text-xs font-medium"
+                            style={{ backgroundColor: "#ef444420", color: "#f87171" }}
+                          >
+                            {u.plan}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-400 text-xs">
+                          {u.canceledAt
+                            ? new Date(u.canceledAt).toLocaleDateString("es-ES")
+                            : "—"}
+                        </td>
+                        <td className="px-4 py-3 text-gray-400">{u.country ?? "—"}</td>
+                        <td className="px-4 py-3 text-gray-500 text-xs font-mono">
+                          {u.stripeCustomerId ?? "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ── MESSAGES ── */}
+          {tab === "messages" && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold text-white">Mensajes de contacto</h2>
+              {messagesQ.isLoading ? (
+                <p className="text-gray-400">Cargando...</p>
+              ) : (messagesQ.data ?? []).length === 0 ? (
+                <p className="text-gray-400">No hay mensajes</p>
+              ) : (
+                <div className="space-y-2">
+                  {(messagesQ.data ?? []).map((msg) => (
+                    <div
+                      key={msg.id}
+                      className="rounded-xl border p-4 cursor-pointer transition-colors"
+                      style={{
+                        backgroundColor: msg.read ? "#131720" : "#1a1f2e",
+                        borderColor: msg.read ? "#1e2433" : "#3b82f640",
+                      }}
+                      onClick={() => {
+                        setExpandedMsg(expandedMsg === msg.id ? null : msg.id);
+                        if (!msg.read) markReadMut.mutate({ id: msg.id });
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {!msg.read && (
+                            <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />
+                          )}
+                          <div>
+                            <p className="text-sm font-medium text-white">
+                              {msg.name}{" "}
+                              <span className="text-gray-400 font-normal">— {msg.email}</span>
+                            </p>
+                            <p className="text-xs text-gray-400">{msg.subject}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500">
+                            {new Date(msg.createdAt).toLocaleDateString("es-ES")}
+                          </span>
+                          {expandedMsg === msg.id ? (
+                            <ChevronUp size={14} className="text-gray-400" />
+                          ) : (
+                            <ChevronDown size={14} className="text-gray-400" />
+                          )}
+                        </div>
+                      </div>
+                      {expandedMsg === msg.id && (
+                        <div className="mt-3 pt-3 border-t" style={{ borderColor: "#1e2433" }}>
+                          <p className="text-sm text-gray-300 whitespace-pre-wrap">{msg.message}</p>
+                          <a
+                            href={`mailto:${msg.email}?subject=Re: ${msg.subject}`}
+                            className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors"
+                            style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Mail size={12} />
+                            Responder por email
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── LEGAL ── */}
+          {tab === "legal" && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold text-white">Páginas legales</h2>
+              {editingLegal ? (
+                <div
+                  className="rounded-xl border p-5 space-y-4"
+                  style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-white">
+                      Editando:{" "}
+                      <span className="text-blue-400">{editingLegal}</span>
+                    </h3>
+                    <button
+                      onClick={() => setEditingLegal(null)}
+                      className="text-xs text-gray-400 hover:text-white"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-400 block mb-1">Título</label>
+                    <input
+                      type="text"
+                      value={legalTitle}
+                      onChange={(e) => setLegalTitle(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-400 block mb-1">
+                      Contenido (HTML o texto)
+                    </label>
+                    <textarea
+                      value={legalContent}
+                      onChange={(e) => setLegalContent(e.target.value)}
+                      rows={16}
+                      className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono resize-y"
+                      style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
+                    />
+                  </div>
+                  <button
+                    onClick={() =>
+                      saveLegalMut.mutate({
+                        slug: editingLegal,
+                        title: legalTitle,
+                        content: legalContent,
+                      })
+                    }
+                    disabled={saveLegalMut.isPending}
+                    className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors"
+                    style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
+                  >
+                    {saveLegalMut.isPending ? "Guardando..." : "Guardar cambios"}
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { slug: "terms", title: "Términos y condiciones" },
+                    { slug: "privacy", title: "Política de privacidad" },
+                    { slug: "cookies", title: "Política de cookies" },
+                    { slug: "legal", title: "Aviso legal" },
+                    { slug: "refund", title: "Política de reembolso" },
+                  ].map((page) => {
+                    const existing = legalQ.data?.find((p) => p.slug === page.slug);
+                    return (
+                      <div
+                        key={page.slug}
+                        className="rounded-xl border p-4 flex items-center justify-between"
+                        style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-white">{page.title}</p>
+                          <p className="text-xs text-gray-400">
+                            {existing
+                              ? `Actualizado: ${new Date(existing.updatedAt).toLocaleDateString("es-ES")}`
+                              : "Sin contenido"}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setEditingLegal(page.slug);
+                            setLegalTitle(existing?.title ?? page.title);
+                            setLegalContent(existing?.content ?? "");
+                          }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors"
+                          style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
+                        >
+                          Editar
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── SETTINGS ── */}
+          {tab === "settings" && (
+            <div className="space-y-6">
+              <h2 className="text-lg font-semibold text-white">Ajustes del sitio</h2>
+
+              {/* Stripe info */}
+              <div
+                className="rounded-xl border p-5 space-y-4"
+                style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-white">Claves de Stripe</p>
+                    <p className="text-xs text-gray-400">
+                      Gestiona las claves de pago desde Settings → Payment en el panel de Manus
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowStripeKeys(!showStripeKeys)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:text-white transition-colors"
+                    style={{ backgroundColor: "#1e2433" }}
+                  >
+                    {showStripeKeys ? <EyeOff size={13} /> : <Eye size={13} />}
+                    {showStripeKeys ? "Ocultar" : "Mostrar"}
+                  </button>
+                </div>
+                {showStripeKeys && (
+                  <div className="space-y-2 text-xs font-mono">
+                    <div className="p-3 rounded-lg" style={{ backgroundColor: "#0f1117" }}>
+                      <p className="text-gray-400 mb-1">VITE_STRIPE_PUBLISHABLE_KEY</p>
+                      <p className="text-green-400">
+                        {import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+                          ? "Configurado ✓"
+                          : "No configurado"}
+                      </p>
+                    </div>
+                    <p className="text-gray-500 text-xs">
+                      Para cambiar las claves de Stripe, ve a Settings → Payment en el panel de Manus
+                    </p>
+                  </div>
                 )}
               </div>
-              <button onClick={() => setSelected(null)} className="p-1 hover:bg-slate-100 rounded-lg">
-                <X size={16} />
-              </button>
-            </div>
-            <div className="bg-slate-50 rounded-xl p-4 text-sm text-slate-700 whitespace-pre-wrap">
-              {selected.message}
-            </div>
-            <p className="text-xs text-slate-400 mt-3">
-              Recibido: {new Date(selected.createdAt).toLocaleString("es-ES")}
-            </p>
-            <Button
-              size="sm"
-              className="mt-3"
-              onClick={() => window.open(`mailto:${selected.email}?subject=Re: ${selected.subject}`)}
-            >
-              <Mail size={13} className="mr-1.5" />
-              Responder por email
-            </Button>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center h-full min-h-[200px] text-slate-400 text-sm">
-            Selecciona un mensaje para verlo
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
-// ─── Legal Tab ────────────────────────────────────────────────
-function LegalTab() {
-  const { data: pages, isLoading, refetch } = trpc.admin.legalPages.useQuery();
-  const [editing, setEditing] = useState<{ slug: string; title: string; content: string } | null>(null);
-
-  const saveMutation = trpc.admin.saveLegalPage.useMutation({
-    onSuccess: () => {
-      refetch();
-      setEditing(null);
-      toast.success("Página legal guardada");
-    },
-    onError: () => toast.error("Error al guardar"),
-  });
-
-  const legalSlugs = [
-    { slug: "privacy", title: "Política de Privacidad" },
-    { slug: "terms", title: "Términos y Condiciones" },
-    { slug: "cookies", title: "Política de Cookies" },
-    { slug: "legal", title: "Aviso Legal" },
-  ];
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {/* List */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
-        <h3 className="font-semibold text-slate-800 mb-3">Páginas legales</h3>
-        <div className="space-y-1.5">
-          {legalSlugs.map((page) => {
-            const existing = pages?.find((p: any) => p.slug === page.slug);
-            return (
-              <button
-                key={page.slug}
-                onClick={() => setEditing({
-                  slug: page.slug,
-                  title: existing?.title ?? page.title,
-                  content: existing?.content ?? "",
-                })}
-                className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-colors ${
-                  editing?.slug === page.slug
-                    ? "border-blue-300 bg-blue-50"
-                    : "border-slate-100 hover:bg-slate-50"
-                }`}
+              {/* Site settings */}
+              <div
+                className="rounded-xl border p-5 space-y-4"
+                style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
               >
-                <div>
-                  <p className="text-sm font-medium text-slate-800">{page.title}</p>
-                  <p className="text-xs text-slate-400">/{page.slug}</p>
-                </div>
-                {existing ? (
-                  <Check size={14} className="text-green-500 flex-shrink-0" />
+                <p className="text-sm font-semibold text-white">Configuración del sitio</p>
+                {settingsQ.isLoading ? (
+                  <p className="text-gray-400 text-sm">Cargando...</p>
                 ) : (
-                  <span className="text-xs text-slate-400">Sin contenido</span>
+                  <div className="space-y-3">
+                    {[
+                      { key: "site_name", label: "Nombre del sitio", placeholder: "PDFPro" },
+                      { key: "support_email", label: "Email de soporte", placeholder: "soporte@pdfpro.com" },
+                      { key: "trial_price_eur", label: "Precio prueba 7 días (€)", placeholder: "0.99" },
+                      { key: "monthly_price_eur", label: "Precio mensual (€)", placeholder: "9.99" },
+                    ].map((setting) => {
+                      const current =
+                        settingsQ.data?.find((s) => s.key === setting.key)?.value ?? "";
+                      return (
+                        <SettingRow
+                          key={setting.key}
+                          label={setting.label}
+                          defaultValue={current}
+                          placeholder={setting.placeholder}
+                          onSave={(value) =>
+                            saveSettingMut.mutate({ key: setting.key, value })
+                          }
+                        />
+                      );
+                    })}
+                  </div>
                 )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Editor */}
-      <div className="md:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
-        {editing ? (
-          <div className="space-y-4">
-            <div>
-              <Label className="text-sm text-slate-600 mb-1.5 block">Título</Label>
-              <Input
-                value={editing.title}
-                onChange={(e) => setEditing({ ...editing, title: e.target.value })}
-              />
+              </div>
             </div>
-            <div>
-              <Label className="text-sm text-slate-600 mb-1.5 block">Contenido (Markdown soportado)</Label>
-              <Textarea
-                value={editing.content}
-                onChange={(e) => setEditing({ ...editing, content: e.target.value })}
-                rows={16}
-                className="font-mono text-sm resize-none"
-                placeholder="# Título&#10;&#10;Contenido de la página..."
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                onClick={() => saveMutation.mutate(editing)}
-                disabled={saveMutation.isPending}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                {saveMutation.isPending ? "Guardando..." : "Guardar página"}
-              </Button>
-              <Button variant="outline" onClick={() => setEditing(null)}>
-                Cancelar
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center h-full min-h-[300px] text-slate-400 text-sm">
-            Selecciona una página para editarla
-          </div>
-        )}
+          )}
+        </main>
       </div>
     </div>
   );
 }
 
-// ─── Settings Tab ─────────────────────────────────────────────
-function SettingsTab() {
-  const { data: settings, isLoading, refetch } = trpc.admin.settings.useQuery();
-  const [form, setForm] = useState<Record<string, string>>({});
+// ─── SettingRow helper ────────────────────────────────────────
+function SettingRow({
+  label,
+  defaultValue,
+  placeholder,
+  onSave,
+}: {
+  label: string;
+  defaultValue: string;
+  placeholder: string;
+  onSave: (value: string) => void;
+}) {
+  const [value, setValue] = useState(defaultValue);
+  const [saved, setSaved] = useState(false);
 
-  const saveMutation = trpc.admin.saveSetting.useMutation({
-    onSuccess: () => { refetch(); toast.success("Ajuste guardado"); },
-  });
-
-  const settingDefs = [
-    { key: "site_name", label: "Nombre del sitio", placeholder: "PDFPro" },
-    { key: "site_tagline", label: "Eslogan", placeholder: "Editor PDF Online Gratuito" },
-    { key: "support_email", label: "Email de soporte", placeholder: "soporte@pdfpro.com" },
-    { key: "max_file_size_mb", label: "Tamaño máximo de archivo (MB)", placeholder: "100" },
-    { key: "maintenance_mode", label: "Modo mantenimiento (true/false)", placeholder: "false" },
-  ];
-
-  const getValue = (key: string) => {
-    if (form[key] !== undefined) return form[key];
-    return settings?.find((s: any) => s.key === key)?.value ?? "";
+  const handleSave = () => {
+    onSave(value);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   };
 
-  if (isLoading) {
-    return (
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-        <div className="space-y-4">
-          {[1, 2, 3, 4].map((i) => <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />)}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-      <h3 className="font-semibold text-slate-800 mb-5">Configuración del sitio</h3>
-      <div className="space-y-4 max-w-lg">
-        {settingDefs.map((def) => (
-          <div key={def.key}>
-            <Label className="text-sm text-slate-600 mb-1.5 block">{def.label}</Label>
-            <div className="flex gap-2">
-              <Input
-                value={getValue(def.key)}
-                onChange={(e) => setForm({ ...form, [def.key]: e.target.value })}
-                placeholder={def.placeholder}
-              />
-              <Button
-                size="sm"
-                onClick={() => saveMutation.mutate({ key: def.key, value: getValue(def.key) })}
-                disabled={saveMutation.isPending}
-                className="flex-shrink-0"
-              >
-                <Check size={14} />
-              </Button>
-            </div>
-          </div>
-        ))}
-      </div>
+    <div className="flex items-center gap-3">
+      <label className="text-xs text-gray-400 w-44 flex-shrink-0">{label}</label>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => {
+          setValue(e.target.value);
+          setSaved(false);
+        }}
+        placeholder={placeholder}
+        className="flex-1 px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-500"
+        style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
+      />
+      <button
+        onClick={handleSave}
+        className="px-3 py-2 rounded-lg text-xs font-medium text-white transition-colors flex-shrink-0"
+        style={{ backgroundColor: saved ? "#10b981" : "oklch(0.55 0.22 260)" }}
+      >
+        {saved ? "✓ Guardado" : "Guardar"}
+      </button>
     </div>
   );
 }

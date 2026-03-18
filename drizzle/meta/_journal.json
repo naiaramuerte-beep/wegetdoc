@@ -29,6 +29,13 @@
       "when": 1773818172453,
       "tag": "0003_familiar_sabretooth",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1773820455259,
+      "tag": "0004_small_genesis",
+      "breakpoints": true
     }
   ]
 }

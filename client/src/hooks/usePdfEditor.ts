@@ -195,7 +195,7 @@ export function usePdfEditor() {
 
   // ── Download helper ──────────────────────────────────────────
   const downloadBytes = useCallback((bytes: Uint8Array, name: string) => {
-    const blob = new Blob([bytes], { type: "application/pdf" });
+    const blob = new Blob([Buffer.from(bytes)], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;

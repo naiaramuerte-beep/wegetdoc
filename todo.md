@@ -14,6 +14,8 @@
 
 - [x] Firma arrastrable/movible por el PDF
 - [x] Botón deshacer (undo) y borrar elemento seleccionado
+- [x] Corregir API pdfjs-dist v5 (canvas en lugar de canvasContext, worker correcto)
+- [x] Corregir errores de BlobPart con Buffer.from()
 - [ ] Tarjetas de herramientas de Home abren el editor con la herramienta activa
 - [ ] Herramientas de conversión (PDF a Word, JPG, etc.) funcionales o con mensaje claro
 
@@ -27,8 +29,11 @@
 - [x] Botón de Contacto en la Navbar con modal/formulario
 - [x] Formulario de contacto funcional con notificación al admin
 - [x] Rutas protegidas para admin en App.tsx
+- [x] Panel Admin: MRR, ARR, churn rate, estadísticas día/semana/mes
+- [x] Panel Admin: gráfica de ingresos mensuales y nuevas suscripciones
+- [x] Panel Admin: tabla de usuarios dados de baja
+- [x] Panel Admin: ajustes del sitio (nombre, email soporte, precios)
 - [ ] Flujo cancelar suscripción en footer → página /cancelar-suscripcion
-- [ ] Panel Admin: gestión de claves Stripe (publishable key, secret key, webhook secret)
 
 ## Dashboard de Usuario
 
@@ -45,3 +50,22 @@
 - [x] Botón "Descargar con Google" (OAuth)
 - [x] Botón "Descargar con Email"
 - [x] Mostrar planes directamente si ya está autenticado
+
+## Internacionalización (i18n)
+
+- [x] Crear sistema de traducciones con contexto React y hook useLanguage
+- [x] Rutas por idioma: /es/, /en/, /fr/, /de/, /pt/, /it/, /nl/, /pl/, /ru/, /zh/
+- [x] Redirección automática según idioma del navegador
+- [x] Selector de idioma en Navbar (dropdown con banderas, desktop + mobile)
+- [ ] Selector de idioma en Footer
+- [x] Traducir textos de Navbar, Footer, Home hero y secciones principales
+- [ ] Traducir PaywallModal y textos de precios
+- [x] Preservar rutas relativas al cambiar de idioma
+
+## Auth propia (email+password+Google)
+
+- [x] Schema: añadir campos password_hash, google_id, reset_token a tabla users
+- [x] Endpoints: register, login, google-oauth, forgot-password, reset-password
+- [x] AuthModal: Sign Up + Login como modal estilo pdfe.com
+- [x] Integrar AuthModal en Navbar y PaywallModal
+- [x] Reemplazar getLoginUrl() por apertura del AuthModal

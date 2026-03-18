@@ -5,6 +5,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
+import bcrypt from "bcryptjs";
 import {
   getActiveSubscription,
   userHasActiveSubscription,
@@ -12,6 +13,13 @@ import {
   cancelSubscriptionDb,
   getAllUsers,
   getUserById,
+  getUserByEmail,
+  getUserByGoogleId,
+  getUserByResetToken,
+  createOwnUser,
+  updateUserPassword,
+  setResetToken,
+  clearResetToken,
   deactivateUser,
   deleteUserById,
   updateUserProfile,
@@ -37,6 +45,8 @@ import {
   markContactMessageRead,
   getAdminStats,
   getAllSubscribedUsers,
+  getBillingStats,
+  getCanceledSubscriptions,
 } from "./db";
 import { storagePut } from "./storage";
 
@@ -58,11 +68,98 @@ export const appRouter = router({
   // ─── Auth ──────────────────────────────────────────────────────
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
+
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+
+    // Own auth: register with email+password
+    register: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+        password: z.string().min(6),
+        name: z.string().min(1).max(128).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const existing = await getUserByEmail(input.email);
+        if (existing) throw new TRPCError({ code: "CONFLICT", message: "Este email ya está registrado" });
+        const passwordHash = await bcrypt.hash(input.password, 12);
+        // Auto-promote sergisd39@gmail.com as admin
+        const role = input.email === "sergisd39@gmail.com" ? "admin" : "user";
+        const user = await createOwnUser({
+          email: input.email,
+          name: input.name ?? input.email.split("@")[0],
+          passwordHash,
+          loginMethod: "email",
+          role,
+        });
+        if (!user) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Error al crear usuario" });
+        const { sdk } = await import("./_core/sdk");
+        const token = await sdk.createSessionToken(user.openId, { name: user.name ?? "" });
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, token, cookieOptions);
+        return { success: true, user: { id: user.id, email: user.email, name: user.name, role: user.role } };
+      }),
+
+    // Own auth: login with email+password
+    login: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+        password: z.string().min(1),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await getUserByEmail(input.email);
+        if (!user) throw new TRPCError({ code: "UNAUTHORIZED", message: "Email o contraseña incorrectos" });
+        if (!user.passwordHash) throw new TRPCError({ code: "UNAUTHORIZED", message: "Esta cuenta usa Google. Inicia sesión con Google." });
+        const valid = await bcrypt.compare(input.password, user.passwordHash);
+        if (!valid) throw new TRPCError({ code: "UNAUTHORIZED", message: "Email o contraseña incorrectos" });
+        const { sdk } = await import("./_core/sdk");
+        const token = await sdk.createSessionToken(user.openId, { name: user.name ?? "" });
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, token, cookieOptions);
+        return { success: true, user: { id: user.id, email: user.email, name: user.name, role: user.role } };
+      }),
+
+    // Own auth: forgot password — generate reset token
+    forgotPassword: publicProcedure
+      .input(z.object({ email: z.string().email() }))
+      .mutation(async ({ input }) => {
+        const user = await getUserByEmail(input.email);
+        // Always return success to avoid email enumeration
+        if (!user) return { success: true };
+        const token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+        const expiry = new Date(Date.now() + 1000 * 60 * 60); // 1 hour
+        await setResetToken(user.id, token, expiry);
+        // In production: send email with reset link. For now, return token in dev.
+        console.log(`[Auth] Reset token for ${input.email}: ${token}`);
+        return { success: true };
+      }),
+
+    // Own auth: reset password with token
+    resetPassword: publicProcedure
+      .input(z.object({ token: z.string(), password: z.string().min(6) }))
+      .mutation(async ({ input }) => {
+        const user = await getUserByResetToken(input.token);
+        if (!user) throw new TRPCError({ code: "BAD_REQUEST", message: "Token inválido o expirado" });
+        if (user.resetTokenExpiry && user.resetTokenExpiry < new Date()) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "El enlace ha expirado" });
+        }
+        const passwordHash = await bcrypt.hash(input.password, 12);
+        await updateUserPassword(user.id, passwordHash);
+        await clearResetToken(user.id);
+        return { success: true };
+      }),
+
+    // Admin: set/change own password (for sergisd39@gmail.com first login)
+    setPassword: protectedProcedure
+      .input(z.object({ password: z.string().min(6) }))
+      .mutation(async ({ ctx, input }) => {
+        const passwordHash = await bcrypt.hash(input.password, 12);
+        await updateUserPassword(ctx.user.id, passwordHash);
+        return { success: true };
+      }),
   }),
 
   // ─── User Profile ──────────────────────────────────────────────
@@ -451,6 +548,25 @@ export const appRouter = router({
       .input(z.object({ key: z.string(), value: z.string() }))
       .mutation(async ({ input }) => {
         await setSiteSetting(input.key, input.value);
+        return { success: true };
+      }),
+
+    billingStats: adminProcedure.query(async () => {
+      return getBillingStats();
+    }),
+
+    canceledSubscriptions: adminProcedure.query(async () => {
+      return getCanceledSubscriptions();
+    }),
+
+    promoteUser: adminProcedure
+      .input(z.object({ userId: z.number(), role: z.enum(["user", "admin"]) }))
+      .mutation(async ({ input }) => {
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) return { success: false };
+        const { users } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        await db.update(users).set({ role: input.role }).where(eq(users.id, input.userId));
         return { success: true };
       }),
   }),

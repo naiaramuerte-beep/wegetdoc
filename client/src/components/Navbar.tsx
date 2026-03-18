@@ -1,34 +1,45 @@
 /* =============================================================
    PDFPro Navbar — Deep Navy Pro design
-   Incluye: modal de contacto, dashboard, estado de auth
+   Auth propia con AuthModal + selector de idioma
    ============================================================= */
 
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X, FileText, User, LogOut, LayoutDashboard, Crown } from "lucide-react";
+import { Menu, X, FileText, LogOut, LayoutDashboard, Crown, Globe, ChevronDown } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
 import ContactModal from "./ContactModal";
+import AuthModal from "./AuthModal";
+import { LANGUAGES } from "@/lib/i18n";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
   const [, navigate] = useLocation();
+  const { lang, switchLang, t } = useLanguage();
+
+  const currentLang = LANGUAGES.find(l => l.code === lang) ?? LANGUAGES[0];
 
   const navLinks = [
-    { href: "/#how-it-works", label: "Cómo funciona" },
-    { href: "/precios", label: "Precios" },
-    { href: "/#faq", label: "FAQ" },
-    { href: "#contact", label: "Contacto", onClick: () => setContactOpen(true) },
+    { href: `/${lang}/#how-it-works`, label: t.nav_how_it_works },
+    { href: `/${lang}/pricing`, label: t.nav_pricing },
+    { href: `/${lang}/#faq`, label: "FAQ" },
+    { href: "#contact", label: t.nav_contact, onClick: () => setContactOpen(true) },
   ];
 
   const handleLogout = async () => {
     await logout();
     setUserMenuOpen(false);
-    navigate("/");
+    navigate(`/${lang}`);
   };
+
+  const openLogin = () => { setAuthMode("login"); setAuthOpen(true); };
+  const openSignup = () => { setAuthMode("signup"); setAuthOpen(true); };
 
   return (
     <>
@@ -38,7 +49,7 @@ export default function Navbar() {
       >
         <div className="container flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
+          <Link href={`/${lang}`} className="flex items-center gap-2 group">
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center"
               style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
@@ -92,8 +103,50 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* Auth Buttons */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* Right side: Lang + Auth */}
+          <div className="hidden md:flex items-center gap-2">
+            {/* Language selector */}
+            <div className="relative">
+              <button
+                onClick={() => setLangMenuOpen(!langMenuOpen)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm transition-colors"
+                style={{ color: "oklch(0.75 0.02 250)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.25 0.04 250)")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+              >
+                <Globe size={14} />
+                <span className="font-medium">{currentLang.flag} {currentLang.code.toUpperCase()}</span>
+                <ChevronDown size={12} />
+              </button>
+              {langMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setLangMenuOpen(false)} />
+                  <div
+                    className="absolute right-0 top-full mt-1 w-44 rounded-xl shadow-xl border overflow-hidden z-50 max-h-72 overflow-y-auto"
+                    style={{ backgroundColor: "oklch(0.18 0.04 250)", borderColor: "oklch(0.28 0.04 250)" }}
+                  >
+                    {LANGUAGES.map((l) => (
+                      <button
+                        key={l.code}
+                        onClick={() => { switchLang(l.code); setLangMenuOpen(false); }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors text-left"
+                        style={{
+                          color: l.code === lang ? "white" : "oklch(0.75 0.02 250)",
+                          backgroundColor: l.code === lang ? "oklch(0.28 0.04 250)" : "transparent",
+                        }}
+                        onMouseEnter={(e) => { if (l.code !== lang) e.currentTarget.style.backgroundColor = "oklch(0.22 0.04 250)"; }}
+                        onMouseLeave={(e) => { if (l.code !== lang) e.currentTarget.style.backgroundColor = "transparent"; }}
+                      >
+                        <span>{l.flag}</span>
+                        <span>{l.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Auth */}
             {isAuthenticated ? (
               <div className="relative">
                 <button
@@ -123,7 +176,7 @@ export default function Navbar() {
                         <p className="text-xs truncate" style={{ color: "oklch(0.6 0.02 250)" }}>{user?.email}</p>
                       </div>
                       <div className="py-1">
-                        <Link href="/dashboard">
+                        <Link href={`/${lang}/dashboard`}>
                           <button
                             onClick={() => setUserMenuOpen(false)}
                             className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors"
@@ -135,7 +188,7 @@ export default function Navbar() {
                             Mi panel
                           </button>
                         </Link>
-                        <Link href="/dashboard?tab=billing">
+                        <Link href={`/${lang}/dashboard?tab=billing`}>
                           <button
                             onClick={() => setUserMenuOpen(false)}
                             className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors"
@@ -147,6 +200,19 @@ export default function Navbar() {
                             Facturación
                           </button>
                         </Link>
+                        {user?.role === "admin" && (
+                          <Link href={`/${lang}/admin`}>
+                            <button
+                              onClick={() => setUserMenuOpen(false)}
+                              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors"
+                              style={{ color: "oklch(0.75 0.2 60)" }}
+                              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.25 0.04 250)")}
+                              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                            >
+                              ⚙️ Panel Admin
+                            </button>
+                          </Link>
+                        )}
                         <div className="my-1 border-t" style={{ borderColor: "oklch(0.28 0.04 250)" }} />
                         <button
                           onClick={handleLogout}
@@ -165,38 +231,24 @@ export default function Navbar() {
               </div>
             ) : (
               <>
-                <a href={getLoginUrl()}>
-                  <button
-                    className="px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200"
-                    style={{
-                      color: "oklch(0.85 0.02 250)",
-                      fontFamily: "'DM Sans', sans-serif",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "oklch(0.25 0.04 250)";
-                      e.currentTarget.style.color = "white";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "transparent";
-                      e.currentTarget.style.color = "oklch(0.85 0.02 250)";
-                    }}
-                  >
-                    Iniciar sesión
-                  </button>
-                </a>
-                <a href={getLoginUrl()}>
-                  <button
-                    className="px-4 py-2 text-sm font-semibold rounded-md text-white transition-all duration-200"
-                    style={{
-                      backgroundColor: "oklch(0.55 0.22 260)",
-                      fontFamily: "'DM Sans', sans-serif",
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.48 0.22 260)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)")}
-                  >
-                    Registrarse
-                  </button>
-                </a>
+                <button
+                  onClick={openLogin}
+                  className="px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200"
+                  style={{ color: "oklch(0.85 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "oklch(0.25 0.04 250)"; e.currentTarget.style.color = "white"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "oklch(0.85 0.02 250)"; }}
+                >
+                  Iniciar sesión
+                </button>
+                <button
+                  onClick={openSignup}
+                  className="px-4 py-2 text-sm font-semibold rounded-md text-white transition-all duration-200"
+                  style={{ backgroundColor: "oklch(0.55 0.22 260)", fontFamily: "'DM Sans', sans-serif" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.48 0.22 260)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)")}
+                >
+                  Registrarse
+                </button>
               </>
             )}
           </div>
@@ -214,10 +266,7 @@ export default function Navbar() {
         {menuOpen && (
           <div
             className="md:hidden border-t px-4 py-4 flex flex-col gap-4"
-            style={{
-              backgroundColor: "oklch(0.18 0.04 250)",
-              borderColor: "oklch(0.28 0.04 250)",
-            }}
+            style={{ backgroundColor: "oklch(0.18 0.04 250)", borderColor: "oklch(0.28 0.04 250)" }}
           >
             {navLinks.map((link) => (
               link.onClick ? (
@@ -241,10 +290,28 @@ export default function Navbar() {
                 </a>
               )
             ))}
+
+            {/* Mobile lang selector */}
+            <div className="flex flex-wrap gap-2 pt-2 border-t" style={{ borderColor: "oklch(0.28 0.04 250)" }}>
+              {LANGUAGES.map((l) => (
+                <button
+                  key={l.code}
+                  onClick={() => { switchLang(l.code); setMenuOpen(false); }}
+                  className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors"
+                  style={{
+                    color: l.code === lang ? "white" : "oklch(0.65 0.02 250)",
+                    backgroundColor: l.code === lang ? "oklch(0.35 0.04 250)" : "oklch(0.22 0.04 250)",
+                  }}
+                >
+                  {l.flag} {l.code.toUpperCase()}
+                </button>
+              ))}
+            </div>
+
             <div className="flex flex-col gap-2 pt-2 border-t" style={{ borderColor: "oklch(0.28 0.04 250)" }}>
               {isAuthenticated ? (
                 <>
-                  <Link href="/dashboard">
+                  <Link href={`/${lang}/dashboard`}>
                     <button
                       className="w-full px-4 py-2 text-sm font-medium rounded-md text-center flex items-center justify-center gap-2"
                       style={{ color: "oklch(0.85 0.02 250)", border: "1px solid oklch(0.35 0.04 250)" }}
@@ -264,22 +331,20 @@ export default function Navbar() {
                 </>
               ) : (
                 <>
-                  <a href={getLoginUrl()}>
-                    <button
-                      className="w-full px-4 py-2 text-sm font-medium rounded-md text-center"
-                      style={{ color: "oklch(0.85 0.02 250)", border: "1px solid oklch(0.35 0.04 250)" }}
-                    >
-                      Iniciar sesión
-                    </button>
-                  </a>
-                  <a href={getLoginUrl()}>
-                    <button
-                      className="w-full px-4 py-2 text-sm font-semibold rounded-md text-white text-center"
-                      style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
-                    >
-                      Registrarse
-                    </button>
-                  </a>
+                  <button
+                    onClick={() => { openLogin(); setMenuOpen(false); }}
+                    className="w-full px-4 py-2 text-sm font-medium rounded-md text-center"
+                    style={{ color: "oklch(0.85 0.02 250)", border: "1px solid oklch(0.35 0.04 250)" }}
+                  >
+                    Iniciar sesión
+                  </button>
+                  <button
+                    onClick={() => { openSignup(); setMenuOpen(false); }}
+                    className="w-full px-4 py-2 text-sm font-semibold rounded-md text-white text-center"
+                    style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
+                  >
+                    Registrarse
+                  </button>
                 </>
               )}
             </div>
@@ -287,8 +352,13 @@ export default function Navbar() {
         )}
       </header>
 
-      {/* Contact Modal */}
+      {/* Modals */}
       <ContactModal open={contactOpen} onClose={() => setContactOpen(false)} />
+      <AuthModal
+        open={authOpen}
+        onClose={() => setAuthOpen(false)}
+        defaultMode={authMode}
+      />
     </>
   );
 }
