@@ -22,6 +22,7 @@ import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import LegalPage from "./pages/LegalPage";
 import EditorPage from "./pages/EditorPage";
+import CancelSubscription from "./pages/CancelSubscription";
 
 // Redirect root "/" to language-prefixed URL based on browser language
 function RootRedirect() {
@@ -70,6 +71,10 @@ function Router() {
         <Route key={`${code}-legal`} path={`/${code}/legal`} component={() => <LegalPage slug="legal" />} />
       ))}
 
+      {LANGUAGES.map(({ code }) => (
+        <Route key={`${code}-cancel`} path={`/${code}/cancelar-suscripcion`} component={CancelSubscription} />
+      ))}
+
       {/* Legacy routes without lang prefix — redirect to /es/ */}
       <Route path="/editor" component={() => <Redirect to="/es/editor" />} />
       <Route path="/pricing" component={() => <Redirect to="/es/pricing" />} />
@@ -82,6 +87,7 @@ function Router() {
       <Route path="/cookies" component={() => <Redirect to="/es/cookies" />} />
       <Route path="/legal" component={() => <Redirect to="/es/legal" />} />
       <Route path="/payment/success" component={() => <Redirect to="/es/payment/success" />} />
+      <Route path="/cancelar-suscripcion" component={() => <Redirect to="/es/cancelar-suscripcion" />} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
 

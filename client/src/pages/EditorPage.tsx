@@ -7,18 +7,23 @@ import PdfEditor from "@/components/PdfEditor";
 import { usePdfFile } from "@/contexts/PdfFileContext";
 import Navbar from "@/components/Navbar";
 
+// Tools that don't require a pre-existing PDF file
+const FILE_FREE_TOOLS = ["jpg-to-pdf", "png-to-pdf", "word-to-pdf", "excel-to-pdf", "ppt-to-pdf"];
+
 export default function EditorPage() {
   const { pendingFile, pendingTool } = usePdfFile();
   const [, navigate] = useLocation();
 
-  // If no file was passed, redirect back to home
+  const isFileFree = pendingTool ? FILE_FREE_TOOLS.includes(pendingTool) : false;
+
+  // If no file was passed and tool requires a file, redirect back to home
   useEffect(() => {
-    if (!pendingFile) {
+    if (!pendingFile && !isFileFree) {
       navigate("/es");
     }
-  }, [pendingFile, navigate]);
+  }, [pendingFile, isFileFree, navigate]);
 
-  if (!pendingFile) return null;
+  if (!pendingFile && !isFileFree) return null;
 
   return (
     <div className="flex flex-col" style={{ height: "100dvh", overflow: "hidden" }}>
@@ -27,7 +32,7 @@ export default function EditorPage() {
       {/* Full-screen editor */}
       <div className="flex-1 overflow-hidden">
         <PdfEditor
-          initialFile={pendingFile}
+          initialFile={pendingFile ?? undefined}
           initialTool={pendingTool ?? undefined}
           fullscreen
         />

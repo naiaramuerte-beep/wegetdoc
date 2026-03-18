@@ -38,7 +38,9 @@ const FONT_OPTIONS = [
 type ToolName =
   | "pointer" | "sign" | "text" | "edit-text" | "highlight"
   | "eraser" | "brush" | "image" | "shapes" | "find"
-  | "protect" | "compress" | "move" | "notes" | "none";
+  | "protect" | "compress" | "move" | "notes" | "none"
+  | "convert-jpg" | "convert-png" | "convert-word" | "convert-excel" | "convert-ppt" | "convert-html"
+  | "word-to-pdf" | "excel-to-pdf" | "ppt-to-pdf" | "jpg-to-pdf" | "png-to-pdf" | "merge";
 
 interface Annotation {
   id: string;
@@ -113,7 +115,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
   const [showPaywall, setShowPaywall] = useState(false);
   const [pdfDataForPaywall, setPdfDataForPaywall] = useState<{ base64: string; name: string; size: number } | undefined>(undefined);
   const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const annotationsRef = useRef<Annotation[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawStart, setDrawStart] = useState({ x: 0, y: 0 });
 
@@ -169,6 +173,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
   const overlayRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+
+  // Keep annotationsRef in sync with annotations state for use in event listeners
+  useEffect(() => { annotationsRef.current = annotations; }, [annotations]);
 
   const { data: subData } = trpc.subscription.status.useQuery(undefined, {
     retry: false,
@@ -558,9 +565,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
 
   const onMouseUp = () => {
     if (isDragging) {
-      pushHistory(annotations);
+      pushHistory(annotationsRef.current);
       setIsDragging(false);
     }
+    // Note: resize is handled by window listeners, not here
   };
 
   // ── Click to place text on PDF ────────────────────────────────
@@ -930,8 +938,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
     const toolMap: Record<string, ToolName> = {
       "text": "text", "sign": "sign", "notes": "notes",
       "image": "image", "protect": "protect", "compress": "compress",
-      "convert-jpg": "compress", "convert-png": "compress",
-      "merge": "compress", "highlight": "highlight",
+      "highlight": "highlight", "eraser": "eraser", "brush": "brush",
+      "shapes": "shapes", "find": "find", "move": "move",
+      // Conversion tools
+      "convert-jpg": "convert-jpg", "convert-png": "convert-png",
+      "convert-word": "convert-word", "convert-excel": "convert-excel",
+      "convert-ppt": "convert-ppt", "convert-html": "convert-html",
+      "word-to-pdf": "word-to-pdf", "excel-to-pdf": "excel-to-pdf",
+      "ppt-to-pdf": "ppt-to-pdf", "jpg-to-pdf": "jpg-to-pdf",
+      "png-to-pdf": "png-to-pdf", "merge": "merge",
     };
     const mapped = toolMap[initialTool];
     if (mapped) setActiveTool(mapped);
@@ -953,8 +968,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
   }, [undo, redo, deleteSelected, selectedId]);
 
   // ── Upload zone (no PDF loaded) ───────────────────────────────
+  // File-free tools: show a special layout without PDF viewer
+  const FILE_FREE_TOOLS_SET = new Set(["jpg-to-pdf", "png-to-pdf", "word-to-pdf", "excel-to-pdf", "ppt-to-pdf"]);
+  const isFileFreeMode = initialTool && FILE_FREE_TOOLS_SET.has(initialTool) && !file;
+
   if (!file || !pdfDoc) {
-    return (
+    // Note: file-free mode is handled below after renderToolPanel is defined
+    if (!isFileFreeMode) return (
       <div
         className="w-full rounded-2xl border-2 border-dashed flex flex-col items-center justify-center py-16 px-8 text-center cursor-pointer transition-all"
         style={{ borderColor: "oklch(0.75 0.10 260)", backgroundColor: "oklch(0.98 0.005 250)" }}
@@ -1357,6 +1377,92 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
             </div>
           </div>
         );
+      case "convert-jpg":
+      case "convert-png": {
+        const fmt = activeTool === "convert-jpg" ? "JPG" : "PNG";
+        return (
+          <div className="p-4 flex flex-col gap-3">
+            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>PDF a {fmt}</h3>
+            <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Convierte páginas del PDF a imágenes {fmt}:</p>
+            <button onClick={() => convertToImage(fmt.toLowerCase() as "jpg" | "png")} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>
+              <FileText className="w-4 h-4 inline mr-1" />Exportar página {currentPage} como {fmt}
+            </button>
+            <button onClick={() => convertAllToImages(fmt.toLowerCase() as "jpg" | "png")} className="py-2 rounded text-sm font-medium border" style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.35 0.02 250)" }}>
+              Exportar todas las páginas ({totalPages})
+            </button>
+            <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "oklch(0.95 0.01 250)", color: "oklch(0.45 0.02 250)" }}>
+              💡 Cada página se descarga como un archivo {fmt} independiente.
+            </div>
+          </div>
+        );
+      }
+      case "merge":
+        return (
+          <div className="p-4 flex flex-col gap-3">
+            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Fusionar PDFs</h3>
+            <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Combina este PDF con otros archivos PDF:</p>
+            <label className="flex items-center gap-2 py-2.5 px-4 rounded text-white text-sm font-semibold cursor-pointer" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>
+              <Layers className="w-4 h-4" />Seleccionar PDFs a fusionar
+              <input type="file" accept=".pdf" multiple className="hidden" onChange={mergePdfs} />
+            </label>
+            <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "oklch(0.95 0.01 250)", color: "oklch(0.45 0.02 250)" }}>
+              💡 El PDF actual se combinará con los archivos seleccionados y se descargará el resultado.
+            </div>
+          </div>
+        );
+      case "jpg-to-pdf":
+      case "png-to-pdf":
+      case "word-to-pdf":
+      case "excel-to-pdf":
+      case "ppt-to-pdf": {
+        const isImg = activeTool === "jpg-to-pdf" || activeTool === "png-to-pdf";
+        const srcFmt = activeTool === "jpg-to-pdf" ? "JPG" : activeTool === "png-to-pdf" ? "PNG" : activeTool === "word-to-pdf" ? "Word" : activeTool === "excel-to-pdf" ? "Excel" : "PowerPoint";
+        const accept = isImg ? "image/jpeg,image/png" : ".doc,.docx,.xls,.xlsx,.ppt,.pptx";
+        return (
+          <div className="p-4 flex flex-col gap-3">
+            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>{srcFmt} a PDF</h3>
+            {isImg ? (
+              <>
+                <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Selecciona una imagen para convertirla a PDF:</p>
+                <label className="flex items-center gap-2 py-2.5 px-4 rounded text-white text-sm font-semibold cursor-pointer" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>
+                  <Upload className="w-4 h-4" />Seleccionar imagen {srcFmt}
+                  <input type="file" accept={accept} className="hidden" onChange={convertImageToPdf} />
+                </label>
+              </>
+            ) : (
+              <>
+                <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Convierte archivos {srcFmt} a PDF:</p>
+                <div className="rounded-xl p-4 border text-center" style={{ borderColor: "oklch(0.85 0.05 260 / 0.4)", backgroundColor: "oklch(0.55 0.22 260 / 0.04)" }}>
+                  <p className="text-sm font-semibold mb-1" style={{ color: "oklch(0.25 0.03 250)" }}>Próximamente</p>
+                  <p className="text-xs" style={{ color: "oklch(0.55 0.02 250)" }}>La conversión de {srcFmt} a PDF estará disponible en breve con soporte completo de formato.</p>
+                </div>
+              </>
+            )}
+          </div>
+        );
+      }
+      case "convert-word":
+      case "convert-excel":
+      case "convert-ppt":
+      case "convert-html": {
+        const targetFmt = activeTool === "convert-word" ? "Word (.docx)" : activeTool === "convert-excel" ? "Excel (.xlsx)" : activeTool === "convert-ppt" ? "PowerPoint (.pptx)" : "HTML";
+        return (
+          <div className="p-4 flex flex-col gap-3">
+            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>PDF a {targetFmt}</h3>
+            <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Convierte este PDF al formato {targetFmt}:</p>
+            <div className="rounded-xl p-4 border text-center" style={{ borderColor: "oklch(0.85 0.05 260 / 0.4)", backgroundColor: "oklch(0.55 0.22 260 / 0.04)" }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.10)" }}>
+                <FileText className="w-5 h-5" style={{ color: "oklch(0.55 0.22 260)" }} />
+              </div>
+              <p className="text-sm font-semibold mb-1" style={{ color: "oklch(0.25 0.03 250)" }}>Próximamente</p>
+              <p className="text-xs mb-3" style={{ color: "oklch(0.55 0.02 250)" }}>La conversión de PDF a {targetFmt} estará disponible con suscripción activa. Preserva el formato, fuentes y diseño original.</p>
+              <button onClick={() => setShowPaywall(true)} className="py-2 px-4 rounded text-white text-xs font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>
+                Ver planes
+              </button>
+            </div>
+          </div>
+        );
+      }
       default:
         return (
           <div className="flex flex-col items-center justify-center h-full gap-3 p-6 text-center">
@@ -1368,13 +1474,32 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
           </div>
         );
     }
-  };
+  };  // ── File-free mode (e.g. JPG/PNG/Word to PDF) ────────────────────────
+  if (isFileFreeMode) {
+    return (
+      <div
+        className={fullscreen ? "flex flex-col overflow-hidden" : "flex flex-col rounded-xl overflow-hidden shadow-xl border"}
+        style={fullscreen
+          ? { height: "100%", backgroundColor: "oklch(0.97 0.005 250)" }
+          : { height: "85vh", borderColor: "oklch(0.88 0.02 250)", backgroundColor: "oklch(0.97 0.005 250)" }
+        }
+      >
+        <div className="flex items-center gap-3 px-4 py-2.5 border-b" style={{ backgroundColor: "oklch(1 0 0)", borderColor: "oklch(0.90 0.01 250)" }}>
+          <span className="text-sm font-semibold" style={{ color: "oklch(0.15 0.03 250)" }}>Herramienta de conversión</span>
+        </div>
+        <div className="flex flex-1 items-center justify-center p-8">
+          <div className="max-w-sm w-full">
+            {renderToolPanel()}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  // ── Main editor layout ────────────────────────────────────────
+  // ── Main editor layout ────────────────────────────────────────────
   const pageAnnotations = annotations.filter(a => a.page === currentPage);
 
-  return (
-    <div
+  return (   <div
       className={fullscreen ? "flex flex-col overflow-hidden" : "flex flex-col rounded-xl overflow-hidden shadow-xl border"}
       style={fullscreen
         ? { height: "100%", backgroundColor: "oklch(0.97 0.005 250)" }
@@ -1588,16 +1713,24 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
                     {/* Resize handle */}
                     {selectedId === ann.id && (
                       <div
-                        style={{ position: "absolute", right: -4, bottom: -4, width: 10, height: 10, backgroundColor: "oklch(0.55 0.22 260)", borderRadius: 2, cursor: "se-resize" }}
+                        title="Arrastrar para redimensionar"
+                        style={{ position: "absolute", right: -5, bottom: -5, width: 12, height: 12, backgroundColor: "oklch(0.55 0.22 260)", borderRadius: 2, cursor: "se-resize", zIndex: 30, border: "2px solid white" }}
                         onMouseDown={(e) => {
                           e.stopPropagation();
+                          e.preventDefault();
+                          setIsResizing(true);
                           const startX = e.clientX, startY = e.clientY;
                           const startW = ann.width, startH = ann.height;
                           const onMove = (ev: MouseEvent) => {
                             const dw = ev.clientX - startX, dh = ev.clientY - startY;
                             setAnnotations(prev => prev.map(a => a.id === ann.id ? { ...a, width: Math.max(30, startW + dw), height: Math.max(20, startH + dh) } : a));
                           };
-                          const onUp = () => { pushHistory(annotations); window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+                          const onUp = () => {
+                            setIsResizing(false);
+                            pushHistory(annotationsRef.current);
+                            window.removeEventListener("mousemove", onMove);
+                            window.removeEventListener("mouseup", onUp);
+                          };
                           window.addEventListener("mousemove", onMove);
                           window.addEventListener("mouseup", onUp);
                         }}

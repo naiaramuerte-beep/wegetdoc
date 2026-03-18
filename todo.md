@@ -16,8 +16,8 @@
 - [x] Botón deshacer (undo) y borrar elemento seleccionado
 - [x] Corregir API pdfjs-dist v5 (canvas en lugar de canvasContext, worker correcto)
 - [x] Corregir errores de BlobPart con Buffer.from()
-- [ ] Tarjetas de herramientas de Home abren el editor con la herramienta activa
-- [ ] Herramientas de conversión (PDF a Word, JPG, etc.) funcionales o con mensaje claro
+- [x] Tarjetas de herramientas de Home abren el editor con la herramienta activa
+- [x] Herramientas de conversión (PDF a Word, JPG, etc.) funcionales o con mensaje claro
 
 ## Panel Admin + Páginas Legales + Contacto
 
@@ -33,7 +33,7 @@
 - [x] Panel Admin: gráfica de ingresos mensuales y nuevas suscripciones
 - [x] Panel Admin: tabla de usuarios dados de baja
 - [x] Panel Admin: ajustes del sitio (nombre, email soporte, precios)
-- [ ] Flujo cancelar suscripción en footer → página /cancelar-suscripcion
+- [x] Flujo cancelar suscripción en footer → página /cancelar-suscripcion
 
 ## Dashboard de Usuario
 
@@ -115,7 +115,7 @@
 - [x] Verificar resto de herramientas (formas, notas, puntero, mover)
 
 ## Bugs Editor (v2)
-- [ ] Resize de anotaciones (notas, imágenes, texto, formas) no funciona — el handle de esquina no responde
+- [x] Resize de anotaciones (notas, imágenes, texto, formas) no funciona — el handle de esquina no responde
 - [x] Barra de acciones (Deshacer / Borrar último / Borrar todo) en panel lateral de TODAS las herramientas
 
 ## Modelo de pago Trial (pdfe.com style)
@@ -146,6 +146,6 @@
 
 ## Nuevas tareas (v4)
 - [ ] Herramienta Mover: añadir panel con instrucciones y corregir drag
-- [ ] Página /cancelar-suscripcion con formulario de motivo de baja y confirmación
-- [ ] Resize de anotaciones: handle de esquina arrastrable para notas, imágenes y formas
-- [ ] Conectar tarjetas de conversión de la Home al editor con herramienta activa
+- [x] Página /cancelar-suscripcion con formulario de motivo de baja y confirmación
+- [x] Resize de anotaciones: handle de esquina arrastrable para notas, imágenes y formas
+- [x] Conectar tarjetas de conversión de la Home al editor con herramienta activa

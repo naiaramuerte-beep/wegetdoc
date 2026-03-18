@@ -160,10 +160,20 @@ export default function Home() {
     if (f) openEditor(f);
   };
 
+  // Tools that don't require a pre-existing PDF file
+  const FILE_FREE_TOOLS = ["jpg-to-pdf", "png-to-pdf", "word-to-pdf", "excel-to-pdf", "ppt-to-pdf"];
+
   const scrollToEditor = (tool?: string) => {
     if (tool) {
-      // Open file picker with tool pre-selected
-      setPendingTool(tool ?? null);
+      setPendingTool(tool);
+      if (FILE_FREE_TOOLS.includes(tool)) {
+        // Navigate directly to editor without needing a PDF file
+        navigate(`/${lang}/editor`);
+      } else {
+        // Open file picker with tool pre-selected
+        fileInputRef.current?.click();
+      }
+    } else {
       fileInputRef.current?.click();
     }
   };
