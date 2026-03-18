@@ -95,7 +95,7 @@ export default function Footer() {
                 { href: "/pricing", label: "Precios" },
                 { href: "/#how-it-works", label: "Cómo funciona" },
                 { href: "/#faq", label: "FAQ" },
-                { href: "/contact", label: "Contacto" },
+                { href: "#contact", label: "Contacto" },
               ].map((link) => (
                 <li key={link.href}>
                   <a

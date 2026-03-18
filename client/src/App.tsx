@@ -15,17 +15,27 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Tools from "./pages/Tools";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import Dashboard from "./pages/Dashboard";
+import Admin from "./pages/Admin";
+import LegalPage from "./pages/LegalPage";
+
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/pricing" component={Pricing} />
+      <Route path="/precios" component={Pricing} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/tools" component={Tools} />
-      <Route path="/precios" component={Pricing} />
       <Route path="/payment/success" component={PaymentSuccess} />
+      <Route path="/dashboard" component={Dashboard} />
+      <Route path="/admin" component={Admin} />
+      <Route path="/privacy" component={() => <LegalPage slug="privacy" />} />
+      <Route path="/terms" component={() => <LegalPage slug="terms" />} />
+      <Route path="/cookies" component={() => <LegalPage slug="cookies" />} />
+      <Route path="/legal" component={() => <LegalPage slug="legal" />} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

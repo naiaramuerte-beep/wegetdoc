@@ -3,7 +3,7 @@
    Hero integrates the real PdfEditor component
    ============================================================= */
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   FileText,
@@ -29,30 +29,30 @@ import PdfEditor from "@/components/PdfEditor";
 
 // ─── Tool definitions ─────────────────────────────────────────
 const editAndSignTools = [
-  { icon: Type, label: "Editar texto" },
-  { icon: PenTool, label: "Añadir firma" },
-  { icon: MessageSquare, label: "Anotar y comentar" },
-  { icon: Image, label: "Modificar imágenes" },
-  { icon: Lock, label: "Proteger con contraseña" },
-  { icon: Share2, label: "Compartir documentos" },
+  { icon: Type, label: "Editar texto", tool: "text" },
+  { icon: PenTool, label: "Añadir firma", tool: "sign" },
+  { icon: MessageSquare, label: "Anotar y comentar", tool: "notes" },
+  { icon: Image, label: "Modificar imágenes", tool: "image" },
+  { icon: Lock, label: "Proteger con contraseña", tool: "protect" },
+  { icon: Share2, label: "Compartir documentos", tool: "share" },
 ];
 
 const convertFromPdfTools = [
-  { icon: FileText, label: "PDF a Word" },
-  { icon: FileText, label: "PDF a Excel" },
-  { icon: FileText, label: "PDF a PowerPoint" },
-  { icon: Image, label: "PDF a JPG" },
-  { icon: Image, label: "PDF a PNG" },
-  { icon: FileText, label: "PDF a HTML" },
+  { icon: FileText, label: "PDF a Word", tool: "convert-word" },
+  { icon: FileText, label: "PDF a Excel", tool: "convert-excel" },
+  { icon: FileText, label: "PDF a PowerPoint", tool: "convert-ppt" },
+  { icon: Image, label: "PDF a JPG", tool: "convert-jpg" },
+  { icon: Image, label: "PDF a PNG", tool: "convert-png" },
+  { icon: FileText, label: "PDF a HTML", tool: "convert-html" },
 ];
 
 const convertToPdfTools = [
-  { icon: FileText, label: "Word a PDF" },
-  { icon: FileText, label: "Excel a PDF" },
-  { icon: FileText, label: "PowerPoint a PDF" },
-  { icon: Image, label: "JPG a PDF" },
-  { icon: Image, label: "PNG a PDF" },
-  { icon: Layers, label: "Fusionar PDFs" },
+  { icon: FileText, label: "Word a PDF", tool: "word-to-pdf" },
+  { icon: FileText, label: "Excel a PDF", tool: "excel-to-pdf" },
+  { icon: FileText, label: "PowerPoint a PDF", tool: "ppt-to-pdf" },
+  { icon: Image, label: "JPG a PDF", tool: "jpg-to-pdf" },
+  { icon: Image, label: "PNG a PDF", tool: "png-to-pdf" },
+  { icon: Layers, label: "Fusionar PDFs", tool: "merge" },
 ];
 
 const allToolsCategories = [
@@ -135,10 +135,12 @@ export default function Home() {
 
   const [activeTab, setActiveTab] = useState("editAndSign");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [pendingTool, setPendingTool] = useState<string | undefined>(undefined);
 
   const activeCategory = allToolsCategories.find((c) => c.id === activeTab)!;
 
-  const scrollToEditor = () => {
+  const scrollToEditor = (tool?: string) => {
+    if (tool) setPendingTool(tool);
     document.getElementById("editor-section")?.scrollIntoView({ behavior: "smooth" });
   };
 
@@ -183,8 +185,8 @@ export default function Home() {
           </div>
 
           {/* ── REAL PDF EDITOR ── */}
-          <div id="editor-section" className="max-w-4xl mx-auto">
-            <PdfEditor />
+          <div id="editor-section" className="max-w-5xl mx-auto">
+            <PdfEditor initialTool={pendingTool} />
           </div>
         </div>
       </section>
@@ -259,7 +261,7 @@ export default function Home() {
                   e.currentTarget.style.boxShadow = "none";
                   e.currentTarget.style.transform = "translateY(0)";
                 }}
-                onClick={scrollToEditor}
+                onClick={() => scrollToEditor((tool as { tool: string }).tool)}
               >
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center"
@@ -293,7 +295,7 @@ export default function Home() {
               onMouseLeave={(e) =>
                 (e.currentTarget.style.backgroundColor = "oklch(0.18 0.04 250)")
               }
-              onClick={scrollToEditor}
+              onClick={() => scrollToEditor()}
             >
               <Upload className="w-4 h-4" />
               Subir PDF para editar
@@ -407,7 +409,7 @@ export default function Home() {
               onMouseLeave={(e) =>
                 (e.currentTarget.style.backgroundColor = "oklch(0.18 0.04 250)")
               }
-              onClick={scrollToEditor}
+              onClick={() => scrollToEditor()}
             >
               <Upload className="w-4 h-4" />
               Subir PDF para editar
@@ -608,7 +610,7 @@ export default function Home() {
             onMouseLeave={(e) =>
               (e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)")
             }
-            onClick={scrollToEditor}
+            onClick={() => scrollToEditor()}
           >
             <Upload className="w-4 h-4" />
             Subir PDF para editar
