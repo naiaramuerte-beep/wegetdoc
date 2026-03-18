@@ -1,11 +1,12 @@
 /* =============================================================
    PDFPro Navbar — Deep Navy Pro design
    Auth propia con AuthModal + selector de idioma
+   Responsive: mobile hamburger, tablet compact, desktop full
    ============================================================= */
 
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X, FileText, LogOut, LayoutDashboard, Crown, Globe, ChevronDown } from "lucide-react";
+import { Menu, X, FileText, LogOut, LayoutDashboard, Crown, Globe, ChevronDown, Settings } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import ContactModal from "./ContactModal";
 import AuthModal from "./AuthModal";
@@ -28,7 +29,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
   const navLinks = [
     { href: `/${lang}/#how-it-works`, label: t.nav_how_it_works },
     { href: `/${lang}/pricing`, label: t.nav_pricing },
-    { href: `/${lang}/#faq`, label: "FAQ" },
+    { href: `/${lang}/#faq`, label: t.nav_faq },
     { href: "#contact", label: t.nav_contact, onClick: () => setContactOpen(true) },
   ];
 
@@ -47,31 +48,31 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
         className="sticky top-0 z-50 w-full"
         style={{ backgroundColor: "oklch(0.18 0.04 250)" }}
       >
-        <div className="container flex items-center justify-between h-16">
+        <div className="container flex items-center justify-between h-14 md:h-16">
           {/* Logo */}
-          <Link href={`/${lang}`} className="flex items-center gap-2 group">
+          <Link href={`/${lang}`} className="flex items-center gap-2 group shrink-0">
             <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              className="w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center"
               style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
             >
-              <FileText className="w-4 h-4 text-white" />
+              <FileText className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
             </div>
             <span
-              className="text-white font-bold text-xl tracking-tight"
+              className="text-white font-bold text-lg md:text-xl tracking-tight"
               style={{ fontFamily: "'Sora', sans-serif" }}
             >
               PDF<span style={{ color: "oklch(0.55 0.22 260)" }}>Pro</span>
             </span>
           </Link>
 
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-8">
+          {/* Desktop Nav — hidden on mobile */}
+          <nav className="hidden lg:flex items-center gap-5 xl:gap-8">
             {navLinks.map((link) => (
               link.onClick ? (
                 <button
                   key={link.href}
                   onClick={link.onClick}
-                  className="text-sm font-medium transition-colors duration-200"
+                  className="text-sm font-medium transition-colors duration-200 whitespace-nowrap"
                   style={{
                     color: "oklch(0.75 0.02 250)",
                     fontFamily: "'DM Sans', sans-serif",
@@ -89,7 +90,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                 <a
                   key={link.href}
                   href={link.href}
-                  className="text-sm font-medium transition-colors duration-200"
+                  className="text-sm font-medium transition-colors duration-200 whitespace-nowrap"
                   style={{
                     color: "oklch(0.75 0.02 250)",
                     fontFamily: "'DM Sans', sans-serif",
@@ -103,33 +104,33 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
             ))}
           </nav>
 
-          {/* Right side: Lang + Auth */}
-          <div className="hidden md:flex items-center gap-2">
+          {/* Right side: Lang + Auth — hidden on mobile */}
+          <div className="hidden md:flex items-center gap-1.5 lg:gap-2 shrink-0">
             {/* Language selector */}
             <div className="relative">
               <button
                 onClick={() => setLangMenuOpen(!langMenuOpen)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm transition-colors"
+                className="flex items-center gap-1 lg:gap-1.5 px-2 py-1.5 rounded-lg text-xs lg:text-sm transition-colors"
                 style={{ color: "oklch(0.75 0.02 250)" }}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.25 0.04 250)")}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
               >
-                <Globe size={14} />
+                <Globe size={13} />
                 <span className="font-medium">{currentLang.flag} {currentLang.code.toUpperCase()}</span>
-                <ChevronDown size={12} />
+                <ChevronDown size={11} />
               </button>
               {langMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setLangMenuOpen(false)} />
                   <div
-                    className="absolute right-0 top-full mt-1 w-44 rounded-xl shadow-xl border overflow-hidden z-50 max-h-72 overflow-y-auto"
+                    className="absolute right-0 top-full mt-1 w-40 rounded-xl shadow-xl border overflow-hidden z-50 max-h-64 overflow-y-auto"
                     style={{ backgroundColor: "oklch(0.18 0.04 250)", borderColor: "oklch(0.28 0.04 250)" }}
                   >
                     {LANGUAGES.map((l) => (
                       <button
                         key={l.code}
                         onClick={() => { switchLang(l.code); setLangMenuOpen(false); }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors text-left"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left"
                         style={{
                           color: l.code === lang ? "white" : "oklch(0.75 0.02 250)",
                           backgroundColor: l.code === lang ? "oklch(0.28 0.04 250)" : "transparent",
@@ -151,15 +152,15 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
               <div className="relative">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"
+                  className="flex items-center gap-1.5 lg:gap-2 px-2 lg:px-3 py-1.5 lg:py-2 rounded-lg transition-colors"
                   style={{ color: "oklch(0.85 0.02 250)" }}
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.25 0.04 250)")}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                 >
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold">
+                  <div className="w-6 h-6 lg:w-7 lg:h-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
                     {user?.name?.charAt(0)?.toUpperCase() ?? user?.email?.charAt(0)?.toUpperCase() ?? "U"}
                   </div>
-                  <span className="text-sm font-medium max-w-[120px] truncate">
+                  <span className="text-xs lg:text-sm font-medium max-w-[80px] lg:max-w-[120px] truncate hidden lg:block">
                     {user?.name ?? user?.email?.split("@")[0] ?? "Usuario"}
                   </span>
                 </button>
@@ -185,7 +186,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                           >
                             <LayoutDashboard size={15} />
-                            Mi panel
+                            {t.nav_my_account}
                           </button>
                         </Link>
                         <Link href={`/${lang}/dashboard?tab=billing`}>
@@ -197,7 +198,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                           >
                             <Crown size={15} />
-                            Facturación
+                            {t.nav_billing}
                           </button>
                         </Link>
                         {user?.role === "admin" && (
@@ -209,7 +210,8 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.25 0.04 250)")}
                               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                             >
-                              ⚙️ Panel Admin
+                              <Settings size={15} />
+                              Admin Panel
                             </button>
                           </Link>
                         )}
@@ -222,7 +224,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                         >
                           <LogOut size={15} />
-                          Cerrar sesión
+                          {t.nav_logout}
                         </button>
                       </div>
                     </div>
@@ -233,39 +235,127 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
               <>
                 <button
                   onClick={openLogin}
-                  className="px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200"
+                  className="px-3 py-1.5 text-xs lg:text-sm font-medium rounded-md transition-colors duration-200 whitespace-nowrap"
                   style={{ color: "oklch(0.85 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
                   onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "oklch(0.25 0.04 250)"; e.currentTarget.style.color = "white"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "oklch(0.85 0.02 250)"; }}
                 >
-                  Iniciar sesión
+                  {t.nav_login}
                 </button>
                 <button
                   onClick={openSignup}
-                  className="px-4 py-2 text-sm font-semibold rounded-md text-white transition-all duration-200"
+                  className="px-3 py-1.5 text-xs lg:text-sm font-semibold rounded-md text-white transition-all duration-200 whitespace-nowrap"
                   style={{ backgroundColor: "oklch(0.55 0.22 260)", fontFamily: "'DM Sans', sans-serif" }}
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.48 0.22 260)")}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)")}
                 >
-                  Registrarse
+                  {t.nav_signup}
                 </button>
               </>
             )}
           </div>
 
-          {/* Mobile menu toggle */}
+          {/* Mobile/Tablet menu toggle */}
           <button
-            className="md:hidden text-white p-2"
+            className="md:hidden text-white p-2 shrink-0"
             onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Toggle menu"
           >
             {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
+
+          {/* Tablet: show lang + auth but hide nav links */}
+          <div className="hidden sm:flex md:hidden items-center gap-1.5 shrink-0">
+            {/* Language selector compact */}
+            <div className="relative">
+              <button
+                onClick={() => setLangMenuOpen(!langMenuOpen)}
+                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs transition-colors"
+                style={{ color: "oklch(0.75 0.02 250)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.25 0.04 250)")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+              >
+                <span>{currentLang.flag}</span>
+                <ChevronDown size={10} />
+              </button>
+              {langMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setLangMenuOpen(false)} />
+                  <div
+                    className="absolute right-0 top-full mt-1 w-36 rounded-xl shadow-xl border overflow-hidden z-50 max-h-64 overflow-y-auto"
+                    style={{ backgroundColor: "oklch(0.18 0.04 250)", borderColor: "oklch(0.28 0.04 250)" }}
+                  >
+                    {LANGUAGES.map((l) => (
+                      <button
+                        key={l.code}
+                        onClick={() => { switchLang(l.code); setLangMenuOpen(false); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors text-left"
+                        style={{
+                          color: l.code === lang ? "white" : "oklch(0.75 0.02 250)",
+                          backgroundColor: l.code === lang ? "oklch(0.28 0.04 250)" : "transparent",
+                        }}
+                        onMouseEnter={(e) => { if (l.code !== lang) e.currentTarget.style.backgroundColor = "oklch(0.22 0.04 250)"; }}
+                        onMouseLeave={(e) => { if (l.code !== lang) e.currentTarget.style.backgroundColor = "transparent"; }}
+                      >
+                        <span>{l.flag}</span>
+                        <span>{l.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {isAuthenticated ? (
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex items-center gap-1 px-2 py-1.5 rounded-lg transition-colors"
+                style={{ color: "oklch(0.85 0.02 250)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.25 0.04 250)")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+              >
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold">
+                  {user?.name?.charAt(0)?.toUpperCase() ?? user?.email?.charAt(0)?.toUpperCase() ?? "U"}
+                </div>
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={openLogin}
+                  className="px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors duration-200 whitespace-nowrap"
+                  style={{ color: "oklch(0.85 0.02 250)" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "oklch(0.25 0.04 250)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                >
+                  {t.nav_login}
+                </button>
+                <button
+                  onClick={openSignup}
+                  className="px-2.5 py-1.5 text-xs font-semibold rounded-md text-white transition-all duration-200 whitespace-nowrap"
+                  style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.48 0.22 260)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)")}
+                >
+                  {t.nav_signup}
+                </button>
+              </>
+            )}
+
+            {/* Hamburger for nav links on tablet */}
+            <button
+              className="text-white p-1.5 shrink-0"
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-label="Toggle menu"
+            >
+              {menuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu (< sm) */}
         {menuOpen && (
           <div
-            className="md:hidden border-t px-4 py-4 flex flex-col gap-4"
+            className="sm:hidden border-t px-4 py-4 flex flex-col gap-3"
             style={{ backgroundColor: "oklch(0.18 0.04 250)", borderColor: "oklch(0.28 0.04 250)" }}
           >
             {navLinks.map((link) => (
@@ -273,7 +363,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                 <button
                   key={link.href}
                   onClick={() => { link.onClick!(); setMenuOpen(false); }}
-                  className="text-sm font-medium text-left"
+                  className="text-sm font-medium text-left py-1"
                   style={{ color: "oklch(0.75 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
                 >
                   {link.label}
@@ -282,7 +372,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                 <a
                   key={link.href}
                   href={link.href}
-                  className="text-sm font-medium"
+                  className="text-sm font-medium py-1"
                   style={{ color: "oklch(0.75 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
                   onClick={() => setMenuOpen(false)}
                 >
@@ -292,7 +382,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
             ))}
 
             {/* Mobile lang selector */}
-            <div className="flex flex-wrap gap-2 pt-2 border-t" style={{ borderColor: "oklch(0.28 0.04 250)" }}>
+            <div className="flex flex-wrap gap-1.5 pt-2 border-t" style={{ borderColor: "oklch(0.28 0.04 250)" }}>
               {LANGUAGES.map((l) => (
                 <button
                   key={l.code}
@@ -318,7 +408,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                       onClick={() => setMenuOpen(false)}
                     >
                       <LayoutDashboard size={15} />
-                      Mi panel
+                      {t.nav_my_account}
                     </button>
                   </Link>
                   <button
@@ -326,7 +416,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                     className="w-full px-4 py-2 text-sm font-medium rounded-md text-center"
                     style={{ color: "oklch(0.7 0.15 25)", border: "1px solid oklch(0.35 0.04 250)" }}
                   >
-                    Cerrar sesión
+                    {t.nav_logout}
                   </button>
                 </>
               ) : (
@@ -336,18 +426,49 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                     className="w-full px-4 py-2 text-sm font-medium rounded-md text-center"
                     style={{ color: "oklch(0.85 0.02 250)", border: "1px solid oklch(0.35 0.04 250)" }}
                   >
-                    Iniciar sesión
+                    {t.nav_login}
                   </button>
                   <button
                     onClick={() => { openSignup(); setMenuOpen(false); }}
                     className="w-full px-4 py-2 text-sm font-semibold rounded-md text-white text-center"
                     style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
                   >
-                    Registrarse
+                    {t.nav_signup}
                   </button>
                 </>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Tablet dropdown menu (sm to md) — nav links only */}
+        {menuOpen && (
+          <div
+            className="hidden sm:flex md:hidden border-t px-4 py-3 flex-col gap-2"
+            style={{ backgroundColor: "oklch(0.18 0.04 250)", borderColor: "oklch(0.28 0.04 250)" }}
+          >
+            {navLinks.map((link) => (
+              link.onClick ? (
+                <button
+                  key={link.href}
+                  onClick={() => { link.onClick!(); setMenuOpen(false); }}
+                  className="text-sm font-medium text-left py-1.5"
+                  style={{ color: "oklch(0.75 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  {link.label}
+                </button>
+              ) : (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className="text-sm font-medium py-1.5"
+                  style={{ color: "oklch(0.75 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {link.label}
+                </a>
+              )
+            ))}
           </div>
         )}
       </header>

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import PaywallModal from "./PaywallModal";
+import { useLanguage } from "@/contexts/LanguageContext";
 import * as pdfjsLib from "pdfjs-dist";
 import { PDFDocument, rgb, StandardFonts, degrees } from "pdf-lib";
 
@@ -143,6 +144,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
     retry: false,
   });
   const isPremium = subData?.isPremium ?? false;
+  const { t } = useLanguage();
 
   // ── Load PDF ─────────────────────────────────────────────────
   const loadPdf = useCallback(async (f: File) => {
@@ -919,65 +921,61 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
       }
     >
       {/* ── TOP TOOLBAR ── */}
-      <div className="flex items-center gap-1 px-3 py-1.5 border-b" style={{ backgroundColor: "oklch(1 0 0)", borderColor: "oklch(0.90 0.01 250)" }}>
+      <div className="flex items-center gap-1 px-3 py-1.5 border-b overflow-x-auto" style={{ backgroundColor: "oklch(1 0 0)", borderColor: "oklch(0.90 0.01 250)" }}>
         {/* Undo / Redo */}
-        <button title="Deshacer (Ctrl+Z)" onClick={undo} disabled={historyIndex <= 0} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors">
+        <button title={t.editor_undo + " (Ctrl+Z)"} onClick={undo} disabled={historyIndex <= 0} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
           <Undo2 className="w-4 h-4" style={{ color: "oklch(0.35 0.02 250)" }} />
         </button>
-        <button title="Rehacer (Ctrl+Y)" onClick={redo} disabled={historyIndex >= history.length - 1} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors">
+        <button title={t.editor_redo + " (Ctrl+Y)"} onClick={redo} disabled={historyIndex >= history.length - 1} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
           <Redo2 className="w-4 h-4" style={{ color: "oklch(0.35 0.02 250)" }} />
         </button>
-        <div className="w-px h-5 mx-1" style={{ backgroundColor: "oklch(0.88 0.02 250)" }} />
-
-        {/* Tool buttons */}
-        {[
-          { id: "sign" as ToolName, icon: PenTool, label: "Sign" },
-          { id: "text" as ToolName, icon: Type, label: "Add text" },
-          { id: "edit-text" as ToolName, icon: Type, label: "Edit text" },
-          { id: "highlight" as ToolName, icon: Highlighter, label: "Highlight" },
-          { id: "eraser" as ToolName, icon: Eraser, label: "Eraser" },
-          { id: "brush" as ToolName, icon: Brush, label: "Brush" },
-          { id: "image" as ToolName, icon: ImageIcon, label: "Image" },
-          { id: "pointer" as ToolName, icon: MousePointer, label: "Pointer" },
-          { id: "shapes" as ToolName, icon: Shapes, label: "Shapes" },
-          { id: "find" as ToolName, icon: Search, label: "Find" },
-          { id: "protect" as ToolName, icon: Shield, label: "Protect" },
-          { id: "compress" as ToolName, icon: Minimize2, label: "Compress" },
-          { id: "move" as ToolName, icon: Move, label: "Move" },
-          { id: "notes" as ToolName, icon: StickyNote, label: "Notes" },
-        ].map(({ id, icon, label }) => (
-          <ToolBtn key={id} icon={icon} label={label} active={activeTool === id} onClick={() => setActiveTool(id)} />
-        ))}
-
-        <div className="flex-1" />
-
+        <div className="w-px h-5 mx-1 shrink-0" style={{ backgroundColor: "oklch(0.88 0.02 250)" }} />
+        {/* Tool buttons — centered */}
+        <div className="flex items-center gap-0.5 flex-1 justify-center">
+          {[
+            { id: "sign" as ToolName, icon: PenTool, label: t.editor_sign },
+            { id: "text" as ToolName, icon: Type, label: t.editor_add_text },
+            { id: "edit-text" as ToolName, icon: Type, label: t.editor_edit_text },
+            { id: "highlight" as ToolName, icon: Highlighter, label: t.editor_highlight },
+            { id: "eraser" as ToolName, icon: Eraser, label: t.editor_eraser },
+            { id: "brush" as ToolName, icon: Brush, label: t.editor_brush },
+            { id: "image" as ToolName, icon: ImageIcon, label: t.editor_image },
+            { id: "pointer" as ToolName, icon: MousePointer, label: t.editor_pointer },
+            { id: "shapes" as ToolName, icon: Shapes, label: t.editor_shapes },
+            { id: "find" as ToolName, icon: Search, label: t.editor_find },
+            { id: "protect" as ToolName, icon: Shield, label: t.editor_protect },
+            { id: "compress" as ToolName, icon: Minimize2, label: t.editor_compress },
+            { id: "move" as ToolName, icon: Move, label: t.editor_move },
+            { id: "notes" as ToolName, icon: StickyNote, label: t.editor_notes },
+          ].map(({ id, icon, label }) => (
+            <ToolBtn key={id} icon={icon} label={label} active={activeTool === id} onClick={() => setActiveTool(id)} />
+          ))}
+        </div>
         {/* Page actions */}
-        <button title="Rotar página" onClick={rotatePage} className="p-1.5 rounded hover:bg-gray-100 transition-colors">
+        <button title={t.editor_rotate} onClick={rotatePage} className="p-1.5 rounded hover:bg-gray-100 transition-colors shrink-0">
           <RotateCw className="w-4 h-4" style={{ color: "oklch(0.45 0.02 250)" }} />
         </button>
-        <button title="Eliminar página" onClick={deletePage} className="p-1.5 rounded hover:bg-gray-100 transition-colors">
+        <button title={t.editor_delete_page} onClick={deletePage} className="p-1.5 rounded hover:bg-gray-100 transition-colors shrink-0">
           <Trash2 className="w-4 h-4" style={{ color: "oklch(0.55 0.15 15)" }} />
         </button>
         {selectedId && (
-          <button title="Borrar selección (Delete)" onClick={deleteSelected} className="p-1.5 rounded transition-colors" style={{ backgroundColor: "oklch(0.95 0.05 15)" }}>
+          <button title="Delete selection" onClick={deleteSelected} className="p-1.5 rounded transition-colors shrink-0" style={{ backgroundColor: "oklch(0.95 0.05 15)" }}>
             <X className="w-4 h-4" style={{ color: "oklch(0.55 0.15 15)" }} />
           </button>
         )}
-        <div className="w-px h-5 mx-1" style={{ backgroundColor: "oklch(0.88 0.02 250)" }} />
-
+        <div className="w-px h-5 mx-1 shrink-0" style={{ backgroundColor: "oklch(0.88 0.02 250)" }} />
         {/* Download */}
         <button
           onClick={downloadPdf}
-          className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-white text-sm font-semibold transition-all"
+          className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-white text-sm font-semibold transition-all shrink-0"
           style={{ backgroundColor: "oklch(0.18 0.04 250)" }}
           onMouseEnter={e => e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)"}
           onMouseLeave={e => e.currentTarget.style.backgroundColor = "oklch(0.18 0.04 250)"}
         >
-          <Download className="w-4 h-4" />Download
+          <Download className="w-4 h-4" />{t.editor_download}
         </button>
       </div>
-
-      {/* ── BODY: thumbnails + viewer + tool panel ── */}
+            {/* ── BODY: thumbnails + viewer + tool panel ── */}
       <div className="flex flex-1 overflow-hidden">
         {/* LEFT: Page thumbnails — compact style like pdfe.com */}
         <div className="w-[150px] border-r overflow-y-auto flex flex-col gap-3 py-3 px-2" style={{ backgroundColor: "oklch(0.96 0.005 250)", borderColor: "oklch(0.90 0.01 250)" }}>

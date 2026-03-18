@@ -36,6 +36,7 @@ export type TranslationKeys = {
   nav_billing: string;
   nav_logout: string;
   nav_login: string;
+  nav_signup: string;
   // Hero
   hero_title_1: string;
   hero_title_2: string;
@@ -131,6 +132,26 @@ export type TranslationKeys = {
   dash_documents: string;
   dash_team: string;
   dash_billing: string;
+  // Editor toolbar
+  editor_sign: string;
+  editor_add_text: string;
+  editor_edit_text: string;
+  editor_highlight: string;
+  editor_eraser: string;
+  editor_brush: string;
+  editor_image: string;
+  editor_pointer: string;
+  editor_shapes: string;
+  editor_find: string;
+  editor_protect: string;
+  editor_compress: string;
+  editor_move: string;
+  editor_notes: string;
+  editor_download: string;
+  editor_undo: string;
+  editor_redo: string;
+  editor_rotate: string;
+  editor_delete_page: string;
 };
 
 type Translations = Record<LangCode, TranslationKeys>;
@@ -145,6 +166,7 @@ export const translations: Translations = {
     nav_billing: "Facturación",
     nav_logout: "Cerrar sesión",
     nav_login: "Iniciar sesión",
+    nav_signup: "Registrarse",
     hero_title_1: "Editor de PDF Online",
     hero_title_2: "Gratuito",
     hero_subtitle: "Sube tu PDF y edítalo ahora mismo — sin instalar nada",
@@ -229,6 +251,25 @@ export const translations: Translations = {
     dash_documents: "Documentos",
     dash_team: "Equipo",
     dash_billing: "Facturación",
+    editor_sign: "Firma",
+    editor_add_text: "Añadir texto",
+    editor_edit_text: "Editar texto",
+    editor_highlight: "Resaltar",
+    editor_eraser: "Borrador",
+    editor_brush: "Pincel",
+    editor_image: "Imagen",
+    editor_pointer: "Puntero",
+    editor_shapes: "Formas",
+    editor_find: "Buscar",
+    editor_protect: "Proteger",
+    editor_compress: "Comprimir",
+    editor_move: "Mover",
+    editor_notes: "Notas",
+    editor_download: "Descargar",
+    editor_undo: "Deshacer",
+    editor_redo: "Rehacer",
+    editor_rotate: "Rotar página",
+    editor_delete_page: "Eliminar página",
   },
 
   en: {
@@ -240,6 +281,7 @@ export const translations: Translations = {
     nav_billing: "Billing",
     nav_logout: "Sign out",
     nav_login: "Sign in",
+    nav_signup: "Sign up",
     hero_title_1: "Free Online",
     hero_title_2: "PDF Editor",
     hero_subtitle: "Upload your PDF and edit it right now — no installation needed",
@@ -324,6 +366,25 @@ export const translations: Translations = {
     dash_documents: "Documents",
     dash_team: "Team",
     dash_billing: "Billing",
+    editor_sign: "Sign",
+    editor_add_text: "Add text",
+    editor_edit_text: "Edit text",
+    editor_highlight: "Highlight",
+    editor_eraser: "Eraser",
+    editor_brush: "Brush",
+    editor_image: "Image",
+    editor_pointer: "Pointer",
+    editor_shapes: "Shapes",
+    editor_find: "Find",
+    editor_protect: "Protect",
+    editor_compress: "Compress",
+    editor_move: "Move",
+    editor_notes: "Notes",
+    editor_download: "Download",
+    editor_undo: "Undo",
+    editor_redo: "Redo",
+    editor_rotate: "Rotate page",
+    editor_delete_page: "Delete page",
   },
 
   fr: {
@@ -335,6 +396,7 @@ export const translations: Translations = {
     nav_billing: "Facturation",
     nav_logout: "Se déconnecter",
     nav_login: "Se connecter",
+    nav_signup: "S'inscrire",
     hero_title_1: "Éditeur PDF en ligne",
     hero_title_2: "Gratuit",
     hero_subtitle: "Téléchargez votre PDF et modifiez-le maintenant — sans installation",
@@ -419,6 +481,25 @@ export const translations: Translations = {
     dash_documents: "Documents",
     dash_team: "Équipe",
     dash_billing: "Facturation",
+    editor_sign: "Signer",
+    editor_add_text: "Ajouter texte",
+    editor_edit_text: "Modifier texte",
+    editor_highlight: "Surligner",
+    editor_eraser: "Gomme",
+    editor_brush: "Pinceau",
+    editor_image: "Image",
+    editor_pointer: "Pointeur",
+    editor_shapes: "Formes",
+    editor_find: "Chercher",
+    editor_protect: "Protéger",
+    editor_compress: "Compresser",
+    editor_move: "Déplacer",
+    editor_notes: "Notes",
+    editor_download: "Télécharger",
+    editor_undo: "Annuler",
+    editor_redo: "Rétablir",
+    editor_rotate: "Rotation page",
+    editor_delete_page: "Supprimer page",
   },
 
   de: {
@@ -430,6 +511,7 @@ export const translations: Translations = {
     nav_billing: "Abrechnung",
     nav_logout: "Abmelden",
     nav_login: "Anmelden",
+    nav_signup: "Registrieren",
     hero_title_1: "Kostenloser Online",
     hero_title_2: "PDF-Editor",
     hero_subtitle: "Laden Sie Ihr PDF hoch und bearbeiten Sie es jetzt — ohne Installation",
@@ -514,6 +596,25 @@ export const translations: Translations = {
     dash_documents: "Dokumente",
     dash_team: "Team",
     dash_billing: "Abrechnung",
+    editor_sign: "Signieren",
+    editor_add_text: "Text hinzufügen",
+    editor_edit_text: "Text bearbeiten",
+    editor_highlight: "Markieren",
+    editor_eraser: "Radierer",
+    editor_brush: "Pinsel",
+    editor_image: "Bild",
+    editor_pointer: "Zeiger",
+    editor_shapes: "Formen",
+    editor_find: "Suchen",
+    editor_protect: "Schützen",
+    editor_compress: "Komprimieren",
+    editor_move: "Verschieben",
+    editor_notes: "Notizen",
+    editor_download: "Herunterladen",
+    editor_undo: "Rückgängig",
+    editor_redo: "Wiederholen",
+    editor_rotate: "Seite drehen",
+    editor_delete_page: "Seite löschen",
   },
 
   pt: {
@@ -525,6 +626,7 @@ export const translations: Translations = {
     nav_billing: "Faturamento",
     nav_logout: "Sair",
     nav_login: "Entrar",
+    nav_signup: "Registrar",
     hero_title_1: "Editor de PDF Online",
     hero_title_2: "Gratuito",
     hero_subtitle: "Carregue seu PDF e edite agora mesmo — sem instalar nada",
@@ -609,6 +711,25 @@ export const translations: Translations = {
     dash_documents: "Documentos",
     dash_team: "Equipe",
     dash_billing: "Faturamento",
+    editor_sign: "Assinar",
+    editor_add_text: "Adicionar texto",
+    editor_edit_text: "Editar texto",
+    editor_highlight: "Destacar",
+    editor_eraser: "Borracha",
+    editor_brush: "Pincel",
+    editor_image: "Imagem",
+    editor_pointer: "Ponteiro",
+    editor_shapes: "Formas",
+    editor_find: "Buscar",
+    editor_protect: "Proteger",
+    editor_compress: "Comprimir",
+    editor_move: "Mover",
+    editor_notes: "Notas",
+    editor_download: "Baixar",
+    editor_undo: "Desfazer",
+    editor_redo: "Refazer",
+    editor_rotate: "Girar página",
+    editor_delete_page: "Excluir página",
   },
 
   it: {
@@ -620,6 +741,7 @@ export const translations: Translations = {
     nav_billing: "Fatturazione",
     nav_logout: "Disconnettersi",
     nav_login: "Accedi",
+    nav_signup: "Registrati",
     hero_title_1: "Editor PDF Online",
     hero_title_2: "Gratuito",
     hero_subtitle: "Carica il tuo PDF e modificalo subito — senza installare nulla",
@@ -704,6 +826,25 @@ export const translations: Translations = {
     dash_documents: "Documenti",
     dash_team: "Team",
     dash_billing: "Fatturazione",
+    editor_sign: "Firma",
+    editor_add_text: "Aggiungi testo",
+    editor_edit_text: "Modifica testo",
+    editor_highlight: "Evidenzia",
+    editor_eraser: "Gomma",
+    editor_brush: "Pennello",
+    editor_image: "Immagine",
+    editor_pointer: "Puntatore",
+    editor_shapes: "Forme",
+    editor_find: "Cerca",
+    editor_protect: "Proteggi",
+    editor_compress: "Comprimi",
+    editor_move: "Sposta",
+    editor_notes: "Note",
+    editor_download: "Scarica",
+    editor_undo: "Annulla",
+    editor_redo: "Ripristina",
+    editor_rotate: "Ruota pagina",
+    editor_delete_page: "Elimina pagina",
   },
 
   nl: {
@@ -715,6 +856,7 @@ export const translations: Translations = {
     nav_billing: "Facturering",
     nav_logout: "Uitloggen",
     nav_login: "Inloggen",
+    nav_signup: "Registreren",
     hero_title_1: "Gratis Online",
     hero_title_2: "PDF-editor",
     hero_subtitle: "Upload uw PDF en bewerk het nu — geen installatie nodig",
@@ -799,6 +941,25 @@ export const translations: Translations = {
     dash_documents: "Documenten",
     dash_team: "Team",
     dash_billing: "Facturering",
+    editor_sign: "Ondertekenen",
+    editor_add_text: "Tekst toevoegen",
+    editor_edit_text: "Tekst bewerken",
+    editor_highlight: "Markeren",
+    editor_eraser: "Gum",
+    editor_brush: "Penseel",
+    editor_image: "Afbeelding",
+    editor_pointer: "Aanwijzer",
+    editor_shapes: "Vormen",
+    editor_find: "Zoeken",
+    editor_protect: "Beveiligen",
+    editor_compress: "Comprimeren",
+    editor_move: "Verplaatsen",
+    editor_notes: "Notities",
+    editor_download: "Downloaden",
+    editor_undo: "Ongedaan maken",
+    editor_redo: "Opnieuw",
+    editor_rotate: "Pagina draaien",
+    editor_delete_page: "Pagina verwijderen",
   },
 
   pl: {
@@ -810,6 +971,7 @@ export const translations: Translations = {
     nav_billing: "Rozliczenia",
     nav_logout: "Wyloguj się",
     nav_login: "Zaloguj się",
+    nav_signup: "Zarejestruj się",
     hero_title_1: "Darmowy edytor PDF",
     hero_title_2: "Online",
     hero_subtitle: "Prześlij swój PDF i edytuj go teraz — bez instalacji",
@@ -894,6 +1056,25 @@ export const translations: Translations = {
     dash_documents: "Dokumenty",
     dash_team: "Zespół",
     dash_billing: "Rozliczenia",
+    editor_sign: "Podpisz",
+    editor_add_text: "Dodaj tekst",
+    editor_edit_text: "Edytuj tekst",
+    editor_highlight: "Zaznacz",
+    editor_eraser: "Gumka",
+    editor_brush: "Pędzel",
+    editor_image: "Obraz",
+    editor_pointer: "Wskaźnik",
+    editor_shapes: "Kształty",
+    editor_find: "Znajdź",
+    editor_protect: "Chroń",
+    editor_compress: "Kompresuj",
+    editor_move: "Przesuń",
+    editor_notes: "Notatki",
+    editor_download: "Pobierz",
+    editor_undo: "Cofnij",
+    editor_redo: "Ponów",
+    editor_rotate: "Obróć stronę",
+    editor_delete_page: "Usuń stronę",
   },
 
   ru: {
@@ -905,6 +1086,7 @@ export const translations: Translations = {
     nav_billing: "Оплата",
     nav_logout: "Выйти",
     nav_login: "Войти",
+    nav_signup: "Регистрация",
     hero_title_1: "Бесплатный онлайн",
     hero_title_2: "редактор PDF",
     hero_subtitle: "Загрузите PDF и редактируйте прямо сейчас — без установки",
@@ -989,6 +1171,25 @@ export const translations: Translations = {
     dash_documents: "Документы",
     dash_team: "Команда",
     dash_billing: "Оплата",
+    editor_sign: "Подписать",
+    editor_add_text: "Добавить текст",
+    editor_edit_text: "Редактировать текст",
+    editor_highlight: "Выделить",
+    editor_eraser: "Ластик",
+    editor_brush: "Кисть",
+    editor_image: "Изображение",
+    editor_pointer: "Указатель",
+    editor_shapes: "Фигуры",
+    editor_find: "Найти",
+    editor_protect: "Защитить",
+    editor_compress: "Сжать",
+    editor_move: "Переместить",
+    editor_notes: "Заметки",
+    editor_download: "Скачать",
+    editor_undo: "Отменить",
+    editor_redo: "Повторить",
+    editor_rotate: "Повернуть страницу",
+    editor_delete_page: "Удалить страницу",
   },
 
   zh: {
@@ -1000,6 +1201,7 @@ export const translations: Translations = {
     nav_billing: "账单",
     nav_logout: "退出登录",
     nav_login: "登录",
+    nav_signup: "注册",
     hero_title_1: "免费在线",
     hero_title_2: "PDF编辑器",
     hero_subtitle: "上传您的PDF并立即编辑 — 无需安装",
@@ -1084,6 +1286,25 @@ export const translations: Translations = {
     dash_documents: "文档",
     dash_team: "团队",
     dash_billing: "账单",
+    editor_sign: "签名",
+    editor_add_text: "添加文字",
+    editor_edit_text: "编辑文字",
+    editor_highlight: "高亮",
+    editor_eraser: "橡皮擦",
+    editor_brush: "画笔",
+    editor_image: "图片",
+    editor_pointer: "指针",
+    editor_shapes: "形状",
+    editor_find: "查找",
+    editor_protect: "保护",
+    editor_compress: "压缩",
+    editor_move: "移动",
+    editor_notes: "备注",
+    editor_download: "下载",
+    editor_undo: "撤销",
+    editor_redo: "重做",
+    editor_rotate: "旋转页面",
+    editor_delete_page: "删除页面",
   },
 };
 

@@ -94,3 +94,14 @@
 
 - [x] Drop zone acepta cualquier formato (Word, Excel, JPG, PNG, etc.) con mensaje de conversión a PDF
 - [x] Editor PDF en pantalla completa estilo pdfe.com
+
+## Toolbar del editor
+
+- [x] Centrar la barra de herramientas del editor PDF
+- [x] Traducir etiquetas de herramientas al idioma activo (Sign, Add text, Highlight, etc.)
+
+## Responsive fixes
+
+- [x] Navbar responsive con menú hamburguesa en móvil/tablet
+- [x] Centrar toolbar del editor PDF
+- [x] Traducir etiquetas de herramientas del editor al idioma activo
