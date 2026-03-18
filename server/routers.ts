@@ -212,7 +212,12 @@ export const appRouter = router({
 
   // ─── Subscriptions ─────────────────────────────────────────────
   subscription: router({
-    status: protectedProcedure.query(async ({ ctx }) => {
+    status: publicProcedure.query(async ({ ctx }) => {
+      // Public procedure: returns isPremium:false for unauthenticated users
+      // This prevents triggering the global auth redirect when loading the editor
+      if (!ctx.user) {
+        return { isPremium: false, subscription: null };
+      }
       const isPremium = await userHasActiveSubscription(ctx.user.id);
       const sub = await getActiveSubscription(ctx.user.id);
       return {

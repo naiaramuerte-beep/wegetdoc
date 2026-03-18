@@ -14,11 +14,12 @@ import {
   Users, DollarSign, TrendingUp, TrendingDown, MessageSquare, FileText,
   Search, Trash2, ShieldCheck, ShieldOff, Mail, ChevronDown, ChevronUp,
   CreditCard, Settings, BookOpen, BarChart2, UserX, RefreshCw, Eye, EyeOff,
-  ArrowLeft, Crown, Rss,
+  ArrowLeft, Crown, Rss, Star,
 } from "lucide-react";
 import BlogAdmin from "./BlogAdmin";
+import TrustpilotAdmin from "./TrustpilotAdmin";
 
-type AdminTab = "overview" | "billing" | "users" | "canceled" | "messages" | "legal" | "settings" | "blog";
+type AdminTab = "overview" | "billing" | "users" | "canceled" | "messages" | "legal" | "settings" | "blog" | "trustpilot";
 
 export default function Admin() {
   const [, navigate] = useLocation();
@@ -105,6 +106,7 @@ export default function Admin() {
     { id: "legal", label: "Páginas legales", icon: <BookOpen size={16} /> },
     { id: "settings", label: "Ajustes", icon: <Settings size={16} /> },
     { id: "blog", label: "Blog", icon: <Rss size={16} /> },
+    { id: "trustpilot", label: "Trustpilot", icon: <Star size={16} /> },
   ];
 
   const formatEur = (n: number) =>
@@ -790,6 +792,7 @@ export default function Admin() {
             </div>
           )}
           {tab === "blog" && <BlogAdmin />}
+          {tab === "trustpilot" && <TrustpilotAdmin />}
         </main>
       </div>
     </div>

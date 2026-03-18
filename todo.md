@@ -179,3 +179,11 @@
 - [x] Enlace Blog en Navbar y Footer
 - [x] sitemap.xml dinámico con todas las entradas del blog
 - [x] 3 artículos de ejemplo pre-cargados en la DB
+
+## Fixes post-publicación
+- [ ] Actualizar VITE_APP_TITLE a "editPDF - Free Online PDF Editor" (pestaña navegador y portal OAuth)
+- [x] Bug: login aparece al entrar en la web, debe aparecer solo al descargar
+- [ ] Bug: sesión no persiste entre visitas (usuario tiene que volver a loguearse cada vez)
+- [ ] Bug: al entrar en la web redirige hacia atrás / no mantiene la sesión
+- [x] Fix OAuth callback: redirigir al usuario a la página de origen tras el login (no a "/")
+- [x] Integrar Trustpilot en panel admin: reseñas demo, filtros, responder, guía de integración real

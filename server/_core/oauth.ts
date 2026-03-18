@@ -44,7 +44,22 @@ export function registerOAuthRoutes(app: Express) {
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
-      res.redirect(302, "/");
+      // Parse state to extract returnPath and redirect back to original page
+      let redirectTo = "/";
+      try {
+        const stateData = JSON.parse(Buffer.from(state, "base64").toString("utf-8"));
+        if (stateData.returnPath && typeof stateData.returnPath === "string") {
+          // Only allow relative paths to prevent open redirect attacks
+          const returnPath = stateData.returnPath;
+          if (returnPath.startsWith("/") && !returnPath.startsWith("//")) {
+            redirectTo = returnPath;
+          }
+        }
+      } catch {
+        // If state parsing fails, redirect to home
+      }
+
+      res.redirect(302, redirectTo);
     } catch (error) {
       console.error("[OAuth] Callback failed", error);
       res.status(500).json({ error: "OAuth callback failed" });
