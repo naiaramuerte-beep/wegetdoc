@@ -231,3 +231,13 @@
 - [x] Touch resize: handle de esquina azul responde a touch para redimensionar (handle ampliado a 20x20px)
 - [x] Sin necesidad de cambiar de herramienta: funciona siempre al tocar la anotación
 - [x] touchAction: none en anotaciones para evitar conflicto con scroll del navegador
+
+## SEO On-page - Página de inicio (/)
+- [x] Meta title y description con palabras clave principales
+- [x] H1 con keyword principal "Free Online PDF Editor" en contenido estático
+- [x] H2/H3 con keywords secundarias (convert PDF, sign PDF, merge PDF, etc.)
+- [x] Contenido estático HTML para crawlers con densidad de keywords adecuada
+- [x] Datos estructurados JSON-LD (WebApplication + FAQPage)
+- [x] Open Graph y Twitter Card tags
+- [x] Meta keywords y canonical URL
+- [x] html lang="en" para señalar idioma principal al crawler
