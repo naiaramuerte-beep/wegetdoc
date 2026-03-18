@@ -22,6 +22,18 @@ import { PDFDocument, rgb, StandardFonts, degrees } from "pdf-lib";
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
+// ── Font options ──────────────────────────────────────────────
+const FONT_OPTIONS = [
+  { value: "Arial, sans-serif", label: "Arial" },
+  { value: "'Times New Roman', serif", label: "Times New Roman" },
+  { value: "'Courier New', monospace", label: "Courier New" },
+  { value: "Georgia, serif", label: "Georgia" },
+  { value: "Verdana, sans-serif", label: "Verdana" },
+  { value: "Helvetica, sans-serif", label: "Helvetica" },
+  { value: "'Trebuchet MS', sans-serif", label: "Trebuchet MS" },
+  { value: "'Comic Sans MS', cursive", label: "Comic Sans" },
+];
+
 // ── Types ─────────────────────────────────────────────────────
 type ToolName =
   | "pointer" | "sign" | "text" | "edit-text" | "highlight"
@@ -30,7 +42,7 @@ type ToolName =
 
 interface Annotation {
   id: string;
-  type: "signature" | "text" | "highlight" | "note" | "shape" | "image";
+  type: "signature" | "text" | "highlight" | "note" | "shape" | "image" | "drawing" | "eraser";
   dataUrl?: string;
   text?: string;
   x: number; y: number;
@@ -38,8 +50,11 @@ interface Annotation {
   page: number;
   color?: string;
   fontSize?: number;
+  fontFamily?: string;
   opacity?: number;
   rotation?: number;
+  points?: { x: number; y: number }[];
+  strokeWidth?: number;
 }
 
 interface HistoryEntry {
@@ -102,7 +117,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
   const [drawStart, setDrawStart] = useState({ x: 0, y: 0 });
 
   // Sign tool state
-  const [signCanvas, setSignCanvas] = useState<HTMLCanvasElement | null>(null);
   const [isSignDrawing, setIsSignDrawing] = useState(false);
   const signCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -111,11 +125,20 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
   const [textColor, setTextColor] = useState("#000000");
   const [textSize, setTextSize] = useState(14);
   const [textBold, setTextBold] = useState(false);
+  const [textFont, setTextFont] = useState("Arial, sans-serif");
+  const [clickToPlaceText, setClickToPlaceText] = useState(false);
 
   // Highlight state
   const [highlightColor, setHighlightColor] = useState("#FFFF00");
   const [brushColor, setBrushColor] = useState("#FF0000");
-  const [brushSize, setBrushSize] = useState(3);
+  const [brushSize, setBrushSize] = useState(4);
+  const [eraserSize, setEraserSize] = useState(30);
+
+  // Drawing canvas state (brush, eraser, highlight)
+  const [isCanvasDrawing, setIsCanvasDrawing] = useState(false);
+  const [canvasDrawStart, setCanvasDrawStart] = useState({ x: 0, y: 0 });
+  const [currentBrushPoints, setCurrentBrushPoints] = useState<{ x: number; y: number }[]>([]);
+  const [dragPreview, setDragPreview] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
 
   // Protect state
   const [password, setPassword] = useState("");
@@ -136,6 +159,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
 
   const viewerRef = useRef<HTMLDivElement>(null);
   const mainCanvasRef = useRef<HTMLCanvasElement>(null);
+  const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -182,7 +206,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
     canvas.height = vp.height;
     const ctx = canvas.getContext("2d")!;
     await page.render({ canvas, viewport: vp } as any).promise;
-  }, [pdfDoc, scale]);
+    // Sync drawing canvas size
+    if (drawingCanvasRef.current) {
+      drawingCanvasRef.current.width = vp.width;
+      drawingCanvasRef.current.height = vp.height;
+      redrawDrawingCanvas();
+    }
+  }, [pdfDoc, scale]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   useEffect(() => { renderPage(currentPage); }, [renderPage, currentPage]);
 
@@ -218,6 +249,140 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
       return newHist;
     });
   }, [historyIndex]);
+
+  // ── Drawing canvas helpers ────────────────────────────────────
+  const getDrawCtx = useCallback(() => drawingCanvasRef.current?.getContext("2d") ?? null, []);
+
+  const redrawDrawingCanvas = useCallback(() => {
+    const dc = drawingCanvasRef.current;
+    if (!dc) return;
+    const ctx = dc.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, dc.width, dc.height);
+    const pageAnns = annotations.filter(a => a.page === currentPage);
+    for (const ann of pageAnns) {
+      if (ann.type === "drawing" && ann.points && ann.points.length > 1) {
+        ctx.beginPath();
+        ctx.strokeStyle = ann.color ?? "#FF0000";
+        ctx.lineWidth = ann.strokeWidth ?? 3;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.moveTo(ann.points[0].x, ann.points[0].y);
+        for (let i = 1; i < ann.points.length; i++) ctx.lineTo(ann.points[i].x, ann.points[i].y);
+        ctx.stroke();
+      } else if (ann.type === "eraser") {
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(ann.x, ann.y, ann.width, ann.height);
+      }
+    }
+  }, [annotations, currentPage]);
+
+  useEffect(() => { redrawDrawingCanvas(); }, [redrawDrawingCanvas]);
+
+  // ── Get canvas-relative position ─────────────────────────────
+  const getCanvasPos = useCallback((e: React.MouseEvent): { x: number; y: number } => {
+    const canvas = mainCanvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (e.clientX - rect.left) * (canvas.width / rect.width),
+      y: (e.clientY - rect.top) * (canvas.height / rect.height),
+    };
+  }, []);
+
+  // ── Canvas mouse handlers (brush, eraser, highlight) ─────────
+  const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
+    const pos = getCanvasPos(e);
+    if (activeTool === "brush") {
+      setIsCanvasDrawing(true);
+      setCurrentBrushPoints([pos]);
+      const ctx = getDrawCtx();
+      if (ctx) {
+        ctx.beginPath();
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.moveTo(pos.x, pos.y);
+      }
+    } else if (activeTool === "eraser" || activeTool === "highlight") {
+      setIsCanvasDrawing(true);
+      setCanvasDrawStart(pos);
+      setDragPreview({ x: pos.x, y: pos.y, w: 0, h: 0 });
+    }
+  }, [activeTool, brushColor, brushSize, getCanvasPos, getDrawCtx]);
+
+  const handleCanvasMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isCanvasDrawing) return;
+    const pos = getCanvasPos(e);
+    if (activeTool === "brush") {
+      setCurrentBrushPoints(prev => [...prev, pos]);
+      const ctx = getDrawCtx();
+      if (ctx) { ctx.lineTo(pos.x, pos.y); ctx.stroke(); }
+    } else if (activeTool === "eraser" || activeTool === "highlight") {
+      const x = Math.min(pos.x, canvasDrawStart.x);
+      const y = Math.min(pos.y, canvasDrawStart.y);
+      const w = Math.abs(pos.x - canvasDrawStart.x);
+      const h = Math.abs(pos.y - canvasDrawStart.y);
+      setDragPreview({ x, y, w, h });
+      // Live preview
+      const dc = drawingCanvasRef.current;
+      const ctx = getDrawCtx();
+      if (ctx && dc) {
+        redrawDrawingCanvas();
+        if (activeTool === "eraser") {
+          ctx.fillStyle = "rgba(255,255,255,0.85)";
+          ctx.fillRect(x, y, w, h);
+          ctx.strokeStyle = "#999";
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 4]);
+          ctx.strokeRect(x, y, w, h);
+          ctx.setLineDash([]);
+        } else {
+          ctx.fillStyle = highlightColor + "55";
+          ctx.fillRect(x, y, w, h);
+          ctx.strokeStyle = highlightColor;
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 4]);
+          ctx.strokeRect(x, y, w, h);
+          ctx.setLineDash([]);
+        }
+      }
+    }
+  }, [isCanvasDrawing, activeTool, getCanvasPos, getDrawCtx, canvasDrawStart, highlightColor, redrawDrawingCanvas]);
+
+  const handleCanvasMouseUp = useCallback((e: React.MouseEvent) => {
+    if (!isCanvasDrawing) return;
+    setIsCanvasDrawing(false);
+    const pos = getCanvasPos(e);
+    if (activeTool === "brush" && currentBrushPoints.length > 1) {
+      const newAnn: Omit<Annotation, "id"> = {
+        type: "drawing", points: currentBrushPoints,
+        x: 0, y: 0, width: 0, height: 0,
+        page: currentPage, color: brushColor, strokeWidth: brushSize,
+      };
+      const id = Math.random().toString(36).slice(2);
+      setAnnotations(prev => { const next = [...prev, { ...newAnn, id }]; pushHistory(next); return next; });
+      setCurrentBrushPoints([]);
+    } else if (activeTool === "eraser" && dragPreview && dragPreview.w > 5 && dragPreview.h > 5) {
+      const newAnn: Omit<Annotation, "id"> = {
+        type: "eraser", x: dragPreview.x, y: dragPreview.y,
+        width: dragPreview.w, height: dragPreview.h, page: currentPage,
+      };
+      const id = Math.random().toString(36).slice(2);
+      setAnnotations(prev => { const next = [...prev, { ...newAnn, id }]; pushHistory(next); return next; });
+      setDragPreview(null);
+    } else if (activeTool === "highlight" && dragPreview && dragPreview.w > 5 && dragPreview.h > 5) {
+      const newAnn: Omit<Annotation, "id"> = {
+        type: "highlight", x: dragPreview.x, y: dragPreview.y,
+        width: dragPreview.w, height: dragPreview.h,
+        page: currentPage, color: highlightColor,
+      };
+      const id = Math.random().toString(36).slice(2);
+      setAnnotations(prev => { const next = [...prev, { ...newAnn, id }]; pushHistory(next); return next; });
+      setDragPreview(null);
+    }
+  }, [isCanvasDrawing, activeTool, getCanvasPos, currentBrushPoints, dragPreview, currentPage, brushColor, brushSize, highlightColor, pushHistory]);
 
   const undo = useCallback(() => {
     if (historyIndex <= 0) { setAnnotations([]); return; }
@@ -294,11 +459,17 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
       type: "text", text: textInput, x: 80, y: 80,
       width: Math.max(100, textInput.length * (textSize * 0.6)),
       height: textSize + 8, page: currentPage,
-      color: textColor, fontSize: textSize,
+      color: textColor, fontSize: textSize, fontFamily: textFont,
     });
     setTextInput("");
     toast.success("Texto añadido. Arrástralo a la posición deseada.");
     setActiveTool("pointer");
+  };
+
+  const activateTextPlace = () => {
+    if (!textInput.trim()) { toast.error("Escribe el texto primero"); return; }
+    setClickToPlaceText(true);
+    toast.info("Haz clic en el PDF donde quieres colocar el texto");
   };
 
   // ── Add note ──────────────────────────────────────────────────
@@ -364,6 +535,27 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
     if (isDragging) {
       pushHistory(annotations);
       setIsDragging(false);
+    }
+  };
+
+  // ── Click to place text on PDF ────────────────────────────────
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (activeTool === "pointer") { setSelectedId(null); return; }
+    if (activeTool === "text" && clickToPlaceText && textInput.trim()) {
+      const overlay = overlayRef.current!.getBoundingClientRect();
+      const x = e.clientX - overlay.left;
+      const y = e.clientY - overlay.top;
+      addAnnotation({
+        type: "text", text: textInput,
+        x, y,
+        width: Math.max(100, textInput.length * (textSize * 0.6)),
+        height: textSize + 8, page: currentPage,
+        color: textColor, fontSize: textSize, fontFamily: textFont,
+      });
+      setClickToPlaceText(false);
+      setTextInput("");
+      setActiveTool("pointer");
+      toast.success("Texto colocado");
     }
   };
 
@@ -632,6 +824,29 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
           } else {
             page.drawLine({ start: { x: ann.x, y: pdfY }, end: { x: ann.x + ann.width, y: pdfY + ann.height }, thickness: 2, color: rgb(r2, g2, b2) });
           }
+        } else if (ann.type === "eraser") {
+          // White rectangle to cover content
+          page.drawRectangle({
+            x: ann.x, y: pdfY, width: ann.width, height: ann.height,
+            color: rgb(1, 1, 1), opacity: 1,
+          });
+        } else if (ann.type === "drawing" && ann.points && ann.points.length > 1) {
+          // Freehand brush strokes — render as line segments
+          const c = ann.color ?? "#FF0000";
+          const r2 = parseInt(c.slice(1, 3), 16) / 255;
+          const g2 = parseInt(c.slice(3, 5), 16) / 255;
+          const b2 = parseInt(c.slice(5, 7), 16) / 255;
+          const { height: ph } = page.getSize();
+          for (let i = 1; i < ann.points.length; i++) {
+            const p1 = ann.points[i - 1];
+            const p2 = ann.points[i];
+            page.drawLine({
+              start: { x: p1.x, y: ph - p1.y },
+              end: { x: p2.x, y: ph - p2.y },
+              thickness: ann.strokeWidth ?? 3,
+              color: rgb(r2, g2, b2),
+            });
+          }
         }
       }
 
@@ -735,32 +950,61 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
               placeholder="Escribe el texto aquí..."
               rows={3}
               className="w-full rounded border p-2 text-sm resize-none"
-              style={{ borderColor: "oklch(0.80 0.05 260)", fontFamily: "'DM Sans', sans-serif" }}
+              style={{ borderColor: "oklch(0.80 0.05 260)", fontFamily: textFont }}
             />
+            {/* Font selector */}
+            <div>
+              <label className="text-xs block mb-1" style={{ color: "oklch(0.50 0.02 250)" }}>Fuente</label>
+              <select
+                value={textFont}
+                onChange={e => setTextFont(e.target.value)}
+                className="w-full border rounded px-2 py-1.5 text-xs"
+                style={{ borderColor: "oklch(0.80 0.05 260)", fontFamily: textFont }}
+              >
+                {FONT_OPTIONS.map(f => (
+                  <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</option>
+                ))}
+              </select>
+            </div>
             <div className="flex gap-2 items-center">
               <label className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Color</label>
               <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0" />
               <label className="text-xs ml-2" style={{ color: "oklch(0.50 0.02 250)" }}>Tamaño</label>
               <input type="number" value={textSize} onChange={e => setTextSize(Number(e.target.value))} min={8} max={72} className="w-14 border rounded px-1 py-0.5 text-xs" style={{ borderColor: "oklch(0.80 0.05 260)" }} />
             </div>
-            <button onClick={placeText} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>Insertar texto</button>
+            {/* Preview */}
+            {textInput && (
+              <div className="p-2 rounded border text-sm" style={{ borderColor: "oklch(0.88 0.02 250)", fontFamily: textFont, fontSize: Math.min(textSize, 16), color: textColor }}>
+                {textInput}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <button
+                onClick={activateTextPlace}
+                className="flex-1 py-2 rounded text-white text-xs font-semibold"
+                style={{ backgroundColor: clickToPlaceText ? "oklch(0.45 0.22 260)" : "oklch(0.55 0.22 260)" }}
+              >
+                {clickToPlaceText ? "✓ Haz clic en el PDF" : "Clic para colocar"}
+              </button>
+              <button onClick={placeText} className="flex-1 py-2 rounded text-xs border font-medium" style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.40 0.02 250)" }}>
+                Centro
+              </button>
+            </div>
           </div>
         );
       case "highlight":
         return (
           <div className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Resaltador</h3>
-            <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Selecciona un color y haz clic en el PDF para añadir un resaltado:</p>
+            <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Elige un color y arrastra sobre el PDF para resaltar texto:</p>
             <div className="flex gap-2 flex-wrap">
               {["#FFFF00", "#00FF00", "#FF69B4", "#87CEEB", "#FFA500"].map(c => (
                 <button key={c} onClick={() => setHighlightColor(c)} className="w-8 h-8 rounded-full border-2 transition-all" style={{ backgroundColor: c, borderColor: highlightColor === c ? "oklch(0.18 0.04 250)" : "transparent" }} />
               ))}
             </div>
-            <button onClick={() => {
-              addAnnotation({ type: "highlight", x: 80, y: 80, width: 200, height: 20, page: currentPage, color: highlightColor });
-              toast.success("Resaltado añadido. Arrástralo a la posición deseada.");
-              setActiveTool("pointer");
-            }} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>Añadir resaltado</button>
+            <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: highlightColor + "33", color: "oklch(0.30 0.02 250)" }}>
+              <strong>Cómo usar:</strong> Haz clic y arrastra sobre el PDF para crear un resaltado del tamaño que quieras.
+            </div>
           </div>
         );
       case "notes":
@@ -893,6 +1137,55 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
             />
             <button onClick={() => toast.info("Búsqueda en texto nativo del PDF disponible próximamente")} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>
               <Search className="w-4 h-4 inline mr-1" />Buscar
+            </button>
+          </div>
+        );
+      case "eraser":
+        return (
+          <div className="p-4 flex flex-col gap-3">
+            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Borrador</h3>
+            <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Arrastra sobre el PDF para crear un rectángulo blanco que cubra el contenido:</p>
+            <div>
+              <label className="text-xs block mb-1" style={{ color: "oklch(0.50 0.02 250)" }}>Tamaño del borrador</label>
+              <input type="range" min={10} max={100} value={eraserSize} onChange={e => setEraserSize(Number(e.target.value))} className="w-full" />
+              <span className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>{eraserSize}px</span>
+            </div>
+            <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.95 0.01 250)", color: "oklch(0.30 0.02 250)" }}>
+              <strong>Cómo usar:</strong> Haz clic y arrastra sobre el área que quieres borrar. Se creará un rectángulo blanco sobre ese contenido.
+            </div>
+          </div>
+        );
+      case "brush":
+        return (
+          <div className="p-4 flex flex-col gap-3">
+            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Pincel</h3>
+            <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Dibuja libremente sobre el PDF:</p>
+            <div className="flex gap-2 items-center">
+              <label className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Color</label>
+              <input type="color" value={brushColor} onChange={e => setBrushColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0" />
+            </div>
+            <div>
+              <label className="text-xs block mb-1" style={{ color: "oklch(0.50 0.02 250)" }}>Grosor: {brushSize}px</label>
+              <input type="range" min={1} max={20} value={brushSize} onChange={e => setBrushSize(Number(e.target.value))} className="w-full" />
+            </div>
+            <div className="p-2 rounded border" style={{ borderColor: "oklch(0.88 0.02 250)", backgroundColor: "#fff" }}>
+              <div style={{ width: 40, height: brushSize, backgroundColor: brushColor, borderRadius: brushSize / 2 }} />
+            </div>
+            <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.95 0.01 250)", color: "oklch(0.30 0.02 250)" }}>
+              <strong>Cómo usar:</strong> Haz clic y arrastra sobre el PDF para dibujar a mano alzada.
+            </div>
+          </div>
+        );
+      case "edit-text":
+        return (
+          <div className="p-4 flex flex-col gap-3">
+            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Editar texto</h3>
+            <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Haz clic en cualquier anotación de texto del PDF para editarla:</p>
+            <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.95 0.01 250)", color: "oklch(0.30 0.02 250)" }}>
+              <strong>Cómo usar:</strong> Selecciona la herramienta Puntero (→) y haz doble clic en un texto para editarlo.
+            </div>
+            <button onClick={() => setActiveTool("pointer")} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>
+              Ir al puntero
             </button>
           </div>
         );
@@ -1050,18 +1343,40 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
               style={{ display: "inline-block" }}
             >
               <canvas ref={mainCanvasRef} className="block" />
+              {/* Drawing canvas for brush/eraser/highlight */}
+              <canvas
+                ref={drawingCanvasRef}
+                className="absolute inset-0 block"
+                style={{
+                  cursor: activeTool === "brush" ? "crosshair"
+                    : activeTool === "eraser" ? "cell"
+                    : activeTool === "highlight" ? "text"
+                    : "default",
+                  pointerEvents: (activeTool === "brush" || activeTool === "eraser" || activeTool === "highlight") ? "auto" : "none",
+                  zIndex: 10,
+                }}
+                onMouseDown={handleCanvasMouseDown}
+                onMouseMove={handleCanvasMouseMove}
+                onMouseUp={handleCanvasMouseUp}
+                onMouseLeave={handleCanvasMouseUp}
+              />
               {/* Annotation overlay */}
               <div
                 ref={overlayRef}
                 className="absolute inset-0"
-                style={{ cursor: activeTool === "pointer" ? "default" : "crosshair" }}
+                style={{
+                  cursor: activeTool === "pointer" ? "default"
+                    : (activeTool === "text" && clickToPlaceText) ? "crosshair"
+                    : activeTool === "text" ? "default"
+                    : "default",
+                  zIndex: 20,
+                  pointerEvents: (activeTool === "brush" || activeTool === "eraser" || activeTool === "highlight") ? "none" : "auto",
+                }}
                 onMouseMove={onMouseMove}
                 onMouseUp={onMouseUp}
-                onClick={(e) => {
-                  if (activeTool === "pointer") setSelectedId(null);
-                }}
+                onClick={handleOverlayClick}
               >
-                {pageAnnotations.map(ann => (
+                {pageAnnotations.filter(ann => ann.type !== "drawing" && ann.type !== "eraser").map(ann => (
                   <div
                     key={ann.id}
                     style={{
@@ -1082,7 +1397,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
                       <img src={ann.dataUrl} alt="img" style={{ width: "100%", height: "100%", objectFit: "contain" }} draggable={false} />
                     )}
                     {ann.type === "text" && (
-                      <span style={{ fontSize: ann.fontSize ?? 14, color: ann.color ?? "#000", fontFamily: "sans-serif", whiteSpace: "pre-wrap", display: "block", lineHeight: 1.2 }}>
+                      <span style={{ fontSize: ann.fontSize ?? 14, color: ann.color ?? "#000", fontFamily: ann.fontFamily ?? "Arial, sans-serif", whiteSpace: "pre-wrap", display: "block", lineHeight: 1.2 }}>
                         {ann.text}
                       </span>
                     )}

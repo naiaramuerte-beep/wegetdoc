@@ -105,3 +105,11 @@
 - [x] Navbar responsive con menú hamburguesa en móvil/tablet
 - [x] Centrar toolbar del editor PDF
 - [x] Traducir etiquetas de herramientas del editor al idioma activo
+
+## Herramientas Editor PDF (correcciones)
+- [x] Borrador: rectángulo blanco arrastrable para borrar zonas del PDF
+- [x] Añadir texto: selector de fuentes (Arial, Times, Helvetica, etc.) y tamaño
+- [x] Editar texto: panel con instrucciones y acceso al puntero
+- [x] Resaltado: arrastrar para crear rectángulo de resaltado sobre el PDF
+- [x] Pincel: dibujo libre a mano alzada con color y grosor
+- [x] Verificar resto de herramientas (formas, notas, puntero, mover)
