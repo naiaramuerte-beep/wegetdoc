@@ -578,13 +578,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     });
     toast.success("Forma añadida. Arrástrala a la posición deseada.");
     // Keep shapes tool active so user can add multiple shapes
-  };
-
-  // ── Dragging annotations ──────────────────────────────────────
+  }  // ── Dragging annotations ──────────────────────────────────────────────
   const startDrag = (e: React.MouseEvent, id: string) => {
-    if (activeTool !== "pointer" && activeTool !== "move") return;
-    e.stopPropagation();
-    const ann = annotations.find(a => a.id === id);
+    // Allow dragging with any tool except canvas-drawing tools
+    const nodrag = ["brush", "eraser", "highlight", "sign", "shapes", "edit-text"];
+    if (nodrag.includes(activeTool)) return;
+    e.stopPropagation();const ann = annotations.find(a => a.id === id);
     if (!ann) return;
     setSelectedId(id);
     setIsDragging(true);
@@ -1723,7 +1722,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           </div>
 
           {/* PDF canvas + annotation overlay */}
-          <div className="flex-1 overflow-auto flex items-start justify-center p-6">
+          <div className="flex-1 overflow-auto flex items-start justify-center p-6 pb-[140px] md:pb-6">
             <div
               className="relative shadow-xl"
               ref={viewerRef}
@@ -1770,7 +1769,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       position: "absolute",
                       left: ann.x, top: ann.y,
                       width: ann.width, height: ann.height,
-                      cursor: (activeTool === "pointer" || activeTool === "move") ? "move" : "default",
+                      cursor: "move",
                       outline: selectedId === ann.id ? "2px solid oklch(0.55 0.22 260)" : "none",
                       outlineOffset: 2,
                       userSelect: "none",
@@ -1778,6 +1777,31 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     onMouseDown={(e) => startDrag(e, ann.id)}
                     onClick={(e) => { e.stopPropagation(); setSelectedId(ann.id); }}
                   >
+                    {/* Delete button — top-right corner when selected */}
+                    {selectedId === ann.id && (
+                      <button
+                        title="Eliminar"
+                        onClick={(e) => { e.stopPropagation(); setAnnotations(prev => prev.filter(a => a.id !== ann.id)); setSelectedId(null); pushHistory(annotationsRef.current.filter(a => a.id !== ann.id)); }}
+                        style={{
+                          position: "absolute", top: -10, right: -10,
+                          width: 20, height: 20,
+                          backgroundColor: "#ef4444",
+                          border: "2px solid white",
+                          borderRadius: "50%",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          cursor: "pointer",
+                          zIndex: 40,
+                          padding: 0,
+                          lineHeight: 1,
+                          fontSize: 12,
+                          color: "white",
+                          fontWeight: "bold",
+                        }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                      >
+                        ×
+                      </button>
+                    )}
                     {ann.type === "signature" && ann.dataUrl && (
                       <img src={ann.dataUrl} alt="firma" style={{ width: "100%", height: "100%", objectFit: "contain" }} draggable={false} />
                     )}
@@ -1860,7 +1884,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         {/* Mobile bottom sheet */}
         <div
           className={[
-            "fixed left-0 right-0 bottom-[112px] z-40 md:hidden transition-transform duration-300 rounded-t-2xl overflow-hidden",
+            "fixed left-0 right-0 bottom-[130px] z-40 md:hidden transition-transform duration-300 rounded-t-2xl overflow-hidden",
             showMobilePanel ? "translate-y-0" : "translate-y-full",
           ].join(" ")}
           style={{ backgroundColor: "oklch(1 0 0)", boxShadow: "0 -4px 24px oklch(0.18 0.04 250 / 0.18)", maxHeight: "60vh", overflowY: "auto" }}
@@ -1879,8 +1903,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         </div>
       </div>
 
-      {/* ── MOBILE BOTTOM BAR ── */}
-      <div className="md:hidden flex flex-col border-t" style={{ backgroundColor: "oklch(1 0 0)", borderColor: "oklch(0.90 0.01 250)" }}>
+      {/* ── MOBILE BOTTOM BAR ── fixed at bottom, always visible */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex flex-col border-t" style={{ backgroundColor: "oklch(1 0 0)", borderColor: "oklch(0.90 0.01 250)", boxShadow: "0 -2px 12px oklch(0.18 0.04 250 / 0.12)" }}>
         {/* Tools row — horizontal scroll */}
         <div className="flex items-center overflow-x-auto gap-0 px-1 py-1" style={{ scrollbarWidth: "none" }}>
           {[

@@ -206,3 +206,10 @@
 - [x] Botón compartir a la izquierda del Download en móvil
 - [x] PDF ocupa toda la pantalla en móvil (sin panel lateral)
 - [x] Panel de opciones de herramienta como bottom sheet desde abajo en móvil
+
+## Editor UX - Interacción con anotaciones
+- [x] Mover cualquier anotación directamente arrastrando (sin cambiar a herramienta "mover")
+- [x] Botón X rojo en esquina superior derecha del cuadro azul de selección para eliminar
+- [ ] Herramienta "Editar texto": capa de corrección blanca sobre texto original + reemplazo
+- [ ] Bug: título pestaña sigue mostrando "PDFPro" en lugar de "editPDF"
+- [x] Bug móvil: barra herramientas y botón descargar ahora fixed en bottom — siempre visible
