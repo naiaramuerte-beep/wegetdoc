@@ -140,3 +140,12 @@
 - [x] Thumbnails ocultos en móvil (hidden md:flex) para más espacio al canvas
 - [x] Herramienta "Buscar texto" implementada con pdf.js getTextContent(), resultados con página y snippet
 - [x] Al seleccionar herramienta en móvil, el panel se abre automáticamente
+
+## Bugs Editor (v3)
+- [ ] Herramienta Mover no funciona (no permite arrastrar anotaciones)
+
+## Nuevas tareas (v4)
+- [ ] Herramienta Mover: añadir panel con instrucciones y corregir drag
+- [ ] Página /cancelar-suscripcion con formulario de motivo de baja y confirmación
+- [ ] Resize de anotaciones: handle de esquina arrastrable para notas, imágenes y formas
+- [ ] Conectar tarjetas de conversión de la Home al editor con herramienta activa

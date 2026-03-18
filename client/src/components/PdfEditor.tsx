@@ -538,7 +538,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
 
   // ── Dragging annotations ──────────────────────────────────────
   const startDrag = (e: React.MouseEvent, id: string) => {
-    if (activeTool !== "pointer") return;
+    if (activeTool !== "pointer" && activeTool !== "move") return;
     e.stopPropagation();
     const ann = annotations.find(a => a.id === id);
     if (!ann) return;
@@ -1341,6 +1341,22 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
             </div>
           </div>
         );
+      case "move":
+        return (
+          <div className="flex flex-col gap-0">
+            {ActionBar}
+            <div className="p-4 flex flex-col gap-3">
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "oklch(0.45 0.02 250)" }}>Mover elementos</p>
+              <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.06)", color: "oklch(0.35 0.02 250)" }}>
+                <p className="font-medium mb-1" style={{ color: "oklch(0.25 0.03 250)" }}>Cómo usar:</p>
+                <p>Haz clic sobre cualquier anotación (texto, firma, imagen, nota) y arrástrala a la posición deseada.</p>
+              </div>
+              <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "oklch(0.96 0.005 250)", color: "oklch(0.45 0.02 250)" }}>
+                <p>💡 También puedes mover elementos con la herramienta <strong>Puntero</strong> sin cambiar de herramienta.</p>
+              </div>
+            </div>
+          </div>
+        );
       default:
         return (
           <div className="flex flex-col items-center justify-center h-full gap-3 p-6 text-center">
@@ -1535,7 +1551,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen }: { in
                       position: "absolute",
                       left: ann.x, top: ann.y,
                       width: ann.width, height: ann.height,
-                      cursor: activeTool === "pointer" ? "move" : "default",
+                      cursor: (activeTool === "pointer" || activeTool === "move") ? "move" : "default",
                       outline: selectedId === ann.id ? "2px solid oklch(0.55 0.22 260)" : "none",
                       outlineOffset: 2,
                       userSelect: "none",
