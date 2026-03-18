@@ -1862,6 +1862,21 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 onMouseMove={onMouseMove}
                 onMouseUp={onMouseUp}
                 onClick={handleOverlayClick}
+                onTouchMove={(e) => {
+                  if (!isDragging || !selectedId) return;
+                  e.preventDefault();
+                  const touch = e.touches[0];
+                  const overlay = overlayRef.current!.getBoundingClientRect();
+                  const x = touch.clientX - overlay.left - dragOffset.x;
+                  const y = touch.clientY - overlay.top - dragOffset.y;
+                  setAnnotations(prev => prev.map(a => a.id === selectedId ? { ...a, x, y } : a));
+                }}
+                onTouchEnd={() => {
+                  if (isDragging) {
+                    pushHistory(annotationsRef.current);
+                    setIsDragging(false);
+                  }
+                }}
               >
                 {pageAnnotations.filter(ann => ann.type !== "drawing" && ann.type !== "eraser").map(ann => (
                   <div
@@ -1874,8 +1889,21 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       outline: selectedId === ann.id ? "2px solid oklch(0.55 0.22 260)" : "none",
                       outlineOffset: 2,
                       userSelect: "none",
+                      touchAction: "none",
                     }}
                     onMouseDown={(e) => startDrag(e, ann.id)}
+                    onTouchStart={(e) => {
+                      // Select annotation on touch
+                      e.stopPropagation();
+                      setSelectedId(ann.id);
+                      // Start drag
+                      const nodrag = ["brush", "eraser", "highlight", "sign", "shapes", "edit-text"];
+                      if (nodrag.includes(activeTool)) return;
+                      const touch = e.touches[0];
+                      const overlay = overlayRef.current!.getBoundingClientRect();
+                      setIsDragging(true);
+                      setDragOffset({ x: touch.clientX - overlay.left - ann.x, y: touch.clientY - overlay.top - ann.y });
+                    }}
                     onClick={(e) => { e.stopPropagation(); setSelectedId(ann.id); }}
                   >
                     {/* Delete button — top-right corner when selected */}
@@ -1899,6 +1927,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                           fontWeight: "bold",
                         }}
                         onMouseDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
                       >
                         ×
                       </button>
@@ -1938,7 +1967,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     {selectedId === ann.id && (
                       <div
                         title="Arrastrar para redimensionar"
-                        style={{ position: "absolute", right: -5, bottom: -5, width: 12, height: 12, backgroundColor: "oklch(0.55 0.22 260)", borderRadius: 2, cursor: "se-resize", zIndex: 30, border: "2px solid white" }}
+                        style={{ position: "absolute", right: -8, bottom: -8, width: 20, height: 20, backgroundColor: "oklch(0.55 0.22 260)", borderRadius: 4, cursor: "se-resize", zIndex: 30, border: "2.5px solid white", touchAction: "none" }}
                         onMouseDown={(e) => {
                           e.stopPropagation();
                           e.preventDefault();
@@ -1957,6 +1986,28 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                           };
                           window.addEventListener("mousemove", onMove);
                           window.addEventListener("mouseup", onUp);
+                        }}
+                        onTouchStart={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          setIsResizing(true);
+                          const startTouch = e.touches[0];
+                          const startX = startTouch.clientX, startY = startTouch.clientY;
+                          const startW = ann.width, startH = ann.height;
+                          const onMove = (ev: TouchEvent) => {
+                            ev.preventDefault();
+                            const t = ev.touches[0];
+                            const dw = t.clientX - startX, dh = t.clientY - startY;
+                            setAnnotations(prev => prev.map(a => a.id === ann.id ? { ...a, width: Math.max(30, startW + dw), height: Math.max(20, startH + dh) } : a));
+                          };
+                          const onUp = () => {
+                            setIsResizing(false);
+                            pushHistory(annotationsRef.current);
+                            window.removeEventListener("touchmove", onMove);
+                            window.removeEventListener("touchend", onUp);
+                          };
+                          window.addEventListener("touchmove", onMove, { passive: false });
+                          window.addEventListener("touchend", onUp);
                         }}
                       />
                     )}

@@ -225,3 +225,9 @@
 - [x] Frontend: reemplazar redirect a Stripe Checkout por formulario CardElement embebido en PaywallModal
 - [x] Frontend: flujo completo: SetupIntent → confirmCardSetup → confirmSubscription → descarga automática
 - [x] onPaymentSuccess callback en PdfEditor para descargar PDF tras pago exitoso
+
+## Móvil - Touch para mover y redimensionar anotaciones
+- [x] Touch drag: arrastrar anotación con el dedo (touchstart/touchmove/touchend en la anotación)
+- [x] Touch resize: handle de esquina azul responde a touch para redimensionar (handle ampliado a 20x20px)
+- [x] Sin necesidad de cambiar de herramienta: funciona siempre al tocar la anotación
+- [x] touchAction: none en anotaciones para evitar conflicto con scroll del navegador
