@@ -51,17 +51,20 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
         <div className="container flex items-center justify-between h-14 md:h-16">
           {/* Logo */}
           <Link href={`/${lang}`} className="flex items-center gap-2 group shrink-0">
-            <div
-              className="w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
-            >
-              <FileText className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
-            </div>
+            {/* Document + pencil icon */}
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+              {/* Document outline */}
+              <rect x="3" y="2" width="16" height="20" rx="2.5" stroke="white" strokeWidth="1.8" fill="none"/>
+              <path d="M15 2v5h4" stroke="white" strokeWidth="1.8" strokeLinejoin="round" fill="none"/>
+              {/* Pencil */}
+              <path d="M13 18.5l8-8 2.5 2.5-8 8L13 21z" fill="oklch(0.55 0.22 260)" stroke="oklch(0.55 0.22 260)" strokeWidth="0.5"/>
+              <path d="M21 10.5l2.5 2.5" stroke="oklch(0.55 0.22 260)" strokeWidth="1.5"/>
+            </svg>
             <span
-              className="text-white font-bold text-lg md:text-xl tracking-tight"
+              className="tracking-tight leading-none"
               style={{ fontFamily: "'Sora', sans-serif" }}
             >
-              PDF<span style={{ color: "oklch(0.55 0.22 260)" }}>Pro</span>
+              <span className="font-light text-xs md:text-sm" style={{ color: "rgba(255,255,255,0.75)" }}>edit</span><span className="font-extrabold text-xl md:text-2xl" style={{ color: "oklch(0.55 0.22 260)" }}>PDF</span>
             </span>
           </Link>
 

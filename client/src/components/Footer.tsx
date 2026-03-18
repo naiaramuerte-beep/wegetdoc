@@ -88,7 +88,7 @@ export default function Footer() {
               className="text-sm font-semibold text-white mb-4"
               style={{ fontFamily: "'Sora', sans-serif" }}
             >
-              PDFPro
+              editPDF
             </h4>
             <ul className="space-y-2">
               {[
@@ -194,7 +194,7 @@ export default function Footer() {
             className="text-xs"
             style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
           >
-            © 2026 PDFPro. Todos los derechos reservados.
+            © 2026 editPDF. Todos los derechos reservados.
           </p>
           <div className="flex items-center gap-4">
             <select

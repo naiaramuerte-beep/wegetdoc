@@ -149,3 +149,11 @@
 - [x] Página /cancelar-suscripcion con formulario de motivo de baja y confirmación
 - [x] Resize de anotaciones: handle de esquina arrastrable para notas, imágenes y formas
 - [x] Conectar tarjetas de conversión de la Home al editor con herramienta activa
+
+## Rebranding editPDF.online
+- [x] Nuevo logo editPDF (edit pequeño + PDF bold azul) en Navbar
+- [x] Actualizar título de página a editPDF - Free Online PDF Editor
+- [x] Actualizar meta description en inglés
+- [x] Actualizar Footer: nombre editPDF y copyright
+- [x] Actualizar i18n: footer_col_pdfpro y copyright en todos los idiomas
+- [x] Actualizar textos visibles PDFPro → editPDF en Home, Login, Signup, Admin

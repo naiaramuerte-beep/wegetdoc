@@ -121,7 +121,7 @@ export default function Admin() {
           </button>
           <div>
             <h1 className="text-xl font-bold text-white">Panel de Administración</h1>
-            <p className="text-xs text-gray-400">PDFPro — {user.email}</p>
+            <p className="text-xs text-gray-400">editPDF — {user.email}</p>
           </div>
         </div>
         <button
@@ -763,7 +763,7 @@ export default function Admin() {
                 ) : (
                   <div className="space-y-3">
                     {[
-                      { key: "site_name", label: "Nombre del sitio", placeholder: "PDFPro" },
+                      { key: "site_name", label: "Nombre del sitio", placeholder: "editPDF" },
                       { key: "support_email", label: "Email de soporte", placeholder: "soporte@pdfpro.com" },
                       { key: "trial_price_eur", label: "Precio prueba 7 días (€)", placeholder: "0.99" },
                       { key: "monthly_price_eur", label: "Precio mensual (€)", placeholder: "9.99" },

@@ -55,7 +55,7 @@ export default function Login() {
           className="text-sm mb-6"
           style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
         >
-          Accede a tu cuenta de PDFPro
+          Accede a tu cuenta de editPDF
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">

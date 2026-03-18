@@ -68,7 +68,7 @@ const faqs = [
   {
     question: "¿Qué herramientas puedo usar para editar un PDF online gratis?",
     answer:
-      "Con PDFPro puedes editar texto, añadir imágenes, insertar firmas digitales, anotar documentos, reorganizar páginas, proteger con contraseña y mucho más. Todo desde tu navegador, sin instalar ningún software.",
+      "Con editPDF puedes editar texto, añadir imágenes, insertar firmas digitales, anotar documentos, reorganizar páginas, proteger con contraseña y mucho más. Todo desde tu navegador, sin instalar ningún software.",
   },
   {
     question: "¿Cómo puedo compartir un PDF una vez editado?",
@@ -78,22 +78,22 @@ const faqs = [
   {
     question: "¿Cómo editar un PDF online sin instalar ningún software?",
     answer:
-      "Simplemente sube tu archivo PDF a PDFPro desde tu navegador. No necesitas instalar ninguna aplicación. Nuestro editor funciona directamente en Chrome, Firefox, Safari y Edge.",
+      "Simplemente sube tu archivo PDF a editPDF desde tu navegador. No necesitas instalar ninguna aplicación. Nuestro editor funciona directamente en Chrome, Firefox, Safari y Edge.",
   },
   {
     question: "¿Puedo editar un PDF usando Google Chrome?",
     answer:
-      "Sí, PDFPro funciona perfectamente en Google Chrome y en cualquier navegador moderno. Solo tienes que acceder a nuestra web, subir tu PDF y empezar a editarlo.",
+      "Sí, editPDF funciona perfectamente en Google Chrome y en cualquier navegador moderno. Solo tienes que acceder a nuestra web, subir tu PDF y empezar a editarlo.",
   },
   {
     question: "¿Cómo hacer que un archivo PDF sea editable?",
     answer:
-      "Sube tu PDF a PDFPro y utiliza nuestras herramientas de edición de texto para modificar el contenido directamente. Puedes reemplazar, añadir o eliminar texto con total libertad.",
+      "Sube tu PDF a editPDF y utiliza nuestras herramientas de edición de texto para modificar el contenido directamente. Puedes reemplazar, añadir o eliminar texto con total libertad.",
   },
   {
     question: "¿Cómo editar un PDF gratis online?",
     answer:
-      "Accede a PDFPro, arrastra tu archivo PDF al área de carga o haz clic en 'Subir PDF'. Luego usa las herramientas disponibles para editar tu documento y descárgalo cuando termines.",
+      "Accede a editPDF, arrastra tu archivo PDF al área de carga o haz clic en 'Subir PDF'. Luego usa las herramientas disponibles para editar tu documento y descárgalo cuando termines.",
   },
 ];
 
@@ -678,7 +678,7 @@ export default function Home() {
             className="text-base mb-8 max-w-xl mx-auto"
             style={{ color: "oklch(0.70 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
           >
-            Únete a millones de usuarios que confían en PDFPro para gestionar sus documentos.
+            Únete a millones de usuarios que confían en editPDF para gestionar sus documentos.
           </p>
           <button
             className="inline-flex items-center gap-2 px-8 py-3 rounded-lg font-semibold text-sm transition-all duration-200"

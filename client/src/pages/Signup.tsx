@@ -64,7 +64,7 @@ export default function Signup() {
               className="text-sm mb-8"
               style={{ color: "oklch(0.65 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
             >
-              Únete a millones de usuarios que confían en PDFPro para gestionar sus documentos.
+              Únete a millones de usuarios que confían en editPDF para gestionar sus documentos.
             </p>
 
             <ul className="space-y-3">
@@ -115,7 +115,7 @@ export default function Signup() {
             className="text-sm mb-6"
             style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
           >
-            Crea tu cuenta gratuita de PDFPro
+            Crea tu cuenta gratuita de editPDF
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
