@@ -69,3 +69,8 @@
 - [x] AuthModal: Sign Up + Login como modal estilo pdfe.com
 - [x] Integrar AuthModal en Navbar y PaywallModal
 - [x] Reemplazar getLoginUrl() por apertura del AuthModal
+
+## Bugs Auth
+
+- [x] Modal login muestra signup por defecto (defaultMode no se aplica correctamente)
+- [x] Botón "Login con Google" falla con error "code and state are required"

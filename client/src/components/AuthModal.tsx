@@ -1,10 +1,11 @@
 /* =============================================================
    PDFPro AuthModal — Sign Up + Login estilo pdfe.com
    ============================================================= */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Eye, EyeOff, Mail, Lock, User as UserIcon, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { getLoginUrl } from "@/const";
 
 interface AuthModalProps {
   open: boolean;
@@ -25,6 +26,12 @@ const GoogleIcon = () => (
 
 export default function AuthModal({ open, onClose, defaultMode = "signup", onSuccess }: AuthModalProps) {
   const [mode, setMode] = useState<"login" | "signup" | "forgot">(defaultMode);
+
+  // Sync mode when defaultMode changes or modal opens
+  useEffect(() => {
+    if (open) setMode(defaultMode);
+  }, [open, defaultMode]);
+
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -245,7 +252,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
 
             {/* Google button */}
             <a
-              href={`/api/oauth/callback?provider=google&returnTo=${encodeURIComponent(window.location.pathname)}`}
+              href={getLoginUrl()}
               className="w-full py-2.5 rounded-lg border border-gray-200 text-sm font-semibold text-gray-700 flex items-center justify-center gap-2.5 hover:bg-gray-50 transition-colors"
             >
               <GoogleIcon />
