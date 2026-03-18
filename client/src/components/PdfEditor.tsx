@@ -172,6 +172,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const [noteText, setNoteText] = useState("");
 
   const viewerRef = useRef<HTMLDivElement>(null);
+  const viewerContainerRef = useRef<HTMLDivElement>(null);
   const mainCanvasRef = useRef<HTMLCanvasElement>(null);
   const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -211,6 +212,18 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       thumbs.push(c.toDataURL());
     }
     setThumbnails(thumbs);
+    // Auto-fit scale on mobile: fit PDF width to viewer container
+    const firstPage = await doc.getPage(1);
+    const naturalVp = firstPage.getViewport({ scale: 1 });
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) {
+      // Available width = screen width minus 2*12px padding
+      const availableWidth = window.innerWidth - 24;
+      const fitScale = availableWidth / naturalVp.width;
+      setScale(Math.min(fitScale, 1.5)); // cap at 1.5 to avoid oversized on tablets
+    } else {
+      setScale(1.2);
+    }
   }, []);
 
   // ── Render page ───────────────────────────────────────────────
@@ -1722,7 +1735,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           </div>
 
           {/* PDF canvas + annotation overlay */}
-          <div className="flex-1 overflow-auto flex items-start justify-center p-6 pb-[140px] md:pb-6">
+          <div className="flex-1 overflow-auto flex items-start justify-center p-3 md:p-6 pb-[140px] md:pb-6">
             <div
               className="relative shadow-xl"
               ref={viewerRef}
@@ -1905,8 +1918,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
       {/* ── MOBILE BOTTOM BAR ── fixed at bottom, always visible */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex flex-col border-t" style={{ backgroundColor: "oklch(1 0 0)", borderColor: "oklch(0.90 0.01 250)", boxShadow: "0 -2px 12px oklch(0.18 0.04 250 / 0.12)" }}>
-        {/* Tools row — horizontal scroll */}
-        <div className="flex items-center overflow-x-auto gap-0 px-1 py-1" style={{ scrollbarWidth: "none" }}>
+        {/* Tools row — horizontal scroll with fade indicator */}
+        <div className="relative">
+        <div className="flex items-center overflow-x-auto gap-0 px-1 py-1" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
           {[
             { id: "notes" as ToolName, icon: StickyNote, label: t.editor_notes },
             { id: "move" as ToolName, icon: Move, label: t.editor_move },
@@ -1936,6 +1950,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               <span style={{ fontSize: 10, whiteSpace: "nowrap" }}>{label}</span>
             </button>
           ))}
+        </div>
+        {/* Fade gradient on right to indicate more tools */}
+        <div className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none" style={{ background: "linear-gradient(to right, transparent, white)" }} />
         </div>
         {/* Download row */}
         <div className="flex items-center gap-2 px-3 pb-3 pt-1">

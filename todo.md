@@ -213,3 +213,5 @@
 - [ ] Herramienta "Editar texto": capa de corrección blanca sobre texto original + reemplazo
 - [ ] Bug: título pestaña sigue mostrando "PDFPro" en lugar de "editPDF"
 - [x] Bug móvil: barra herramientas y botón descargar ahora fixed en bottom — siempre visible
+- [x] Móvil: PDF encuadrado con márgenes grises, escala automática al ancho de pantalla
+- [x] Móvil: indicador visual de scroll horizontal en barra de herramientas (gradiente fade derecho)
