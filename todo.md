@@ -157,3 +157,25 @@
 - [x] Actualizar Footer: nombre editPDF y copyright
 - [x] Actualizar i18n: footer_col_pdfpro y copyright en todos los idiomas
 - [x] Actualizar textos visibles PDFPro → editPDF en Home, Login, Signup, Admin
+
+## Blog SEO/GEO
+- [x] Corregir spacing entre icono y texto del logo en Navbar
+- [x] Schema DB: tabla blog_posts (slug, title, excerpt, content, metaTitle, metaDescription, publishedAt, readTime, category)
+- [x] tRPC: procedimientos getBlogPosts, getBlogPost(slug)
+- [x] Página /blog con listado de artículos (cards con imagen, título, excerpt, fecha)
+- [x] Página /blog/:slug con artículo completo + meta tags SEO dinámicos
+- [x] Enlace Blog en Navbar y Footer
+- [x] 3 artículos SEO/GEO optimizados sobre keywords PDF de alto volumen
+- [x] Seed de artículos en DB
+
+## Blog Admin + Público
+- [x] tRPC: getBlogPosts, getBlogPost(slug), createBlogPost, updateBlogPost, deleteBlogPost (admin)
+- [x] Panel Admin: sección Blog con lista de entradas, crear/editar/eliminar
+- [x] Editor rich text con TipTap (negrita, cursiva, listas, imágenes, HTML, headings)
+- [x] Campos SEO: metaTitle, metaDescription, tags, categoría, tiempo de lectura
+- [x] Publicar/despublicar entradas desde el panel
+- [x] Página pública /blog con listado de artículos (cards)
+- [x] Página pública /blog/:slug con artículo completo + JSON-LD + meta tags dinámicos
+- [x] Enlace Blog en Navbar y Footer
+- [x] sitemap.xml dinámico con todas las entradas del blog
+- [x] 3 artículos de ejemplo pre-cargados en la DB

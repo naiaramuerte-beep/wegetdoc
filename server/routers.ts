@@ -47,6 +47,12 @@ import {
   getAllSubscribedUsers,
   getBillingStats,
   getCanceledSubscriptions,
+  getBlogPosts,
+  getBlogPost,
+  getBlogPostById,
+  createBlogPost,
+  updateBlogPost,
+  deleteBlogPost,
 } from "./db";
 import { storagePut } from "./storage";
 
@@ -566,7 +572,7 @@ export const appRouter = router({
       return getCanceledSubscriptions();
     }),
 
-    promoteUser: adminProcedure
+     promoteUser: adminProcedure
       .input(z.object({ userId: z.number(), role: z.enum(["user", "admin"]) }))
       .mutation(async ({ input }) => {
         const db = await import("./db").then(m => m.getDb());
@@ -576,7 +582,81 @@ export const appRouter = router({
         await db.update(users).set({ role: input.role }).where(eq(users.id, input.userId));
         return { success: true };
       }),
+    // ─── Blog Admin ───────────────────────────────────────────
+    blogPosts: adminProcedure.query(async () => {
+      return getBlogPosts(false); // all posts including drafts
+    }),
+    createBlogPost: adminProcedure
+      .input(z.object({
+        slug: z.string().min(1),
+        title: z.string().min(1),
+        excerpt: z.string().min(1),
+        content: z.string().min(1),
+        metaTitle: z.string().optional(),
+        metaDescription: z.string().optional(),
+        category: z.string().default("guides"),
+        tags: z.string().optional(),
+        readTime: z.number().default(5),
+        published: z.boolean().default(false),
+      }))
+      .mutation(async ({ input }) => {
+        return createBlogPost(input);
+      }),
+    updateBlogPost: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        slug: z.string().optional(),
+        title: z.string().optional(),
+        excerpt: z.string().optional(),
+        content: z.string().optional(),
+        metaTitle: z.string().optional(),
+        metaDescription: z.string().optional(),
+        category: z.string().optional(),
+        tags: z.string().optional(),
+        readTime: z.number().optional(),
+        published: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        return updateBlogPost(id, data);
+      }),
+    deleteBlogPost: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await deleteBlogPost(input.id);
+        return { success: true };
+      }),
+    getBlogPost: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return getBlogPostById(input.id);
+      }),
+    uploadBlogImage: adminProcedure
+      .input(z.object({ base64: z.string(), filename: z.string() }))
+      .mutation(async ({ input }) => {
+        const matches = input.base64.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
+        if (!matches) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid base64" });
+        const contentType = matches[1];
+        const buffer = Buffer.from(matches[2], "base64");
+        const ext = input.filename.split(".").pop() ?? "jpg";
+        const key = `blog-images/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { url } = await storagePut(key, buffer, contentType);
+        return { url };
+      }),
+  }),
+
+  // ─── Public Blog ───────────────────────────────────────────
+  blog: router({
+    list: publicProcedure.query(async () => {
+      return getBlogPosts(true);
+    }),
+    post: publicProcedure
+      .input(z.object({ slug: z.string() }))
+      .query(async ({ input }) => {
+        const post = await getBlogPost(input.slug);
+        if (!post || !post.published) throw new TRPCError({ code: "NOT_FOUND" });
+        return post;
+      }),
   }),
 });
-
 export type AppRouter = typeof appRouter;

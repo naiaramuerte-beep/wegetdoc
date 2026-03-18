@@ -14,10 +14,11 @@ import {
   Users, DollarSign, TrendingUp, TrendingDown, MessageSquare, FileText,
   Search, Trash2, ShieldCheck, ShieldOff, Mail, ChevronDown, ChevronUp,
   CreditCard, Settings, BookOpen, BarChart2, UserX, RefreshCw, Eye, EyeOff,
-  ArrowLeft, Crown,
+  ArrowLeft, Crown, Rss,
 } from "lucide-react";
+import BlogAdmin from "./BlogAdmin";
 
-type AdminTab = "overview" | "billing" | "users" | "canceled" | "messages" | "legal" | "settings";
+type AdminTab = "overview" | "billing" | "users" | "canceled" | "messages" | "legal" | "settings" | "blog";
 
 export default function Admin() {
   const [, navigate] = useLocation();
@@ -103,6 +104,7 @@ export default function Admin() {
     { id: "messages", label: "Mensajes", icon: <MessageSquare size={16} /> },
     { id: "legal", label: "Páginas legales", icon: <BookOpen size={16} /> },
     { id: "settings", label: "Ajustes", icon: <Settings size={16} /> },
+    { id: "blog", label: "Blog", icon: <Rss size={16} /> },
   ];
 
   const formatEur = (n: number) =>
@@ -787,6 +789,7 @@ export default function Admin() {
               </div>
             </div>
           )}
+          {tab === "blog" && <BlogAdmin />}
         </main>
       </div>
     </div>

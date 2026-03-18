@@ -141,3 +141,25 @@ export const siteSettings = mysqlTable("site_settings", {
 
 export type SiteSetting = typeof siteSettings.$inferSelect;
 export type InsertSiteSetting = typeof siteSettings.$inferInsert;
+
+/**
+ * Blog posts — SEO/GEO-optimized articles for the blog section.
+ */
+export const blogPosts = mysqlTable("blog_posts", {
+  id: int("id").autoincrement().primaryKey(),
+  slug: varchar("slug", { length: 256 }).notNull().unique(),
+  title: varchar("title", { length: 512 }).notNull(),
+  excerpt: text("excerpt").notNull(),
+  content: text("content").notNull(),
+  metaTitle: varchar("metaTitle", { length: 512 }),
+  metaDescription: text("metaDescription"),
+  category: varchar("category", { length: 128 }).default("guides").notNull(),
+  tags: text("tags"),
+  readTime: int("readTime").default(5).notNull(),
+  published: boolean("published").default(true).notNull(),
+  publishedAt: timestamp("publishedAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BlogPost = typeof blogPosts.$inferSelect;
+export type InsertBlogPost = typeof blogPosts.$inferInsert;

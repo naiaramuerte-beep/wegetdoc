@@ -23,6 +23,8 @@ import Admin from "./pages/Admin";
 import LegalPage from "./pages/LegalPage";
 import EditorPage from "./pages/EditorPage";
 import CancelSubscription from "./pages/CancelSubscription";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
 
 // Redirect root "/" to language-prefixed URL based on browser language
 function RootRedirect() {
@@ -74,6 +76,18 @@ function Router() {
       {LANGUAGES.map(({ code }) => (
         <Route key={`${code}-cancel`} path={`/${code}/cancelar-suscripcion`} component={CancelSubscription} />
       ))}
+
+      {/* Blog routes — language-prefixed */}
+      {LANGUAGES.map(({ code }) => (
+        <Route key={`${code}-blog`} path={`/${code}/blog`} component={Blog} />
+      ))}
+      {LANGUAGES.map(({ code }) => (
+        <Route key={`${code}-blog-post`} path={`/${code}/blog/:slug`} component={BlogPost} />
+      ))}
+
+      {/* Blog legacy routes */}
+      <Route path="/blog" component={() => <Redirect to="/es/blog" />} />
+      <Route path="/blog/:slug" component={({ params }) => <Redirect to={`/es/blog/${params.slug}`} />} />
 
       {/* Legacy routes without lang prefix — redirect to /es/ */}
       <Route path="/editor" component={() => <Redirect to="/es/editor" />} />

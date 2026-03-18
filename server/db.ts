@@ -2,6 +2,8 @@ import { and, desc, eq, like, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
+  InsertBlogPost,
+  blogPosts,
   contactMessages,
   documents,
   folders,
@@ -566,4 +568,61 @@ export async function getCanceledSubscriptions() {
     .innerJoin(subscriptions, eq(users.id, subscriptions.userId))
     .where(eq(subscriptions.status, "canceled"))
     .orderBy(desc(subscriptions.updatedAt));
+}
+
+// ─── Blog Posts ───────────────────────────────────────────────
+export async function getBlogPosts(publishedOnly = true) {
+  const db = await getDb();
+  if (!db) return [];
+  const query = db.select({
+    id: blogPosts.id,
+    slug: blogPosts.slug,
+    title: blogPosts.title,
+    excerpt: blogPosts.excerpt,
+    category: blogPosts.category,
+    tags: blogPosts.tags,
+    readTime: blogPosts.readTime,
+    published: blogPosts.published,
+    publishedAt: blogPosts.publishedAt,
+    updatedAt: blogPosts.updatedAt,
+  }).from(blogPosts);
+  if (publishedOnly) {
+    return query.where(eq(blogPosts.published, true)).orderBy(desc(blogPosts.publishedAt));
+  }
+  return query.orderBy(desc(blogPosts.publishedAt));
+}
+
+export async function getBlogPost(slug: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(blogPosts).where(eq(blogPosts.slug, slug)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function getBlogPostById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(blogPosts).where(eq(blogPosts.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function createBlogPost(data: InsertBlogPost) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(blogPosts).values(data);
+  const rows = await db.select().from(blogPosts).where(eq(blogPosts.slug, data.slug)).limit(1);
+  return rows[0];
+}
+
+export async function updateBlogPost(id: number, data: Partial<InsertBlogPost>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(blogPosts).set(data).where(eq(blogPosts.id, id));
+  return getBlogPostById(id);
+}
+
+export async function deleteBlogPost(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(blogPosts).where(eq(blogPosts.id, id));
 }

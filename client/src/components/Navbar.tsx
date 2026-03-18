@@ -29,6 +29,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
   const navLinks = [
     { href: `/${lang}/#how-it-works`, label: t.nav_how_it_works },
     { href: `/${lang}/pricing`, label: t.nav_pricing },
+    { href: `/${lang}/blog`, label: "Blog" },
     { href: `/${lang}/#faq`, label: t.nav_faq },
     { href: "#contact", label: t.nav_contact, onClick: () => setContactOpen(true) },
   ];
@@ -50,7 +51,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
       >
         <div className="container flex items-center justify-between h-14 md:h-16">
           {/* Logo */}
-          <Link href={`/${lang}`} className="flex items-center gap-2 group shrink-0">
+          <Link href={`/${lang}`} className="flex items-center gap-1 group shrink-0">
             {/* Document + pencil icon */}
             <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
               {/* Document outline */}

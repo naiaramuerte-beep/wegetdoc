@@ -8,7 +8,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { getUserById, upsertSubscription } from "../db";
+import { getUserById, upsertSubscription, getBlogPosts } from "../db";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -140,6 +140,41 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+
+  // Sitemap.xml — dynamic, includes blog posts
+  app.get("/sitemap.xml", async (_req, res) => {
+    try {
+      const posts = await getBlogPosts(true);
+      const base = "https://editpdf.online";
+      const staticUrls: Array<{ loc: string; priority: string; changefreq: string; lastmod?: string }> = [
+        { loc: `${base}/es`, priority: "1.0", changefreq: "weekly" },
+        { loc: `${base}/en`, priority: "1.0", changefreq: "weekly" },
+        { loc: `${base}/es/pricing`, priority: "0.8", changefreq: "monthly" },
+        { loc: `${base}/es/blog`, priority: "0.9", changefreq: "weekly" },
+        { loc: `${base}/en/blog`, priority: "0.9", changefreq: "weekly" },
+        { loc: `${base}/es/tools`, priority: "0.7", changefreq: "monthly" },
+      ];
+      const blogUrls = (posts as Array<{slug: string; updatedAt: Date}>).flatMap((p) => [
+        { loc: `${base}/es/blog/${p.slug}`, priority: "0.8", changefreq: "monthly", lastmod: new Date(p.updatedAt).toISOString().split("T")[0] },
+        { loc: `${base}/en/blog/${p.slug}`, priority: "0.8", changefreq: "monthly", lastmod: new Date(p.updatedAt).toISOString().split("T")[0] },
+      ]);
+      const allUrls = [...staticUrls, ...blogUrls];
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${allUrls.map(u => `  <url>
+    <loc>${u.loc}</loc>
+    <changefreq>${u.changefreq}</changefreq>
+    <priority>${u.priority}</priority>${u.lastmod ? `
+    <lastmod>${u.lastmod}</lastmod>` : ""}
+  </url>`).join("\n")}
+</urlset>`;
+      res.header("Content-Type", "application/xml");
+      res.send(xml);
+    } catch {
+      res.status(500).send("Error generating sitemap");
+    }
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",

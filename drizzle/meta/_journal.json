@@ -36,6 +36,13 @@
       "when": 1773820455259,
       "tag": "0004_small_genesis",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1773836235438,
+      "tag": "0005_broken_dakota_north",
+      "breakpoints": true
     }
   ]
 }
