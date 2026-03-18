@@ -6,10 +6,11 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch, Redirect, useLocation } from "wouter";
+import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { PdfFileProvider } from "./contexts/PdfFileContext";
 import { LANGUAGES, detectLangFromBrowser } from "./lib/i18n";
 import Home from "./pages/Home";
 import Pricing from "./pages/Pricing";
@@ -20,6 +21,7 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import LegalPage from "./pages/LegalPage";
+import EditorPage from "./pages/EditorPage";
 
 // Redirect root "/" to language-prefixed URL based on browser language
 function RootRedirect() {
@@ -36,6 +38,9 @@ function Router() {
       {/* Language-prefixed routes — one block per lang */}
       {LANGUAGES.map(({ code }) => (
         <Route key={code} path={`/${code}`} component={Home} />
+      ))}
+      {LANGUAGES.map(({ code }) => (
+        <Route key={`${code}-editor`} path={`/${code}/editor`} component={EditorPage} />
       ))}
       {LANGUAGES.map(({ code }) => (
         <Route key={`${code}-pricing`} path={`/${code}/pricing`} component={Pricing} />
@@ -66,6 +71,7 @@ function Router() {
       ))}
 
       {/* Legacy routes without lang prefix — redirect to /es/ */}
+      <Route path="/editor" component={() => <Redirect to="/es/editor" />} />
       <Route path="/pricing" component={() => <Redirect to="/es/pricing" />} />
       <Route path="/precios" component={() => <Redirect to="/es/pricing" />} />
       <Route path="/tools" component={() => <Redirect to="/es/tools" />} />
@@ -90,10 +96,12 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <LanguageProvider>
-          <TooltipProvider>
-            <Toaster position="top-right" />
-            <Router />
-          </TooltipProvider>
+          <PdfFileProvider>
+            <TooltipProvider>
+              <Toaster position="top-right" />
+              <Router />
+            </TooltipProvider>
+          </PdfFileProvider>
         </LanguageProvider>
       </ThemeProvider>
     </ErrorBoundary>

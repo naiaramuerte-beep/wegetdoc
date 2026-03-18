@@ -81,7 +81,7 @@ function ToolBtn({
 }
 
 // ── Main component ─────────────────────────────────────────────
-export default function PdfEditor({ initialTool }: { initialTool?: string }) {
+export default function PdfEditor({ initialTool, initialFile, fullscreen }: { initialTool?: string; initialFile?: File; fullscreen?: boolean }) {
   const [file, setFile] = useState<File | null>(null);
   const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null); // eslint-disable-line
@@ -184,7 +184,16 @@ export default function PdfEditor({ initialTool }: { initialTool?: string }) {
 
   useEffect(() => { renderPage(currentPage); }, [renderPage, currentPage]);
 
-  // ── Handle file drop / select ─────────────────────────────────
+  // Auto-load initialFile if provided─
+  useEffect(() => {
+    if (initialFile) {
+      setFile(initialFile);
+      loadPdf(initialFile);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialFile]);
+
+  // Handle file drop / select
   const handleFile = useCallback((f: File) => {
     if (!f.name.endsWith(".pdf")) { toast.error("Solo se aceptan archivos PDF"); return; }
     setFile(f);
@@ -902,7 +911,13 @@ export default function PdfEditor({ initialTool }: { initialTool?: string }) {
   const pageAnnotations = annotations.filter(a => a.page === currentPage);
 
   return (
-    <div className="flex flex-col rounded-xl overflow-hidden shadow-xl border" style={{ height: "85vh", borderColor: "oklch(0.88 0.02 250)", backgroundColor: "oklch(0.97 0.005 250)" }}>
+    <div
+      className={fullscreen ? "flex flex-col overflow-hidden" : "flex flex-col rounded-xl overflow-hidden shadow-xl border"}
+      style={fullscreen
+        ? { height: "100%", backgroundColor: "oklch(0.97 0.005 250)" }
+        : { height: "85vh", borderColor: "oklch(0.88 0.02 250)", backgroundColor: "oklch(0.97 0.005 250)" }
+      }
+    >
       {/* ── TOP TOOLBAR ── */}
       <div className="flex items-center gap-1 px-3 py-1.5 border-b" style={{ backgroundColor: "oklch(1 0 0)", borderColor: "oklch(0.90 0.01 250)" }}>
         {/* Undo / Redo */}
@@ -964,24 +979,29 @@ export default function PdfEditor({ initialTool }: { initialTool?: string }) {
 
       {/* ── BODY: thumbnails + viewer + tool panel ── */}
       <div className="flex flex-1 overflow-hidden">
-        {/* LEFT: Page thumbnails */}
-        <div className="w-[180px] border-r overflow-y-auto flex flex-col gap-2 p-2" style={{ backgroundColor: "oklch(0.96 0.005 250)", borderColor: "oklch(0.90 0.01 250)" }}>
-          {/* Page count + actions */}
-          <div className="flex items-center justify-between px-1 py-0.5">
-            <span className="text-xs font-medium" style={{ color: "oklch(0.45 0.02 250)" }}>{totalPages} páginas</span>
+        {/* LEFT: Page thumbnails — compact style like pdfe.com */}
+        <div className="w-[150px] border-r overflow-y-auto flex flex-col gap-3 py-3 px-2" style={{ backgroundColor: "oklch(0.96 0.005 250)", borderColor: "oklch(0.90 0.01 250)" }}>
+          {/* Page count */}
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs font-semibold" style={{ color: "oklch(0.40 0.02 250)" }}>{totalPages}</span>
           </div>
           {thumbnails.map((thumb, i) => (
             <button
               key={i}
               onClick={() => setCurrentPage(i + 1)}
-              className="flex flex-col items-center gap-1 p-1 rounded-lg transition-all"
-              style={{
-                backgroundColor: currentPage === i + 1 ? "oklch(0.55 0.22 260 / 0.12)" : "transparent",
-                border: currentPage === i + 1 ? "2px solid oklch(0.55 0.22 260)" : "2px solid transparent",
-              }}
+              className="flex flex-col items-center gap-1.5 transition-all"
+              style={{ outline: "none" }}
             >
-              <img src={thumb} alt={`Página ${i + 1}`} className="w-full rounded shadow-sm" />
-              <span className="text-xs" style={{ color: currentPage === i + 1 ? "oklch(0.55 0.22 260)" : "oklch(0.55 0.02 250)" }}>
+              <div
+                className="w-full rounded overflow-hidden"
+                style={{
+                  border: currentPage === i + 1 ? "2px solid oklch(0.55 0.22 260)" : "2px solid oklch(0.85 0.02 250)",
+                  boxShadow: currentPage === i + 1 ? "0 0 0 1px oklch(0.55 0.22 260 / 0.3)" : "0 1px 3px oklch(0 0 0 / 0.12)",
+                }}
+              >
+                <img src={thumb} alt={`Página ${i + 1}`} className="w-full block" />
+              </div>
+              <span className="text-xs" style={{ color: currentPage === i + 1 ? "oklch(0.55 0.22 260)" : "oklch(0.55 0.02 250)", fontSize: 11 }}>
                 Page {i + 1}
               </span>
             </button>

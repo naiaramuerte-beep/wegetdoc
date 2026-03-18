@@ -12,7 +12,7 @@ import AuthModal from "./AuthModal";
 import { LANGUAGES } from "@/lib/i18n";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-export default function Navbar() {
+export default function Navbar({ compact }: { compact?: boolean } = {}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);

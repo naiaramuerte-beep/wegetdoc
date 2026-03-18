@@ -3,7 +3,8 @@
    Hero integrates the real PdfEditor component
    ============================================================= */
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
+import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   FileText,
@@ -25,7 +26,8 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import PdfEditor from "@/components/PdfEditor";
+import { usePdfFile } from "@/contexts/PdfFileContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // ─── Tool definitions ─────────────────────────────────────────
 const editAndSignTools = [
@@ -129,19 +131,41 @@ const features = [
 
 // ─── Component ─────────────────────────────────────────────────
 export default function Home() {
-  // The userAuth hooks provides authentication state
-  // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
   let { user, loading, error, isAuthenticated, logout } = useAuth();
-
   const [activeTab, setActiveTab] = useState("editAndSign");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [pendingTool, setPendingTool] = useState<string | undefined>(undefined);
-
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { setPendingFile, setPendingTool } = usePdfFile();
+  const { lang } = useLanguage();
+  const [, navigate] = useLocation();
   const activeCategory = allToolsCategories.find((c) => c.id === activeTab)!;
 
-  const scrollToEditor = (tool?: string) => {
+  const openEditor = useCallback((file: File, tool?: string) => {
+    // Accept any file — PDF is loaded directly, others will be converted in the editor
+    setPendingFile(file);
     if (tool) setPendingTool(tool);
-    document.getElementById("editor-section")?.scrollIntoView({ behavior: "smooth" });
+    navigate(`/${lang}/editor`);
+  }, [setPendingFile, setPendingTool, navigate, lang]);
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) openEditor(f);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+    const f = e.dataTransfer.files[0];
+    if (f) openEditor(f);
+  };
+
+  const scrollToEditor = (tool?: string) => {
+    if (tool) {
+      // Open file picker with tool pre-selected
+      setPendingTool(tool ?? null);
+      fileInputRef.current?.click();
+    }
   };
 
   return (
@@ -184,9 +208,58 @@ export default function Home() {
             </p>
           </div>
 
-          {/* ── REAL PDF EDITOR ── */}
-          <div id="editor-section" className="max-w-5xl mx-auto">
-            <PdfEditor initialTool={pendingTool} />
+          {/* ── DROP ZONE ── */}
+          <div id="editor-section" className="max-w-2xl mx-auto">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="*/*"
+              className="hidden"
+              onChange={handleFileInput}
+            />
+            <div
+              onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+              onDragLeave={() => setIsDraggingOver(false)}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className="cursor-pointer rounded-2xl border-2 border-dashed transition-all duration-200 flex flex-col items-center justify-center gap-4 py-12 px-8"
+              style={{
+                borderColor: isDraggingOver ? "oklch(0.55 0.22 260)" : "oklch(0.75 0.06 250)",
+                backgroundColor: isDraggingOver ? "oklch(0.55 0.22 260 / 0.06)" : "white",
+              }}
+            >
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.10)" }}
+              >
+                <FileText className="w-8 h-8" style={{ color: "oklch(0.55 0.22 260)" }} />
+              </div>
+              <div className="text-center">
+                <p className="font-semibold text-lg" style={{ color: "oklch(0.55 0.22 260)" }}>
+                  Arrastra cualquier archivo aquí
+                </p>
+                <p className="text-sm mt-1" style={{ color: "oklch(0.55 0.05 250)" }}>o</p>
+              </div>
+              <button
+                className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white transition-all"
+                style={{ backgroundColor: "oklch(0.18 0.04 250)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.25 0.04 250)")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.18 0.04 250)")}
+              >
+                <Upload className="w-4 h-4" />
+                Subir archivo
+              </button>
+              {/* Mensaje de conversión */}
+              <div
+                className="flex items-start gap-2 rounded-xl px-4 py-3 text-sm max-w-sm text-center"
+                style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.07)", color: "oklch(0.40 0.10 260)" }}
+              >
+                <span>
+                  ✨ <strong>Word, Excel, JPG, PNG, HTML…</strong> cualquier archivo se convierte automáticamente a PDF al cargarlo.
+                </span>
+              </div>
+              <p className="text-xs" style={{ color: "oklch(0.6 0.02 250)" }}>Hasta 100 MB · PDF, Word, Excel, PowerPoint, JPG, PNG y más</p>
+            </div>
           </div>
         </div>
       </section>

@@ -74,3 +74,23 @@
 
 - [x] Modal login muestra signup por defecto (defaultMode no se aplica correctamente)
 - [x] Botón "Login con Google" falla con error "code and state are required"
+
+## Rediseño Editor PDF (estilo pdfe.com)
+
+- [x] Editor ocupa toda la pantalla (100vh - navbar)
+- [x] Páginas separadas con espacio entre ellas, fondo gris claro
+- [x] Panel de miniaturas compacto a la izquierda (como pdfe.com)
+- [x] Área de trabajo con scroll vertical, páginas centradas y a tamaño real
+
+## Editor pantalla completa (estilo pdfe.com)
+
+- [x] Crear ruta /editor con el PdfEditor en pantalla completa
+- [x] Home redirige a /editor al subir un PDF (pasando el archivo via contexto React)
+- [x] Editor ocupa 100vh - altura navbar, sin hero encima
+- [x] Páginas separadas con espacio entre ellas, fondo gris claro
+- [x] Panel miniaturas compacto (150px), páginas bien visibles
+
+## Drop zone mejorado
+
+- [x] Drop zone acepta cualquier formato (Word, Excel, JPG, PNG, etc.) con mensaje de conversión a PDF
+- [x] Editor PDF en pantalla completa estilo pdfe.com
