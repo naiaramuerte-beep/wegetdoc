@@ -10,7 +10,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { getUserById, upsertSubscription, getBlogPosts, createDocument } from "../db";
-import { storagePut } from "../storage";
+import { storagePut, storageGet } from "../storage";
 import { sdk } from "./sdk";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -177,6 +177,63 @@ ${allUrls.map(u => `  <url>
       res.send(xml);
     } catch {
       res.status(500).send("Error generating sitemap");
+    }
+  });
+
+  // ── REST endpoint for TEMP PDF upload (pre-login, no auth required) ─────────────
+  // Stores the edited PDF in S3 under a temp key. The key is returned and stored
+  // in sessionStorage (small string, no quota issues). After login + payment,
+  // the server moves it to the user's permanent folder.
+  const tempUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
+  app.post("/api/documents/temp-upload", tempUpload.single("file"), async (req, res) => {
+    try {
+      const file = req.file;
+      if (!file) { res.status(400).json({ error: "No file" }); return; }
+      const name = (req.body.name as string) || file.originalname || "document.pdf";
+      // Store under temp/ with a random key — expires conceptually after 24h
+      const randomId = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      const key = `temp/${randomId}-${name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      const { url } = await storagePut(key, file.buffer, "application/pdf");
+      res.json({ success: true, tempKey: key, tempUrl: url, name });
+    } catch (err) {
+      console.error("[TempUpload] Error:", err);
+      res.status(500).json({ error: "Temp upload failed" });
+    }
+  });
+
+  // ── REST endpoint for claiming a temp PDF after login + payment ────────────────
+  // Moves the temp PDF to the user's permanent folder and creates a DB record.
+  app.post("/api/documents/claim-temp", async (req, res) => {
+    try {
+      let userId: number;
+      try {
+        const user = await sdk.authenticateRequest(req as any);
+        userId = user.id;
+      } catch {
+        res.status(401).json({ error: "Unauthorized" }); return;
+      }
+      const { tempKey, name } = req.body as { tempKey: string; name: string };
+      if (!tempKey || !name) { res.status(400).json({ error: "Missing tempKey or name" }); return; }
+      // Validate tempKey is under temp/ to prevent path traversal
+      if (!tempKey.startsWith("temp/")) { res.status(400).json({ error: "Invalid tempKey" }); return; }
+      // Re-download from S3 via the temp URL and re-upload under user's folder
+      const { url: signedUrl } = await storageGet(tempKey);
+      const fileResp = await fetch(signedUrl);
+      if (!fileResp.ok) { res.status(404).json({ error: "Temp file not found" }); return; }
+      const buffer = Buffer.from(await fileResp.arrayBuffer());
+      const permanentKey = `docs/${userId}/${Date.now()}-${name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      const { url: permanentUrl } = await storagePut(permanentKey, buffer, "application/pdf");
+      const doc = await createDocument({
+        userId,
+        name,
+        fileKey: permanentKey,
+        fileUrl: permanentUrl,
+        fileSize: buffer.length,
+      });
+      res.json({ success: true, doc });
+    } catch (err) {
+      console.error("[ClaimTemp] Error:", err);
+      res.status(500).json({ error: "Claim failed" });
     }
   });
 

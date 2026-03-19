@@ -27,6 +27,11 @@ const stripePromise = loadStripe(
   ""
 );
 
+// PDF data can be base64 (from editor) or tempKey (from S3 temp upload after login redirect)
+type PdfPayload =
+  | { base64: string; name: string; size: number }
+  | { tempKey: string; name: string };
+
 interface PaywallModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -48,7 +53,7 @@ function CheckoutForm({
   buildPdfForUpload,
 }: {
   onSuccess: () => void;
-  pdfData?: { base64: string; name: string; size: number };
+  pdfData?: PdfPayload;
   thumbnailUrl?: string;
   buildPdfForUpload?: () => Promise<{ base64: string; name: string; size: number } | null>;
 }) {
@@ -68,14 +73,14 @@ function CheckoutForm({
   const utils = trpc.useUtils();
 
   // Upload PDF via REST multipart (avoids tRPC base64 size limits)
-  const uploadPdfViaRest = async (pdfData: { base64: string; name: string; size: number }): Promise<void> => {
-    const binary = atob(pdfData.base64);
+  const uploadPdfViaRest = async (data: { base64: string; name: string; size: number }): Promise<void> => {
+    const binary = atob(data.base64);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
     const blob = new Blob([bytes], { type: "application/pdf" });
     const formData = new FormData();
-    formData.append("file", blob, pdfData.name);
-    formData.append("name", pdfData.name);
+    formData.append("file", blob, data.name);
+    formData.append("name", data.name);
     const resp = await fetch("/api/documents/upload", {
       method: "POST",
       credentials: "include",
@@ -84,6 +89,20 @@ function CheckoutForm({
     if (!resp.ok) {
       const text = await resp.text().catch(() => "");
       throw new Error(`Upload failed: ${resp.status} ${text}`);
+    }
+  };
+
+  // Claim a temp PDF from S3 (uploaded before login redirect)
+  const claimTempPdf = async (tempKey: string, name: string): Promise<void> => {
+    const resp = await fetch("/api/documents/claim-temp", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tempKey, name }),
+    });
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => "");
+      throw new Error(`Claim failed: ${resp.status} ${text}`);
     }
   };
 
@@ -150,32 +169,40 @@ function CheckoutForm({
       await utils.subscription.status.invalidate();
 
       // 2. Upload PDF now that subscription is active
-      // If pdfData wasn't pre-built (e.g. user opened paywall from a tool button),
-      // try to build it on demand via the callback from PdfEditor.
-      let resolvedPdfData = pdfData;
-      if (!resolvedPdfData && buildPdfForUpload) {
-        try {
-          setProgressStep("saving");
-          resolvedPdfData = (await buildPdfForUpload()) ?? undefined;
-        } catch (buildErr) {
-          console.error("[PaywallModal] buildPdfForUpload failed:", buildErr);
-        }
-      }
+      setProgressStep("saving");
 
-      if (resolvedPdfData) {
-        setProgressStep("saving");
+      // Case A: pdfData has a tempKey (uploaded to S3 before login redirect)
+      if (pdfData && "tempKey" in pdfData) {
         try {
-          await uploadPdfViaRest(resolvedPdfData);
+          await claimTempPdf(pdfData.tempKey, pdfData.name);
           await utils.documents.list.invalidate();
-        } catch (uploadErr) {
-          // Upload failed — try once more
-          console.error("PDF upload failed (attempt 1):", uploadErr);
+        } catch (claimErr) {
+          console.error("[PaywallModal] claimTempPdf failed:", claimErr);
+          // Don't block success — user paid, subscription is active
+        }
+      } else {
+        // Case B: pdfData has base64 (built in-memory, user was already logged in)
+        let resolvedPdfData = pdfData as { base64: string; name: string; size: number } | undefined;
+        if (!resolvedPdfData && buildPdfForUpload) {
+          try {
+            resolvedPdfData = (await buildPdfForUpload()) ?? undefined;
+          } catch (buildErr) {
+            console.error("[PaywallModal] buildPdfForUpload failed:", buildErr);
+          }
+        }
+        if (resolvedPdfData) {
           try {
             await uploadPdfViaRest(resolvedPdfData);
             await utils.documents.list.invalidate();
-          } catch (uploadErr2) {
-            console.error("PDF upload failed (attempt 2):", uploadErr2);
-            // Don't block success — user paid, subscription is active
+          } catch (uploadErr) {
+            console.error("PDF upload failed (attempt 1):", uploadErr);
+            try {
+              await uploadPdfViaRest(resolvedPdfData);
+              await utils.documents.list.invalidate();
+            } catch (uploadErr2) {
+              console.error("PDF upload failed (attempt 2):", uploadErr2);
+              // Don't block success — user paid, subscription is active
+            }
           }
         }
       }
@@ -460,7 +487,7 @@ export default function PaywallModal({
 }: PaywallModalProps) {
   const { t } = useLanguage();
   const { isAuthenticated } = useAuth();
-  const { savePdfToSession, setPendingPaywall, pendingFile, pendingEditedPdf, clearPendingEditedPdf } = usePdfFile();
+  const { savePdfToSession, setPendingPaywall, pendingFile, pendingEditedPdf, clearPendingEditedPdf, saveEditedPdfToSession } = usePdfFile();
   const [step, setStep] = useState<Step>(isAuthenticated ? "plans" : "auth-choice");
   const [emailInput, setEmailInput] = useState("");
 
@@ -471,20 +498,29 @@ export default function PaywallModal({
   const effectivePdfData = pdfData ?? pendingEditedPdf ?? undefined;
 
   const handleGoogleLogin = async () => {
+    // Save the original PDF file
     if (pendingFile) {
       try { await savePdfToSession(pendingFile); } catch {}
+    }
+     // Save the EDITED PDF (with annotations) so it survives the OAuth redirect
+    if (pdfData) {
+      try { await saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size); } catch {}
     }
     setPendingPaywall(true);
     window.location.href = getLoginUrl();
   };
-
   const handleEmailContinue = async () => {
     if (!emailInput.trim() || !emailInput.includes("@")) {
       toast.error(t.paywall_enter_email);
       return;
     }
+    // Save the original PDF file
     if (pendingFile) {
       try { await savePdfToSession(pendingFile); } catch {}
+    }
+    // Save the EDITED PDF (with annotations) so it survives the OAuth redirect
+    if (pdfData) {
+      try { await saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size); } catch {}
     }
     setPendingPaywall(true);
     window.location.href = getLoginUrl();
