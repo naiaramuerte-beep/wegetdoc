@@ -312,3 +312,9 @@
 
 ## Bug rotación de páginas
 - [x] Bug: rotar página solo funciona una vez, no permite rotar múltiples veces consecutivas
+
+## Aviso verificación bancaria
+- [ ] Añadir texto explicativo en PaywallModal sobre verificación de 0,00€ del banco
+
+## Autoguardado al descargar
+- [x] Guardar PDF editado en panel del usuario al pulsar Descargar (independientemente del pago)
