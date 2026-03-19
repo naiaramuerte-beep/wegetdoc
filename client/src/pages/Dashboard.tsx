@@ -611,7 +611,7 @@ function TeamTab() {
 function BillingTab() {
   const { data: subData, isLoading } = trpc.subscription.status.useQuery();
   const utils = trpc.useUtils();
-  const [, navigate] = useLocation();
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   const checkoutMutation = trpc.subscription.createCheckout.useMutation({
     onSuccess: (data) => {
@@ -623,13 +623,24 @@ function BillingTab() {
   const cancelMutation = trpc.subscription.cancel.useMutation({
     onSuccess: () => {
       utils.subscription.status.invalidate();
+      setShowCancelModal(false);
       toast.success("Suscripción cancelada. Seguirás teniendo acceso hasta el final del período.");
     },
-    onError: () => toast.error("Error al cancelar la suscripción"),
+    onError: () => {
+      toast.error("Error al cancelar la suscripción. Inténtalo de nuevo.");
+    },
   });
 
   const isPremium = subData?.isPremium ?? false;
   const sub = subData?.subscription;
+
+  const expiryDateStr = sub?.currentPeriodEnd
+    ? new Date(sub.currentPeriodEnd).toLocaleDateString("es-ES", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : null;
 
   if (isLoading) {
     return (
@@ -644,37 +655,58 @@ function BillingTab() {
 
   return (
     <div className="space-y-4">
-      {/* Current plan */}
-      <div className={`rounded-2xl shadow-sm border p-6 ${isPremium ? "bg-gradient-to-br from-blue-600 to-indigo-700 text-white border-blue-500" : "bg-white border-slate-100"}`}>
-        <div className="flex items-center justify-between">
-          <div>
+      {/* Current plan card */}
+      <div className={`rounded-2xl shadow-sm border p-6 ${
+        isPremium
+          ? sub?.cancelAtPeriodEnd
+            ? "bg-gradient-to-br from-amber-500 to-orange-600 text-white border-amber-400"
+            : "bg-gradient-to-br from-blue-600 to-indigo-700 text-white border-blue-500"
+          : "bg-white border-slate-100"
+      }`}>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              {isPremium && <Crown size={18} className="text-yellow-300" />}
-              <h2 className={`text-lg font-bold ${isPremium ? "text-white" : "text-slate-800"}`}>
-                {isPremium ? `Plan ${sub?.plan === "trial" ? "Prueba" : "Premium"}` : "Plan Gratuito"}
+              {isPremium && <Crown size={18} className="text-yellow-300 flex-shrink-0" />}
+              <h2 className={`text-lg font-bold truncate ${isPremium ? "text-white" : "text-slate-800"}`}>
+                {isPremium
+                  ? sub?.cancelAtPeriodEnd
+                    ? "Suscripción cancelada"
+                    : `Plan ${sub?.plan === "trial" ? "Prueba (7 días)" : "Premium Mensual"}`
+                  : "Plan Gratuito"}
               </h2>
             </div>
-            <p className={`text-sm ${isPremium ? "text-blue-100" : "text-slate-500"}`}>
-              {isPremium
-                ? sub?.currentPeriodEnd
-                  ? `Válido hasta ${new Date(sub.currentPeriodEnd).toLocaleDateString("es-ES")}`
-                  : "Acceso activo"
-                : "Funciones básicas de edición PDF"}
-            </p>
-            {isPremium && sub?.cancelAtPeriodEnd && (
-              <p className="text-yellow-200 text-xs mt-1 flex items-center gap-1">
-                <AlertCircle size={12} />
-                Se cancelará al final del período
+
+            {/* Status description */}
+            {isPremium && sub?.cancelAtPeriodEnd ? (
+              <div className="mt-1 space-y-1">
+                <p className="text-amber-100 text-sm flex items-center gap-1.5">
+                  <AlertCircle size={14} className="flex-shrink-0" />
+                  Tu acceso expira el{" "}
+                  <strong className="text-white">{expiryDateStr ?? "final del período"}</strong>
+                </p>
+                <p className="text-amber-200 text-xs">
+                  Puedes seguir usando todas las funciones hasta esa fecha.
+                </p>
+              </div>
+            ) : isPremium ? (
+              <p className="text-blue-100 text-sm">
+                {expiryDateStr
+                  ? `Próxima renovación: ${expiryDateStr}`
+                  : "Acceso activo"}
               </p>
+            ) : (
+              <p className="text-slate-500 text-sm">Funciones básicas de edición PDF</p>
             )}
           </div>
-          <div className={`text-right`}>
+
+          {/* Price badge */}
+          <div className="text-right flex-shrink-0">
             {isPremium ? (
               <div>
                 <p className="text-3xl font-bold text-white">
-                  {sub?.plan === "trial" ? "0,99€" : "9,99€"}
+                  {sub?.plan === "trial" ? "0,50€" : "49,90€"}
                 </p>
-                <p className="text-blue-200 text-xs">
+                <p className={`text-xs ${sub?.cancelAtPeriodEnd ? "text-amber-200" : "text-blue-200"}`}>
                   {sub?.plan === "trial" ? "prueba 7 días" : "/ mes"}
                 </p>
               </div>
@@ -685,7 +717,43 @@ function BillingTab() {
         </div>
       </div>
 
-      {/* Features comparison */}
+      {/* Manage subscription — cancel button (only if active and NOT already canceling) */}
+      {isPremium && !sub?.cancelAtPeriodEnd && (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+          <h3 className="font-semibold text-slate-800 mb-1">Gestionar suscripción</h3>
+          <p className="text-sm text-slate-500 mb-4">
+            Si cancelas, seguirás teniendo acceso completo hasta el{" "}
+            <strong>{expiryDateStr ?? "final del período de facturación"}</strong>.
+            No se realizarán más cargos.
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => setShowCancelModal(true)}
+            className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-400 transition-colors"
+          >
+            Cancelar suscripción
+          </Button>
+        </div>
+      )}
+
+      {/* Already canceled — info banner */}
+      {isPremium && sub?.cancelAtPeriodEnd && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-start gap-3">
+          <AlertCircle size={18} className="text-amber-500 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-amber-800">
+              Suscripción programada para cancelarse
+            </p>
+            <p className="text-sm text-amber-700 mt-0.5">
+              Tu acceso estará activo hasta el{" "}
+              <strong>{expiryDateStr ?? "final del período"}</strong>.
+              Después de esa fecha no se realizará ningún cargo adicional.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Features comparison (only for free users) */}
       {!isPremium && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
           <h3 className="font-semibold text-slate-800 mb-4">Funciones disponibles con Premium</h3>
@@ -710,18 +778,22 @@ function BillingTab() {
           </div>
 
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="border-2 border-blue-200 rounded-xl p-4 hover:border-blue-400 transition-colors cursor-pointer"
-              onClick={() => checkoutMutation.mutate({ plan: "trial", origin: window.location.origin })}>
-              <p className="font-bold text-slate-800 text-lg">0,99€</p>
+            <div
+              className="border-2 border-blue-200 rounded-xl p-4 hover:border-blue-400 transition-colors cursor-pointer"
+              onClick={() => checkoutMutation.mutate({ plan: "trial", origin: window.location.origin })}
+            >
+              <p className="font-bold text-slate-800 text-lg">0,50€</p>
               <p className="text-blue-600 font-medium text-sm">Prueba 7 días</p>
               <p className="text-xs text-slate-500 mt-1">Acceso completo durante 7 días</p>
               <Button size="sm" className="w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white" disabled={checkoutMutation.isPending}>
                 Empezar prueba
               </Button>
             </div>
-            <div className="border-2 border-indigo-200 rounded-xl p-4 hover:border-indigo-400 transition-colors cursor-pointer bg-indigo-50"
-              onClick={() => checkoutMutation.mutate({ plan: "monthly", origin: window.location.origin })}>
-              <p className="font-bold text-slate-800 text-lg">9,99€<span className="text-sm font-normal text-slate-500">/mes</span></p>
+            <div
+              className="border-2 border-indigo-200 rounded-xl p-4 hover:border-indigo-400 transition-colors cursor-pointer bg-indigo-50"
+              onClick={() => checkoutMutation.mutate({ plan: "monthly", origin: window.location.origin })}
+            >
+              <p className="font-bold text-slate-800 text-lg">49,90€<span className="text-sm font-normal text-slate-500">/mes</span></p>
               <p className="text-indigo-600 font-medium text-sm">Plan Mensual</p>
               <p className="text-xs text-slate-500 mt-1">Acceso ilimitado, cancela cuando quieras</p>
               <Button size="sm" className="w-full mt-3 bg-indigo-600 hover:bg-indigo-700 text-white" disabled={checkoutMutation.isPending}>
@@ -732,21 +804,76 @@ function BillingTab() {
         </div>
       )}
 
-      {/* Cancel subscription */}
-      {isPremium && !sub?.cancelAtPeriodEnd && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-          <h3 className="font-semibold text-slate-800 mb-2">Gestionar suscripción</h3>
-          <p className="text-sm text-slate-500 mb-4">
-            Si cancelas, seguirás teniendo acceso hasta el {sub?.currentPeriodEnd ? new Date(sub.currentPeriodEnd).toLocaleDateString("es-ES") : "final del período"}.
-          </p>
-          <Button
-            variant="outline"
-            onClick={() => cancelMutation.mutate()}
-            disabled={cancelMutation.isPending}
-            className="border-red-200 text-red-600 hover:bg-red-50"
-          >
-            {cancelMutation.isPending ? "Cancelando..." : "Cancelar suscripción"}
-          </Button>
+      {/* ── Cancel Confirmation Modal ── */}
+      {showCancelModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(3px)" }}
+          onClick={(e) => e.target === e.currentTarget && setShowCancelModal(false)}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            {/* Header */}
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <AlertCircle size={20} className="text-red-500" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">¿Cancelar suscripción?</h3>
+                <p className="text-sm text-slate-500 mt-0.5">Esta acción no se puede deshacer.</p>
+              </div>
+              <button
+                onClick={() => setShowCancelModal(false)}
+                className="ml-auto w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 transition-colors flex-shrink-0"
+              >
+                <X size={16} className="text-slate-400" />
+              </button>
+            </div>
+
+            {/* Info box */}
+            <div className="bg-slate-50 rounded-xl p-4 mb-5 space-y-2">
+              <div className="flex items-center gap-2">
+                <Check size={15} className="text-green-500 flex-shrink-0" />
+                <p className="text-sm text-slate-700">
+                  Seguirás teniendo acceso hasta el{" "}
+                  <strong>{expiryDateStr ?? "final del período"}</strong>.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check size={15} className="text-green-500 flex-shrink-0" />
+                <p className="text-sm text-slate-700">No se realizarán más cargos automáticos.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check size={15} className="text-green-500 flex-shrink-0" />
+                <p className="text-sm text-slate-700">Tus documentos guardados permanecerán accesibles.</p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowCancelModal(false)}
+                disabled={cancelMutation.isPending}
+              >
+                Mantener suscripción
+              </Button>
+              <Button
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                onClick={() => cancelMutation.mutate()}
+                disabled={cancelMutation.isPending}
+              >
+                {cancelMutation.isPending ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    Cancelando...
+                  </span>
+                ) : (
+                  "Sí, cancelar"
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

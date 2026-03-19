@@ -321,3 +321,9 @@
 
 ## Rediseño checkout
 - [x] Rediseñar PaywallModal: layout dos columnas (preview PDF izquierda + formulario derecha), checkbox obligatorio, colores PDFPro
+
+## Cancelación de suscripción (panel Facturación)
+- [x] Endpoint tRPC subscription.cancel que llama a Stripe cancel_at_period_end
+- [x] Mostrar estado de suscripción en apartado Facturación del Dashboard (plan, fecha renovación/expiración)
+- [x] Botón "Cancelar suscripción" con modal de confirmación — cancela al final del ciclo actual
+- [x] Mostrar aviso "Tu acceso expira el [fecha]" si la suscripción está en periodo de cancelación
