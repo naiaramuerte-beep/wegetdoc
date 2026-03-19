@@ -1126,25 +1126,40 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     });
     for (const block of editedBlocks) {
       const page = doc.getPage(block.page - 1);
-      const { height: pageH } = page.getSize();
-      // block coords are in canvas pixels; convert back to PDF points
+      // block coords are stored in canvas pixels (multiplied by scale during load)
+      // Convert back to PDF points by dividing by scale
       const pdfX = block.x / scale;
-      const pdfY = block.y / scale;
       const pdfW = block.width / scale;
-      const pdfH = block.height / scale;
-      // PDF y is from bottom; canvas y is from top
-      const pdfYFromBottom = pageH - pdfY - pdfH;
+      // block.y is canvas-top-based: canvasY = (pdfPageHeight - f) * scale - fontSize * scale
+      // So: pdfPageHeight - f = block.y/scale + fontSize_pts
+      // => f (PDF bottom of text) = pdfPageHeight - block.y/scale - fontSize_pts
+      // block.fontSize is stored as fontSize_pts * scale, so fontSize_pts = block.fontSize / scale
+      const fontSizePts = block.fontSize / scale;
+      const pdfH = block.height / scale; // height in PDF points
+      // f is the PDF y-coordinate of the text baseline (from bottom of page)
+      const f = block.pageHeight - (block.y / scale) - fontSizePts;
+      // The white cover rect should start at f (baseline) and extend upward by fontSizePts
+      // Add padding to fully cover descenders and ascenders
+      const rectY = f - fontSizePts * 0.3; // extend below baseline for descenders
+      const rectH = pdfH + fontSizePts * 0.3; // extend above for ascenders
       // Cover original text with white rectangle
-      page.drawRectangle({ x: pdfX - 1, y: pdfYFromBottom - 1, width: pdfW + 2, height: pdfH + 2, color: rgb(1, 1, 1), opacity: 1 });
+      page.drawRectangle({
+        x: pdfX - 2,
+        y: rectY,
+        width: pdfW + 4,
+        height: rectH + 2,
+        color: rgb(1, 1, 1),
+        opacity: 1,
+      });
       // Draw replacement text
       const hexColor = block.fontColor ?? "#000000";
       const tr = parseInt(hexColor.slice(1, 3), 16) / 255;
       const tg = parseInt(hexColor.slice(3, 5), 16) / 255;
       const tb = parseInt(hexColor.slice(5, 7), 16) / 255;
-      const textSize = Math.max(block.fontSize / scale, 6);
+      const textSize = Math.max(fontSizePts, 6);
       page.drawText(block.editedStr!, {
         x: pdfX,
-        y: pdfYFromBottom + 1,
+        y: f,
         size: textSize,
         font,
         color: rgb(tr, tg, tb),

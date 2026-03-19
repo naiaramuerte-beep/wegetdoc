@@ -310,3 +310,6 @@
 ## Bugs i18n
 - [ ] Bug: PaywallModal no se traduce al idioma activo (aparece siempre en inglés)
 - [ ] Bug: Edit Text — texto original no se borra al exportar (solo se superpone el nuevo texto)
+
+## Bug crítico: Edit Text no borra texto original al exportar
+- [x] Corregir buildAnnotatedPdf: la capa blanca no cubre el texto original (problema de coordenadas pdf.js vs pdf-lib)
