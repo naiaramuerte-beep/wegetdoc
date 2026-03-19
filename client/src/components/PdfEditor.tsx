@@ -2713,7 +2713,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           toast.success("¡Pago completado! Tu documento está disponible en tu panel.");
           const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
           const lang = langMatch ? langMatch[1] : "es";
-          navigate(`/${lang}/dashboard?tab=documents`);
+          navigate(`/${lang}/dashboard?tab=documents&payment=success`);
         }}
       />
     </div>

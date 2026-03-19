@@ -21,7 +21,7 @@ export default function PaymentSuccess() {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
-          navigate(`/${lang}/dashboard?tab=documents`);
+          navigate(`/${lang}/dashboard?tab=documents&payment=success`);
           return 0;
         }
         return prev - 1;
@@ -34,7 +34,7 @@ export default function PaymentSuccess() {
   const handleGoNow = () => {
     const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
     const lang = langMatch ? langMatch[1] : "es";
-    navigate(`/${lang}/dashboard?tab=documents`);
+    navigate(`/${lang}/dashboard?tab=documents&payment=success`);
   };
 
   return (
