@@ -226,19 +226,31 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     if (activeTool !== 'sign' || signTab !== 'draw') return;
     const canvas = signCanvasRef.current;
     if (!canvas) return;
+    // Use requestAnimationFrame to defer DOM writes outside the ResizeObserver callback.
+    // Writing canvas.width/height inside the observer callback causes the
+    // "ResizeObserver loop completed with undelivered notifications" warning.
+    let rafId: number | null = null;
     const syncSize = () => {
-      const rect = canvas.getBoundingClientRect();
-      if (rect.width > 0 && (canvas.width !== Math.round(rect.width) || canvas.height !== Math.round(rect.height))) {
-        canvas.width = Math.round(rect.width);
-        canvas.height = Math.round(rect.height);
-      }
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width > 0 && (canvas.width !== Math.round(rect.width) || canvas.height !== Math.round(rect.height))) {
+          canvas.width = Math.round(rect.width);
+          canvas.height = Math.round(rect.height);
+        }
+      });
     };
     // Sync immediately and after a short delay (in case panel is animating)
     syncSize();
     const timer = setTimeout(syncSize, 100);
     const ro = new ResizeObserver(syncSize);
     ro.observe(canvas);
-    return () => { clearTimeout(timer); ro.disconnect(); };
+    return () => {
+      clearTimeout(timer);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      ro.disconnect();
+    };
   }, [activeTool, signTab]);
 
   // ── Global mouseup to stop signature drawing if mouse released outside canvas
