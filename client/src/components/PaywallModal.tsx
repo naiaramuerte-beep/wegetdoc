@@ -34,6 +34,8 @@ interface PaywallModalProps {
   pdfData?: { base64: string; name: string; size: number };
   onPaymentSuccess?: () => void;
   thumbnailUrl?: string;
+  /** Called when pdfData is missing — builds the annotated PDF on demand */
+  buildPdfForUpload?: () => Promise<{ base64: string; name: string; size: number } | null>;
 }
 
 type Step = "auth-choice" | "email-form" | "plans";
@@ -43,10 +45,12 @@ function CheckoutForm({
   onSuccess,
   pdfData,
   thumbnailUrl,
+  buildPdfForUpload,
 }: {
   onSuccess: () => void;
   pdfData?: { base64: string; name: string; size: number };
   thumbnailUrl?: string;
+  buildPdfForUpload?: () => Promise<{ base64: string; name: string; size: number } | null>;
 }) {
   const { t } = useLanguage();
   const stripe = useStripe();
@@ -146,16 +150,28 @@ function CheckoutForm({
       await utils.subscription.status.invalidate();
 
       // 2. Upload PDF now that subscription is active
-      if (pdfData) {
+      // If pdfData wasn't pre-built (e.g. user opened paywall from a tool button),
+      // try to build it on demand via the callback from PdfEditor.
+      let resolvedPdfData = pdfData;
+      if (!resolvedPdfData && buildPdfForUpload) {
+        try {
+          setProgressStep("saving");
+          resolvedPdfData = (await buildPdfForUpload()) ?? undefined;
+        } catch (buildErr) {
+          console.error("[PaywallModal] buildPdfForUpload failed:", buildErr);
+        }
+      }
+
+      if (resolvedPdfData) {
         setProgressStep("saving");
         try {
-          await uploadPdfViaRest(pdfData);
+          await uploadPdfViaRest(resolvedPdfData);
           await utils.documents.list.invalidate();
         } catch (uploadErr) {
           // Upload failed — try once more
           console.error("PDF upload failed (attempt 1):", uploadErr);
           try {
-            await uploadPdfViaRest(pdfData);
+            await uploadPdfViaRest(resolvedPdfData);
             await utils.documents.list.invalidate();
           } catch (uploadErr2) {
             console.error("PDF upload failed (attempt 2):", uploadErr2);
@@ -440,6 +456,7 @@ export default function PaywallModal({
   pdfData,
   onPaymentSuccess,
   thumbnailUrl,
+  buildPdfForUpload,
 }: PaywallModalProps) {
   const { t } = useLanguage();
   const { isAuthenticated } = useAuth();
@@ -601,6 +618,7 @@ export default function PaywallModal({
                 onSuccess={handlePaymentSuccess}
                 pdfData={effectivePdfData}
                 thumbnailUrl={thumbnailUrl}
+                buildPdfForUpload={buildPdfForUpload}
               />
             </Elements>
           </>

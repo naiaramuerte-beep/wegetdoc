@@ -2690,6 +2690,20 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         onClose={() => setShowPaywall(false)}
         pdfData={pdfDataForPaywall}
         thumbnailUrl={thumbnails[0]}
+        buildPdfForUpload={async () => {
+          if (!pdfBytes) return null;
+          try {
+            const out = await buildAnnotatedPdf();
+            if (!out) return null;
+            return {
+              base64: Buffer.from(out).toString("base64"),
+              name: file?.name ?? "document.pdf",
+              size: out.byteLength,
+            };
+          } catch {
+            return null;
+          }
+        }}
         onPaymentSuccess={() => {
           // After successful payment, redirect to dashboard documents
           // The PDF was already uploaded to S3 during checkout
