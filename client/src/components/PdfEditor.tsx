@@ -1340,23 +1340,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             // Also persist in sessionStorage so it survives login redirect
             saveEditedPdfToSession(base64, docName, docSize);
 
-            // Auto-save to user panel if authenticated (silently, no toast)
-            if (isAuthenticated) {
-              try {
-                const safeBuffer = out.buffer.slice(out.byteOffset, out.byteOffset + out.byteLength) as ArrayBuffer;
-                const blob = new Blob([safeBuffer], { type: "application/pdf" });
-                const formData = new FormData();
-                formData.append("file", blob, docName);
-                formData.append("name", docName);
-                await fetch("/api/documents/upload", {
-                  method: "POST",
-                  credentials: "include",
-                  body: formData,
-                });
-              } catch (saveErr) {
-                console.error("[autoSave] Failed to save document:", saveErr);
-              }
-            }
+            // PDF data is passed to PaywallModal which uploads it AFTER payment succeeds
           }
           toast.dismiss("dl");
         } catch {

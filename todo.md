@@ -327,3 +327,10 @@
 - [x] Mostrar estado de suscripción en apartado Facturación del Dashboard (plan, fecha renovación/expiración)
 - [x] Botón "Cancelar suscripción" con modal de confirmación — cancela al final del ciclo actual
 - [x] Mostrar aviso "Tu acceso expira el [fecha]" si la suscripción está en periodo de cancelación
+
+## Bug crítico: PDF no se guarda tras pago
+- [x] Corregir orden: confirmar suscripción PRIMERO, luego subir PDF (para que el usuario sea premium al subir)
+- [x] Reemplazar upload base64 tRPC por REST multipart en CheckoutForm (evita límite de tamaño)
+- [x] Añadir reintento automático si el upload falla en el primer intento
+- [x] Eliminar auto-save pre-pago (causaba duplicados y subía antes de tener suscripción activa)
+- [x] Invalidar cache de documentos tras upload exitoso para que aparezca inmediatamente en el panel

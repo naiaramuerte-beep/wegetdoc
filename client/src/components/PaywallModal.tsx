@@ -60,8 +60,27 @@ function CheckoutForm({
 
   const createSetupIntent = trpc.subscription.createSetupIntent.useMutation();
   const confirmSubscription = trpc.subscription.confirmSubscription.useMutation();
-  const uploadDocument = trpc.documents.upload.useMutation();
   const utils = trpc.useUtils();
+
+  // Upload PDF via REST multipart (avoids tRPC base64 size limits)
+  const uploadPdfViaRest = async (pdfData: { base64: string; name: string; size: number }): Promise<void> => {
+    const binary = atob(pdfData.base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const blob = new Blob([bytes], { type: "application/pdf" });
+    const formData = new FormData();
+    formData.append("file", blob, pdfData.name);
+    formData.append("name", pdfData.name);
+    const resp = await fetch("/api/documents/upload", {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => "");
+      throw new Error(`Upload failed: ${resp.status} ${text}`);
+    }
+  };
 
   useEffect(() => {
     createSetupIntent.mutateAsync().then((result) => {
@@ -119,25 +138,28 @@ function CheckoutForm({
           ? setupIntent.payment_method
           : setupIntent.payment_method.id;
 
-      if (pdfData) {
-        try {
-          const doc = await uploadDocument.mutateAsync({
-            name: pdfData.name,
-            base64: pdfData.base64,
-            size: pdfData.size,
-          });
-          if (doc) {
-            localStorage.setItem("pdfpro_pending_doc_id", String(doc.id));
-            localStorage.setItem("pdfpro_pending_doc_name", pdfData.name);
-            localStorage.setItem("pdfpro_pending_doc_url", doc.fileUrl ?? "");
-          }
-        } catch (uploadErr) {
-          console.error("PDF upload failed:", uploadErr);
-        }
-      }
-
+      // 1. Confirm subscription first (so the user is premium when we upload)
       await confirmSubscription.mutateAsync({ paymentMethodId, customerId });
       await utils.subscription.status.invalidate();
+
+      // 2. Upload PDF now that subscription is active
+      if (pdfData) {
+        try {
+          await uploadPdfViaRest(pdfData);
+          await utils.documents.list.invalidate();
+        } catch (uploadErr) {
+          // Upload failed — try once more
+          console.error("PDF upload failed (attempt 1):", uploadErr);
+          try {
+            await uploadPdfViaRest(pdfData);
+            await utils.documents.list.invalidate();
+          } catch (uploadErr2) {
+            console.error("PDF upload failed (attempt 2):", uploadErr2);
+            // Don't block success — user paid, subscription is active
+            // The PDF is still in sessionStorage so they can retry from the editor
+          }
+        }
+      }
 
       toast.success(t.paywall_doc_ready + " " + t.paywall_processing);
       onSuccess();
