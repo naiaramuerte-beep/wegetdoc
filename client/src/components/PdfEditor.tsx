@@ -230,31 +230,39 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
   const uploadDocMutation = trpc.documents.upload.useMutation();
 
-  // ── Save PDF to My Documents ──────────────────────────────────
+  // ── Save PDF to My Documents ──────────────────────────────
   const savePdf = async () => {
     if (!isAuthenticated) {
-      toast.error("Please log in to save documents");
+      toast.error("Inicia sesión para guardar documentos");
       return;
     }
     if (!pdfBytes) {
-      toast.error("No PDF loaded");
+      toast.error("No hay PDF cargado");
       return;
     }
     setIsSaving(true);
-    toast.loading("Saving document...", { id: "save" });
+    toast.loading(t.editor_saving ?? "Guardando documento...", { id: "save" });
     try {
       const out = await buildAnnotatedPdf();
       if (!out) throw new Error("Failed to build PDF");
-      const base64 = Buffer.from(out).toString("base64");
-      await uploadDocMutation.mutateAsync({
-        name: file?.name ?? "document.pdf",
-        base64,
-        size: out.byteLength,
+      // Use REST multipart upload to avoid tRPC base64 size limits
+      const blob = new Blob([out.buffer as ArrayBuffer], { type: "application/pdf" });
+      const formData = new FormData();
+      formData.append("file", blob, file?.name ?? "document.pdf");
+      formData.append("name", file?.name ?? "document.pdf");
+      const resp = await fetch("/api/documents/upload", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
       });
-      toast.success("Document saved to My Documents!", { id: "save" });
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.error ?? `HTTP ${resp.status}`);
+      }
+      toast.success("Documento guardado en Mis Documentos!", { id: "save" });
     } catch (err) {
       console.error(err);
-      toast.error("Failed to save document", { id: "save" });
+      toast.error("Error al guardar el documento", { id: "save" });
     } finally {
       setIsSaving(false);
     }
@@ -276,7 +284,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const thumbs: string[] = [];
     for (let i = 1; i <= Math.min(doc.numPages, 20); i++) {
       const page = await doc.getPage(i);
-      const vp = page.getViewport({ scale: 0.2 });
+      const vp = page.getViewport({ scale: 0.4 });
       const c = document.createElement("canvas");
       c.width = vp.width; c.height = vp.height;
       const ctx = c.getContext("2d")!;
@@ -1824,73 +1832,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 {t.editor_loading_text_blocks}
               </div>
             )}
-            {/* Editing inline panel */}
-            {editingBlockId && (() => {
-              const block = nativeTextBlocks.find(b => b.id === editingBlockId);
-              if (!block) return null;
-              return (
-                <div className="flex flex-col gap-2 p-3 rounded-lg border" style={{ borderColor: "oklch(0.75 0.10 260)", backgroundColor: "oklch(0.98 0.005 250)" }}>
-                  <p className="text-xs font-semibold" style={{ color: "oklch(0.25 0.03 250)" }}>Editando bloque:</p>
-                  <p className="text-xs italic" style={{ color: "oklch(0.55 0.02 250)" }}>Original: "{block.str}"</p>
-                  <textarea
-                    value={editingBlockText}
-                    onChange={e => setEditingBlockText(e.target.value)}
-                    rows={3}
-                    className="w-full rounded border p-2 text-sm resize-none"
-                    style={{ borderColor: "oklch(0.75 0.10 260)" }}
-                    autoFocus
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setAllNativeTextBlocks(prev => {
-                          const pageBlocks = prev.get(currentPage) ?? [];
-                          const updated = pageBlocks.map((b: NativeTextBlock) =>
-                            b.id === editingBlockId
-                              ? { ...b, editedStr: editingBlockText, fontColor: editTextColor }
-                              : b
-                          );
-                          const next = new Map(prev);
-                          next.set(currentPage, updated);
-                          return next;
-                        });
-                        setEditingBlockId(null);
-                        toast.success("Texto actualizado. Se aplicará al descargar.");
-                      }}
-                      className="flex-1 py-1.5 rounded text-white text-xs font-semibold"
-                      style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
-                    >
-                     {t.editor_save_btn}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setAllNativeTextBlocks(prev => {
-                          const pageBlocks = prev.get(currentPage) ?? [];
-                          const updated = pageBlocks.map((b: NativeTextBlock) =>
-                            b.id === editingBlockId ? { ...b, editedStr: undefined, fontColor: undefined } : b
-                          );
-                          const next = new Map(prev);
-                          next.set(currentPage, updated);
-                          return next;
-                        });
-                        setEditingBlockId(null);
-                      }}
-                      className="flex-1 py-1.5 rounded text-xs border font-medium"
-                      style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.40 0.02 250)" }}
-                    >
-                      Restaurar original
-                    </button>
-                  </div>
-                  <button
-                    onClick={() => setEditingBlockId(null)}
-                    className="text-xs text-center py-1"
-                    style={{ color: "oklch(0.55 0.02 250)" }}
-                  >
-                   {t.editor_cancel_btn}
-                  </button>
-                </div>
-              );
-            })()}
+            {/* Instruction when a block is selected */}
+            {editingBlockId && (
+              <div className="p-2 rounded text-xs" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.1)", color: "oklch(0.30 0.02 250)" }}>
+                Edita el texto directamente sobre el PDF. Pulsa Enter o el botón Guardar para confirmar.
+              </div>
+            )}
             </div>
           </div>
         );
@@ -2403,67 +2350,108 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   }}
                   title={block.editedStr !== undefined ? `Editado: "${block.editedStr}"` : `Clic para editar: "${block.str}"`}
                 >
-                  {/* Inline editor: appears directly on the block when selected */}
+                  {/* Inline editor: floating popup above the block */}
                   {editingBlockId === block.id ? (
-                    <input
-                      autoFocus
-                      value={editingBlockText}
-                      onChange={e => setEditingBlockText(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === "Enter") {
-                          // Save on Enter
-                          setAllNativeTextBlocks(prev => {
-                            const pageBlocks = prev.get(block.page) ?? [];
-                            const updated = pageBlocks.map((b: NativeTextBlock) =>
-                              b.id === block.id
-                                ? { ...b, editedStr: editingBlockText, fontColor: editTextColor }
-                                : b
-                            );
-                            const next = new Map(prev);
-                            next.set(block.page, updated);
-                            return next;
-                          });
-                          setEditingBlockId(null);
-                          toast.success("Texto actualizado");
-                        } else if (e.key === "Escape") {
-                          setEditingBlockId(null);
-                        }
-                        e.stopPropagation();
-                      }}
-                      onBlur={() => {
-                        // Auto-save on blur
-                        if (editingBlockText !== block.str || block.editedStr !== undefined) {
-                          setAllNativeTextBlocks(prev => {
-                            const pageBlocks = prev.get(block.page) ?? [];
-                            const updated = pageBlocks.map((b: NativeTextBlock) =>
-                              b.id === block.id
-                                ? { ...b, editedStr: editingBlockText, fontColor: editTextColor }
-                                : b
-                            );
-                            const next = new Map(prev);
-                            next.set(block.page, updated);
-                            return next;
-                          });
-                        }
-                        setEditingBlockId(null);
-                      }}
-                      onClick={e => e.stopPropagation()}
+                    <div
                       style={{
                         position: "absolute",
-                        inset: 0,
-                        width: "100%",
-                        height: "100%",
-                        fontSize: Math.min(block.fontSize, 14),
-                        color: editTextColor,
+                        left: 0,
+                        top: block.height + 4,
+                        minWidth: Math.max(block.width, 200),
                         background: "white",
-                        border: "none",
-                        outline: "none",
-                        padding: "0 2px",
-                        fontFamily: "Helvetica, Arial, sans-serif",
-                        zIndex: 30,
-                        boxSizing: "border-box",
+                        border: "2px solid oklch(0.55 0.22 260)",
+                        borderRadius: 6,
+                        padding: 8,
+                        zIndex: 100,
+                        boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 6,
                       }}
-                    />
+                      onMouseDown={e => e.stopPropagation()}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <input
+                        autoFocus
+                        value={editingBlockText}
+                        onChange={e => setEditingBlockText(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === "Enter") {
+                            setAllNativeTextBlocks(prev => {
+                              const pageBlocks = prev.get(block.page) ?? [];
+                              const updated = pageBlocks.map((b: NativeTextBlock) =>
+                                b.id === block.id
+                                  ? { ...b, editedStr: editingBlockText, fontColor: editTextColor }
+                                  : b
+                              );
+                              const next = new Map(prev);
+                              next.set(block.page, updated);
+                              return next;
+                            });
+                            setEditingBlockId(null);
+                            toast.success("Texto actualizado");
+                          } else if (e.key === "Escape") {
+                            setEditingBlockId(null);
+                          }
+                          e.stopPropagation();
+                        }}
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                          width: "100%",
+                          fontSize: 13,
+                          color: editTextColor,
+                          background: "#f8f9ff",
+                          border: "1px solid oklch(0.80 0.05 260)",
+                          borderRadius: 4,
+                          outline: "none",
+                          padding: "4px 6px",
+                          fontFamily: "Helvetica, Arial, sans-serif",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                      <div style={{ display: "flex", gap: 4 }}>
+                        <button
+                          onMouseDown={e => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setAllNativeTextBlocks(prev => {
+                              const pageBlocks = prev.get(block.page) ?? [];
+                              const updated = pageBlocks.map((b: NativeTextBlock) =>
+                                b.id === block.id
+                                  ? { ...b, editedStr: editingBlockText, fontColor: editTextColor }
+                                  : b
+                              );
+                              const next = new Map(prev);
+                              next.set(block.page, updated);
+                              return next;
+                            });
+                            setEditingBlockId(null);
+                            toast.success("Texto actualizado");
+                          }}
+                          style={{
+                            flex: 1, padding: "3px 0", borderRadius: 4,
+                            background: "oklch(0.55 0.22 260)", color: "white",
+                            border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
+                          }}
+                        >
+                          {t.editor_save_btn}
+                        </button>
+                        <button
+                          onMouseDown={e => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setEditingBlockId(null);
+                          }}
+                          style={{
+                            flex: 1, padding: "3px 0", borderRadius: 4,
+                            background: "transparent", color: "oklch(0.40 0.02 250)",
+                            border: "1px solid oklch(0.80 0.05 260)", cursor: "pointer", fontSize: 12,
+                          }}
+                        >
+                          {t.editor_cancel_btn}
+                        </button>
+                      </div>
+                    </div>
                   ) : (
                     /* Show edited text preview or original text */
                     <span style={{

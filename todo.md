@@ -253,3 +253,12 @@
 
 ## Bug CRÍTICO - Editar texto
 - [x] Herramienta "Editar texto": corregido — coordenadas PDF directas + editor inline sobre el bloque + auto-guardado al perder foco
+
+## Bug CRÍTICO (v2) - Editar texto sigue sin funcionar
+- [ ] Diagnosticar con prueba real qué coordenadas llegan al export y por qué el texto aparece mal
+- [ ] Reimplementar con enfoque diferente: leer coordenadas directamente desde pdf-lib en el servidor
+
+## Bugs reportados 19/03
+- [x] Panel "Editar texto": eliminado conflicto autoFocus, ahora popup flotante sobre el bloque
+- [x] Miniaturas de páginas: escala corregida de 0.2 a 0.4
+- [x] Error "Failed to save document": cambiado a REST multipart upload (evita límite base64 tRPC)

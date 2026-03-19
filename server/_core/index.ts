@@ -3,12 +3,15 @@ import express from "express";
 import { createServer } from "http";
 import net from "net";
 import Stripe from "stripe";
+import multer from "multer";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { getUserById, upsertSubscription, getBlogPosts } from "../db";
+import { getUserById, upsertSubscription, getBlogPosts, createDocument } from "../db";
+import { storagePut } from "../storage";
+import { sdk } from "./sdk";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -174,6 +177,39 @@ ${allUrls.map(u => `  <url>
       res.send(xml);
     } catch {
       res.status(500).send("Error generating sitemap");
+    }
+  });
+
+  // ── REST endpoint for PDF upload (avoids tRPC base64 size limits) ─────────────
+  const pdfUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
+  app.post("/api/documents/upload", pdfUpload.single("file"), async (req, res) => {
+    try {
+      // Authenticate via session cookie using the same SDK as tRPC
+      let userId: number;
+      try {
+        const user = await sdk.authenticateRequest(req as any);
+        userId = user.id;
+      } catch {
+        res.status(401).json({ error: "Unauthorized" }); return;
+      }
+      const file = req.file;
+      if (!file) { res.status(400).json({ error: "No file" }); return; }
+      const name = (req.body.name as string) || file.originalname || "document.pdf";
+      const folderId = req.body.folderId ? parseInt(req.body.folderId) : undefined;
+      const key = `docs/${userId}/${Date.now()}-${name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      const { url } = await storagePut(key, file.buffer, "application/pdf");
+      const doc = await createDocument({
+        userId,
+        name,
+        fileKey: key,
+        fileUrl: url,
+        fileSize: file.size,
+        folderId,
+      });
+      res.json({ success: true, doc });
+    } catch (err) {
+      console.error("[Upload] Error:", err);
+      res.status(500).json({ error: "Upload failed" });
     }
   });
 
