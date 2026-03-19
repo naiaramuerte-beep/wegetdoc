@@ -283,7 +283,7 @@ export default function PaywallModal({
 }: PaywallModalProps) {
   const { t } = useLanguage();
   const { isAuthenticated } = useAuth();
-  const { savePdfToSession, setPendingPaywall, pendingFile } = usePdfFile();
+  const { savePdfToSession, setPendingPaywall, pendingFile, pendingEditedPdf, clearPendingEditedPdf } = usePdfFile();
   const [step, setStep] = useState<Step>(isAuthenticated ? "plans" : "auth-choice");
   const [emailInput, setEmailInput] = useState("");
 
@@ -291,6 +291,8 @@ export default function PaywallModal({
 
   const currentStep = isAuthenticated ? "plans" : step;
   const actionLabel = action ?? t.paywall_pay_download.toLowerCase();
+  // Use pdfData from prop OR from sessionStorage-restored pendingEditedPdf (after login redirect)
+  const effectivePdfData = pdfData ?? pendingEditedPdf ?? undefined;
 
   const handleGoogleLogin = async () => {
     if (pendingFile) {
@@ -313,6 +315,8 @@ export default function PaywallModal({
   };
 
   const handlePaymentSuccess = () => {
+    // Clear the persisted edited PDF so it doesn't get re-uploaded on future payments
+    clearPendingEditedPdf();
     onClose();
     if (onPaymentSuccess) onPaymentSuccess();
   };
@@ -465,7 +469,7 @@ export default function PaywallModal({
             <Elements stripe={stripePromise}>
               <CheckoutForm
                 onSuccess={handlePaymentSuccess}
-                pdfData={pdfData}
+                pdfData={effectivePdfData}
               />
             </Elements>
           </>

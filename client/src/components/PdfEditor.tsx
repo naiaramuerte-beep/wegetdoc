@@ -20,6 +20,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import PaywallModal from "./PaywallModal";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePdfFile } from "@/contexts/PdfFileContext";
 import * as pdfjsLib from "pdfjs-dist";
 import { PDFDocument, rgb, StandardFonts, degrees } from "pdf-lib";
 
@@ -266,6 +267,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const isPremium = subData?.isPremium ?? false;
   const { t } = useLanguage();
   const { isAuthenticated } = useAuth();
+  const { saveEditedPdfToSession } = usePdfFile();
   const [, navigate] = useLocation();
   const [isSaving, setIsSaving] = useState(false);
 
@@ -1309,8 +1311,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       setIsSearching(false);
     }
   };
-
-  // ── Download with annotations ──────────────────────────────────────────────────────
+  // ── Download with annotations ─────────────────────────────────────────────────────────────────────────────────
   const downloadPdf = async () => {
     if (!isPremium) {
       // Build PDF and pass to paywall so it can be uploaded to S3 before checkout
@@ -1320,7 +1321,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           const out = await buildAnnotatedPdf();
           if (out) {
             const base64 = Buffer.from(out).toString("base64");
-            setPdfDataForPaywall({ base64, name: file?.name ?? "document.pdf", size: out.byteLength });
+            const docName = file?.name ?? "document.pdf";
+            const docSize = out.byteLength;
+            setPdfDataForPaywall({ base64, name: docName, size: docSize });
+            // Also persist in sessionStorage so it survives login redirect
+            saveEditedPdfToSession(base64, docName, docSize);
           }
           toast.dismiss("dl");
         } catch {

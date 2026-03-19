@@ -303,3 +303,9 @@
 - [x] Corregir precio mostrado en PaywallModal (mostrar 0,50€ en lugar de 0,00€)
 - [x] Añadir botón "Editar" en documentos del panel de usuario
 - [x] Tras pago exitoso, redirigir automáticamente al panel de documentos
+
+## Bug crítico: documento no se guarda antes del pago
+- [x] Generar PDF final con anotaciones y guardarlo en sessionStorage antes del redirect de login
+- [x] Restaurar PDF editado desde sessionStorage tras el login y pasarlo al PaywallModal
+- [x] Subir PDF editado a S3 durante el pago (en CheckoutForm) y guardarlo en DB
+- [x] Tras el pago, el documento ya aparece en el panel del usuario listo para descargar
