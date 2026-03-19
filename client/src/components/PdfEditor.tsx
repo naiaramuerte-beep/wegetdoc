@@ -5,6 +5,7 @@
    ============================================================= */
 import { useState, useRef, useCallback, useEffect } from "react";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
 import {
   Download, ChevronLeft, ChevronRight, ZoomIn, ZoomOut,
   Undo2, Redo2, PenTool, Type, Highlighter, Eraser, Brush,
@@ -12,8 +13,10 @@ import {
   Minimize2, Move, StickyNote, FileText, Trash2, RotateCw,
   Plus, Scissors, Layers, X, Upload, Check, Eye, EyeOff,
   AlignLeft, Bold, Italic, Underline, ChevronDown, Lock, Unlock,
+  Save,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import PaywallModal from "./PaywallModal";
 import { useLanguage } from "@/contexts/LanguageContext";
 import * as pdfjsLib from "pdfjs-dist";
@@ -189,6 +192,41 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   });
   const isPremium = subData?.isPremium ?? false;
   const { t } = useLanguage();
+  const { isAuthenticated } = useAuth();
+  const [, navigate] = useLocation();
+  const [isSaving, setIsSaving] = useState(false);
+
+  const uploadDocMutation = trpc.documents.upload.useMutation();
+
+  // ── Save PDF to My Documents ──────────────────────────────────
+  const savePdf = async () => {
+    if (!isAuthenticated) {
+      toast.error("Please log in to save documents");
+      return;
+    }
+    if (!pdfBytes) {
+      toast.error("No PDF loaded");
+      return;
+    }
+    setIsSaving(true);
+    toast.loading("Saving document...", { id: "save" });
+    try {
+      const out = await buildAnnotatedPdf();
+      if (!out) throw new Error("Failed to build PDF");
+      const base64 = Buffer.from(out).toString("base64");
+      await uploadDocMutation.mutateAsync({
+        name: file?.name ?? "document.pdf",
+        base64,
+        size: out.byteLength,
+      });
+      toast.success("Document saved to My Documents!", { id: "save" });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save document", { id: "save" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // ── Load PDF ─────────────────────────────────────────────────
   const loadPdf = useCallback(async (f: File) => {
@@ -1744,6 +1782,17 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           </button>
         )}
         <div className="w-px h-5 mx-1 shrink-0" style={{ backgroundColor: "oklch(0.88 0.02 250)" }} />
+        {/* Save */}
+        <button
+          onClick={savePdf}
+          disabled={isSaving || !pdfBytes}
+          className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all shrink-0 border"
+          style={{ borderColor: "oklch(0.75 0.10 260)", color: "oklch(0.30 0.04 250)", backgroundColor: "white" }}
+          onMouseEnter={e => { e.currentTarget.style.backgroundColor = "oklch(0.96 0.01 250)"; }}
+          onMouseLeave={e => { e.currentTarget.style.backgroundColor = "white"; }}
+        >
+          <Save className="w-4 h-4" />{isSaving ? "Saving..." : "Save"}
+        </button>
         {/* Download */}
         <button
           onClick={downloadPdf}
@@ -2095,19 +2144,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         </div>
         {/* Download row */}
         <div className="flex items-center gap-2 px-3 pb-3 pt-1">
-          {/* Share button */}
+          {/* Save button */}
           <button
-            onClick={() => {
-              if (navigator.share && file) {
-                navigator.share({ title: file.name, text: "Edited PDF" }).catch(() => {});
-              } else {
-                toast.info("Share not supported on this browser");
-              }
-            }}
-            className="flex items-center justify-center w-12 h-12 rounded-xl border shrink-0 transition-all"
-            style={{ borderColor: "oklch(0.85 0.02 250)", color: "oklch(0.35 0.02 250)" }}
+            onClick={savePdf}
+            disabled={isSaving || !pdfBytes}
+            className="flex items-center justify-center gap-1.5 w-14 h-12 rounded-xl border shrink-0 transition-all text-xs font-semibold"
+            style={{ borderColor: "oklch(0.75 0.10 260)", color: "oklch(0.30 0.04 250)", backgroundColor: "white" }}
           >
-            <Upload className="w-5 h-5" />
+            <Save className="w-4 h-4" />
+            {isSaving ? "..." : "Save"}
           </button>
           {/* Download button */}
           <button

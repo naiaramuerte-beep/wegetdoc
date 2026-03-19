@@ -261,3 +261,26 @@
 - [x] Botón "Pay and download" negro
 - [x] Preview del PDF a la izquierda del modal
 - [x] Backend: cobrar 0,50€ real (PaymentIntent inmediato + suscripción 49,95€/mes con trial 7 días)
+
+## Flujo completo pdfe.com
+- [ ] Editor: botón "Save" guarda PDF en My Documents sin pagar
+- [ ] Editor: botón "Download" abre directamente el modal de pago (si no tiene suscripción)
+- [ ] Editor: si tiene suscripción activa, Download descarga directamente sin modal
+- [ ] My Documents: columna "Timer" con cuenta atrás de 24h para usuarios sin suscripción
+- [ ] My Documents: popup "Download not available" con botón "Subscribe" → /billing
+- [ ] Página /billing: tabla de planes Trial 0,50€ / Monthly 49,95€
+- [ ] Página /billing: tabla comparativa de funciones (Trial vs Monthly)
+- [ ] Página /billing: FAQ con preguntas frecuentes
+- [ ] Página /billing: modal de pago con tarjeta al pulsar "Start Test"
+
+## Flujo completo pdfe.com
+- [x] Botón Save en el editor (desktop + móvil)
+- [x] My Documents: tabla con columnas Name, Updated Date, Size, Timer
+- [x] Timer 24h: cuenta atrás desde createdAt para usuarios sin suscripción
+- [x] Popup "Download not available" con botón Subscribe → /billing
+- [x] Banner "Make the most of your account" con Upgrade now → /billing
+- [x] Página /billing con tabla de planes Trial 0,50€ / Monthly 49,95€
+- [x] Tabla comparativa de funciones (Trial vs Monthly)
+- [x] FAQ en página de Billing
+- [x] Modal de pago con tarjeta se abre desde botón "Start Test" en Billing
+- [x] Sidebar Dashboard: Facturación → navega a /billing
