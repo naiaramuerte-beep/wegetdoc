@@ -291,7 +291,7 @@ function DocumentsTab() {
   const [newFolderName, setNewFolderName] = useState("");
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [showDownloadPopup, setShowDownloadPopup] = useState(false);
-  const [, navigate] = useLocation();
+  const [, navigateTo] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
 
   const deleteMutation = trpc.documents.delete.useMutation({
@@ -337,7 +337,7 @@ function DocumentsTab() {
             </div>
           </div>
           <Button
-            onClick={() => navigate("/billing")}
+            onClick={() => navigateTo("/billing")}
             className="bg-slate-900 hover:bg-slate-800 text-white shrink-0 ml-4"
             size="sm"
           >
@@ -519,7 +519,7 @@ function DocumentsTab() {
               </div>
             </div>
             <Button
-              onClick={() => { setShowDownloadPopup(false); navigate("/billing"); }}
+              onClick={() => { setShowDownloadPopup(false); navigateTo("/billing"); }}
               className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold h-11 mb-2"
             >
               Subscribe

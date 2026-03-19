@@ -284,3 +284,17 @@
 - [x] FAQ en página de Billing
 - [x] Modal de pago con tarjeta se abre desde botón "Start Test" en Billing
 - [x] Sidebar Dashboard: Facturación → navega a /billing
+
+## Edit Text - Detección y edición de texto nativo del PDF
+- [ ] Detectar bloques de texto con pdf.js getTextContent() por página
+- [ ] Mostrar cajas editables con borde punteado sobre cada bloque de texto
+- [ ] Al hacer clic en una caja: textarea editable con mismo font-size aproximado
+- [ ] Guardar ediciones de texto como anotaciones tipo "textEdit"
+- [ ] Al descargar: capa blanca sobre texto original + nuevo texto encima con pdf-lib
+
+## Firma - Rediseño modal estilo pdfe.com
+- [ ] Tab "Draw signature": lienzo más grande, selector de color, slider de grosor, botón Clear
+- [ ] Tab "Write signature": input texto + dropdown 5 fuentes (Alex Brush, Dancing Script, Great Vibes, Pacifico, Sacramento) + preview en tiempo real
+- [ ] Tab "Use image": subir imagen escaneada de la firma
+- [ ] Botones Cancel / Create and use
+- [ ] Fuentes caligráficas cargadas desde Google Fonts

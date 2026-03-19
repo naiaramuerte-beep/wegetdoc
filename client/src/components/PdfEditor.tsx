@@ -45,9 +45,20 @@ type ToolName =
   | "convert-jpg" | "convert-png" | "convert-word" | "convert-excel" | "convert-ppt" | "convert-html"
   | "word-to-pdf" | "excel-to-pdf" | "ppt-to-pdf" | "jpg-to-pdf" | "png-to-pdf" | "merge";
 
+interface NativeTextBlock {
+  id: string;
+  str: string;
+  x: number; // in PDF points
+  y: number; // in PDF points (from bottom)
+  width: number;
+  height: number;
+  fontSize: number;
+  pageHeight: number; // page height in PDF points
+}
+
 interface Annotation {
   id: string;
-  type: "signature" | "text" | "highlight" | "note" | "shape" | "image" | "drawing" | "eraser";
+  type: "signature" | "text" | "highlight" | "note" | "shape" | "image" | "drawing" | "eraser" | "textEdit";
   dataUrl?: string;
   text?: string;
   x: number; y: number;
@@ -128,8 +139,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // Sign tool state
   const [isSignDrawing, setIsSignDrawing] = useState(false);
   const signCanvasRef = useRef<HTMLCanvasElement>(null);
-  const [signTab, setSignTab] = useState<"draw" | "name" | "esign">("draw"); // draw, name, or esign
-  const [signName, setSignName] = useState(""); // name for auto-generated signature
+  const [signTab, setSignTab] = useState<"draw" | "write" | "image">("draw"); // draw, write, or image
+  const [signColor, setSignColor] = useState("#1a237e"); // draw tab color
+  const [signStrokeWidth, setSignStrokeWidth] = useState(2.5); // draw tab stroke width
+  const [signName, setSignName] = useState(""); // name for write tab
+  const [signFont, setSignFont] = useState("'Dancing Script', cursive"); // font for write tab
   const [eSignName, setESignName] = useState(""); // full name for electronic signature
   const [eSignEmail, setESignEmail] = useState(""); // email for electronic signature
 
@@ -175,6 +189,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
   // Note state
   const [noteText, setNoteText] = useState("");
+
+  // Edit-text tool state
+  const [nativeTextBlocks, setNativeTextBlocks] = useState<NativeTextBlock[]>([]);
+  const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+  const [editingBlockText, setEditingBlockText] = useState("");
 
   const viewerRef = useRef<HTMLDivElement>(null);
   const viewerContainerRef = useRef<HTMLDivElement>(null);
@@ -539,8 +558,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const c = signCanvasRef.current!;
     const ctx = c.getContext("2d")!;
     const { x, y } = getSignCoords(e.clientX, e.clientY);
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = "#1a237e";
+    ctx.lineWidth = signStrokeWidth;
+    ctx.strokeStyle = signColor;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.lineTo(x, y);
@@ -565,8 +584,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const c = signCanvasRef.current!;
     const ctx = c.getContext("2d")!;
     const { x, y } = getSignCoords(touch.clientX, touch.clientY);
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = "#1a237e";
+    ctx.lineWidth = signStrokeWidth;
+    ctx.strokeStyle = signColor;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.lineTo(x, y);
@@ -584,32 +603,33 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const c = signCanvasRef.current!;
     const dataUrl = c.toDataURL();
     addAnnotation({ type: "signature", dataUrl, x: 100, y: 100, width: 200, height: 80, page: currentPage });
-    toast.success("Firma añadida. Arrástrala a la posición deseada.");
+    toast.success("Signature added. Drag it to position.");
     // Keep sign tool active so user can add multiple signatures
   };
   // Generate a cursive-style signature from a typed name using canvas
   const placeNameSignature = () => {
-    if (!signName.trim()) { toast.error("Escribe tu nombre primero"); return; }
+    if (!signName.trim()) { toast.error("Type your name first"); return; }
     const c = document.createElement("canvas");
-    const fontSize = 42;
-    c.width = Math.max(200, signName.length * 28);
-    c.height = 80;
+    const fontSize = 48;
+    // Estimate width based on font
+    c.width = Math.max(220, signName.length * 32);
+    c.height = 90;
     const ctx = c.getContext("2d")!;
     ctx.clearRect(0, 0, c.width, c.height);
-    ctx.font = `italic ${fontSize}px 'Dancing Script', 'Brush Script MT', cursive`;
-    ctx.fillStyle = "#1a237e";
+    ctx.font = `${fontSize}px ${signFont}`;
+    ctx.fillStyle = signColor;
     ctx.textBaseline = "middle";
     // Draw a subtle underline
     ctx.beginPath();
-    ctx.moveTo(4, 68);
-    ctx.lineTo(c.width - 4, 68);
-    ctx.strokeStyle = "#1a237e";
+    ctx.moveTo(4, 78);
+    ctx.lineTo(c.width - 4, 78);
+    ctx.strokeStyle = signColor;
     ctx.lineWidth = 1.5;
     ctx.stroke();
-    ctx.fillText(signName, 8, 42);
+    ctx.fillText(signName, 8, 46);
     const dataUrl = c.toDataURL();
-    addAnnotation({ type: "signature", dataUrl, x: 100, y: 100, width: Math.max(200, signName.length * 28), height: 80, page: currentPage });
-    toast.success("Firma añadida. Arrástrala a la posición deseada.");
+    addAnnotation({ type: "signature", dataUrl, x: 100, y: 100, width: Math.max(220, signName.length * 32), height: 90, page: currentPage });
+    toast.success("Signature added. Drag it to position.");
   };
 
   // Generate electronic signature block (name + date + legal text rendered to canvas)
@@ -1221,55 +1241,136 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           <div className="flex flex-col">
             {ActionBar}
             <div className="p-4 flex flex-col gap-3">
-            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Añadir firma</h3>
-            {/* Tabs: Dibujar / Nombre */}
+            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Add Signature</h3>
+            {/* Tabs: Draw / Write / Image */}
             <div className="flex gap-1 p-1 rounded-lg" style={{ backgroundColor: "oklch(0.93 0.01 250)" }}>
-              <button
-                onClick={() => setSignTab("draw")}
-                className="flex-1 py-1.5 rounded text-xs font-medium transition-all"
-                style={{ backgroundColor: signTab === "draw" ? "#fff" : "transparent", color: signTab === "draw" ? "oklch(0.15 0.03 250)" : "oklch(0.50 0.02 250)", boxShadow: signTab === "draw" ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}
-              >Dibujar</button>
-              <button
-                onClick={() => setSignTab("name")}
-                className="flex-1 py-1.5 rounded text-xs font-medium transition-all"
-                style={{ backgroundColor: signTab === "name" ? "#fff" : "transparent", color: signTab === "name" ? "oklch(0.15 0.03 250)" : "oklch(0.50 0.02 250)", boxShadow: signTab === "name" ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}
-              >Nombre</button>
+              {(["draw", "write", "image"] as const).map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setSignTab(tab)}
+                  className="flex-1 py-1.5 rounded text-xs font-medium transition-all"
+                  style={{
+                    backgroundColor: signTab === tab ? "#fff" : "transparent",
+                    color: signTab === tab ? "oklch(0.15 0.03 250)" : "oklch(0.50 0.02 250)",
+                    boxShadow: signTab === tab ? "0 1px 3px rgba(0,0,0,0.1)" : "none"
+                  }}
+                >{tab === "draw" ? "Draw" : tab === "write" ? "Write" : "Image"}</button>
+              ))}
             </div>
-            {signTab === "draw" ? (
+
+            {/* ── Draw Tab ── */}
+            {signTab === "draw" && (
               <>
-                <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Dibuja tu firma con el ratón o dedo:</p>
                 <canvas
                   ref={signCanvasRef}
-                  width={220} height={100}
-                  className="border rounded-lg cursor-crosshair"
-                  style={{ borderColor: "oklch(0.80 0.05 260)", backgroundColor: "#fff", touchAction: "none" }}
+                  width={260} height={130}
+                  className="w-full border rounded-lg cursor-crosshair"
+                  style={{ borderColor: "oklch(0.80 0.05 260)", backgroundColor: "#fff", touchAction: "none", display: "block" }}
                   onMouseDown={startSign} onMouseMove={drawSign}
                   onMouseUp={endSign} onMouseLeave={endSign}
                   onTouchStart={startSignTouch} onTouchMove={drawSignTouch}
                   onTouchEnd={endSignTouch}
                 />
+                {/* Color + stroke width controls */}
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Color</label>
+                    <input type="color" value={signColor} onChange={e => setSignColor(e.target.value)} className="w-7 h-7 rounded cursor-pointer border-0" />
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-1">
+                    <label className="text-xs whitespace-nowrap" style={{ color: "oklch(0.50 0.02 250)" }}>Width: {signStrokeWidth}px</label>
+                    <input type="range" min={1} max={8} step={0.5} value={signStrokeWidth} onChange={e => setSignStrokeWidth(Number(e.target.value))} className="flex-1" />
+                  </div>
+                </div>
                 <div className="flex gap-2">
-                  <button onClick={clearSign} className="flex-1 py-1.5 rounded text-xs border" style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.40 0.02 250)" }}>Limpiar</button>
-                  <button onClick={placeSignature} className="flex-1 py-1.5 rounded text-xs text-white font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>Insertar firma</button>
+                  <button onClick={clearSign} className="flex-1 py-2 rounded text-xs border font-medium" style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.40 0.02 250)" }}>Clear</button>
+                  <button onClick={placeSignature} className="flex-1 py-2 rounded text-xs text-white font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>Insert signature</button>
                 </div>
               </>
-            ) : (
+            )}
+
+            {/* ── Write Tab ── */}
+            {signTab === "write" && (
               <>
-                <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Escribe tu nombre y generaremos una firma estilo cursiva:</p>
                 <input
                   type="text"
                   value={signName}
                   onChange={e => setSignName(e.target.value)}
-                  placeholder="Ej: Juan García"
+                  placeholder="Type your name..."
                   className="w-full border rounded px-3 py-2 text-sm"
-                  style={{ borderColor: "oklch(0.80 0.05 260)", fontFamily: "'Dancing Script', cursive", fontSize: 22, color: "#1a237e" }}
+                  style={{ borderColor: "oklch(0.80 0.05 260)", fontFamily: signFont, fontSize: 20, color: signColor }}
                 />
-                {signName.trim() && (
-                  <div className="rounded border p-3 text-center" style={{ borderColor: "oklch(0.88 0.02 250)", fontFamily: "'Dancing Script', cursive", fontSize: 28, color: "#1a237e", borderBottom: "2px solid #1a237e", backgroundColor: "#fafafa" }}>
-                    {signName}
-                  </div>
-                )}
-                <button onClick={placeNameSignature} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>Insertar firma</button>
+                {/* Font selector */}
+                <div className="grid grid-cols-1 gap-1.5">
+                  {[
+                    { label: "Dancing Script", value: "'Dancing Script', cursive" },
+                    { label: "Alex Brush", value: "'Alex Brush', cursive" },
+                    { label: "Great Vibes", value: "'Great Vibes', cursive" },
+                    { label: "Pacifico", value: "'Pacifico', cursive" },
+                    { label: "Sacramento", value: "'Sacramento', cursive" },
+                  ].map(f => (
+                    <button
+                      key={f.value}
+                      onClick={() => setSignFont(f.value)}
+                      className="px-3 py-2 rounded border text-left transition-all"
+                      style={{
+                        borderColor: signFont === f.value ? "oklch(0.55 0.22 260)" : "oklch(0.88 0.02 250)",
+                        backgroundColor: signFont === f.value ? "oklch(0.55 0.22 260 / 0.08)" : "#fff",
+                        fontFamily: f.value,
+                        fontSize: 20,
+                        color: signColor,
+                      }}
+                    >{signName || f.label}</button>
+                  ))}
+                </div>
+                {/* Color picker */}
+                <div className="flex items-center gap-2">
+                  <label className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Color</label>
+                  <input type="color" value={signColor} onChange={e => setSignColor(e.target.value)} className="w-7 h-7 rounded cursor-pointer border-0" />
+                </div>
+                <button
+                  onClick={placeNameSignature}
+                  className="py-2 rounded text-white text-sm font-semibold"
+                  style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
+                >Insert signature</button>
+              </>
+            )}
+
+            {/* ── Image Tab ── */}
+            {signTab === "image" && (
+              <>
+                <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Upload a scanned signature image (PNG with transparent background works best):</p>
+                <label
+                  className="flex flex-col items-center justify-center gap-2 py-8 rounded-lg border-2 border-dashed cursor-pointer transition-all"
+                  style={{ borderColor: "oklch(0.80 0.05 260)", backgroundColor: "oklch(0.97 0.005 250)" }}
+                >
+                  <Upload className="w-8 h-8" style={{ color: "oklch(0.55 0.22 260)" }} />
+                  <span className="text-sm font-medium" style={{ color: "oklch(0.35 0.02 250)" }}>Click to upload image</span>
+                  <span className="text-xs" style={{ color: "oklch(0.55 0.02 250)" }}>PNG, JPG, GIF supported</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = ev => {
+                        const dataUrl = ev.target?.result as string;
+                        const img = new Image();
+                        img.onload = () => {
+                          const aspect = img.width / img.height;
+                          const w = Math.min(240, img.width);
+                          const h = w / aspect;
+                          addAnnotation({ type: "signature", dataUrl, x: 100, y: 100, width: w, height: h, page: currentPage });
+                          toast.success("Signature image added. Drag it to position.");
+                        };
+                        img.src = dataUrl;
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </label>
               </>
             )}
             </div>
