@@ -246,3 +246,7 @@
 - [x] Anotaciones arrastrables sin cambiar a herramienta mover (desktop mouse)
 - [x] Anotaciones arrastrables sin cambiar a herramienta mover (móvil touch)
 - [x] Handle de resize visible siempre en anotación seleccionada
+
+## i18n - Textos hardcodeados en PdfEditor
+- [x] Traducir "Selecciona una herramienta para comenzar" y textos del estado vacío
+- [x] Traducir todos los textos hardcodeados del editor (tooltips, mensajes, etc.) - 10 idiomas
