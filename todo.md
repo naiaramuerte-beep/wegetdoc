@@ -286,11 +286,13 @@
 - [x] Sidebar Dashboard: Facturación → navega a /billing
 
 ## Edit Text - Detección y edición de texto nativo del PDF
-- [ ] Detectar bloques de texto con pdf.js getTextContent() por página
-- [ ] Mostrar cajas editables con borde punteado sobre cada bloque de texto
-- [ ] Al hacer clic en una caja: textarea editable con mismo font-size aproximado
-- [ ] Guardar ediciones de texto como anotaciones tipo "textEdit"
-- [ ] Al descargar: capa blanca sobre texto original + nuevo texto encima con pdf-lib
+- [x] Reducir keywords SEO en index.html a máximo 8 palabras clave enfocadas
+- [x] Corregir error de sintaxis en PdfEditor.tsx (overlay de texto nativo roto)
+- [x] Detectar bloques de texto con pdf.js getTextContent() por página
+- [x] Mostrar cajas editables con borde punteado sobre cada bloque de texto
+- [x] Al hacer clic en una caja: textarea editable en panel lateral con mismo font-size aproximado
+- [x] Guardar ediciones de texto en nativeTextBlocks con editedStr
+- [x] Al descargar: capa blanca sobre texto original + nuevo texto encima con pdf-lib
 
 ## Firma - Rediseño modal estilo pdfe.com
 - [ ] Tab "Draw signature": lienzo más grande, selector de color, slider de grosor, botón Clear

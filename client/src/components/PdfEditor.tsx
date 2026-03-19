@@ -48,12 +48,15 @@ type ToolName =
 interface NativeTextBlock {
   id: string;
   str: string;
+  editedStr?: string; // if set, this replaces str on export
   x: number; // in PDF points
   y: number; // in PDF points (from bottom)
   width: number;
   height: number;
   fontSize: number;
   pageHeight: number; // page height in PDF points
+  page: number; // 1-indexed page number
+  fontColor?: string; // hex color e.g. "#000000"
 }
 
 interface Annotation {
@@ -194,6 +197,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const [nativeTextBlocks, setNativeTextBlocks] = useState<NativeTextBlock[]>([]);
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [editingBlockText, setEditingBlockText] = useState("");
+  const [editTextColor, setEditTextColor] = useState("#000000");
+  const [nativeTextPage, setNativeTextPage] = useState<number>(0); // which page was loaded
 
   const viewerRef = useRef<HTMLDivElement>(null);
   const viewerContainerRef = useRef<HTMLDivElement>(null);
@@ -323,6 +328,49 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       onPaywallOpened?.();
     }
   }, [initialOpenPaywall, pdfDoc, onPaywallOpened]);
+
+  // ── Load native text blocks for Edit-Text tool ──────────────
+  const loadNativeTextBlocks = useCallback(async (pageNum: number) => {
+    if (!pdfDoc) return;
+    const page = await pdfDoc.getPage(pageNum);
+    const vp = page.getViewport({ scale });
+    const content = await page.getTextContent();
+    const blocks: NativeTextBlock[] = [];
+    for (const item of content.items as any[]) {
+      if (!item.str || !item.str.trim()) continue;
+      // item.transform = [a, b, c, d, e, f] where (e,f) is bottom-left in PDF points (from bottom)
+      const [a, b, c, d, e, f] = item.transform as number[];
+      const fontSize = Math.sqrt(a * a + b * b); // approximate font size from transform
+      const pdfPageHeight = vp.height / scale; // page height in PDF points
+      // Convert PDF point coords to canvas pixel coords
+      // PDF y is from bottom; canvas y is from top
+      const canvasX = e * scale;
+      const canvasY = (pdfPageHeight - f) * scale - fontSize * scale;
+      const canvasW = (item.width ?? item.str.length * fontSize * 0.6) * scale;
+      const canvasH = fontSize * scale * 1.2;
+      blocks.push({
+        id: Math.random().toString(36).slice(2),
+        str: item.str,
+        x: canvasX,
+        y: canvasY,
+        width: Math.max(canvasW, 20),
+        height: Math.max(canvasH, 14),
+        fontSize: fontSize * scale,
+        pageHeight: pdfPageHeight,
+        page: pageNum,
+      });
+    }
+    setNativeTextBlocks(blocks);
+    setNativeTextPage(pageNum);
+  }, [pdfDoc, scale]);
+
+  // Reload text blocks when page or scale changes while edit-text is active
+  useEffect(() => {
+    if (activeTool === "edit-text" && pdfDoc) {
+      loadNativeTextBlocks(currentPage);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTool, currentPage, scale, pdfDoc]);
 
   // Handle file drop / select
   const handleFile = useCallback((f: File) => {
@@ -1051,6 +1099,35 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         }
       }
     }
+    // Apply native text edits: cover original text with white rect, draw new text
+    const editedBlocks = nativeTextBlocks.filter(b => b.editedStr !== undefined);
+    for (const block of editedBlocks) {
+      const page = doc.getPage(block.page - 1);
+      const { height: pageH } = page.getSize();
+      // block coords are in canvas pixels; convert back to PDF points
+      const pdfX = block.x / scale;
+      const pdfY = block.y / scale;
+      const pdfW = block.width / scale;
+      const pdfH = block.height / scale;
+      // PDF y is from bottom; canvas y is from top
+      const pdfYFromBottom = pageH - pdfY - pdfH;
+      // Cover original text with white rectangle
+      page.drawRectangle({ x: pdfX - 1, y: pdfYFromBottom - 1, width: pdfW + 2, height: pdfH + 2, color: rgb(1, 1, 1), opacity: 1 });
+      // Draw replacement text
+      const hexColor = block.fontColor ?? "#000000";
+      const tr = parseInt(hexColor.slice(1, 3), 16) / 255;
+      const tg = parseInt(hexColor.slice(3, 5), 16) / 255;
+      const tb = parseInt(hexColor.slice(5, 7), 16) / 255;
+      const textSize = Math.max(block.fontSize / scale, 6);
+      page.drawText(block.editedStr!, {
+        x: pdfX,
+        y: pdfYFromBottom + 1,
+        size: textSize,
+        font,
+        color: rgb(tr, tg, tb),
+        maxWidth: pdfW + 20,
+      });
+    }
     return doc.save();
   };
 
@@ -1681,16 +1758,86 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       case "edit-text":
         return (
           <div className="flex flex-col">
-            {ActionBar}
             <div className="p-4 flex flex-col gap-3">
-            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Editar texto</h3>
-            <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Haz clic en cualquier anotación de texto del PDF para editarla:</p>
-            <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.95 0.01 250)", color: "oklch(0.30 0.02 250)" }}>
-              <strong>Cómo usar:</strong> Selecciona la herramienta Puntero (→) y haz doble clic en un texto para editarlo.
+            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Editar texto nativo</h3>
+            <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.08)", color: "oklch(0.30 0.02 250)" }}>
+              <strong>Cómo usar:</strong> Haz clic en cualquier bloque de texto del PDF para editarlo directamente. Los cambios se aplican al descargar.
             </div>
-            <button onClick={() => setActiveTool("pointer")} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>
-              Ir al puntero
-            </button>
+            {/* Color picker for replacement text */}
+            <div className="flex gap-2 items-center">
+              <label className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Color texto</label>
+              <input type="color" value={editTextColor} onChange={e => setEditTextColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0" />
+            </div>
+            {/* Block count */}
+            {nativeTextBlocks.length > 0 ? (
+              <div className="text-xs p-2 rounded" style={{ backgroundColor: "oklch(0.96 0.005 250)", color: "oklch(0.40 0.02 250)" }}>
+                {nativeTextBlocks.length} bloques de texto detectados en esta página.
+                {nativeTextBlocks.filter(b => b.editedStr !== undefined).length > 0 && (
+                  <span className="ml-1 font-semibold" style={{ color: "oklch(0.45 0.20 150)" }}>
+                    ({nativeTextBlocks.filter(b => b.editedStr !== undefined).length} editados)
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="text-xs p-2 rounded" style={{ backgroundColor: "oklch(0.96 0.005 250)", color: "oklch(0.55 0.02 250)" }}>
+                Cargando bloques de texto...
+              </div>
+            )}
+            {/* Editing inline panel */}
+            {editingBlockId && (() => {
+              const block = nativeTextBlocks.find(b => b.id === editingBlockId);
+              if (!block) return null;
+              return (
+                <div className="flex flex-col gap-2 p-3 rounded-lg border" style={{ borderColor: "oklch(0.75 0.10 260)", backgroundColor: "oklch(0.98 0.005 250)" }}>
+                  <p className="text-xs font-semibold" style={{ color: "oklch(0.25 0.03 250)" }}>Editando bloque:</p>
+                  <p className="text-xs italic" style={{ color: "oklch(0.55 0.02 250)" }}>Original: "{block.str}"</p>
+                  <textarea
+                    value={editingBlockText}
+                    onChange={e => setEditingBlockText(e.target.value)}
+                    rows={3}
+                    className="w-full rounded border p-2 text-sm resize-none"
+                    style={{ borderColor: "oklch(0.75 0.10 260)" }}
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setNativeTextBlocks(prev => prev.map(b =>
+                          b.id === editingBlockId
+                            ? { ...b, editedStr: editingBlockText, fontColor: editTextColor }
+                            : b
+                        ));
+                        setEditingBlockId(null);
+                        toast.success("Texto actualizado. Se aplicará al descargar.");
+                      }}
+                      className="flex-1 py-1.5 rounded text-white text-xs font-semibold"
+                      style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
+                    >
+                      Guardar
+                    </button>
+                    <button
+                      onClick={() => {
+                        setNativeTextBlocks(prev => prev.map(b =>
+                          b.id === editingBlockId ? { ...b, editedStr: undefined, fontColor: undefined } : b
+                        ));
+                        setEditingBlockId(null);
+                      }}
+                      className="flex-1 py-1.5 rounded text-xs border font-medium"
+                      style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.40 0.02 250)" }}
+                    >
+                      Restaurar original
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => setEditingBlockId(null)}
+                    className="text-xs text-center py-1"
+                    style={{ color: "oklch(0.55 0.02 250)" }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              );
+            })()}
             </div>
           </div>
         );
@@ -2164,6 +2311,58 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   </div>
                 ))}
               </div>
+              {/* Native text blocks overlay — only visible when edit-text tool is active */}
+              {activeTool === "edit-text" && nativeTextBlocks.map(block => (
+                <div
+                  key={block.id}
+                  style={{
+                    position: "absolute",
+                    left: block.x,
+                    top: block.y,
+                    width: block.width,
+                    height: block.height,
+                    cursor: "text",
+                    border: editingBlockId === block.id
+                      ? "2px solid oklch(0.55 0.22 260)"
+                      : block.editedStr !== undefined
+                        ? "2px dashed oklch(0.45 0.20 150)"
+                        : "1.5px dashed oklch(0.55 0.22 260 / 0.6)",
+                    backgroundColor: editingBlockId === block.id
+                      ? "oklch(0.55 0.22 260 / 0.12)"
+                      : block.editedStr !== undefined
+                        ? "oklch(0.45 0.20 150 / 0.08)"
+                        : "transparent",
+                    borderRadius: 2,
+                    zIndex: 25,
+                    boxSizing: "border-box",
+                    overflow: "hidden",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingBlockId(block.id);
+                    setEditingBlockText(block.editedStr ?? block.str);
+                    setShowMobilePanel(true);
+                  }}
+                  title={block.editedStr !== undefined ? `Editado: "${block.editedStr}"` : `Clic para editar: "${block.str}"`}
+                >
+                  {/* Show edited text preview */}
+                  {block.editedStr !== undefined && (
+                    <span style={{
+                      fontSize: Math.min(block.fontSize, 12),
+                      color: block.fontColor ?? editTextColor,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      padding: "0 2px",
+                      fontWeight: 500,
+                    }}>
+                      {block.editedStr}
+                    </span>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         </div>
