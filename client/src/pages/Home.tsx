@@ -101,10 +101,21 @@ export default function Home() {
   const activeCategory = allToolsCategories.find((c) => c.id === activeTab)!;
 
   const openEditor = useCallback((file: File, tool?: string) => {
+    // Validate that the file is a PDF
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    if (!isPdf) {
+      // Show error without navigating - user stays on home page
+      import('sonner').then(({ toast }) => {
+        toast.error('Solo se admiten archivos PDF. Por favor, sube un archivo .pdf');
+      });
+      // Reset file input so user can try again
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
     setPendingFile(file);
     if (tool) setPendingTool(tool);
     navigate(`/${lang}/editor`);
-  }, [setPendingFile, setPendingTool, navigate, lang]);
+  }, [setPendingFile, setPendingTool, navigate, lang, fileInputRef]);
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -179,7 +190,7 @@ export default function Home() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="*/*"
+              accept="application/pdf,.pdf"
               className="hidden"
               onChange={handleFileInput}
             />

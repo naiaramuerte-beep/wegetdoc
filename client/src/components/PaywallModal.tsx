@@ -89,13 +89,23 @@ function CheckoutForm({
       });
 
       if (error) {
-        toast.error(error.message || "Card error");
+        // Map common Stripe error codes to user-friendly Spanish messages
+        const stripeErrorMap: Record<string, string> = {
+          'card_declined': 'Tarjeta rechazada. Por favor, verifica los datos o usa otra tarjeta.',
+          'insufficient_funds': 'Fondos insuficientes. Por favor, usa otra tarjeta.',
+          'incorrect_cvc': 'El código CVC es incorrecto.',
+          'expired_card': 'La tarjeta ha caducado.',
+          'incorrect_number': 'El número de tarjeta es incorrecto.',
+          'card_velocity_exceeded': 'Demasiados intentos. Por favor, espera unos minutos e inténtalo de nuevo.',
+        };
+        const friendlyMsg = error.code ? stripeErrorMap[error.code] : null;
+        toast.error(friendlyMsg || error.message || 'Error al procesar la tarjeta');
         setIsLoading(false);
         return;
       }
 
       if (!setupIntent?.payment_method) {
-        toast.error("Could not retrieve payment method");
+        toast.error('No se pudo obtener el método de pago. Por favor, inténtalo de nuevo.');
         setIsLoading(false);
         return;
       }
@@ -128,8 +138,12 @@ function CheckoutForm({
       toast.success(t.paywall_doc_ready + " " + t.paywall_processing);
       onSuccess();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Payment error";
-      toast.error(message);
+      const message = err instanceof Error ? err.message : 'Error al procesar el pago';
+      if (message.toLowerCase().includes('velocity') || message.toLowerCase().includes('too many')) {
+        toast.error('Demasiados intentos. Por favor, espera unos minutos e inténtalo de nuevo.');
+      } else {
+        toast.error(message || 'Error al procesar el pago. Por favor, inténtalo de nuevo.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -158,7 +172,7 @@ function CheckoutForm({
           }}
         >
           <CreditCard className="w-4 h-4" />
-          Card
+          {t.paywall_card_tab ?? "Tarjeta"}
         </button>
         <button
           onClick={() => setActiveTab("gpay")}

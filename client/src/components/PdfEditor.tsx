@@ -220,6 +220,39 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // Keep annotationsRef in sync with annotations state for use in event listeners
   useEffect(() => { annotationsRef.current = annotations; }, [annotations]);
 
+  // ── Sync canvas internal size with its CSS display size ──────
+  // This ensures getSignCoords works correctly when the panel is shown
+  useEffect(() => {
+    if (activeTool !== 'sign' || signTab !== 'draw') return;
+    const canvas = signCanvasRef.current;
+    if (!canvas) return;
+    const syncSize = () => {
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width > 0 && (canvas.width !== Math.round(rect.width) || canvas.height !== Math.round(rect.height))) {
+        canvas.width = Math.round(rect.width);
+        canvas.height = Math.round(rect.height);
+      }
+    };
+    // Sync immediately and after a short delay (in case panel is animating)
+    syncSize();
+    const timer = setTimeout(syncSize, 100);
+    const ro = new ResizeObserver(syncSize);
+    ro.observe(canvas);
+    return () => { clearTimeout(timer); ro.disconnect(); };
+  }, [activeTool, signTab]);
+
+  // ── Global mouseup to stop signature drawing if mouse released outside canvas
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isSignDrawingRef.current) {
+        isSignDrawingRef.current = false;
+        setIsSignDrawing(false);
+      }
+    };
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, []);
+
   const { data: subData } = trpc.subscription.status.useQuery(undefined, {
     retry: false,
   });
@@ -245,9 +278,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     toast.loading(t.editor_saving ?? "Guardando documento...", { id: "save" });
     try {
       const out = await buildAnnotatedPdf();
-      if (!out) throw new Error("Failed to build PDF");
+      if (!out) throw new Error("No se pudo generar el PDF anotado");
       // Use REST multipart upload to avoid tRPC base64 size limits
-      const blob = new Blob([out.buffer as ArrayBuffer], { type: "application/pdf" });
+      // Note: out is Uint8Array; out.buffer may be a shared ArrayBuffer with offset.
+      // Use slice to get a clean copy of just the relevant bytes.
+      const safeBuffer = out.buffer.slice(out.byteOffset, out.byteOffset + out.byteLength) as ArrayBuffer;
+      const blob = new Blob([safeBuffer], { type: "application/pdf" });
       const formData = new FormData();
       formData.append("file", blob, file?.name ?? "document.pdf");
       formData.append("name", file?.name ?? "document.pdf");
@@ -258,12 +294,16 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       });
       if (!resp.ok) {
         const errData = await resp.json().catch(() => ({}));
-        throw new Error(errData.error ?? `HTTP ${resp.status}`);
+        if (resp.status === 401) {
+          throw new Error("Debes iniciar sesi\u00f3n para guardar documentos");
+        }
+        throw new Error(errData.error ?? `Error del servidor (HTTP ${resp.status})`);
       }
-      toast.success("Documento guardado en Mis Documentos!", { id: "save" });
+      toast.success(t.editor_save_success ?? "Documento guardado en Mis Documentos!", { id: "save" });
     } catch (err) {
-      console.error(err);
-      toast.error("Error al guardar el documento", { id: "save" });
+      console.error("[savePdf error]", err);
+      const errMsg = err instanceof Error ? err.message : "Error al guardar el documento";
+      toast.error(errMsg, { id: "save" });
     } finally {
       setIsSaving(false);
     }
@@ -422,7 +462,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
   // Handle file drop / select
   const handleFile = useCallback((f: File) => {
-    if (!f.name.endsWith(".pdf")) { toast.error("Solo se aceptan archivos PDF"); return; }
+    const isPdf = f.name.toLowerCase().endsWith(".pdf") || f.type === "application/pdf";
+    if (!isPdf) {
+      // Non-PDF files: show a friendly message and don't try to load as PDF
+      toast.error("Por favor sube un archivo PDF. Para convertir otros formatos, usa las herramientas de conversión.");
+      return;
+    }
     setFile(f);
     loadPdf(f);
     toast.success("PDF cargado correctamente");
@@ -1060,12 +1105,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
   };
 
-  // ── Rotate page ───────────────────────────────────────────────
+  // ── Rotate page ─────────────────────────────────────────────
   const rotatePage = async () => {
     if (!pdfBytes) return;
     toast.loading("Rotando página...", { id: "rotate" });
     try {
-      const doc = await PDFDocument.load(pdfBytes as Uint8Array);
+      const safeBytes = new Uint8Array(pdfBytes);
+      const doc = await PDFDocument.load(safeBytes);
       const page = doc.getPage(currentPage - 1);
       page.setRotation(degrees((page.getRotation().angle + 90) % 360));
       const out = await doc.save();
@@ -1084,7 +1130,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     if (!pdfBytes || totalPages <= 1) { toast.error("No se puede eliminar la única página"); return; }
     toast.loading("Eliminando página...", { id: "delpage" });
     try {
-      const doc = await PDFDocument.load(pdfBytes as Uint8Array);
+      const safeBytes = new Uint8Array(pdfBytes);
+      const doc = await PDFDocument.load(safeBytes);
       doc.removePage(currentPage - 1);
       const out = await doc.save();
       const newBytes = new Uint8Array(out);
@@ -1352,33 +1399,36 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const showActionBar = activeTool !== "pointer" && activeTool !== "compress" && activeTool !== "protect" && activeTool !== "find";
     const pageAnnCount = annotations.filter(a => a.page === currentPage).length;
     const ActionBar = showActionBar ? (
-      <div className="flex gap-1.5 p-3 border-b" style={{ borderColor: "oklch(0.90 0.01 250)", backgroundColor: "oklch(0.97 0.005 250)" }}>
+      <div className="flex flex-wrap gap-1.5 p-3 border-b" style={{ borderColor: "oklch(0.90 0.01 250)", backgroundColor: "oklch(0.97 0.005 250)" }}>
         <button
           onClick={undo}
           disabled={historyIndex <= 0}
           title={t.editor_undo_tooltip}
-          className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-medium border transition-all disabled:opacity-40"
+          className="flex-1 min-w-0 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-medium border transition-all disabled:opacity-40"
           style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.35 0.02 250)", backgroundColor: "#fff" }}
         >
-          <Undo2 className="w-3 h-3" />{t.editor_undo}
+          <Undo2 className="w-3 h-3 shrink-0" />
+          <span className="truncate">{t.editor_undo}</span>
         </button>
         <button
           onClick={deleteLastAnnotation}
           disabled={pageAnnCount === 0}
           title={t.editor_delete_last}
-          className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-medium border transition-all disabled:opacity-40"
+          className="flex-1 min-w-0 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-medium border transition-all disabled:opacity-40"
           style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.35 0.02 250)", backgroundColor: "#fff" }}
         >
-          <Trash2 className="w-3 h-3" />{t.editor_delete_last}
+          <Trash2 className="w-3 h-3 shrink-0" />
+          <span className="truncate">{t.editor_delete_last}</span>
         </button>
         <button
           onClick={deleteAllPageAnnotations}
           disabled={pageAnnCount === 0}
           title={t.editor_delete_all}
-          className="flex items-center justify-center gap-1 py-1.5 px-2 rounded text-xs font-medium border transition-all disabled:opacity-40"
+          className="flex-1 min-w-0 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-medium border transition-all disabled:opacity-40"
           style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.55 0.20 15)", backgroundColor: "#fff" }}
         >
-          <Trash2 className="w-3 h-3" />{t.editor_delete_all}
+          <Trash2 className="w-3 h-3 shrink-0" />
+          <span className="truncate">{t.editor_delete_all}</span>
         </button>
       </div>
     ) : null;
@@ -1389,7 +1439,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           <div className="flex flex-col">
             {ActionBar}
             <div className="p-4 flex flex-col gap-3">
-            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Add Signature</h3>
+            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>{t.editor_sign}</h3>
             {/* Tabs: Draw / Write / Image */}
             <div className="flex gap-1 p-1 rounded-lg" style={{ backgroundColor: "oklch(0.93 0.01 250)" }}>
               {(["draw", "write", "image"] as const).map(tab => (
@@ -1422,11 +1472,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 {/* Color + stroke width controls */}
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1.5">
-                    <label className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Color</label>
+                    <label className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>{t.editor_color_label ?? "Color"}</label>
                     <input type="color" value={signColor} onChange={e => setSignColor(e.target.value)} className="w-7 h-7 rounded cursor-pointer border-0" />
                   </div>
                   <div className="flex items-center gap-1.5 flex-1">
-                    <label className="text-xs whitespace-nowrap" style={{ color: "oklch(0.50 0.02 250)" }}>Width: {signStrokeWidth}px</label>
+                    <label className="text-xs whitespace-nowrap" style={{ color: "oklch(0.50 0.02 250)" }}>{t.editor_width_label ?? "Grosor"}: {signStrokeWidth}px</label>
                     <input type="range" min={1} max={8} step={0.5} value={signStrokeWidth} onChange={e => setSignStrokeWidth(Number(e.target.value))} className="flex-1" />
                   </div>
                 </div>
@@ -1473,7 +1523,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 </div>
                 {/* Color picker */}
                 <div className="flex items-center gap-2">
-                  <label className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Color</label>
+                  <label className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>{t.editor_color_label ?? "Color"}</label>
                   <input type="color" value={signColor} onChange={e => setSignColor(e.target.value)} className="w-7 h-7 rounded cursor-pointer border-0" />
                 </div>
                 <button
@@ -1487,14 +1537,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             {/* ── Image Tab ── */}
             {signTab === "image" && (
               <>
-                <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Upload a scanned signature image (PNG with transparent background works best):</p>
+                <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>{t.editor_sign_image_hint ?? "Sube una imagen de tu firma (PNG con fondo transparente funciona mejor):"}</p>
                 <label
                   className="flex flex-col items-center justify-center gap-2 py-8 rounded-lg border-2 border-dashed cursor-pointer transition-all"
                   style={{ borderColor: "oklch(0.80 0.05 260)", backgroundColor: "oklch(0.97 0.005 250)" }}
                 >
                   <Upload className="w-8 h-8" style={{ color: "oklch(0.55 0.22 260)" }} />
-                  <span className="text-sm font-medium" style={{ color: "oklch(0.35 0.02 250)" }}>Click to upload image</span>
-                  <span className="text-xs" style={{ color: "oklch(0.55 0.02 250)" }}>PNG, JPG, GIF supported</span>
+                  <span className="text-sm font-medium" style={{ color: "oklch(0.35 0.02 250)" }}>{t.editor_sign_image_upload ?? "Haz clic para subir imagen"}</span>
+                  <span className="text-xs" style={{ color: "oklch(0.55 0.02 250)" }}>{t.editor_sign_image_formats ?? "PNG, JPG, GIF"}</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -1511,7 +1561,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                           const w = Math.min(240, img.width);
                           const h = w / aspect;
                           addAnnotation({ type: "signature", dataUrl, x: 100, y: 100, width: w, height: h, page: currentPage });
-                          toast.success("Signature image added. Drag it to position.");
+                          toast.success(t.editor_sign_image_added ?? "Imagen de firma añadida. Arrástrala para posicionarla.");
                         };
                         img.src = dataUrl;
                       };
@@ -2061,7 +2111,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           onMouseEnter={e => { e.currentTarget.style.backgroundColor = "oklch(0.96 0.01 250)"; }}
           onMouseLeave={e => { e.currentTarget.style.backgroundColor = "white"; }}
         >
-          <Save className="w-4 h-4" />{isSaving ? "Saving..." : "Save"}
+          <Save className="w-4 h-4" />{isSaving ? t.editor_saving : t.editor_save_btn}
         </button>
         {/* Download */}
         <button
@@ -2580,7 +2630,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             style={{ borderColor: "oklch(0.75 0.10 260)", color: "oklch(0.30 0.04 250)", backgroundColor: "white" }}
           >
             <Save className="w-4 h-4" />
-            {isSaving ? "..." : "Save"}
+            {isSaving ? "..." : t.editor_save_btn}
           </button>
           {/* Download button */}
           <button

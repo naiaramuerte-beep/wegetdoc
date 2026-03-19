@@ -4,12 +4,10 @@
    an OAuth redirect (login flow) and is restored on return.
    ============================================================= */
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-
 const SESSION_KEY_PDF = "pdfpro_pending_pdf_b64";
 const SESSION_KEY_NAME = "pdfpro_pending_pdf_name";
 const SESSION_KEY_TOOL = "pdfpro_pending_tool";
 const SESSION_KEY_PAYWALL = "pdfpro_open_paywall";
-
 interface PdfFileContextValue {
   pendingFile: File | null;
   setPendingFile: (f: File | null) => void;
@@ -20,8 +18,9 @@ interface PdfFileContextValue {
   pendingPaywall: boolean;
   /** Save PDF bytes to sessionStorage before OAuth redirect */
   savePdfToSession: (file: File) => Promise<void>;
+  /** True while restoring PDF from sessionStorage (after OAuth redirect) */
+  isRestoringFromSession: boolean;
 }
-
 const PdfFileContext = createContext<PdfFileContextValue>({
   pendingFile: null,
   setPendingFile: () => {},
@@ -30,12 +29,22 @@ const PdfFileContext = createContext<PdfFileContextValue>({
   setPendingPaywall: () => {},
   pendingPaywall: false,
   savePdfToSession: async () => {},
+  isRestoringFromSession: false,
 });
-
 export function PdfFileProvider({ children }: { children: ReactNode }) {
   const [pendingFile, setPendingFileState] = useState<File | null>(null);
   const [pendingTool, setPendingToolState] = useState<string | null>(null);
   const [pendingPaywall, setPendingPaywallState] = useState(false);
+  // isRestoringFromSession: true while we're restoring from sessionStorage
+  // Starts as true if there's a saved PDF in sessionStorage, false otherwise
+  const [isRestoringFromSession, setIsRestoringFromSession] = useState(() => {
+    // Check synchronously if there's a saved PDF in sessionStorage
+    try {
+      return !!sessionStorage.getItem(SESSION_KEY_PDF);
+    } catch {
+      return false;
+    }
+  });
 
   // On mount, try to restore PDF from sessionStorage (after OAuth redirect)
   useEffect(() => {
@@ -43,7 +52,6 @@ export function PdfFileProvider({ children }: { children: ReactNode }) {
     const name = sessionStorage.getItem(SESSION_KEY_NAME);
     const tool = sessionStorage.getItem(SESSION_KEY_TOOL);
     const paywall = sessionStorage.getItem(SESSION_KEY_PAYWALL);
-
     if (b64 && name) {
       try {
         const byteChars = atob(b64);
@@ -60,36 +68,37 @@ export function PdfFileProvider({ children }: { children: ReactNode }) {
         sessionStorage.removeItem(SESSION_KEY_NAME);
       }
     }
-
     if (tool) {
       setPendingToolState(tool);
       sessionStorage.removeItem(SESSION_KEY_TOOL);
     }
-
     if (paywall === "1") {
       setPendingPaywallState(true);
       sessionStorage.removeItem(SESSION_KEY_PAYWALL);
     }
+    // Done restoring — allow EditorPage to redirect if still no file
+    setIsRestoringFromSession(false);
   }, []);
-
   const setPendingFile = (f: File | null) => setPendingFileState(f);
   const setPendingTool = (t: string | null) => setPendingToolState(t);
-
   const setPendingPaywall = (open: boolean) => {
     setPendingPaywallState(open);
     if (open) sessionStorage.setItem(SESSION_KEY_PAYWALL, "1");
     else sessionStorage.removeItem(SESSION_KEY_PAYWALL);
   };
-
   const savePdfToSession = async (file: File): Promise<void> => {
     return new Promise((resolve, reject) => {
-      if (file.size > 4 * 1024 * 1024) { resolve(); return; } // >4MB: skip
+      if (file.size > 20 * 1024 * 1024) { resolve(); return; } // >20MB: skip
       const reader = new FileReader();
       reader.onload = () => {
         try {
           const b64 = (reader.result as string).split(",")[1];
-          sessionStorage.setItem(SESSION_KEY_PDF, b64);
-          sessionStorage.setItem(SESSION_KEY_NAME, file.name);
+          try {
+            sessionStorage.setItem(SESSION_KEY_PDF, b64);
+            sessionStorage.setItem(SESSION_KEY_NAME, file.name);
+          } catch {
+            // Storage quota exceeded - silently ignore, user will need to re-upload
+          }
           resolve();
         } catch (e) { reject(e); }
       };
@@ -97,7 +106,6 @@ export function PdfFileProvider({ children }: { children: ReactNode }) {
       reader.readAsDataURL(file);
     });
   };
-
   return (
     <PdfFileContext.Provider value={{
       pendingFile,
@@ -107,12 +115,12 @@ export function PdfFileProvider({ children }: { children: ReactNode }) {
       pendingPaywall,
       setPendingPaywall,
       savePdfToSession,
+      isRestoringFromSession,
     }}>
       {children}
     </PdfFileContext.Provider>
   );
 }
-
 export function usePdfFile() {
   return useContext(PdfFileContext);
 }

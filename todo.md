@@ -275,3 +275,26 @@
 - [x] Canvas de firma: no registra el dibujo al arrastrar el ratón — corregido usando useRef en lugar de useState para isSignDrawing
 - [x] Texto editado aparece encima del original — corregido con fondo blanco opaco en el bloque editado
 - [x] Error "Cannot perform slice on detached ArrayBuffer" — corregido copiando pdfBytes antes de usar en buildAnnotatedPdf
+
+## Bugs críticos reportados por usuario (19/03 v4)
+- [ ] Bug 1: Subir archivo no-PDF da error y redirige a inicio sin header (página rota)
+- [ ] Bug 2: Botones del toolbar no se ven bien (overflow/visual)
+- [ ] Bug 3: Canvas de firma no permite dibujar (solo funciona tab "Nombre")
+- [ ] Bug 5: Botón Rotar página no funciona
+- [ ] Bug 6: Botón Eliminar página no funciona
+- [ ] Bug 7: Al dar Descargar sin login, pide login, y al logearse pierde el PDF y va a inicio
+- [ ] Bug 8: Pago Stripe cobra 0€ (error "card velocity exceeded") en lugar de 0,50€
+- [ ] Bug 9: Error al guardar documento (Save) aunque el usuario está logueado
+- [ ] Bug 10: Mezcla de idiomas en el editor (textos en inglés cuando debería estar en español)
+
+## Bugs críticos reportados y corregidos 19/03 v5
+
+- [x] Bug 1: subir no-PDF da error y redirige sin header — validación en Home.tsx (solo acepta PDF) + EditorPage con isRestoringFromSession para no redirigir mientras se restaura
+- [x] Bug 2: botones toolbar se salen del contenedor — flex-1 y truncate en ActionBar
+- [x] Bug 3: canvas firma no dibuja — useRef para isSignDrawing + ResizeObserver + global mouseup listener
+- [x] Bug 5: botón rotar no funciona — copia defensiva de pdfBytes en rotatePage
+- [x] Bug 6: botón eliminar página no funciona — copia defensiva de pdfBytes en deletePage
+- [x] Bug 7: login pierde el PDF — isRestoringFromSession en PdfFileContext + EditorPage espera antes de redirigir
+- [x] Bug 8: Stripe cobra 0€ / card velocity exceeded — mensajes de error amigables en español con mapeo de códigos Stripe
+- [x] Bug 9: error al guardar — mejor manejo de errores con mensaje específico + fix ArrayBuffer slice
+- [x] Bug 10: mezcla de idiomas — textos hardcodeados en inglés reemplazados por traducciones (Card tab, Save button, etc.)
