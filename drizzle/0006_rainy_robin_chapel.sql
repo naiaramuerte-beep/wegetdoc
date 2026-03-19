@@ -1,0 +1,1 @@
+ALTER TABLE `subscriptions` ADD `downloadCount` int DEFAULT 0 NOT NULL;

@@ -231,3 +231,16 @@
 - [x] Touch resize: handle de esquina azul responde a touch para redimensionar (handle ampliado a 20x20px)
 - [x] Sin necesidad de cambiar de herramienta: funciona siempre al tocar la anotación
 - [x] touchAction: none en anotaciones para evitar conflicto con scroll del navegador
+
+## Stripe - Configuración completa
+- [ ] Crear productos y precios en Stripe (Trial 0,50€ + Mensual 49,95€)
+- [ ] Actualizar schema DB con stripe_customer_id y stripe_subscription_id
+- [ ] Implementar PaywallModal con Stripe Elements (tarjeta inline)
+- [ ] Implementar suscripción automática mensual con trial
+- [ ] Webhook para sincronizar estado de suscripción
+- [ ] Página /billing con planes y gestión de suscripción
+
+## UX - Drag directo en anotaciones
+- [x] Anotaciones arrastrables sin cambiar a herramienta mover (desktop mouse)
+- [x] Anotaciones arrastrables sin cambiar a herramienta mover (móvil touch)
+- [x] Handle de resize visible siempre en anotación seleccionada

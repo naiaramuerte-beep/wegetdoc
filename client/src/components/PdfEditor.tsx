@@ -5,6 +5,7 @@
    ============================================================= */
 import { useState, useRef, useCallback, useEffect } from "react";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
 import {
   Download, ChevronLeft, ChevronRight, ZoomIn, ZoomOut,
   Undo2, Redo2, PenTool, Type, Highlighter, Eraser, Brush,
@@ -12,8 +13,10 @@ import {
   Minimize2, Move, StickyNote, FileText, Trash2, RotateCw,
   Plus, Scissors, Layers, X, Upload, Check, Eye, EyeOff,
   AlignLeft, Bold, Italic, Underline, ChevronDown, Lock, Unlock,
+  Save,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import PaywallModal from "./PaywallModal";
 import { useLanguage } from "@/contexts/LanguageContext";
 import * as pdfjsLib from "pdfjs-dist";
@@ -42,9 +45,23 @@ type ToolName =
   | "convert-jpg" | "convert-png" | "convert-word" | "convert-excel" | "convert-ppt" | "convert-html"
   | "word-to-pdf" | "excel-to-pdf" | "ppt-to-pdf" | "jpg-to-pdf" | "png-to-pdf" | "merge";
 
+interface NativeTextBlock {
+  id: string;
+  str: string;
+  editedStr?: string; // if set, this replaces str on export
+  x: number; // in PDF points
+  y: number; // in PDF points (from bottom)
+  width: number;
+  height: number;
+  fontSize: number;
+  pageHeight: number; // page height in PDF points
+  page: number; // 1-indexed page number
+  fontColor?: string; // hex color e.g. "#000000"
+}
+
 interface Annotation {
   id: string;
-  type: "signature" | "text" | "highlight" | "note" | "shape" | "image" | "drawing" | "eraser";
+  type: "signature" | "text" | "highlight" | "note" | "shape" | "image" | "drawing" | "eraser" | "textEdit";
   dataUrl?: string;
   text?: string;
   x: number; y: number;
@@ -125,8 +142,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // Sign tool state
   const [isSignDrawing, setIsSignDrawing] = useState(false);
   const signCanvasRef = useRef<HTMLCanvasElement>(null);
-  const [signTab, setSignTab] = useState<"draw" | "name" | "esign">("draw"); // draw, name, or esign
-  const [signName, setSignName] = useState(""); // name for auto-generated signature
+  const [signTab, setSignTab] = useState<"draw" | "write" | "image">("draw"); // draw, write, or image
+  const [signColor, setSignColor] = useState("#1a237e"); // draw tab color
+  const [signStrokeWidth, setSignStrokeWidth] = useState(2.5); // draw tab stroke width
+  const [signName, setSignName] = useState(""); // name for write tab
+  const [signFont, setSignFont] = useState("'Dancing Script', cursive"); // font for write tab
   const [eSignName, setESignName] = useState(""); // full name for electronic signature
   const [eSignEmail, setESignEmail] = useState(""); // email for electronic signature
 
@@ -173,6 +193,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // Note state
   const [noteText, setNoteText] = useState("");
 
+  // Edit-text tool state
+  // allNativeTextBlocks: Map<pageNum, NativeTextBlock[]> — persists edits across page navigation
+  const [allNativeTextBlocks, setAllNativeTextBlocks] = useState<Map<number, NativeTextBlock[]>>(new Map());
+  const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+  const [editingBlockText, setEditingBlockText] = useState("");
+  const [editTextColor, setEditTextColor] = useState("#000000");
+  // Derived: blocks for the current page
+  const nativeTextBlocks = allNativeTextBlocks.get(currentPage) ?? [];
+
   const viewerRef = useRef<HTMLDivElement>(null);
   const viewerContainerRef = useRef<HTMLDivElement>(null);
   const mainCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -189,6 +218,41 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   });
   const isPremium = subData?.isPremium ?? false;
   const { t } = useLanguage();
+  const { isAuthenticated } = useAuth();
+  const [, navigate] = useLocation();
+  const [isSaving, setIsSaving] = useState(false);
+
+  const uploadDocMutation = trpc.documents.upload.useMutation();
+
+  // ── Save PDF to My Documents ──────────────────────────────────
+  const savePdf = async () => {
+    if (!isAuthenticated) {
+      toast.error("Please log in to save documents");
+      return;
+    }
+    if (!pdfBytes) {
+      toast.error("No PDF loaded");
+      return;
+    }
+    setIsSaving(true);
+    toast.loading("Saving document...", { id: "save" });
+    try {
+      const out = await buildAnnotatedPdf();
+      if (!out) throw new Error("Failed to build PDF");
+      const base64 = Buffer.from(out).toString("base64");
+      await uploadDocMutation.mutateAsync({
+        name: file?.name ?? "document.pdf",
+        base64,
+        size: out.byteLength,
+      });
+      toast.success("Document saved to My Documents!", { id: "save" });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save document", { id: "save" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // ── Load PDF ─────────────────────────────────────────────────
   const loadPdf = useCallback(async (f: File) => {
@@ -266,6 +330,66 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       onPaywallOpened?.();
     }
   }, [initialOpenPaywall, pdfDoc, onPaywallOpened]);
+
+  // ── Load native text blocks for Edit-Text tool ──────────────
+  const loadNativeTextBlocks = useCallback(async (pageNum: number) => {
+    if (!pdfDoc) return;
+    const page = await pdfDoc.getPage(pageNum);
+    const vp = page.getViewport({ scale });
+    const content = await page.getTextContent();
+    const blocks: NativeTextBlock[] = [];
+    for (const item of content.items as any[]) {
+      if (!item.str || !item.str.trim()) continue;
+      // item.transform = [a, b, c, d, e, f] where (e,f) is bottom-left in PDF points (from bottom)
+      const [a, b, c, d, e, f] = item.transform as number[];
+      const fontSize = Math.sqrt(a * a + b * b); // approximate font size from transform
+      const pdfPageHeight = vp.height / scale; // page height in PDF points
+      // Convert PDF point coords to canvas pixel coords
+      // PDF y is from bottom; canvas y is from top
+      const canvasX = e * scale;
+      const canvasY = (pdfPageHeight - f) * scale - fontSize * scale;
+      const canvasW = (item.width ?? item.str.length * fontSize * 0.6) * scale;
+      const canvasH = fontSize * scale * 1.2;
+      blocks.push({
+        id: Math.random().toString(36).slice(2),
+        str: item.str,
+        x: canvasX,
+        y: canvasY,
+        width: Math.max(canvasW, 20),
+        height: Math.max(canvasH, 14),
+        fontSize: fontSize * scale,
+        pageHeight: pdfPageHeight,
+        page: pageNum,
+      });
+    }
+    // Only set blocks for this page if not already loaded (preserve existing edits)
+    setAllNativeTextBlocks(prev => {
+      const existing = prev.get(pageNum);
+      if (existing && existing.length > 0) {
+        // Merge: keep editedStr from existing blocks matched by str+position
+        const merged = blocks.map(newBlock => {
+          const match = existing.find(
+            ex => ex.str === newBlock.str && Math.abs(ex.x - newBlock.x) < 2 && Math.abs(ex.y - newBlock.y) < 2
+          );
+          return match ? { ...newBlock, editedStr: match.editedStr, fontColor: match.fontColor } : newBlock;
+        });
+        const next = new Map(prev);
+        next.set(pageNum, merged);
+        return next;
+      }
+      const next = new Map(prev);
+      next.set(pageNum, blocks);
+      return next;
+    });
+  }, [pdfDoc, scale]);
+
+  // Reload text blocks when page or scale changes while edit-text is active
+  useEffect(() => {
+    if (activeTool === "edit-text" && pdfDoc) {
+      loadNativeTextBlocks(currentPage);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTool, currentPage, scale, pdfDoc]);
 
   // Handle file drop / select
   const handleFile = useCallback((f: File) => {
@@ -501,8 +625,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const c = signCanvasRef.current!;
     const ctx = c.getContext("2d")!;
     const { x, y } = getSignCoords(e.clientX, e.clientY);
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = "#1a237e";
+    ctx.lineWidth = signStrokeWidth;
+    ctx.strokeStyle = signColor;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.lineTo(x, y);
@@ -527,8 +651,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const c = signCanvasRef.current!;
     const ctx = c.getContext("2d")!;
     const { x, y } = getSignCoords(touch.clientX, touch.clientY);
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = "#1a237e";
+    ctx.lineWidth = signStrokeWidth;
+    ctx.strokeStyle = signColor;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.lineTo(x, y);
@@ -546,32 +670,33 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const c = signCanvasRef.current!;
     const dataUrl = c.toDataURL();
     addAnnotation({ type: "signature", dataUrl, x: 100, y: 100, width: 200, height: 80, page: currentPage });
-    toast.success("Firma añadida. Arrástrala a la posición deseada.");
+    toast.success("Signature added. Drag it to position.");
     // Keep sign tool active so user can add multiple signatures
   };
   // Generate a cursive-style signature from a typed name using canvas
   const placeNameSignature = () => {
-    if (!signName.trim()) { toast.error("Escribe tu nombre primero"); return; }
+    if (!signName.trim()) { toast.error("Type your name first"); return; }
     const c = document.createElement("canvas");
-    const fontSize = 42;
-    c.width = Math.max(200, signName.length * 28);
-    c.height = 80;
+    const fontSize = 48;
+    // Estimate width based on font
+    c.width = Math.max(220, signName.length * 32);
+    c.height = 90;
     const ctx = c.getContext("2d")!;
     ctx.clearRect(0, 0, c.width, c.height);
-    ctx.font = `italic ${fontSize}px 'Dancing Script', 'Brush Script MT', cursive`;
-    ctx.fillStyle = "#1a237e";
+    ctx.font = `${fontSize}px ${signFont}`;
+    ctx.fillStyle = signColor;
     ctx.textBaseline = "middle";
     // Draw a subtle underline
     ctx.beginPath();
-    ctx.moveTo(4, 68);
-    ctx.lineTo(c.width - 4, 68);
-    ctx.strokeStyle = "#1a237e";
+    ctx.moveTo(4, 78);
+    ctx.lineTo(c.width - 4, 78);
+    ctx.strokeStyle = signColor;
     ctx.lineWidth = 1.5;
     ctx.stroke();
-    ctx.fillText(signName, 8, 42);
+    ctx.fillText(signName, 8, 46);
     const dataUrl = c.toDataURL();
-    addAnnotation({ type: "signature", dataUrl, x: 100, y: 100, width: Math.max(200, signName.length * 28), height: 80, page: currentPage });
-    toast.success("Firma añadida. Arrástrala a la posición deseada.");
+    addAnnotation({ type: "signature", dataUrl, x: 100, y: 100, width: Math.max(220, signName.length * 32), height: 90, page: currentPage });
+    toast.success("Signature added. Drag it to position.");
   };
 
   // Generate electronic signature block (name + date + legal text rendered to canvas)
@@ -680,7 +805,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   }  // ── Dragging annotations ──────────────────────────────────────────────
   const startDrag = (e: React.MouseEvent, id: string) => {
     // Allow dragging with any tool except canvas-drawing tools
-    const nodrag = ["brush", "eraser", "highlight", "sign", "shapes", "edit-text"];
+    // Only block drag on canvas-drawing tools — all other tools allow dragging annotations
+    const nodrag = ["brush", "eraser", "highlight"];
     if (nodrag.includes(activeTool)) return;
     e.stopPropagation();const ann = annotations.find(a => a.id === id);
     if (!ann) return;
@@ -993,6 +1119,54 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         }
       }
     }
+    // Apply native text edits: cover original text with white rect, draw new text
+    // Collect edited blocks from ALL pages (not just the current page)
+    const editedBlocks: NativeTextBlock[] = [];
+    allNativeTextBlocks.forEach(pageBlocks => {
+      pageBlocks.filter(b => b.editedStr !== undefined).forEach(b => editedBlocks.push(b));
+    });
+    for (const block of editedBlocks) {
+      const page = doc.getPage(block.page - 1);
+      // block coords are stored in canvas pixels (multiplied by scale during load)
+      // Convert back to PDF points by dividing by scale
+      const pdfX = block.x / scale;
+      const pdfW = block.width / scale;
+      // block.y is canvas-top-based: canvasY = (pdfPageHeight - f) * scale - fontSize * scale
+      // So: pdfPageHeight - f = block.y/scale + fontSize_pts
+      // => f (PDF bottom of text) = pdfPageHeight - block.y/scale - fontSize_pts
+      // block.fontSize is stored as fontSize_pts * scale, so fontSize_pts = block.fontSize / scale
+      const fontSizePts = block.fontSize / scale;
+      const pdfH = block.height / scale; // height in PDF points
+      // f is the PDF y-coordinate of the text baseline (from bottom of page)
+      const f = block.pageHeight - (block.y / scale) - fontSizePts;
+      // The white cover rect should start at f (baseline) and extend upward by fontSizePts
+      // Add padding to fully cover descenders and ascenders
+      const rectY = f - fontSizePts * 0.3; // extend below baseline for descenders
+      const rectH = pdfH + fontSizePts * 0.3; // extend above for ascenders
+      // Cover original text with white rectangle
+      page.drawRectangle({
+        x: pdfX - 2,
+        y: rectY,
+        width: pdfW + 4,
+        height: rectH + 2,
+        color: rgb(1, 1, 1),
+        opacity: 1,
+      });
+      // Draw replacement text
+      const hexColor = block.fontColor ?? "#000000";
+      const tr = parseInt(hexColor.slice(1, 3), 16) / 255;
+      const tg = parseInt(hexColor.slice(3, 5), 16) / 255;
+      const tb = parseInt(hexColor.slice(5, 7), 16) / 255;
+      const textSize = Math.max(fontSizePts, 6);
+      page.drawText(block.editedStr!, {
+        x: pdfX,
+        y: f,
+        size: textSize,
+        font,
+        color: rgb(tr, tg, tb),
+        maxWidth: pdfW + 20,
+      });
+    }
     return doc.save();
   };
 
@@ -1183,55 +1357,136 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           <div className="flex flex-col">
             {ActionBar}
             <div className="p-4 flex flex-col gap-3">
-            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Añadir firma</h3>
-            {/* Tabs: Dibujar / Nombre */}
+            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Add Signature</h3>
+            {/* Tabs: Draw / Write / Image */}
             <div className="flex gap-1 p-1 rounded-lg" style={{ backgroundColor: "oklch(0.93 0.01 250)" }}>
-              <button
-                onClick={() => setSignTab("draw")}
-                className="flex-1 py-1.5 rounded text-xs font-medium transition-all"
-                style={{ backgroundColor: signTab === "draw" ? "#fff" : "transparent", color: signTab === "draw" ? "oklch(0.15 0.03 250)" : "oklch(0.50 0.02 250)", boxShadow: signTab === "draw" ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}
-              >Dibujar</button>
-              <button
-                onClick={() => setSignTab("name")}
-                className="flex-1 py-1.5 rounded text-xs font-medium transition-all"
-                style={{ backgroundColor: signTab === "name" ? "#fff" : "transparent", color: signTab === "name" ? "oklch(0.15 0.03 250)" : "oklch(0.50 0.02 250)", boxShadow: signTab === "name" ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}
-              >Nombre</button>
+              {(["draw", "write", "image"] as const).map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setSignTab(tab)}
+                  className="flex-1 py-1.5 rounded text-xs font-medium transition-all"
+                  style={{
+                    backgroundColor: signTab === tab ? "#fff" : "transparent",
+                    color: signTab === tab ? "oklch(0.15 0.03 250)" : "oklch(0.50 0.02 250)",
+                    boxShadow: signTab === tab ? "0 1px 3px rgba(0,0,0,0.1)" : "none"
+                  }}
+                >{tab === "draw" ? "Draw" : tab === "write" ? "Write" : "Image"}</button>
+              ))}
             </div>
-            {signTab === "draw" ? (
+
+            {/* ── Draw Tab ── */}
+            {signTab === "draw" && (
               <>
-                <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Dibuja tu firma con el ratón o dedo:</p>
                 <canvas
                   ref={signCanvasRef}
-                  width={220} height={100}
-                  className="border rounded-lg cursor-crosshair"
-                  style={{ borderColor: "oklch(0.80 0.05 260)", backgroundColor: "#fff", touchAction: "none" }}
+                  width={260} height={130}
+                  className="w-full border rounded-lg cursor-crosshair"
+                  style={{ borderColor: "oklch(0.80 0.05 260)", backgroundColor: "#fff", touchAction: "none", display: "block" }}
                   onMouseDown={startSign} onMouseMove={drawSign}
                   onMouseUp={endSign} onMouseLeave={endSign}
                   onTouchStart={startSignTouch} onTouchMove={drawSignTouch}
                   onTouchEnd={endSignTouch}
                 />
+                {/* Color + stroke width controls */}
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Color</label>
+                    <input type="color" value={signColor} onChange={e => setSignColor(e.target.value)} className="w-7 h-7 rounded cursor-pointer border-0" />
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-1">
+                    <label className="text-xs whitespace-nowrap" style={{ color: "oklch(0.50 0.02 250)" }}>Width: {signStrokeWidth}px</label>
+                    <input type="range" min={1} max={8} step={0.5} value={signStrokeWidth} onChange={e => setSignStrokeWidth(Number(e.target.value))} className="flex-1" />
+                  </div>
+                </div>
                 <div className="flex gap-2">
-                  <button onClick={clearSign} className="flex-1 py-1.5 rounded text-xs border" style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.40 0.02 250)" }}>Limpiar</button>
-                  <button onClick={placeSignature} className="flex-1 py-1.5 rounded text-xs text-white font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>Insertar firma</button>
+                  <button onClick={clearSign} className="flex-1 py-2 rounded text-xs border font-medium" style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.40 0.02 250)" }}>Clear</button>
+                  <button onClick={placeSignature} className="flex-1 py-2 rounded text-xs text-white font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>Insert signature</button>
                 </div>
               </>
-            ) : (
+            )}
+
+            {/* ── Write Tab ── */}
+            {signTab === "write" && (
               <>
-                <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Escribe tu nombre y generaremos una firma estilo cursiva:</p>
                 <input
                   type="text"
                   value={signName}
                   onChange={e => setSignName(e.target.value)}
-                  placeholder="Ej: Juan García"
+                  placeholder="Type your name..."
                   className="w-full border rounded px-3 py-2 text-sm"
-                  style={{ borderColor: "oklch(0.80 0.05 260)", fontFamily: "'Dancing Script', cursive", fontSize: 22, color: "#1a237e" }}
+                  style={{ borderColor: "oklch(0.80 0.05 260)", fontFamily: signFont, fontSize: 20, color: signColor }}
                 />
-                {signName.trim() && (
-                  <div className="rounded border p-3 text-center" style={{ borderColor: "oklch(0.88 0.02 250)", fontFamily: "'Dancing Script', cursive", fontSize: 28, color: "#1a237e", borderBottom: "2px solid #1a237e", backgroundColor: "#fafafa" }}>
-                    {signName}
-                  </div>
-                )}
-                <button onClick={placeNameSignature} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>Insertar firma</button>
+                {/* Font selector */}
+                <div className="grid grid-cols-1 gap-1.5">
+                  {[
+                    { label: "Dancing Script", value: "'Dancing Script', cursive" },
+                    { label: "Alex Brush", value: "'Alex Brush', cursive" },
+                    { label: "Great Vibes", value: "'Great Vibes', cursive" },
+                    { label: "Pacifico", value: "'Pacifico', cursive" },
+                    { label: "Sacramento", value: "'Sacramento', cursive" },
+                  ].map(f => (
+                    <button
+                      key={f.value}
+                      onClick={() => setSignFont(f.value)}
+                      className="px-3 py-2 rounded border text-left transition-all"
+                      style={{
+                        borderColor: signFont === f.value ? "oklch(0.55 0.22 260)" : "oklch(0.88 0.02 250)",
+                        backgroundColor: signFont === f.value ? "oklch(0.55 0.22 260 / 0.08)" : "#fff",
+                        fontFamily: f.value,
+                        fontSize: 20,
+                        color: signColor,
+                      }}
+                    >{signName || f.label}</button>
+                  ))}
+                </div>
+                {/* Color picker */}
+                <div className="flex items-center gap-2">
+                  <label className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Color</label>
+                  <input type="color" value={signColor} onChange={e => setSignColor(e.target.value)} className="w-7 h-7 rounded cursor-pointer border-0" />
+                </div>
+                <button
+                  onClick={placeNameSignature}
+                  className="py-2 rounded text-white text-sm font-semibold"
+                  style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
+                >Insert signature</button>
+              </>
+            )}
+
+            {/* ── Image Tab ── */}
+            {signTab === "image" && (
+              <>
+                <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Upload a scanned signature image (PNG with transparent background works best):</p>
+                <label
+                  className="flex flex-col items-center justify-center gap-2 py-8 rounded-lg border-2 border-dashed cursor-pointer transition-all"
+                  style={{ borderColor: "oklch(0.80 0.05 260)", backgroundColor: "oklch(0.97 0.005 250)" }}
+                >
+                  <Upload className="w-8 h-8" style={{ color: "oklch(0.55 0.22 260)" }} />
+                  <span className="text-sm font-medium" style={{ color: "oklch(0.35 0.02 250)" }}>Click to upload image</span>
+                  <span className="text-xs" style={{ color: "oklch(0.55 0.02 250)" }}>PNG, JPG, GIF supported</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = ev => {
+                        const dataUrl = ev.target?.result as string;
+                        const img = new Image();
+                        img.onload = () => {
+                          const aspect = img.width / img.height;
+                          const w = Math.min(240, img.width);
+                          const h = w / aspect;
+                          addAnnotation({ type: "signature", dataUrl, x: 100, y: 100, width: w, height: h, page: currentPage });
+                          toast.success("Signature image added. Drag it to position.");
+                        };
+                        img.src = dataUrl;
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </label>
               </>
             )}
             </div>
@@ -1542,16 +1797,98 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       case "edit-text":
         return (
           <div className="flex flex-col">
-            {ActionBar}
             <div className="p-4 flex flex-col gap-3">
-            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Editar texto</h3>
-            <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Haz clic en cualquier anotación de texto del PDF para editarla:</p>
-            <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.95 0.01 250)", color: "oklch(0.30 0.02 250)" }}>
-              <strong>Cómo usar:</strong> Selecciona la herramienta Puntero (→) y haz doble clic en un texto para editarlo.
+            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Editar texto nativo</h3>
+            <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.08)", color: "oklch(0.30 0.02 250)" }}>
+              <strong>Cómo usar:</strong> Haz clic en cualquier bloque de texto del PDF para editarlo directamente. Los cambios se aplican al descargar.
             </div>
-            <button onClick={() => setActiveTool("pointer")} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>
-              Ir al puntero
-            </button>
+            {/* Color picker for replacement text */}
+            <div className="flex gap-2 items-center">
+              <label className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Color texto</label>
+              <input type="color" value={editTextColor} onChange={e => setEditTextColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0" />
+            </div>
+            {/* Block count */}
+            {nativeTextBlocks.length > 0 ? (
+              <div className="text-xs p-2 rounded" style={{ backgroundColor: "oklch(0.96 0.005 250)", color: "oklch(0.40 0.02 250)" }}>
+                {nativeTextBlocks.length} bloques de texto detectados en esta página.
+                {nativeTextBlocks.filter(b => b.editedStr !== undefined).length > 0 && (
+                  <span className="ml-1 font-semibold" style={{ color: "oklch(0.45 0.20 150)" }}>
+                    ({nativeTextBlocks.filter(b => b.editedStr !== undefined).length} editados)
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="text-xs p-2 rounded" style={{ backgroundColor: "oklch(0.96 0.005 250)", color: "oklch(0.55 0.02 250)" }}>
+                Cargando bloques de texto...
+              </div>
+            )}
+            {/* Editing inline panel */}
+            {editingBlockId && (() => {
+              const block = nativeTextBlocks.find(b => b.id === editingBlockId);
+              if (!block) return null;
+              return (
+                <div className="flex flex-col gap-2 p-3 rounded-lg border" style={{ borderColor: "oklch(0.75 0.10 260)", backgroundColor: "oklch(0.98 0.005 250)" }}>
+                  <p className="text-xs font-semibold" style={{ color: "oklch(0.25 0.03 250)" }}>Editando bloque:</p>
+                  <p className="text-xs italic" style={{ color: "oklch(0.55 0.02 250)" }}>Original: "{block.str}"</p>
+                  <textarea
+                    value={editingBlockText}
+                    onChange={e => setEditingBlockText(e.target.value)}
+                    rows={3}
+                    className="w-full rounded border p-2 text-sm resize-none"
+                    style={{ borderColor: "oklch(0.75 0.10 260)" }}
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setAllNativeTextBlocks(prev => {
+                          const pageBlocks = prev.get(currentPage) ?? [];
+                          const updated = pageBlocks.map((b: NativeTextBlock) =>
+                            b.id === editingBlockId
+                              ? { ...b, editedStr: editingBlockText, fontColor: editTextColor }
+                              : b
+                          );
+                          const next = new Map(prev);
+                          next.set(currentPage, updated);
+                          return next;
+                        });
+                        setEditingBlockId(null);
+                        toast.success("Texto actualizado. Se aplicará al descargar.");
+                      }}
+                      className="flex-1 py-1.5 rounded text-white text-xs font-semibold"
+                      style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
+                    >
+                      Guardar
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAllNativeTextBlocks(prev => {
+                          const pageBlocks = prev.get(currentPage) ?? [];
+                          const updated = pageBlocks.map((b: NativeTextBlock) =>
+                            b.id === editingBlockId ? { ...b, editedStr: undefined, fontColor: undefined } : b
+                          );
+                          const next = new Map(prev);
+                          next.set(currentPage, updated);
+                          return next;
+                        });
+                        setEditingBlockId(null);
+                      }}
+                      className="flex-1 py-1.5 rounded text-xs border font-medium"
+                      style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.40 0.02 250)" }}
+                    >
+                      Restaurar original
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => setEditingBlockId(null)}
+                    className="text-xs text-center py-1"
+                    style={{ color: "oklch(0.55 0.02 250)" }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              );
+            })()}
             </div>
           </div>
         );
@@ -1744,6 +2081,17 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           </button>
         )}
         <div className="w-px h-5 mx-1 shrink-0" style={{ backgroundColor: "oklch(0.88 0.02 250)" }} />
+        {/* Save */}
+        <button
+          onClick={savePdf}
+          disabled={isSaving || !pdfBytes}
+          className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all shrink-0 border"
+          style={{ borderColor: "oklch(0.75 0.10 260)", color: "oklch(0.30 0.04 250)", backgroundColor: "white" }}
+          onMouseEnter={e => { e.currentTarget.style.backgroundColor = "oklch(0.96 0.01 250)"; }}
+          onMouseLeave={e => { e.currentTarget.style.backgroundColor = "white"; }}
+        >
+          <Save className="w-4 h-4" />{isSaving ? "Saving..." : "Save"}
+        </button>
         {/* Download */}
         <button
           onClick={downloadPdf}
@@ -1897,7 +2245,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       e.stopPropagation();
                       setSelectedId(ann.id);
                       // Start drag
-                      const nodrag = ["brush", "eraser", "highlight", "sign", "shapes", "edit-text"];
+                      // Only block drag on canvas-drawing tools
+                      const nodrag = ["brush", "eraser", "highlight"];
                       if (nodrag.includes(activeTool)) return;
                       const touch = e.touches[0];
                       const overlay = overlayRef.current!.getBoundingClientRect();
@@ -2014,6 +2363,58 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   </div>
                 ))}
               </div>
+              {/* Native text blocks overlay — only visible when edit-text tool is active */}
+              {activeTool === "edit-text" && nativeTextBlocks.map(block => (
+                <div
+                  key={block.id}
+                  style={{
+                    position: "absolute",
+                    left: block.x,
+                    top: block.y,
+                    width: block.width,
+                    height: block.height,
+                    cursor: "text",
+                    border: editingBlockId === block.id
+                      ? "2px solid oklch(0.55 0.22 260)"
+                      : block.editedStr !== undefined
+                        ? "2px dashed oklch(0.45 0.20 150)"
+                        : "1.5px dashed oklch(0.55 0.22 260 / 0.6)",
+                    backgroundColor: editingBlockId === block.id
+                      ? "oklch(0.55 0.22 260 / 0.12)"
+                      : block.editedStr !== undefined
+                        ? "oklch(0.45 0.20 150 / 0.08)"
+                        : "transparent",
+                    borderRadius: 2,
+                    zIndex: 25,
+                    boxSizing: "border-box",
+                    overflow: "hidden",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingBlockId(block.id);
+                    setEditingBlockText(block.editedStr ?? block.str);
+                    setShowMobilePanel(true);
+                  }}
+                  title={block.editedStr !== undefined ? `Editado: "${block.editedStr}"` : `Clic para editar: "${block.str}"`}
+                >
+                  {/* Show edited text preview */}
+                  {block.editedStr !== undefined && (
+                    <span style={{
+                      fontSize: Math.min(block.fontSize, 12),
+                      color: block.fontColor ?? editTextColor,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      padding: "0 2px",
+                      fontWeight: 500,
+                    }}>
+                      {block.editedStr}
+                    </span>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -2095,19 +2496,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         </div>
         {/* Download row */}
         <div className="flex items-center gap-2 px-3 pb-3 pt-1">
-          {/* Share button */}
+          {/* Save button */}
           <button
-            onClick={() => {
-              if (navigator.share && file) {
-                navigator.share({ title: file.name, text: "Edited PDF" }).catch(() => {});
-              } else {
-                toast.info("Share not supported on this browser");
-              }
-            }}
-            className="flex items-center justify-center w-12 h-12 rounded-xl border shrink-0 transition-all"
-            style={{ borderColor: "oklch(0.85 0.02 250)", color: "oklch(0.35 0.02 250)" }}
+            onClick={savePdf}
+            disabled={isSaving || !pdfBytes}
+            className="flex items-center justify-center gap-1.5 w-14 h-12 rounded-xl border shrink-0 transition-all text-xs font-semibold"
+            style={{ borderColor: "oklch(0.75 0.10 260)", color: "oklch(0.30 0.04 250)", backgroundColor: "white" }}
           >
-            <Upload className="w-5 h-5" />
+            <Save className="w-4 h-4" />
+            {isSaving ? "..." : "Save"}
           </button>
           {/* Download button */}
           <button
