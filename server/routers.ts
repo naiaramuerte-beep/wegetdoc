@@ -60,7 +60,8 @@ const getStripe = (testMode = false) =>
   new Stripe(
     testMode
       ? (process.env.STRIPE_TEST_SECRET_KEY || process.env.STRIPE_SECRET_KEY || "")
-      : (process.env.STRIPE_SECRET_KEY || ""),
+      // Prefer STRIPE_LIVE_SECRET_KEY (user-provided live key) over system default
+      : (process.env.STRIPE_LIVE_SECRET_KEY || process.env.STRIPE_SECRET_KEY || ""),
     { apiVersion: "2026-02-25.clover" }
   );
 

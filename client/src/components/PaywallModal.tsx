@@ -19,7 +19,12 @@ import {
 } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
+// Prefer live key (user-provided) over system default
+const stripePromise = loadStripe(
+  import.meta.env.VITE_STRIPE_LIVE_PUBLISHABLE_KEY ||
+  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ||
+  ""
+);
 
 interface PaywallModalProps {
   isOpen: boolean;

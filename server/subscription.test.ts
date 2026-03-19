@@ -116,6 +116,24 @@ describe("subscription.status", () => {
   });
 });
 
+describe("stripe.liveKeys", () => {
+  it("STRIPE_LIVE_SECRET_KEY is set and starts with sk_live_", () => {
+    const key = process.env.STRIPE_LIVE_SECRET_KEY || "";
+    expect(key.startsWith("sk_live_")).toBe(true);
+  });
+
+  it("VITE_STRIPE_LIVE_PUBLISHABLE_KEY is set and starts with pk_live_", () => {
+    const key = process.env.VITE_STRIPE_LIVE_PUBLISHABLE_KEY || "";
+    expect(key.startsWith("pk_live_")).toBe(true);
+  });
+
+  it("Price IDs are correctly configured in products.ts", async () => {
+    const { STRIPE_PRICE_IDS } = await import("./products");
+    expect(STRIPE_PRICE_IDS.monthly).toBe("price_1TCdbn2WMuUgq7vD74v0mclA");
+    expect(STRIPE_PRICE_IDS.activation).toBe("price_1TCdcV2WMuUgq7vD5X99lzED");
+  });
+});
+
 describe("auth.logout", () => {
   it("clears the session cookie and reports success", async () => {
     const ctx = createAuthContext();

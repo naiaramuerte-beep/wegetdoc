@@ -33,10 +33,12 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
-  // ── Stripe Webhook (MUST be before express.json) ─────────────
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-    apiVersion: "2026-02-25.clover",
-  });
+  // ── Stripe Webhook (MUST be before express.json) ───────────────────────────────────────────
+  // Prefer STRIPE_LIVE_SECRET_KEY (user-provided) over system default
+  const stripe = new Stripe(
+    process.env.STRIPE_LIVE_SECRET_KEY || process.env.STRIPE_SECRET_KEY || "",
+    { apiVersion: "2026-02-25.clover" }
+  );
 
   app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
     const sig = req.headers["stripe-signature"];
