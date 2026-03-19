@@ -147,6 +147,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
   // Sign tool state
   const [isSignDrawing, setIsSignDrawing] = useState(false);
+  const isSignDrawingRef = useRef(false); // Use ref to avoid closure stale state bug
   const signCanvasRef = useRef<HTMLCanvasElement>(null);
   const [signTab, setSignTab] = useState<"draw" | "write" | "image">("draw"); // draw, write, or image
   const [signColor, setSignColor] = useState("#1a237e"); // draw tab color
@@ -641,15 +642,17 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     return { x: (clientX - r.left) * scaleX, y: (clientY - r.top) * scaleY };
   };
   const startSign = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
     const c = signCanvasRef.current!;
     const ctx = c.getContext("2d")!;
     const { x, y } = getSignCoords(e.clientX, e.clientY);
     ctx.beginPath();
     ctx.moveTo(x, y);
+    isSignDrawingRef.current = true;
     setIsSignDrawing(true);
   };
   const drawSign = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isSignDrawing) return;
+    if (!isSignDrawingRef.current) return;
     const c = signCanvasRef.current!;
     const ctx = c.getContext("2d")!;
     const { x, y } = getSignCoords(e.clientX, e.clientY);
@@ -660,7 +663,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     ctx.lineTo(x, y);
     ctx.stroke();
   };
-  const endSign = () => setIsSignDrawing(false);
+  const endSign = () => { isSignDrawingRef.current = false; setIsSignDrawing(false); };
   // Touch handlers for mobile signature drawing
   const startSignTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
@@ -670,11 +673,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const { x, y } = getSignCoords(touch.clientX, touch.clientY);
     ctx.beginPath();
     ctx.moveTo(x, y);
+    isSignDrawingRef.current = true;
     setIsSignDrawing(true);
   };
   const drawSignTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    if (!isSignDrawing) return;
+    if (!isSignDrawingRef.current) return;
     const touch = e.touches[0];
     const c = signCanvasRef.current!;
     const ctx = c.getContext("2d")!;
@@ -688,6 +692,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   };
   const endSignTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
+    isSignDrawingRef.current = false;
     setIsSignDrawing(false);
   };
   const clearSign = () => {
@@ -1097,14 +1102,16 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // ── Build annotated PDF as Uint8Array (shared by download and paywall) ──
   const buildAnnotatedPdf = async (): Promise<Uint8Array | null> => {
     if (!pdfBytes) return null;
+    // Copy bytes to avoid detached ArrayBuffer issues
+    const safeBytes = new Uint8Array(pdfBytes);
     // Validate PDF header: search for %PDF in first 1024 bytes
-    const headerSlice = pdfBytes.slice(0, 1024);
+    const headerSlice = safeBytes.slice(0, 1024);
     const headerStr = String.fromCharCode(...Array.from(headerSlice));
     if (!headerStr.includes("%PDF")) {
       toast.error("Error: los bytes del PDF son inválidos. Por favor, recarga el archivo.");
       return null;
     }
-    const doc = await PDFDocument.load(pdfBytes as Uint8Array, { ignoreEncryption: true });
+    const doc = await PDFDocument.load(safeBytes, { ignoreEncryption: true });
     const font = await doc.embedFont(StandardFonts.Helvetica);
     for (const ann of annotations) {
       const page = doc.getPage(ann.page - 1);
@@ -2002,7 +2009,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       }
     >
       {/* ── TOP TOOLBAR — desktop only ── */}
-      <div className="hidden md:flex items-center gap-1 px-3 py-1.5 border-b overflow-x-auto" style={{ backgroundColor: "oklch(1 0 0)", borderColor: "oklch(0.90 0.01 250)" }}>
+      <div className="hidden md:flex items-center gap-1 px-3 py-1.5 border-b min-w-0" style={{ backgroundColor: "oklch(1 0 0)", borderColor: "oklch(0.90 0.01 250)" }}>
         {/* Undo / Redo */}
         <button title={t.editor_undo + " (Ctrl+Z)"} onClick={undo} disabled={historyIndex <= 0} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
           <Undo2 className="w-4 h-4" style={{ color: "oklch(0.35 0.02 250)" }} />
@@ -2011,8 +2018,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           <Redo2 className="w-4 h-4" style={{ color: "oklch(0.35 0.02 250)" }} />
         </button>
         <div className="w-px h-5 mx-1 shrink-0" style={{ backgroundColor: "oklch(0.88 0.02 250)" }} />
-        {/* Tool buttons — centered */}
-        <div className="flex items-center gap-0.5 flex-1 justify-center">
+        {/* Tool buttons — scrollable */}
+        <div className="flex items-center gap-0.5 flex-1 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
           {[
             { id: "sign" as ToolName, icon: PenTool, label: t.editor_sign },
             { id: "text" as ToolName, icon: Type, label: t.editor_add_text },
@@ -2344,9 +2351,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         ? "2px dashed oklch(0.45 0.20 150)"
                         : "1.5px dashed oklch(0.55 0.22 260 / 0.6)",
                     backgroundColor: editingBlockId === block.id
-                      ? "oklch(0.55 0.22 260 / 0.12)"
+                      ? "rgba(255,255,255,0.95)"
                       : block.editedStr !== undefined
-                        ? "oklch(0.45 0.20 150 / 0.08)"
+                        ? "rgba(255,255,255,0.95)"
                         : "transparent",
                     borderRadius: 2,
                     zIndex: 25,

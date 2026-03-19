@@ -269,3 +269,9 @@
 ## Bugs 19/03 v2
 - [x] Validación %PDF: busca en primeros 1024 bytes (soporta PDFs con BOM/espacios antes del header)
 - [x] Texto editado: capa blanca ahora cubre hasta el borde derecho de la página para borrar completamente el original
+
+## Bugs 19/03 v3
+- [x] Toolbar superior: botones se salen del contenedor (overflow) — corregido con overflow-x-auto y min-w-0
+- [x] Canvas de firma: no registra el dibujo al arrastrar el ratón — corregido usando useRef en lugar de useState para isSignDrawing
+- [x] Texto editado aparece encima del original — corregido con fondo blanco opaco en el bloque editado
+- [x] Error "Cannot perform slice on detached ArrayBuffer" — corregido copiando pdfBytes antes de usar en buildAnnotatedPdf
