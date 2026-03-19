@@ -254,23 +254,14 @@ export const appRouter = router({
         const { plan, origin } = input;
         const user = ctx.user;
 
-        // Both plans use subscription mode with 49.95€/month
-        // "trial" plan includes a 7-day free trial (0€ today, card required)
+        // Price IDs from Stripe Dashboard (live):
+        // Monthly 49,90€/mes: price_1TCdbn2WMuUgq7vD74v0mclA
+        // One-time 0,50€: price_1TCdcV2WMuUgq7vD5X99lzED
+        const MONTHLY_PRICE_ID = "price_1TCdbn2WMuUgq7vD74v0mclA";
+
+        // Use real Price ID instead of price_data to avoid creating duplicate prices
         const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
-          {
-            price_data: {
-              currency: "eur",
-              product_data: {
-                name: plan === "trial" ? "PDFPro — Prueba gratuita 7 días" : "PDFPro — Plan Mensual",
-                description: plan === "trial"
-                  ? "7 días gratis, luego 49,95€/mes. Cancela cuando quieras."
-                  : "Acceso ilimitado a todas las herramientas PDF por 49,95€/mes",
-              },
-              unit_amount: 4995, // 49.95€ in cents
-              recurring: { interval: "month" },
-            },
-            quantity: 1,
-          },
+          { price: MONTHLY_PRICE_ID, quantity: 1 },
         ];
 
         const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData =
@@ -299,7 +290,6 @@ export const appRouter = router({
           customer_email: user.email || undefined,
           allow_promotion_codes: true,
           client_reference_id: user.id.toString(),
-          payment_method_collection: plan === "trial" ? "always" : "always",
           metadata: {
             user_id: user.id.toString(),
             plan,
@@ -393,7 +383,7 @@ export const appRouter = router({
           invoice_settings: { default_payment_method: input.paymentMethodId },
         });
 
-        // 3. Charge 0,50€ immediately (trial fee)
+        // 3. Charge 0,50€ immediately (trial fee) using the real Price ID
         const trialPayment = await stripe.paymentIntents.create({
           amount: 50, // 0,50€ in cents
           currency: "eur",
@@ -401,7 +391,7 @@ export const appRouter = router({
           payment_method: input.paymentMethodId,
           confirm: true,
           off_session: true,
-          description: "editPDF — Trial 7 días (0,50€)",
+          description: "editPDF — Acceso 7 días (0,50€)",
           metadata: {
             user_id: user.id.toString(),
             type: "trial_fee",
@@ -411,25 +401,21 @@ export const appRouter = router({
         if (trialPayment.status !== "succeeded") {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Payment of 0,50€ could not be processed. Please check your card details.",
+            message: "El pago de 0,50€ no se pudo procesar. Por favor, revisa los datos de tu tarjeta.",
           });
         }
 
-        // 4. Create recurring price (49,95€/month) and subscription with 7-day trial
-        const price = await stripe.prices.create({
-          currency: "eur",
-          unit_amount: 4995,
-          recurring: { interval: "month" },
-          product_data: {
-            name: "editPDF — Plan Mensual",
-          },
-        });
+        // 4. Create subscription with real Price ID (49,90€/month) and 7-day trial
+        // Price IDs from Stripe Dashboard:
+        // Monthly 49,90€: price_1TCdbn2WMuUgq7vD74v0mclA
+        // One-time 0,50€: price_1TCdcV2WMuUgq7vD5X99lzED
+        const MONTHLY_PRICE_ID = "price_1TCdbn2WMuUgq7vD74v0mclA";
 
         const trialEndTimestamp = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60;
 
         const subscription = await stripe.subscriptions.create({
           customer: input.customerId,
-          items: [{ price: price.id }],
+          items: [{ price: MONTHLY_PRICE_ID }],
           trial_end: trialEndTimestamp,
           default_payment_method: input.paymentMethodId,
           metadata: {

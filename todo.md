@@ -237,8 +237,10 @@
 - [ ] Actualizar schema DB con stripe_customer_id y stripe_subscription_id
 - [ ] Implementar PaywallModal con Stripe Elements (tarjeta inline)
 - [ ] Implementar suscripción automática mensual con trial
-- [ ] Webhook para sincronizar estado de suscripción
-- [ ] Página /billing con planes y gestión de suscripción
+- [x] Price IDs reales de Stripe configurados (49,90€/mes + 0,50€ activación)
+- [x] Flujo pago: 0,50€ inmediato + suscripción automática 49,90€/mes tras 7 días
+- [x] Webhook para sincronizar estado de suscripción
+- [ ] Claves live de Stripe configuradas en Settings → Secrets (pendiente usuario)
 
 ## UX - Drag directo en anotaciones
 - [x] Anotaciones arrastrables sin cambiar a herramienta mover (desktop mouse)
