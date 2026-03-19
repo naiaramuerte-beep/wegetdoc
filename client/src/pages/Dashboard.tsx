@@ -2,7 +2,7 @@
    PDFPro — Dashboard de usuario
    Pestañas: Mi Cuenta | Mis Documentos | Equipo | Facturación
    ============================================================= */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -15,20 +15,41 @@ import {
   User, FileText, Users, CreditCard, Settings,
   LogOut, Trash2, Plus, X, Download, FolderOpen,
   Crown, Check, AlertCircle, ChevronRight, Mail,
-  Shield, Globe, Clock,
+  Shield, Globe, Clock, Edit3,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
 import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
+import { usePdfFile } from "@/contexts/PdfFileContext";
 
 type Tab = "account" | "documents" | "team" | "billing";
 
 export default function Dashboard() {
   const { user, isAuthenticated, loading, logout } = useAuth();
   const [, navigate] = useLocation();
-  const [activeTab, setActiveTab] = useState<Tab>("account");
+  // Read tab from URL query param (e.g. ?tab=documents after payment)
+  const getInitialTab = (): Tab => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    if (tab === "documents" || tab === "team" || tab === "billing" || tab === "account") return tab;
+    return "account";
+  };
+   const [activeTab, setActiveTab] = useState<Tab>(getInitialTab);
+  const utils = trpc.useUtils();
+
+  // Show success toast if redirected from Stripe Checkout
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("payment") === "success") {
+      utils.subscription.status.invalidate();
+      toast.success("¡Pago completado! Tu suscripción está activa. Ya puedes descargar tus documentos.");
+      // Clean URL without reload
+      const cleanUrl = window.location.pathname + "?tab=documents";
+      window.history.replaceState({}, "", cleanUrl);
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -263,6 +284,28 @@ function DocumentsTab() {
   const [newFolderName, setNewFolderName] = useState("");
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [, navigate] = useLocation();
+  const { setPendingFile, setPendingTool } = usePdfFile();
+
+  const handleEditDocument = async (doc: any) => {
+    if (!doc.fileUrl) { toast.error("No se puede abrir este documento"); return; }
+    try {
+      toast.loading("Cargando documento...", { id: "load-doc" });
+      const response = await fetch(doc.fileUrl);
+      if (!response.ok) throw new Error("Error al descargar el documento");
+      const blob = await response.blob();
+      const file = new File([blob], doc.name, { type: "application/pdf" });
+      setPendingFile(file);
+      setPendingTool(null);
+      toast.dismiss("load-doc");
+      const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
+      const lang = langMatch ? langMatch[1] : "es";
+      navigate(`/${lang}/editor`);
+    } catch (err) {
+      toast.dismiss("load-doc");
+      toast.error("Error al cargar el documento");
+    }
+  };
 
   const deleteMutation = trpc.documents.delete.useMutation({
     onSuccess: () => { utils.documents.list.invalidate(); toast.success("Documento eliminado"); },
@@ -373,6 +416,19 @@ function DocumentsTab() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* Edit button — always visible for all users */}
+                  {doc.fileUrl && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 px-2 gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      title="Editar en el editor"
+                      onClick={() => handleEditDocument(doc)}
+                    >
+                      <Edit3 size={13} />
+                      <span className="text-xs">Editar</span>
+                    </Button>
+                  )}
                   {doc.fileUrl && (
                     isPremium ? (
                       <a href={doc.fileUrl} download={doc.name} target="_blank" rel="noopener noreferrer">

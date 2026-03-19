@@ -298,3 +298,8 @@
 - [x] Bug 8: Stripe cobra 0€ / card velocity exceeded — mensajes de error amigables en español con mapeo de códigos Stripe
 - [x] Bug 9: error al guardar — mejor manejo de errores con mensaje específico + fix ArrayBuffer slice
 - [x] Bug 10: mezcla de idiomas — textos hardcodeados en inglés reemplazados por traducciones (Card tab, Save button, etc.)
+
+## Mejoras Post-Pago (19/03 v5)
+- [x] Corregir precio mostrado en PaywallModal (mostrar 0,50€ en lugar de 0,00€)
+- [x] Añadir botón "Editar" en documentos del panel de usuario
+- [x] Tras pago exitoso, redirigir automáticamente al panel de documentos

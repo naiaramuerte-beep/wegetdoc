@@ -2669,24 +2669,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         isOpen={showPaywall}
         onClose={() => setShowPaywall(false)}
         pdfData={pdfDataForPaywall}
-        onPaymentSuccess={async () => {
-          // After successful payment, trigger the actual download
+        onPaymentSuccess={() => {
+          // After successful payment, redirect to dashboard documents
+          // The PDF was already uploaded to S3 during checkout
           setShowPaywall(false);
-          if (!pdfBytes) return;
-          toast.loading("Preparando descarga...", { id: "dl-post-payment" });
-          try {
-            const out = await buildAnnotatedPdf();
-            if (!out) throw new Error("Failed to build PDF");
-            const blob = new Blob([Buffer.from(out)], { type: "application/pdf" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a"); a.href = url;
-            a.download = file?.name ?? "document.pdf";
-            a.click(); URL.revokeObjectURL(url);
-            toast.success("PDF descargado correctamente", { id: "dl-post-payment" });
-          } catch (err) {
-            console.error(err);
-            toast.error("Error al generar el PDF", { id: "dl-post-payment" });
-          }
+          toast.success("¡Pago completado! Tu documento está disponible en tu panel.");
+          const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
+          const lang = langMatch ? langMatch[1] : "es";
+          navigate(`/${lang}/dashboard?tab=documents`);
         }}
       />
     </div>

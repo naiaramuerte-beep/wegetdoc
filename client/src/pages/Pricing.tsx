@@ -153,7 +153,7 @@ export default function Pricing() {
                   className="text-4xl font-extrabold"
                   style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
                 >
-                  $0.99
+                  0,50 €
                 </span>
                 <span
                   className="text-sm ml-1"
@@ -185,7 +185,7 @@ export default function Pricing() {
                 onClick={() => handleSubscribe("trial")}
                 disabled={loadingPlan === "trial"}
               >
-                {loadingPlan === "trial" ? <><Loader2 className="w-4 h-4 animate-spin" /> Procesando...</> : "Iniciar prueba por 0,99 €"}
+                {loadingPlan === "trial" ? <><Loader2 className="w-4 h-4 animate-spin" /> Procesando...</> : "Iniciar prueba por 0,50 €"}
               </button>
             </div>
 
@@ -218,7 +218,7 @@ export default function Pricing() {
                   className="text-4xl font-extrabold"
                   style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
                 >
-                  $9.99
+                  49,90 €
                 </span>
                 <span
                   className="text-sm ml-1"
