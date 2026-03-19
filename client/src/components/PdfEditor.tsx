@@ -311,7 +311,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
   // ── Load PDF ─────────────────────────────────────────────────
   const loadPdf = useCallback(async (f: File) => {
-    const bytes = new Uint8Array(await f.arrayBuffer());
+    // Use .slice() to ensure the stored bytes have their own independent ArrayBuffer.
+    // f.arrayBuffer() may return a shared/transferable buffer that can be detached later.
+    const bytes = new Uint8Array(await f.arrayBuffer()).slice();
     // Validate PDF header: search for %PDF in first 1024 bytes (some PDFs have BOM or whitespace before header)
     const headerSlice = bytes.slice(0, 1024);
     const headerStr = String.fromCharCode(...Array.from(headerSlice));
@@ -320,7 +322,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       return;
     }
     setPdfBytes(bytes);
-    const doc = await pdfjsLib.getDocument({ data: bytes }).promise;
+    const doc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
     setPdfDoc(doc);
     setTotalPages(doc.numPages);
     setCurrentPage(1);
@@ -1110,14 +1112,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     if (!pdfBytes) return;
     toast.loading("Rotando página...", { id: "rotate" });
     try {
-      const safeBytes = new Uint8Array(pdfBytes);
+      const safeBytes = pdfBytes.slice();
       const doc = await PDFDocument.load(safeBytes);
       const page = doc.getPage(currentPage - 1);
       page.setRotation(degrees((page.getRotation().angle + 90) % 360));
       const out = await doc.save();
-      const newBytes = new Uint8Array(out);
+      const newBytes = new Uint8Array(out).slice(); // .slice() ensures independent ArrayBuffer
       setPdfBytes(newBytes);
-      const newDoc = await pdfjsLib.getDocument({ data: out }).promise;
+      const newDoc = await pdfjsLib.getDocument({ data: newBytes }).promise;
       setPdfDoc(newDoc);
       toast.success("Página rotada", { id: "rotate" });
     } catch {
@@ -1130,13 +1132,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     if (!pdfBytes || totalPages <= 1) { toast.error("No se puede eliminar la única página"); return; }
     toast.loading("Eliminando página...", { id: "delpage" });
     try {
-      const safeBytes = new Uint8Array(pdfBytes);
+      const safeBytes = pdfBytes.slice();
       const doc = await PDFDocument.load(safeBytes);
       doc.removePage(currentPage - 1);
       const out = await doc.save();
-      const newBytes = new Uint8Array(out);
+      const newBytes = new Uint8Array(out).slice(); // .slice() ensures independent ArrayBuffer
       setPdfBytes(newBytes);
-      const newDoc = await pdfjsLib.getDocument({ data: out }).promise;
+      const newDoc = await pdfjsLib.getDocument({ data: newBytes }).promise;
       setPdfDoc(newDoc);
       setTotalPages(doc.getPageCount() - 1);
       if (currentPage > 1) setCurrentPage(p => p - 1);
@@ -1149,8 +1151,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // ── Build annotated PDF as Uint8Array (shared by download and paywall) ──
   const buildAnnotatedPdf = async (): Promise<Uint8Array | null> => {
     if (!pdfBytes) return null;
-    // Copy bytes to avoid detached ArrayBuffer issues
-    const safeBytes = new Uint8Array(pdfBytes);
+    // Use .slice() to create a fully independent copy of the bytes.
+    // new Uint8Array(pdfBytes) shares the underlying buffer which can be detached.
+    // .slice() always returns a new Uint8Array with its own fresh ArrayBuffer.
+    const safeBytes = pdfBytes.slice();
     // Validate PDF header: search for %PDF in first 1024 bytes
     const headerSlice = safeBytes.slice(0, 1024);
     const headerStr = String.fromCharCode(...Array.from(headerSlice));
