@@ -146,8 +146,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const [drawStart, setDrawStart] = useState({ x: 0, y: 0 });
 
   // Sign tool state
-  const [isSignDrawing, setIsSignDrawing] = useState(false);
-  const isSignDrawingRef = useRef(false); // Use ref to avoid closure stale state bug
+  // isSignDrawing is tracked ONLY via ref to avoid re-renders that would remount the canvas
+  const isSignDrawingRef = useRef(false);
   const signLastPoint = useRef<{ x: number; y: number } | null>(null); // Track last point for smooth drawing
   const signCanvasRef = useRef<HTMLCanvasElement>(null);
   const [signTab, setSignTab] = useState<"draw" | "write" | "image">("draw"); // draw, write, or image
@@ -252,7 +252,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const handleGlobalMouseUp = () => {
       if (isSignDrawingRef.current) {
         isSignDrawingRef.current = false;
-        setIsSignDrawing(false);
+        signLastPoint.current = null;
       }
     };
     window.addEventListener('mouseup', handleGlobalMouseUp);
@@ -699,7 +699,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const { x, y } = getSignCoords(e.clientX, e.clientY);
     isSignDrawingRef.current = true;
     signLastPoint.current = { x, y };
-    setIsSignDrawing(true);
     // Draw a dot at the click point so single clicks are visible
     const c = signCanvasRef.current!;
     const ctx = c.getContext("2d")!;
@@ -723,7 +722,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     ctx.stroke();
     signLastPoint.current = { x, y };
   };
-  const endSign = () => { isSignDrawingRef.current = false; signLastPoint.current = null; setIsSignDrawing(false); };
+  const endSign = () => { isSignDrawingRef.current = false; signLastPoint.current = null; };
   // Touch handlers for mobile signature drawing
   const startSignTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
@@ -731,7 +730,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const { x, y } = getSignCoords(touch.clientX, touch.clientY);
     isSignDrawingRef.current = true;
     signLastPoint.current = { x, y };
-    setIsSignDrawing(true);
     const c = signCanvasRef.current!;
     const ctx = c.getContext("2d")!;
     ctx.beginPath();
@@ -760,7 +758,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     e.preventDefault();
     isSignDrawingRef.current = false;
     signLastPoint.current = null;
-    setIsSignDrawing(false);
   };
   const clearSign = () => {
     const c = signCanvasRef.current!;
