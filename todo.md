@@ -313,3 +313,6 @@
 
 ## Bug crítico: Edit Text no borra texto original al exportar
 - [x] Corregir buildAnnotatedPdf: la capa blanca no cubre el texto original (problema de coordenadas pdf.js vs pdf-lib)
+
+## Bug móvil: subida de archivo no funciona
+- [x] Bug: en móvil al pulsar "Upload PDF to edit" no pasa nada y desaparece el header

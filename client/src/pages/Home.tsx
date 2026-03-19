@@ -126,9 +126,13 @@ export default function Home() {
       setPendingTool(tool);
       if (FILE_FREE_TOOLS.includes(tool)) {
         navigate(`/${lang}/editor`);
-      } else {
-        fileInputRef.current?.click();
+        return;
       }
+    }
+    // Trigger file input via label click — works on iOS Safari
+    const label = document.getElementById("home-file-input-label");
+    if (label) {
+      (label as HTMLLabelElement).click();
     } else {
       fileInputRef.current?.click();
     }
@@ -178,17 +182,19 @@ export default function Home() {
           <div id="editor-section" className="max-w-2xl mx-auto">
             <input
               ref={fileInputRef}
+              id="home-file-input"
               type="file"
               accept="*/*"
               className="hidden"
               onChange={handleFileInput}
             />
+            {/* Hidden label used by scrollToEditor for iOS Safari compatibility */}
+            <label id="home-file-input-label" htmlFor="home-file-input" className="hidden" aria-hidden="true" />
             <div
               onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
               onDragLeave={() => setIsDraggingOver(false)}
               onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className="cursor-pointer rounded-3xl flex flex-col items-center justify-center gap-4 py-12 px-8 transition-all duration-200"
+              className="rounded-3xl flex flex-col items-center justify-center gap-4 py-12 px-8 transition-all duration-200"
               style={{
                 border: `2px dashed ${isDraggingOver ? "oklch(0.55 0.22 260)" : "oklch(0.80 0.05 260)"}`,
                 backgroundColor: isDraggingOver
@@ -209,15 +215,16 @@ export default function Home() {
                 </p>
                 <p className="text-sm mt-1" style={{ color: "oklch(0.55 0.05 250)" }}>{t.hero_or}</p>
               </div>
-              <button
-                className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white transition-all"
+              <label
+                htmlFor="home-file-input"
+                className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white transition-all cursor-pointer select-none"
                 style={{ backgroundColor: "oklch(0.18 0.04 250)" }}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.25 0.04 250)")}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.18 0.04 250)")}
               >
                 <Upload className="w-4 h-4" />
                 {t.hero_upload_btn}
-              </button>
+              </label>
               {/* Mensaje de conversión */}
               <div
                 className="flex items-start gap-2 rounded-xl px-4 py-3 text-sm max-w-sm text-center"
