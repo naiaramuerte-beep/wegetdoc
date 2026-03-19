@@ -110,7 +110,8 @@ export default function Home() {
     const f = e.target.files?.[0];
     // Reset input value so selecting the same file again triggers onChange on mobile
     e.currentTarget.value = "";
-    if (f) openEditor(f);
+    if (f) openEditor(f, pendingToolForInput.current);
+    pendingToolForInput.current = undefined;
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -123,20 +124,24 @@ export default function Home() {
   // Tools that don't require a pre-existing PDF file
   const FILE_FREE_TOOLS = ["jpg-to-pdf", "png-to-pdf", "word-to-pdf", "excel-to-pdf", "ppt-to-pdf"];
 
+  // pendingToolForInput stores the tool to activate when the file input fires
+  // This is set BEFORE the label click so it's ready when onChange fires
+  const pendingToolForInput = useRef<string | undefined>(undefined);
+
   const scrollToEditor = (tool?: string) => {
-    if (tool) {
+    if (tool && FILE_FREE_TOOLS.includes(tool)) {
+      // File-free tools go straight to editor
       setPendingTool(tool);
-      if (FILE_FREE_TOOLS.includes(tool)) {
-        navigate(`/${lang}/editor`);
-        return;
-      }
+      navigate(`/${lang}/editor`);
+      return;
     }
-    // Trigger file input via label click — works on iOS Safari
-    const label = document.getElementById("home-file-input-label");
-    if (label) {
-      (label as HTMLLabelElement).click();
-    } else {
-      fileInputRef.current?.click();
+    // Store the tool so handleFileInput can pick it up
+    pendingToolForInput.current = tool;
+    // Programmatic click is unreliable on iOS — scroll to the upload zone instead
+    // so the user can tap the visible <label> button directly
+    const section = document.getElementById("editor-section");
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   };
 
@@ -289,51 +294,62 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Tool Cards */}
+          {/* Tool Cards — use <label> for file-requiring tools so iOS/Android opens the picker directly */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-10">
-            {activeCategory.tools.map((tool, i) => (
-              <button
-                key={i}
-                className="flex flex-col items-center gap-3 p-4 rounded-xl text-center transition-all duration-200"
-                style={{
-                  backgroundColor: "oklch(1 0 0)",
-                  border: "1px solid oklch(0.90 0.01 250)",
-                  fontFamily: "'DM Sans', sans-serif",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "oklch(0.55 0.22 260 / 0.4)";
-                  e.currentTarget.style.boxShadow = "0 8px 24px oklch(0.55 0.22 260 / 0.10)";
-                  e.currentTarget.style.transform = "translateY(-3px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "oklch(0.90 0.01 250)";
-                  e.currentTarget.style.boxShadow = "none";
-                  e.currentTarget.style.transform = "translateY(0)";
-                }}
-                onClick={() => scrollToEditor((tool as { tool: string }).tool)}
-              >
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center"
-                  style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.08)" }}
-                >
-                  <tool.icon
-                    className="w-5 h-5"
-                    style={{ color: "oklch(0.55 0.22 260)" }}
-                  />
-                </div>
-                <span
-                  className="text-xs font-medium leading-tight"
-                  style={{ color: "oklch(0.25 0.03 250)" }}
-                >
-                  {tool.label}
-                </span>
-              </button>
-            ))}
+            {activeCategory.tools.map((tool, i) => {
+              const toolId = (tool as { tool: string }).tool;
+              const isFree = FILE_FREE_TOOLS.includes(toolId);
+              const sharedStyle = {
+                backgroundColor: "oklch(1 0 0)",
+                border: "1px solid oklch(0.90 0.01 250)",
+                fontFamily: "'DM Sans', sans-serif",
+                display: "flex" as const,
+                flexDirection: "column" as const,
+                alignItems: "center" as const,
+                gap: "0.75rem",
+                padding: "1rem",
+                borderRadius: "0.75rem",
+                textAlign: "center" as const,
+                transition: "all 0.2s",
+                cursor: "pointer",
+              };
+              const inner = (
+                <>
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.08)" }}
+                  >
+                    <tool.icon className="w-5 h-5" style={{ color: "oklch(0.55 0.22 260)" }} />
+                  </div>
+                  <span className="text-xs font-medium leading-tight" style={{ color: "oklch(0.25 0.03 250)" }}>
+                    {tool.label}
+                  </span>
+                </>
+              );
+              if (isFree) {
+                return (
+                  <button
+                    key={i}
+                    style={sharedStyle}
+                    onClick={() => { setPendingTool(toolId); navigate(`/${lang}/editor`); }}
+                  >{inner}</button>
+                );
+              }
+              return (
+                <label
+                  key={i}
+                  htmlFor="home-file-input"
+                  style={sharedStyle}
+                  onClick={() => { pendingToolForInput.current = toolId; }}
+                >{inner}</label>
+              );
+            })}
           </div>
 
           <div className="text-center">
-            <button
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-lg text-white font-semibold text-sm transition-all duration-200"
+            <label
+              htmlFor="home-file-input"
+              className="inline-flex items-center gap-2 px-8 py-3 rounded-lg text-white font-semibold text-sm transition-all duration-200 cursor-pointer"
               style={{
                 backgroundColor: "oklch(0.18 0.04 250)",
                 fontFamily: "'DM Sans', sans-serif",
@@ -344,11 +360,10 @@ export default function Home() {
               onMouseLeave={(e) =>
                 (e.currentTarget.style.backgroundColor = "oklch(0.18 0.04 250)")
               }
-              onClick={() => scrollToEditor()}
             >
               <Upload className="w-4 h-4" />
               {t.tools_cta}
-            </button>
+            </label>
           </div>
         </div>
       </section>
@@ -446,8 +461,9 @@ export default function Home() {
           </div>
 
           <div className="text-center">
-            <button
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-lg text-white font-semibold text-sm transition-all duration-200"
+            <label
+              htmlFor="home-file-input"
+              className="inline-flex items-center gap-2 px-8 py-3 rounded-lg text-white font-semibold text-sm transition-all duration-200 cursor-pointer"
               style={{
                 backgroundColor: "oklch(0.18 0.04 250)",
                 fontFamily: "'DM Sans', sans-serif",
@@ -458,11 +474,10 @@ export default function Home() {
               onMouseLeave={(e) =>
                 (e.currentTarget.style.backgroundColor = "oklch(0.18 0.04 250)")
               }
-              onClick={() => scrollToEditor()}
             >
               <Upload className="w-4 h-4" />
               {t.how_cta}
-            </button>
+            </label>
           </div>
         </div>
       </section>
@@ -630,8 +645,9 @@ export default function Home() {
           >
             {t.cta_subtitle}
           </p>
-          <button
-            className="inline-flex items-center gap-2 px-8 py-3 rounded-lg font-semibold text-sm transition-all duration-200"
+          <label
+            htmlFor="home-file-input"
+            className="inline-flex items-center gap-2 px-8 py-3 rounded-lg font-semibold text-sm transition-all duration-200 cursor-pointer"
             style={{
               backgroundColor: "oklch(0.55 0.22 260)",
               color: "white",
@@ -643,12 +659,11 @@ export default function Home() {
             onMouseLeave={(e) =>
               (e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)")
             }
-            onClick={() => scrollToEditor()}
           >
             <Upload className="w-4 h-4" />
             {t.cta_btn}
             <ArrowRight className="w-4 h-4" />
-          </button>
+          </label>
         </div>
       </section>
 

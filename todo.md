@@ -322,3 +322,6 @@
 
 ## BUG CRÍTICO: web no funciona en móvil
 - [x] Rediseñar flujo de subida para que funcione en móvil (iOS/Android)
+
+## Compatibilidad móvil iOS + Android
+- [x] Garantizar subida de archivos y apertura del editor en iOS Safari y Android Chrome
