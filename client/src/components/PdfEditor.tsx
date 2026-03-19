@@ -148,6 +148,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // Sign tool state
   const [isSignDrawing, setIsSignDrawing] = useState(false);
   const isSignDrawingRef = useRef(false); // Use ref to avoid closure stale state bug
+  const signLastPoint = useRef<{ x: number; y: number } | null>(null); // Track last point for smooth drawing
   const signCanvasRef = useRef<HTMLCanvasElement>(null);
   const [signTab, setSignTab] = useState<"draw" | "write" | "image">("draw"); // draw, write, or image
   const [signColor, setSignColor] = useState("#1a237e"); // draw tab color
@@ -695,56 +696,70 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   };
   const startSign = (e: React.MouseEvent<HTMLCanvasElement>) => {
     e.preventDefault();
+    const { x, y } = getSignCoords(e.clientX, e.clientY);
+    isSignDrawingRef.current = true;
+    signLastPoint.current = { x, y };
+    setIsSignDrawing(true);
+    // Draw a dot at the click point so single clicks are visible
+    const c = signCanvasRef.current!;
+    const ctx = c.getContext("2d")!;
+    ctx.beginPath();
+    ctx.arc(x, y, signStrokeWidth / 2, 0, Math.PI * 2);
+    ctx.fillStyle = signColor;
+    ctx.fill();
+  };
+  const drawSign = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isSignDrawingRef.current || !signLastPoint.current) return;
     const c = signCanvasRef.current!;
     const ctx = c.getContext("2d")!;
     const { x, y } = getSignCoords(e.clientX, e.clientY);
     ctx.beginPath();
-    ctx.moveTo(x, y);
-    isSignDrawingRef.current = true;
-    setIsSignDrawing(true);
-  };
-  const drawSign = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isSignDrawingRef.current) return;
-    const c = signCanvasRef.current!;
-    const ctx = c.getContext("2d")!;
-    const { x, y } = getSignCoords(e.clientX, e.clientY);
+    ctx.moveTo(signLastPoint.current.x, signLastPoint.current.y);
+    ctx.lineTo(x, y);
     ctx.lineWidth = signStrokeWidth;
     ctx.strokeStyle = signColor;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.lineTo(x, y);
     ctx.stroke();
+    signLastPoint.current = { x, y };
   };
-  const endSign = () => { isSignDrawingRef.current = false; setIsSignDrawing(false); };
+  const endSign = () => { isSignDrawingRef.current = false; signLastPoint.current = null; setIsSignDrawing(false); };
   // Touch handlers for mobile signature drawing
   const startSignTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     const touch = e.touches[0];
+    const { x, y } = getSignCoords(touch.clientX, touch.clientY);
+    isSignDrawingRef.current = true;
+    signLastPoint.current = { x, y };
+    setIsSignDrawing(true);
     const c = signCanvasRef.current!;
     const ctx = c.getContext("2d")!;
-    const { x, y } = getSignCoords(touch.clientX, touch.clientY);
     ctx.beginPath();
-    ctx.moveTo(x, y);
-    isSignDrawingRef.current = true;
-    setIsSignDrawing(true);
+    ctx.arc(x, y, signStrokeWidth / 2, 0, Math.PI * 2);
+    ctx.fillStyle = signColor;
+    ctx.fill();
   };
   const drawSignTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    if (!isSignDrawingRef.current) return;
+    if (!isSignDrawingRef.current || !signLastPoint.current) return;
     const touch = e.touches[0];
     const c = signCanvasRef.current!;
     const ctx = c.getContext("2d")!;
     const { x, y } = getSignCoords(touch.clientX, touch.clientY);
+    ctx.beginPath();
+    ctx.moveTo(signLastPoint.current.x, signLastPoint.current.y);
+    ctx.lineTo(x, y);
     ctx.lineWidth = signStrokeWidth;
     ctx.strokeStyle = signColor;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.lineTo(x, y);
     ctx.stroke();
+    signLastPoint.current = { x, y };
   };
   const endSignTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     isSignDrawingRef.current = false;
+    signLastPoint.current = null;
     setIsSignDrawing(false);
   };
   const clearSign = () => {
