@@ -271,6 +271,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // ── Load PDF ─────────────────────────────────────────────────
   const loadPdf = useCallback(async (f: File) => {
     const bytes = new Uint8Array(await f.arrayBuffer());
+    // Validate PDF header: must start with %PDF
+    const header = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
+    if (header !== "%PDF") {
+      toast.error("El archivo no es un PDF válido. Por favor, sube un archivo PDF.");
+      return;
+    }
     setPdfBytes(bytes);
     const doc = await pdfjsLib.getDocument({ data: bytes }).promise;
     setPdfDoc(doc);
@@ -1090,7 +1096,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // ── Build annotated PDF as Uint8Array (shared by download and paywall) ──
   const buildAnnotatedPdf = async (): Promise<Uint8Array | null> => {
     if (!pdfBytes) return null;
-    const doc = await PDFDocument.load(pdfBytes as Uint8Array);
+    // Validate PDF header before attempting to load
+    const header = String.fromCharCode(pdfBytes[0], pdfBytes[1], pdfBytes[2], pdfBytes[3]);
+    if (header !== "%PDF") {
+      toast.error("Error: los bytes del PDF son inválidos. Por favor, recarga el archivo.");
+      return null;
+    }
+    const doc = await PDFDocument.load(pdfBytes as Uint8Array, { ignoreEncryption: true });
     const font = await doc.embedFont(StandardFonts.Helvetica);
     for (const ann of annotations) {
       const page = doc.getPage(ann.page - 1);

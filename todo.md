@@ -262,3 +262,6 @@
 - [x] Panel "Editar texto": eliminado conflicto autoFocus, ahora popup flotante sobre el bloque
 - [x] Miniaturas de páginas: escala corregida de 0.2 a 0.4
 - [x] Error "Failed to save document": cambiado a REST multipart upload (evita límite base64 tRPC)
+
+## Bug - Error "No PDF header found"
+- [x] buildAnnotatedPdf: añadida validación de header %PDF antes de cargar + ignoreEncryption:true + mensaje de error claro si el archivo no es PDF válido
