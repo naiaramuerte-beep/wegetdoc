@@ -241,3 +241,23 @@
 - [x] Open Graph y Twitter Card tags
 - [x] Meta keywords y canonical URL
 - [x] html lang="en" para señalar idioma principal al crawler
+
+## Modelo Freemium - Trial 0,50€ vs Mensual 49,95€
+- [ ] DB: campo download_count en tabla users (contador de descargas)
+- [ ] Backend: endpoint checkDownloadLimit - devuelve si el usuario puede descargar
+- [ ] Backend: endpoint incrementDownloadCount - suma 1 al contador tras descarga exitosa
+- [ ] Lógica: trial = máx 5 descargas en 7 días; mensual = ilimitado
+- [ ] Pricing page: tabla de comparación Trial vs Mensual con checkmarks
+- [ ] PaywallModal: mostrar dos planes con precios y límites claros
+- [ ] PaywallModal: Trial destacado como "Most popular" con precio 0,50€
+- [ ] PdfEditor: llamar a checkDownloadLimit antes de mostrar paywall
+
+## PaywallModal - Rediseño estilo pdfe.com
+- [x] Título "Your document is ready!" con check verde
+- [x] Importe "0,50 € — Trial plan" visible arriba a la derecha
+- [x] Tabs Card / Google Pay
+- [x] Formulario Stripe Elements limpio (card number, expiry, CVC)
+- [x] Checkbox con texto legal: renovación automática 49,95€/mes
+- [x] Botón "Pay and download" negro
+- [x] Preview del PDF a la izquierda del modal
+- [x] Backend: cobrar 0,50€ real (PaymentIntent inmediato + suscripción 49,95€/mes con trial 7 días)
