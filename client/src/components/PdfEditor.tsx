@@ -2705,6 +2705,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         isOpen={showPaywall}
         onClose={() => setShowPaywall(false)}
         pdfData={pdfDataForPaywall}
+        thumbnailUrl={thumbnails[0]}
         onPaymentSuccess={() => {
           // After successful payment, redirect to dashboard documents
           // The PDF was already uploaded to S3 during checkout

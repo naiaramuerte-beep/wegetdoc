@@ -1,10 +1,11 @@
 /*
- * PaywallModal — Diseño idéntico a pdfe.com con soporte i18n completo:
- * 1. Sin cuenta → pantalla de login (Google / Email)
- * 2. Con cuenta → modal de pago con Stripe Elements
+ * PaywallModal — Diseño dos columnas:
+ * - Izquierda: preview del PDF (miniatura)
+ * - Derecha: formulario de pago con Stripe Elements
+ * Checkbox obligatorio con borde rojo si no se acepta
  */
 import { useState, useEffect } from "react";
-import { X, Check, Loader2, Mail, CreditCard, ArrowRight } from "lucide-react";
+import { X, Check, Loader2, Mail, CreditCard, ArrowRight, AlertCircle } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
@@ -32,6 +33,7 @@ interface PaywallModalProps {
   action?: string;
   pdfData?: { base64: string; name: string; size: number };
   onPaymentSuccess?: () => void;
+  thumbnailUrl?: string;
 }
 
 type Step = "auth-choice" | "email-form" | "plans";
@@ -40,14 +42,17 @@ type Step = "auth-choice" | "email-form" | "plans";
 function CheckoutForm({
   onSuccess,
   pdfData,
+  thumbnailUrl,
 }: {
   onSuccess: () => void;
   pdfData?: { base64: string; name: string; size: number };
+  thumbnailUrl?: string;
 }) {
   const { t } = useLanguage();
   const stripe = useStripe();
   const elements = useElements();
   const [agreed, setAgreed] = useState(false);
+  const [showCheckboxError, setShowCheckboxError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [customerId, setCustomerId] = useState<string | null>(null);
@@ -75,7 +80,7 @@ function CheckoutForm({
       return;
     }
     if (!agreed) {
-      toast.error(t.paywall_legal_text.slice(0, 60) + "...");
+      setShowCheckboxError(true);
       return;
     }
 
@@ -89,7 +94,6 @@ function CheckoutForm({
       });
 
       if (error) {
-        // Map common Stripe error codes to user-friendly Spanish messages
         const stripeErrorMap: Record<string, string> = {
           'card_declined': 'Tarjeta rechazada. Por favor, verifica los datos o usa otra tarjeta.',
           'insufficient_funds': 'Fondos insuficientes. Por favor, usa otra tarjeta.',
@@ -150,54 +154,100 @@ function CheckoutForm({
   };
 
   return (
-    <div className="p-6">
-      {/* Amount row */}
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <p className="text-xs text-gray-500 mb-0.5">{t.paywall_amount_label}</p>
-          <p className="text-xs font-medium text-gray-400">{t.paywall_trial_plan}</p>
+    <div className="flex flex-col md:flex-row min-h-0">
+      {/* ── Left: PDF Preview ── */}
+      <div className="hidden md:flex flex-col items-center justify-center bg-slate-50 border-r border-slate-100 p-6" style={{ minWidth: 200, maxWidth: 220 }}>
+        <div
+          className="w-full rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden flex items-center justify-center"
+          style={{ aspectRatio: "0.707", maxHeight: 260 }}
+        >
+          {thumbnailUrl ? (
+            <img
+              src={thumbnailUrl}
+              alt="Vista previa del documento"
+              className="w-full h-full object-contain"
+            />
+          ) : (
+            /* Skeleton PDF page */
+            <div className="w-full h-full p-3 flex flex-col gap-2">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-6 h-7 bg-red-100 rounded flex items-center justify-center flex-shrink-0">
+                  <span className="text-red-500 text-[8px] font-bold">PDF</span>
+                </div>
+                <div className="flex-1 space-y-1">
+                  <div className="h-1.5 bg-slate-200 rounded w-full" />
+                  <div className="h-1.5 bg-slate-200 rounded w-3/4" />
+                </div>
+              </div>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="h-1.5 bg-slate-100 rounded" style={{ width: `${70 + (i % 3) * 10}%` }} />
+              ))}
+              <div className="mt-2 space-y-1">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="h-1.5 bg-slate-100 rounded" style={{ width: `${60 + (i % 4) * 10}%` }} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-        <p className="text-2xl font-bold text-gray-900">0,50 €</p>
+        <p className="text-xs text-slate-400 mt-3 text-center leading-tight">
+          {pdfData?.name ?? "documento.pdf"}
+        </p>
       </div>
 
-      {/* Payment method tabs */}
-      <div className="flex gap-2 mb-5">
-        <button
-          onClick={() => setActiveTab("card")}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 text-sm font-medium transition-all"
-          style={{
-            borderColor: activeTab === "card" ? "#1a1a2e" : "#e2e8f0",
-            backgroundColor: activeTab === "card" ? "#f8faff" : "white",
-            color: activeTab === "card" ? "#1a1a2e" : "#64748b",
-          }}
-        >
-          <CreditCard className="w-4 h-4" />
-          {t.paywall_card_tab ?? "Tarjeta"}
-        </button>
-        <button
-          onClick={() => setActiveTab("gpay")}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 text-sm font-medium transition-all"
-          style={{
-            borderColor: activeTab === "gpay" ? "#1a1a2e" : "#e2e8f0",
-            backgroundColor: activeTab === "gpay" ? "#f8faff" : "white",
-            color: activeTab === "gpay" ? "#1a1a2e" : "#64748b",
-          }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-          </svg>
-          Google Pay
-        </button>
-      </div>
+      {/* ── Right: Payment form ── */}
+      <div className="flex-1 p-6 flex flex-col">
+        {/* Amount row */}
+        <div className="flex items-center justify-between mb-5 pb-4 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+              <CreditCard className="w-5 h-5 text-[#1a3c6e]" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-800">{t.paywall_amount_label}</p>
+              <p className="text-xs text-slate-400">{t.paywall_trial_plan}</p>
+            </div>
+          </div>
+          <p className="text-2xl font-bold text-[#1a3c6e]">0,50 €</p>
+        </div>
 
-      {/* Card form */}
-      {activeTab === "card" && (
-        <div className="space-y-4 mb-5">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.paywall_card_number}</label>
+        {/* Payment method tabs */}
+        <div className="flex gap-2 mb-5">
+          <button
+            onClick={() => setActiveTab("card")}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 text-sm font-medium transition-all flex-1 justify-center"
+            style={{
+              borderColor: activeTab === "card" ? "#1a3c6e" : "#e2e8f0",
+              backgroundColor: activeTab === "card" ? "#eef3fb" : "white",
+              color: activeTab === "card" ? "#1a3c6e" : "#64748b",
+            }}
+          >
+            <CreditCard className="w-4 h-4" />
+            {t.paywall_card_tab ?? "Tarjeta"}
+          </button>
+          <button
+            onClick={() => setActiveTab("gpay")}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 text-sm font-medium transition-all flex-1 justify-center"
+            style={{
+              borderColor: activeTab === "gpay" ? "#1a3c6e" : "#e2e8f0",
+              backgroundColor: activeTab === "gpay" ? "#eef3fb" : "white",
+              color: activeTab === "gpay" ? "#1a3c6e" : "#64748b",
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            Google Pay
+          </button>
+        </div>
+
+        {/* Card form */}
+        {activeTab === "card" && (
+          <div className="mb-5">
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">{t.paywall_card_number}</label>
             <div
               className="border rounded-lg px-3 py-3.5"
               style={{ borderColor: "#e2e8f0", backgroundColor: "#fff" }}
@@ -225,50 +275,83 @@ function CheckoutForm({
                 </div>
               )}
             </div>
+            {/* Bank verification notice */}
+            <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
+              Tu banco puede mostrar una verificación de 0,00€. El cargo real de 0,50€ aparecerá confirmado en breve.
+            </p>
           </div>
-        </div>
-      )}
-
-      {/* Google Pay placeholder */}
-      {activeTab === "gpay" && (
-        <div className="mb-5 p-4 rounded-lg bg-gray-50 border border-gray-200 text-center text-sm text-gray-500">
-          {t.paywall_gpay_soon}
-        </div>
-      )}
-
-      {/* Legal checkbox */}
-      <label className="flex items-start gap-2.5 mb-5 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={agreed}
-          onChange={(e) => setAgreed(e.target.checked)}
-          className="mt-0.5 w-4 h-4 rounded flex-shrink-0 cursor-pointer accent-gray-900"
-        />
-        <span className="text-xs leading-relaxed text-gray-500">
-          {t.paywall_legal_text}{" "}
-          <a href="mailto:support@editpdf.online" className="underline text-gray-700 hover:text-gray-900">support@editpdf.online</a>
-        </span>
-      </label>
-
-      {/* CTA button */}
-      <button
-        onClick={handleSubmit}
-        disabled={isLoading || !agreed || !clientSecret || activeTab === "gpay"}
-        className="w-full flex items-center justify-center gap-2 py-4 rounded-xl text-white font-bold text-base transition-all duration-200"
-        style={{
-          backgroundColor: (isLoading || !agreed || !clientSecret || activeTab === "gpay") ? "#94a3b8" : "#111827",
-          cursor: (isLoading || !agreed || !clientSecret || activeTab === "gpay") ? "not-allowed" : "pointer",
-        }}
-      >
-        {isLoading ? (
-          <>
-            <Loader2 className="w-5 h-5 animate-spin" />
-            {t.paywall_processing}
-          </>
-        ) : (
-          t.paywall_pay_download
         )}
-      </button>
+
+        {/* Google Pay placeholder */}
+        {activeTab === "gpay" && (
+          <div className="mb-5 p-4 rounded-lg bg-gray-50 border border-gray-200 text-center text-sm text-gray-500">
+            {t.paywall_gpay_soon}
+          </div>
+        )}
+
+        {/* Legal checkbox — borde rojo si no aceptado */}
+        <div
+          className="rounded-lg p-3 mb-4 cursor-pointer transition-all"
+          style={{
+            border: showCheckboxError && !agreed ? "1.5px solid #ef4444" : "1.5px solid #e2e8f0",
+            backgroundColor: showCheckboxError && !agreed ? "#fff5f5" : "#f8faff",
+          }}
+          onClick={() => {
+            setAgreed(!agreed);
+            if (!agreed) setShowCheckboxError(false);
+          }}
+        >
+          <label className="flex items-start gap-2.5 cursor-pointer">
+            <div
+              className="mt-0.5 w-4 h-4 rounded flex-shrink-0 flex items-center justify-center border-2 transition-all"
+              style={{
+                borderColor: agreed ? "#1a3c6e" : (showCheckboxError ? "#ef4444" : "#cbd5e1"),
+                backgroundColor: agreed ? "#1a3c6e" : "white",
+              }}
+            >
+              {agreed && <Check className="w-2.5 h-2.5 text-white" />}
+            </div>
+            <span className="text-xs leading-relaxed text-slate-600">
+              {t.paywall_legal_text}{" "}
+              <a
+                href="mailto:support@editpdf.online"
+                className="underline text-slate-700 hover:text-slate-900"
+                onClick={(e) => e.stopPropagation()}
+              >
+                support@editpdf.online
+              </a>
+            </span>
+          </label>
+        </div>
+
+        {/* Required field error */}
+        {showCheckboxError && !agreed && (
+          <div className="flex items-center gap-1.5 mb-3 text-red-500">
+            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="text-xs font-medium">Campo obligatorio</span>
+          </div>
+        )}
+
+        {/* CTA button */}
+        <button
+          onClick={handleSubmit}
+          disabled={isLoading || !clientSecret || activeTab === "gpay"}
+          className="w-full flex items-center justify-center gap-2 py-4 rounded-xl text-white font-bold text-base transition-all duration-200 mt-auto"
+          style={{
+            backgroundColor: (isLoading || !clientSecret || activeTab === "gpay") ? "#94a3b8" : "#1a3c6e",
+            cursor: (isLoading || !clientSecret || activeTab === "gpay") ? "not-allowed" : "pointer",
+          }}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              {t.paywall_processing}
+            </>
+          ) : (
+            t.paywall_pay_download
+          )}
+        </button>
+      </div>
     </div>
   );
 }
@@ -280,6 +363,7 @@ export default function PaywallModal({
   action,
   pdfData,
   onPaymentSuccess,
+  thumbnailUrl,
 }: PaywallModalProps) {
   const { t } = useLanguage();
   const { isAuthenticated } = useAuth();
@@ -290,7 +374,6 @@ export default function PaywallModal({
   if (!isOpen) return null;
 
   const currentStep = isAuthenticated ? "plans" : step;
-  const actionLabel = action ?? t.paywall_pay_download.toLowerCase();
   // Use pdfData from prop OR from sessionStorage-restored pendingEditedPdf (after login redirect)
   const effectivePdfData = pdfData ?? pendingEditedPdf ?? undefined;
 
@@ -315,7 +398,6 @@ export default function PaywallModal({
   };
 
   const handlePaymentSuccess = () => {
-    // Clear the persisted edited PDF so it doesn't get re-uploaded on future payments
     clearPendingEditedPdf();
     onClose();
     if (onPaymentSuccess) onPaymentSuccess();
@@ -329,7 +411,7 @@ export default function PaywallModal({
     >
       <div
         className="relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden"
-        style={{ maxWidth: 520, maxHeight: "92vh", overflowY: "auto" }}
+        style={{ maxWidth: currentStep === "plans" ? 720 : 520, maxHeight: "92vh", overflowY: "auto" }}
       >
         {/* Close */}
         <button
@@ -343,7 +425,7 @@ export default function PaywallModal({
         {currentStep === "auth-choice" && (
           <div className="p-8">
             <div className="text-center mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-gray-900 flex items-center justify-center mx-auto mb-4">
+              <div className="w-14 h-14 rounded-2xl bg-[#1a3c6e] flex items-center justify-center mx-auto mb-4">
                 <CreditCard className="w-7 h-7 text-white" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -401,12 +483,12 @@ export default function PaywallModal({
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 placeholder="you@email.com"
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]"
                 onKeyDown={(e) => e.key === "Enter" && handleEmailContinue()}
               />
               <button
                 onClick={handleEmailContinue}
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gray-900 text-white font-bold text-sm hover:bg-gray-800 transition-colors"
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#1a3c6e] text-white font-bold text-sm hover:bg-[#15305a] transition-colors"
               >
                 <ArrowRight className="w-4 h-4" />
                 {t.paywall_continue}
@@ -425,51 +507,24 @@ export default function PaywallModal({
         {currentStep === "plans" && (
           <>
             {/* Header */}
-            <div className="flex items-start gap-4 p-6 pb-4 border-b border-gray-100">
-              {/* PDF preview thumbnail */}
-              <div
-                className="w-20 h-24 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0 flex items-center justify-center overflow-hidden"
-                style={{ minWidth: 80 }}
-              >
-                {pdfData?.base64 ? (
-                  <img
-                    src={`data:application/pdf;base64,${pdfData.base64.slice(0, 100)}`}
-                    alt="PDF preview"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
-                ) : null}
-                <div className="flex flex-col items-center gap-1">
-                  <div className="w-8 h-10 bg-red-100 rounded flex items-center justify-center">
-                    <span className="text-red-500 text-xs font-bold">PDF</span>
-                  </div>
-                  <div className="w-10 h-1 bg-gray-200 rounded" />
-                  <div className="w-8 h-1 bg-gray-200 rounded" />
-                  <div className="w-10 h-1 bg-gray-200 rounded" />
-                </div>
+            <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-slate-100">
+              <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                <Check className="w-3.5 h-3.5 text-white" />
               </div>
-
-              {/* Title */}
-              <div className="flex-1 pt-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                    <Check className="w-3 h-3 text-white" />
-                  </div>
-                  <span className="text-sm font-semibold text-green-600">{t.paywall_doc_ready}</span>
-                </div>
-                <h2 className="text-lg font-bold text-gray-900 leading-tight">
+              <div>
+                <p className="text-sm font-semibold text-green-600">{t.paywall_doc_ready}</p>
+                <h2 className="text-lg font-bold text-slate-900 leading-tight">
                   {t.paywall_one_step}
                 </h2>
               </div>
             </div>
 
-            {/* Stripe checkout form */}
+            {/* Two-column layout */}
             <Elements stripe={stripePromise}>
               <CheckoutForm
                 onSuccess={handlePaymentSuccess}
                 pdfData={effectivePdfData}
+                thumbnailUrl={thumbnailUrl}
               />
             </Elements>
           </>

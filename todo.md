@@ -318,3 +318,6 @@
 
 ## Autoguardado al descargar
 - [x] Guardar PDF editado en panel del usuario al pulsar Descargar (independientemente del pago)
+
+## Rediseño checkout
+- [x] Rediseñar PaywallModal: layout dos columnas (preview PDF izquierda + formulario derecha), checkbox obligatorio, colores PDFPro
