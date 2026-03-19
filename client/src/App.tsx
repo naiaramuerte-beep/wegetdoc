@@ -23,7 +23,6 @@ import Admin from "./pages/Admin";
 import LegalPage from "./pages/LegalPage";
 import EditorPage from "./pages/EditorPage";
 import CancelSubscription from "./pages/CancelSubscription";
-import Billing from "./pages/Billing";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 
@@ -78,11 +77,6 @@ function Router() {
         <Route key={`${code}-cancel`} path={`/${code}/cancelar-suscripcion`} component={CancelSubscription} />
       ))}
 
-      {/* Billing page */}
-      {LANGUAGES.map(({ code }) => (
-        <Route key={`${code}-billing`} path={`/${code}/billing`} component={Billing} />
-      ))}
-
       {/* Blog routes — language-prefixed */}
       {LANGUAGES.map(({ code }) => (
         <Route key={`${code}-blog`} path={`/${code}/blog`} component={Blog} />
@@ -108,7 +102,6 @@ function Router() {
       <Route path="/legal" component={() => <Redirect to="/es/legal" />} />
       <Route path="/payment/success" component={() => <Redirect to="/es/payment/success" />} />
       <Route path="/cancelar-suscripcion" component={() => <Redirect to="/es/cancelar-suscripcion" />} />
-      <Route path="/billing" component={() => <Redirect to="/es/billing" />} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
 

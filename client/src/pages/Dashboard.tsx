@@ -2,7 +2,7 @@
    PDFPro — Dashboard de usuario
    Pestañas: Mi Cuenta | Mis Documentos | Equipo | Facturación
    ============================================================= */
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import {
   User, FileText, Users, CreditCard, Settings,
   LogOut, Trash2, Plus, X, Download, FolderOpen,
   Crown, Check, AlertCircle, ChevronRight, Mail,
-  Shield, Globe, Clock, Search,
+  Shield, Globe, Clock,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -69,7 +69,7 @@ export default function Dashboard() {
                 ] as const).map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => item.id === "billing" ? navigate("/billing") : setActiveTab(item.id)}
+                    onClick={() => setActiveTab(item.id)}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                       activeTab === item.id
                         ? "bg-blue-50 text-blue-700"
@@ -253,34 +253,6 @@ function AccountTab({ user }: { user: any }) {
   );
 }
 
-// ─── Timer component: counts down 24h from createdAt ──────────────────────────
-function DocTimer({ createdAt }: { createdAt: string | Date }) {
-  const [remaining, setRemaining] = useState("");
-  useEffect(() => {
-    const calc = () => {
-      const created = new Date(createdAt).getTime();
-      const expiry = created + 24 * 60 * 60 * 1000;
-      const diff = expiry - Date.now();
-      if (diff <= 0) { setRemaining("Expired"); return; }
-      const h = Math.floor(diff / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      setRemaining(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`);
-    };
-    calc();
-    const id = setInterval(calc, 1000);
-    return () => clearInterval(id);
-  }, [createdAt]);
-  const isExpired = remaining === "Expired";
-  return (
-    <span className={`flex items-center gap-1 text-xs font-mono font-medium ${
-      isExpired ? "text-red-500" : "text-orange-500"
-    }`}>
-      <Clock size={11} />{remaining}
-    </span>
-  );
-}
-
 // ─── Documents Tab ────────────────────────────────────────────────────────
 function DocumentsTab() {
   const { data: docs, isLoading } = trpc.documents.list.useQuery();
@@ -290,25 +262,19 @@ function DocumentsTab() {
   const utils = trpc.useUtils();
   const [newFolderName, setNewFolderName] = useState("");
   const [showNewFolder, setShowNewFolder] = useState(false);
-  const [showDownloadPopup, setShowDownloadPopup] = useState(false);
-  const [, navigateTo] = useLocation();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [showPaywall, setShowPaywall] = useState(false);
 
   const deleteMutation = trpc.documents.delete.useMutation({
-    onSuccess: () => { utils.documents.list.invalidate(); toast.success("Document deleted"); },
+    onSuccess: () => { utils.documents.list.invalidate(); toast.success("Documento eliminado"); },
   });
 
   const createFolderMutation = trpc.folders.create.useMutation({
-    onSuccess: () => { utils.folders.list.invalidate(); setNewFolderName(""); setShowNewFolder(false); toast.success("Folder created"); },
+    onSuccess: () => { utils.folders.list.invalidate(); setNewFolderName(""); setShowNewFolder(false); toast.success("Carpeta creada"); },
   });
 
   const deleteFolderMutation = trpc.folders.delete.useMutation({
-    onSuccess: () => { utils.folders.list.invalidate(); toast.success("Folder deleted"); },
+    onSuccess: () => { utils.folders.list.invalidate(); toast.success("Carpeta eliminada"); },
   });
-
-  const filteredDocs = docs?.filter((d: any) =>
-    d.name.toLowerCase().includes(searchQuery.toLowerCase())
-  ) ?? [];
 
   if (isLoading) {
     return (
@@ -324,34 +290,12 @@ function DocumentsTab() {
 
   return (
     <div className="space-y-4">
-      {/* Upgrade banner for non-premium users */}
-      {!isPremium && (
-        <div className="bg-red-50 border border-red-100 rounded-2xl p-5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-              <Crown size={18} className="text-red-500" />
-            </div>
-            <div>
-              <p className="font-semibold text-slate-800">Make the most of your account</p>
-              <p className="text-sm text-slate-500">Subscribe to edit, save and download your PDFs without restrictions.</p>
-            </div>
-          </div>
-          <Button
-            onClick={() => navigateTo("/billing")}
-            className="bg-slate-900 hover:bg-slate-800 text-white shrink-0 ml-4"
-            size="sm"
-          >
-            Upgrade now
-          </Button>
-        </div>
-      )}
-
       {/* Folders */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-slate-800">Folders</h2>
+          <h2 className="text-lg font-semibold text-slate-800">Carpetas</h2>
           <Button size="sm" variant="outline" onClick={() => setShowNewFolder(true)}>
-            <Plus size={14} className="mr-1.5" />Create Folder
+            <Plus size={14} className="mr-1.5" />Nueva carpeta
           </Button>
         </div>
         {showNewFolder && (
@@ -359,7 +303,7 @@ function DocumentsTab() {
             <Input
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
-              placeholder="Folder name..."
+              placeholder="Nombre de la carpeta..."
               onKeyDown={(e) => e.key === "Enter" && createFolderMutation.mutate({ name: newFolderName })}
               autoFocus
             />
@@ -389,151 +333,88 @@ function DocumentsTab() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-slate-400 text-center py-3">Here you can manage your folders</p>
+          <p className="text-sm text-slate-400 text-center py-3">Sin carpetas aún</p>
         )}
       </div>
 
-      {/* Documents table */}
+      {/* Documents */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-slate-800">Documents</h2>
+          <h2 className="text-lg font-semibold text-slate-800">Mis documentos</h2>
+          {isPremium ? (
+            <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
+              <Crown size={12} className="text-emerald-600" />
+              Descarga activa
+            </span>
+          ) : (
+            <button
+              onClick={() => setShowPaywall(true)}
+              className="flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full hover:bg-amber-100 transition-colors"
+            >
+              <Crown size={12} className="text-amber-600" />
+              Suscríbete para descargar
+            </button>
+          )}
         </div>
-        {/* Search */}
-        <div className="relative mb-4">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search..."
-            className="pl-8 text-sm"
-          />
-        </div>
-        {filteredDocs.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100">
-                  <th className="text-left py-2 px-2 text-xs font-medium text-slate-500 w-8">
-                    <input type="checkbox" className="rounded" />
-                  </th>
-                  <th className="text-left py-2 px-2 text-xs font-medium text-slate-500">Name</th>
-                  <th className="text-left py-2 px-2 text-xs font-medium text-slate-500 hidden md:table-cell">Updated Date</th>
-                  <th className="text-left py-2 px-2 text-xs font-medium text-slate-500 hidden md:table-cell">Size</th>
-                  {!isPremium && <th className="text-left py-2 px-2 text-xs font-medium text-slate-500">Timer</th>}
-                  <th className="py-2 px-2"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredDocs.map((doc: any) => (
-                  <tr key={doc.id} className="border-b border-slate-50 hover:bg-slate-50 group">
-                    <td className="py-3 px-2">
-                      <input type="checkbox" className="rounded" />
-                    </td>
-                    <td className="py-3 px-2">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-red-100 text-red-600">PDF</span>
-                        <span className="font-medium text-slate-800 truncate max-w-[160px]">{doc.name}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-2 text-slate-500 hidden md:table-cell">
-                      {new Date(doc.updatedAt ?? doc.createdAt).toLocaleDateString("en-GB", {
-                        day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
-                      })}
-                    </td>
-                    <td className="py-3 px-2 text-slate-500 hidden md:table-cell">
-                      {doc.fileSize ? `${(doc.fileSize / 1024).toFixed(0)} KB` : "-"}
-                    </td>
-                    {!isPremium && (
-                      <td className="py-3 px-2">
-                        <DocTimer createdAt={doc.createdAt} />
-                      </td>
-                    )}
-                    <td className="py-3 px-2">
-                      <div className="flex items-center gap-1 justify-end">
-                        {/* Edit button */}
-                        <a href={`/editor?docId=${doc.id}`}>
-                          <Button size="sm" variant="ghost" className="h-8 px-2 text-xs gap-1 text-slate-600 hover:text-slate-900">
-                            <FileText size={12} />Edit
-                          </Button>
-                        </a>
-                        {/* Download button */}
-                        {isPremium ? (
-                          <a href={doc.fileUrl} download={doc.name} target="_blank" rel="noopener noreferrer">
-                            <Button size="sm" variant="ghost" className="h-8 px-2 text-xs gap-1 text-slate-600 hover:text-slate-900">
-                              <Download size={12} />Download
-                            </Button>
-                          </a>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 px-2 text-xs gap-1 text-slate-600 hover:text-slate-900"
-                            onClick={() => setShowDownloadPopup(true)}
-                          >
-                            <Download size={12} />Download
-                          </Button>
-                        )}
-                        {/* Delete */}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-8 w-8 p-0 hover:text-red-500 opacity-0 group-hover:opacity-100"
-                          onClick={() => deleteMutation.mutate({ id: doc.id })}
-                        >
-                          <Trash2 size={12} />
+        {docs && docs.length > 0 ? (
+          <div className="space-y-2">
+            {docs.map((doc: any) => (
+              <div key={doc.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:bg-slate-50 group">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 bg-red-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <FileText size={16} className="text-red-500" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-800 truncate">{doc.name}</p>
+                    <p className="text-xs text-slate-400">
+                      {doc.fileSize ? `${(doc.fileSize / 1024 / 1024).toFixed(1)} MB · ` : ""}
+                      {new Date(doc.createdAt).toLocaleDateString("es-ES")}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {doc.fileUrl && (
+                    isPremium ? (
+                      <a href={doc.fileUrl} download={doc.name} target="_blank" rel="noopener noreferrer">
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Descargar">
+                          <Download size={14} />
                         </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </a>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 text-amber-500"
+                        title="Requiere suscripción activa"
+                        onClick={() => setShowPaywall(true)}
+                      >
+                        <Crown size={14} />
+                      </Button>
+                    )
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 p-0 hover:text-red-500"
+                    onClick={() => deleteMutation.mutate({ id: doc.id })}
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="text-center py-10">
             <FileText size={40} className="text-slate-200 mx-auto mb-3" />
-            <p className="text-slate-500 font-medium">No documents yet</p>
-            <p className="text-sm text-slate-400 mt-1">PDFs you save from the editor will appear here</p>
+            <p className="text-slate-500 font-medium">Sin documentos aún</p>
+            <p className="text-sm text-slate-400 mt-1">Los PDFs que edites y descargues aparecerán aquí</p>
           </div>
         )}
       </div>
 
-      {/* Download not available popup */}
-      {showDownloadPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4 relative">
-            <button
-              onClick={() => setShowDownloadPopup(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
-            >
-              <X size={18} />
-            </button>
-            <h3 className="font-bold text-slate-900 text-lg mb-4">Download not available</h3>
-            <div className="bg-red-50 rounded-xl p-4 flex items-start gap-3 mb-5">
-              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center shrink-0 mt-0.5">
-                <Download size={14} className="text-red-500" />
-              </div>
-              <div>
-                <p className="font-semibold text-slate-800 text-sm">Take your document with you</p>
-                <p className="text-xs text-slate-500 mt-1">Subscribe to save it with the changes applied and keep it handy anytime.</p>
-              </div>
-            </div>
-            <Button
-              onClick={() => { setShowDownloadPopup(false); navigateTo("/billing"); }}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold h-11 mb-2"
-            >
-              Subscribe
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowDownloadPopup(false)}
-              className="w-full h-10"
-            >
-              Cancel
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Paywall: shown when user tries to download without subscription */}
+      <PaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} action="descargar" />
     </div>
   );
 }

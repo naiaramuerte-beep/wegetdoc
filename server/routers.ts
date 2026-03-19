@@ -56,18 +56,10 @@ import {
 } from "./db";
 import { storagePut } from "./storage";
 
-const getStripe = (testMode = false) =>
-  new Stripe(
-    testMode
-      ? (process.env.STRIPE_TEST_SECRET_KEY || process.env.STRIPE_SECRET_KEY || "")
-      : (process.env.STRIPE_SECRET_KEY || ""),
-    { apiVersion: "2026-02-25.clover" }
-  );
-
-async function isStripeTestMode(): Promise<boolean> {
-  const setting = await getSiteSetting("stripe_test_mode");
-  return setting === "true";
-}
+const getStripe = () =>
+  new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+    apiVersion: "2026-02-25.clover",
+  });
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") {
@@ -249,8 +241,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
-        const testMode = await isStripeTestMode();
-        const stripe = getStripe(testMode);
+        const stripe = getStripe();
         const { plan, origin } = input;
         const user = ctx.user;
 
@@ -314,8 +305,7 @@ export const appRouter = router({
       }),
 
     cancel: protectedProcedure.mutation(async ({ ctx }) => {
-      const testMode = await isStripeTestMode();
-      const stripe = getStripe(testMode);
+      const stripe = getStripe();
       const sub = await getActiveSubscription(ctx.user.id);
       if (!sub?.stripeSubscriptionId) {
         await cancelSubscriptionDb(ctx.user.id);
@@ -341,8 +331,7 @@ export const appRouter = router({
 
     // ── Stripe Elements: create SetupIntent for inline card form ──────────────
     createSetupIntent: protectedProcedure.mutation(async ({ ctx }) => {
-      const testMode = await isStripeTestMode();
-      const stripe = getStripe(testMode);
+      const stripe = getStripe();
       const user = ctx.user;
 
       // Find or create Stripe customer
@@ -379,43 +368,21 @@ export const appRouter = router({
         customerId: z.string(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const testMode = await isStripeTestMode();
-        const stripe = getStripe(testMode);
+        const stripe = getStripe();
         const user = ctx.user;
 
-        // 1. Attach payment method to customer
+        // Attach payment method to customer
         await stripe.paymentMethods.attach(input.paymentMethodId, {
           customer: input.customerId,
         });
 
-        // 2. Set as default payment method
+        // Set as default payment method
         await stripe.customers.update(input.customerId, {
           invoice_settings: { default_payment_method: input.paymentMethodId },
         });
 
-        // 3. Charge 0,50€ immediately (trial fee)
-        const trialPayment = await stripe.paymentIntents.create({
-          amount: 50, // 0,50€ in cents
-          currency: "eur",
-          customer: input.customerId,
-          payment_method: input.paymentMethodId,
-          confirm: true,
-          off_session: true,
-          description: "editPDF — Trial 7 días (0,50€)",
-          metadata: {
-            user_id: user.id.toString(),
-            type: "trial_fee",
-          },
-        });
-
-        if (trialPayment.status !== "succeeded") {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Payment of 0,50€ could not be processed. Please check your card details.",
-          });
-        }
-
-        // 4. Create recurring price (49,95€/month) and subscription with 7-day trial
+        // Create price (49.95€/month) - first create a product+price, then subscribe
+        // For subscriptions, we need a recurring Price object
         const price = await stripe.prices.create({
           currency: "eur",
           unit_amount: 4995,
@@ -425,28 +392,27 @@ export const appRouter = router({
           },
         });
 
-        const trialEndTimestamp = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60;
-
         const subscription = await stripe.subscriptions.create({
           customer: input.customerId,
           items: [{ price: price.id }],
-          trial_end: trialEndTimestamp,
+          trial_period_days: 7,
           default_payment_method: input.paymentMethodId,
           metadata: {
             user_id: user.id.toString(),
             plan: "trial",
           },
+          expand: ["latest_invoice.payment_intent"],
         });
 
         const now = new Date();
-        const trialEnd = new Date(trialEndTimestamp * 1000);
+        const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
         await upsertSubscription({
           userId: user.id,
           stripeCustomerId: input.customerId,
           stripeSubscriptionId: subscription.id,
           plan: "trial",
-          status: "trialing",
+          status: "active",
           currentPeriodStart: now,
           currentPeriodEnd: trialEnd,
           cancelAtPeriodEnd: false,
@@ -458,8 +424,7 @@ export const appRouter = router({
     verifySession: protectedProcedure
       .input(z.object({ sessionId: z.string() }))
       .mutation(async ({ ctx, input }) => {
-        const testMode = await isStripeTestMode();
-        const stripe = getStripe(testMode);
+        const stripe = getStripe();
         try {
           const session = await stripe.checkout.sessions.retrieve(input.sessionId);
           if (session.payment_status === "paid" || session.status === "complete") {
@@ -774,19 +739,6 @@ export const appRouter = router({
         const key = `blog-images/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
         const { url } = await storagePut(key, buffer, contentType);
         return { url };
-      }),
-
-    // ─── Stripe Test Mode ─────────────────────────────────────
-    getStripeTestMode: adminProcedure.query(async () => {
-      const setting = await getSiteSetting("stripe_test_mode");
-      return { testMode: setting === "true" };
-    }),
-
-    setStripeTestMode: adminProcedure
-      .input(z.object({ testMode: z.boolean() }))
-      .mutation(async ({ input }) => {
-        await setSiteSetting("stripe_test_mode", input.testMode ? "true" : "false");
-        return { success: true, testMode: input.testMode };
       }),
   }),
 
