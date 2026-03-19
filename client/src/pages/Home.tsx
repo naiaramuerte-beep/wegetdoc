@@ -108,6 +108,8 @@ export default function Home() {
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
+    // Reset input value so selecting the same file again triggers onChange on mobile
+    e.currentTarget.value = "";
     if (f) openEditor(f);
   };
 

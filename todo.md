@@ -319,3 +319,6 @@
 
 ## Bug móvil: seleccionar archivo no abre el editor
 - [x] Bug: en móvil el selector de archivos se abre pero al seleccionar el archivo no navega al editor
+
+## BUG CRÍTICO: web no funciona en móvil
+- [x] Rediseñar flujo de subida para que funcione en móvil (iOS/Android)
