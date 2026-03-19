@@ -56,10 +56,18 @@ import {
 } from "./db";
 import { storagePut } from "./storage";
 
-const getStripe = () =>
-  new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-    apiVersion: "2026-02-25.clover",
-  });
+const getStripe = (testMode = false) =>
+  new Stripe(
+    testMode
+      ? (process.env.STRIPE_TEST_SECRET_KEY || process.env.STRIPE_SECRET_KEY || "")
+      : (process.env.STRIPE_SECRET_KEY || ""),
+    { apiVersion: "2026-02-25.clover" }
+  );
+
+async function isStripeTestMode(): Promise<boolean> {
+  const setting = await getSiteSetting("stripe_test_mode");
+  return setting === "true";
+}
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") {
@@ -241,7 +249,8 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
-        const stripe = getStripe();
+        const testMode = await isStripeTestMode();
+        const stripe = getStripe(testMode);
         const { plan, origin } = input;
         const user = ctx.user;
 
@@ -305,7 +314,8 @@ export const appRouter = router({
       }),
 
     cancel: protectedProcedure.mutation(async ({ ctx }) => {
-      const stripe = getStripe();
+      const testMode = await isStripeTestMode();
+      const stripe = getStripe(testMode);
       const sub = await getActiveSubscription(ctx.user.id);
       if (!sub?.stripeSubscriptionId) {
         await cancelSubscriptionDb(ctx.user.id);
@@ -331,7 +341,8 @@ export const appRouter = router({
 
     // ── Stripe Elements: create SetupIntent for inline card form ──────────────
     createSetupIntent: protectedProcedure.mutation(async ({ ctx }) => {
-      const stripe = getStripe();
+      const testMode = await isStripeTestMode();
+      const stripe = getStripe(testMode);
       const user = ctx.user;
 
       // Find or create Stripe customer
@@ -368,7 +379,8 @@ export const appRouter = router({
         customerId: z.string(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const stripe = getStripe();
+        const testMode = await isStripeTestMode();
+        const stripe = getStripe(testMode);
         const user = ctx.user;
 
         // 1. Attach payment method to customer
@@ -446,7 +458,8 @@ export const appRouter = router({
     verifySession: protectedProcedure
       .input(z.object({ sessionId: z.string() }))
       .mutation(async ({ ctx, input }) => {
-        const stripe = getStripe();
+        const testMode = await isStripeTestMode();
+        const stripe = getStripe(testMode);
         try {
           const session = await stripe.checkout.sessions.retrieve(input.sessionId);
           if (session.payment_status === "paid" || session.status === "complete") {
@@ -761,6 +774,19 @@ export const appRouter = router({
         const key = `blog-images/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
         const { url } = await storagePut(key, buffer, contentType);
         return { url };
+      }),
+
+    // ─── Stripe Test Mode ─────────────────────────────────────
+    getStripeTestMode: adminProcedure.query(async () => {
+      const setting = await getSiteSetting("stripe_test_mode");
+      return { testMode: setting === "true" };
+    }),
+
+    setStripeTestMode: adminProcedure
+      .input(z.object({ testMode: z.boolean() }))
+      .mutation(async ({ input }) => {
+        await setSiteSetting("stripe_test_mode", input.testMode ? "true" : "false");
+        return { success: true, testMode: input.testMode };
       }),
   }),
 

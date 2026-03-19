@@ -300,3 +300,9 @@
 - [ ] Tab "Use image": subir imagen escaneada de la firma
 - [ ] Botones Cancel / Create and use
 - [ ] Fuentes caligráficas cargadas desde Google Fonts
+
+## Panel Admin - Modo Test Stripe
+- [ ] Campo stripe_test_mode en tabla site_settings de la DB
+- [ ] Procedimiento tRPC admin: getStripeMode, setStripeMode
+- [ ] Botón toggle en panel admin con indicador visual (verde=test, rojo=live)
+- [ ] Aplicar modo test/live en todos los endpoints de Stripe (checkout, webhook, setup intent)
