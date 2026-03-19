@@ -221,36 +221,29 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   useEffect(() => { annotationsRef.current = annotations; }, [annotations]);
 
   // ── Sync canvas internal size with its CSS display size ──────
-  // This ensures getSignCoords works correctly when the panel is shown
+  // Sync the canvas internal size to its CSS display size once when the sign/draw panel opens.
+  // We do NOT use a ResizeObserver here because resizing the canvas clears its content.
+  // A one-time sync on mount (+ 150ms delay for panel animation) is sufficient.
   useEffect(() => {
     if (activeTool !== 'sign' || signTab !== 'draw') return;
     const canvas = signCanvasRef.current;
     if (!canvas) return;
-    // Use requestAnimationFrame to defer DOM writes outside the ResizeObserver callback.
-    // Writing canvas.width/height inside the observer callback causes the
-    // "ResizeObserver loop completed with undelivered notifications" warning.
-    let rafId: number | null = null;
     const syncSize = () => {
-      if (rafId !== null) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        rafId = null;
-        const rect = canvas.getBoundingClientRect();
-        if (rect.width > 0 && (canvas.width !== Math.round(rect.width) || canvas.height !== Math.round(rect.height))) {
-          canvas.width = Math.round(rect.width);
-          canvas.height = Math.round(rect.height);
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width > 0) {
+        // Only update if the size actually changed to avoid clearing the canvas unnecessarily.
+        const newW = Math.round(rect.width);
+        const newH = Math.round(rect.height || 130);
+        if (canvas.width !== newW || canvas.height !== newH) {
+          canvas.width = newW;
+          canvas.height = newH;
         }
-      });
+      }
     };
-    // Sync immediately and after a short delay (in case panel is animating)
+    // Sync immediately, then once more after the panel slide-in animation completes.
     syncSize();
-    const timer = setTimeout(syncSize, 100);
-    const ro = new ResizeObserver(syncSize);
-    ro.observe(canvas);
-    return () => {
-      clearTimeout(timer);
-      if (rafId !== null) cancelAnimationFrame(rafId);
-      ro.disconnect();
-    };
+    const timer = setTimeout(syncSize, 150);
+    return () => clearTimeout(timer);
   }, [activeTool, signTab]);
 
   // ── Global mouseup to stop signature drawing if mouse released outside canvas
