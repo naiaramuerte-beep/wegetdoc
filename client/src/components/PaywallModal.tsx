@@ -54,6 +54,7 @@ function CheckoutForm({
   const [agreed, setAgreed] = useState(false);
   const [showCheckboxError, setShowCheckboxError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [progressStep, setProgressStep] = useState<"idle" | "card" | "subscription" | "saving" | "done">("idle");
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"card" | "gpay">("card");
@@ -104,6 +105,7 @@ function CheckoutForm({
     }
 
     setIsLoading(true);
+    setProgressStep("card");
     try {
       const cardElement = elements.getElement(CardElement);
       if (!cardElement) throw new Error("Card element not found");
@@ -139,11 +141,13 @@ function CheckoutForm({
           : setupIntent.payment_method.id;
 
       // 1. Confirm subscription first (so the user is premium when we upload)
+      setProgressStep("subscription");
       await confirmSubscription.mutateAsync({ paymentMethodId, customerId });
       await utils.subscription.status.invalidate();
 
       // 2. Upload PDF now that subscription is active
       if (pdfData) {
+        setProgressStep("saving");
         try {
           await uploadPdfViaRest(pdfData);
           await utils.documents.list.invalidate();
@@ -156,14 +160,15 @@ function CheckoutForm({
           } catch (uploadErr2) {
             console.error("PDF upload failed (attempt 2):", uploadErr2);
             // Don't block success — user paid, subscription is active
-            // The PDF is still in sessionStorage so they can retry from the editor
           }
         }
       }
 
+      setProgressStep("done");
       toast.success(t.paywall_doc_ready + " " + t.paywall_processing);
       onSuccess();
     } catch (err: unknown) {
+      setProgressStep("idle");
       const message = err instanceof Error ? err.message : 'Error al procesar el pago';
       if (message.toLowerCase().includes('velocity') || message.toLowerCase().includes('too many')) {
         toast.error('Demasiados intentos. Por favor, espera unos minutos e inténtalo de nuevo.');
@@ -354,6 +359,52 @@ function CheckoutForm({
           </div>
         )}
 
+        {/* Progress steps — visible during payment processing */}
+        {isLoading && (
+          <div className="mb-4 rounded-xl border border-slate-100 bg-slate-50 p-4">
+            {([
+              { key: "card",         label: "Verificando tarjeta...",      icon: "💳" },
+              { key: "subscription", label: "Activando suscripción...",    icon: "✅" },
+              { key: "saving",       label: "Guardando tu documento...",   icon: "📄" },
+              { key: "done",         label: "¡Todo listo!",                icon: "🎉" },
+            ] as const).map((step, idx, arr) => {
+              const stepOrder = ["card", "subscription", "saving", "done"] as const;
+              const currentIdx = stepOrder.indexOf(progressStep as typeof stepOrder[number]);
+              const stepIdx = stepOrder.indexOf(step.key);
+              const isDone    = stepIdx < currentIdx;
+              const isActive  = stepIdx === currentIdx;
+              return (
+                <div key={step.key} className="flex items-center gap-3 py-1.5">
+                  {/* Icon / spinner */}
+                  <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
+                    {isDone ? (
+                      <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
+                    ) : isActive ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-[#1a3c6e]" />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full border-2 border-slate-200" />
+                    )}
+                  </div>
+                  {/* Label */}
+                  <span className={`text-sm font-medium transition-colors ${
+                    isDone    ? "text-green-600" :
+                    isActive  ? "text-[#1a3c6e]" :
+                    "text-slate-300"
+                  }`}>
+                    {step.label}
+                  </span>
+                  {/* Connector line (not last) */}
+                  {idx < arr.length - 1 && (
+                    <div className="ml-auto w-px h-0" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {/* CTA button */}
         <button
           onClick={handleSubmit}
@@ -367,7 +418,10 @@ function CheckoutForm({
           {isLoading ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              {t.paywall_processing}
+              {progressStep === "saving" ? "Guardando tu documento..." :
+               progressStep === "subscription" ? "Activando suscripción..." :
+               progressStep === "done" ? "¡Completado!" :
+               "Verificando tarjeta..."}
             </>
           ) : (
             t.paywall_pay_download

@@ -334,3 +334,6 @@
 - [x] Añadir reintento automático si el upload falla en el primer intento
 - [x] Eliminar auto-save pre-pago (causaba duplicados y subía antes de tener suscripción activa)
 - [x] Invalidar cache de documentos tras upload exitoso para que aparezca inmediatamente en el panel
+
+## Indicador de progreso en checkout
+- [x] Mostrar pasos animados durante el pago: "Verificando tarjeta" → "Activando suscripción" → "Guardando documento..."
