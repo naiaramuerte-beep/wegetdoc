@@ -265,3 +265,7 @@
 
 ## Bug - Error "No PDF header found"
 - [x] buildAnnotatedPdf: añadida validación de header %PDF antes de cargar + ignoreEncryption:true + mensaje de error claro si el archivo no es PDF válido
+
+## Bugs 19/03 v2
+- [x] Validación %PDF: busca en primeros 1024 bytes (soporta PDFs con BOM/espacios antes del header)
+- [x] Texto editado: capa blanca ahora cubre hasta el borde derecho de la página para borrar completamente el original

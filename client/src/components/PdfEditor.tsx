@@ -271,9 +271,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // ── Load PDF ─────────────────────────────────────────────────
   const loadPdf = useCallback(async (f: File) => {
     const bytes = new Uint8Array(await f.arrayBuffer());
-    // Validate PDF header: must start with %PDF
-    const header = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
-    if (header !== "%PDF") {
+    // Validate PDF header: search for %PDF in first 1024 bytes (some PDFs have BOM or whitespace before header)
+    const headerSlice = bytes.slice(0, 1024);
+    const headerStr = String.fromCharCode(...Array.from(headerSlice));
+    if (!headerStr.includes("%PDF")) {
       toast.error("El archivo no es un PDF válido. Por favor, sube un archivo PDF.");
       return;
     }
@@ -1096,9 +1097,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // ── Build annotated PDF as Uint8Array (shared by download and paywall) ──
   const buildAnnotatedPdf = async (): Promise<Uint8Array | null> => {
     if (!pdfBytes) return null;
-    // Validate PDF header before attempting to load
-    const header = String.fromCharCode(pdfBytes[0], pdfBytes[1], pdfBytes[2], pdfBytes[3]);
-    if (header !== "%PDF") {
+    // Validate PDF header: search for %PDF in first 1024 bytes
+    const headerSlice = pdfBytes.slice(0, 1024);
+    const headerStr = String.fromCharCode(...Array.from(headerSlice));
+    if (!headerStr.includes("%PDF")) {
       toast.error("Error: los bytes del PDF son inválidos. Por favor, recarga el archivo.");
       return null;
     }
@@ -1160,18 +1162,19 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     });
     for (const block of editedBlocks) {
       const page = doc.getPage(block.page - 1);
+      const { width: pageW } = page.getSize();
       // Use stored PDF point coordinates directly (no scale conversion needed)
       const pdfX = block.pdfX;
       const pdfY = block.pdfY;      // baseline y from bottom of page
-      const pdfW = block.pdfWidth;
       const fontSizePts = block.pdfFontSize;
-      // Cover original text with white rectangle
-      // Rect starts below baseline (for descenders) and extends above (for ascenders)
+      // Cover original text with a wide white rectangle that extends to the right edge of the page
+      // This ensures the original text is fully hidden regardless of its actual width
+      const coverWidth = pageW - pdfX + 10; // extend to right edge of page
       page.drawRectangle({
-        x: pdfX - 2,
-        y: pdfY - fontSizePts * 0.25,  // below baseline for descenders
-        width: pdfW + 4,
-        height: fontSizePts * 1.4,      // full line height
+        x: pdfX - 4,
+        y: pdfY - fontSizePts * 0.35,  // extra space below baseline for descenders
+        width: coverWidth,
+        height: fontSizePts * 1.6,      // extra height to cover ascenders and line spacing
         color: rgb(1, 1, 1),
         opacity: 1,
       });
@@ -1186,7 +1189,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         size: fontSizePts,
         font,
         color: rgb(tr, tg, tb),
-        maxWidth: pdfW + 40,
+        maxWidth: coverWidth - 8,
       });
     }
     return doc.save();
