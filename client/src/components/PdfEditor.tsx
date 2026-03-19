@@ -3,7 +3,8 @@
    Top toolbar | Left thumbnails | Center viewer | Right tool panel
    All tools functional: sign, text, highlight, compress, convert, protect
    ============================================================= */
-import { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import SignatureCanvas from "./SignatureCanvas";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 import {
@@ -1480,16 +1481,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             {/* ── Draw Tab ── */}
             {signTab === "draw" && (
               <>
-                <canvas
-                  ref={signCanvasRef}
-                  width={260} height={130}
-                  className="w-full border rounded-lg cursor-crosshair"
-                  style={{ borderColor: "oklch(0.80 0.05 260)", backgroundColor: "#fff", touchAction: "none", display: "block" }}
-                  onMouseDown={startSign} onMouseMove={drawSign}
-                  onMouseUp={endSign} onMouseLeave={endSign}
-                  onTouchStart={startSignTouch} onTouchMove={drawSignTouch}
-                  onTouchEnd={endSignTouch}
-                />
                 {/* Color + stroke width controls */}
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1.5">
@@ -1501,10 +1492,16 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     <input type="range" min={1} max={8} step={0.5} value={signStrokeWidth} onChange={e => setSignStrokeWidth(Number(e.target.value))} className="flex-1" />
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={clearSign} className="flex-1 py-2 rounded text-xs border font-medium" style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.40 0.02 250)" }}>{t.editor_cancel_btn}</button>
-                  <button onClick={placeSignature} className="flex-1 py-2 rounded text-xs text-white font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>{t.editor_sign_insert_btn}</button>
-                </div>
+                <SignatureCanvas
+                  color={signColor}
+                  strokeWidth={signStrokeWidth}
+                  onPlaceSignature={(dataUrl) => {
+                    addAnnotation({ type: "signature", dataUrl, x: 100, y: 100, width: 200, height: 80, page: currentPage });
+                    toast.success(t.editor_sign_added ?? "Firma añadida. Arrástrala para posicionarla.");
+                  }}
+                  clearLabel={t.editor_cancel_btn ?? "Limpiar"}
+                  placeLabel={t.editor_sign_insert_btn ?? "Insertar firma"}
+                />
               </>
             )}
 

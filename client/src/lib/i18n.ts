@@ -250,6 +250,7 @@ export type TranslationKeys = {
   editor_sign_image_upload: string;
   editor_sign_image_formats: string;
   editor_sign_image_added: string;
+  editor_sign_added: string;
 };
 
 type Translations = Record<LangCode, TranslationKeys>;
@@ -437,6 +438,7 @@ export const translations: Translations = {
     editor_sign_image_upload: "Haz clic para subir imagen",
     editor_sign_image_formats: "PNG, JPG, GIF",
     editor_sign_image_added: "Imagen de firma añadida. Arrástrala para posicionarla.",
+  editor_sign_added: "Signature added. Drag it to position.",
     faq_q1: "¿Qué herramientas puedo usar para editar un PDF online gratis?",
     faq_a1: "Con editPDF puedes editar texto, añadir imágenes, insertar firmas digitales, anotar documentos, reorganizar páginas, proteger con contraseña y mucho más. Todo desde tu navegador, sin instalar ningún software.",
     faq_q2: "¿Cómo puedo compartir un PDF una vez editado?",
@@ -655,6 +657,7 @@ export const translations: Translations = {
     editor_sign_image_upload: "Click to upload image",
     editor_sign_image_formats: "PNG, JPG, GIF supported",
     editor_sign_image_added: "Signature image added. Drag it to position.",
+  editor_sign_added: "Signature added. Drag it to position.",
     faq_q1: "What tools can I use to edit a PDF online for free?",
     faq_a1: "With editPDF you can edit text, add images, insert digital signatures, annotate documents, rearrange pages, password protect and much more. All from your browser, no software needed.",
     faq_q2: "How can I share a PDF once edited?",
@@ -873,6 +876,7 @@ export const translations: Translations = {
     editor_sign_image_upload: "Cliquez pour télécharger une image",
     editor_sign_image_formats: "PNG, JPG, GIF supportés",
     editor_sign_image_added: "Image de signature ajoutée. Faites-la glisser pour la positionner.",
+  editor_sign_added: "Signature added. Drag it to position.",
     faq_q1: "Quels outils puis-je utiliser pour éditer un PDF en ligne gratuitement ?",
     faq_a1: "Avec editPDF vous pouvez éditer du texte, ajouter des images, insérer des signatures numériques, annoter des documents et bien plus encore. Tout depuis votre navigateur.",
     faq_q2: "Comment partager un PDF une fois modifié ?",
@@ -1091,6 +1095,7 @@ export const translations: Translations = {
     editor_sign_image_upload: "Klicken Sie, um ein Bild hochzuladen",
     editor_sign_image_formats: "PNG, JPG, GIF unterstützt",
     editor_sign_image_added: "Unterschriftenbild hinzugefügt. Ziehen Sie es an die gewünschte Position.",
+  editor_sign_added: "Signature added. Drag it to position.",
     faq_q1: "Welche Tools kann ich verwenden, um ein PDF online kostenlos zu bearbeiten?",
     faq_a1: "Mit editPDF können Sie Text bearbeiten, Bilder hinzufügen, digitale Signaturen einfügen, Dokumente kommentieren und vieles mehr. Alles über Ihren Browser.",
     faq_q2: "Wie kann ich ein PDF nach der Bearbeitung teilen?",
@@ -1309,6 +1314,7 @@ export const translations: Translations = {
     editor_sign_image_upload: "Clique para carregar imagem",
     editor_sign_image_formats: "PNG, JPG, GIF suportados",
     editor_sign_image_added: "Imagem de assinatura adicionada. Arraste-a para posicioná-la.",
+  editor_sign_added: "Signature added. Drag it to position.",
     faq_q1: "Quais ferramentas posso usar para editar um PDF online gratuitamente?",
     faq_a1: "Com editPDF você pode editar texto, adicionar imagens, inserir assinaturas digitais, anotar documentos e muito mais. Tudo pelo seu navegador.",
     faq_q2: "Como posso compartilhar um PDF após editá-lo?",
@@ -1527,6 +1533,7 @@ export const translations: Translations = {
     editor_sign_image_upload: "Clicca per caricare l'immagine",
     editor_sign_image_formats: "PNG, JPG, GIF supportati",
     editor_sign_image_added: "Immagine firma aggiunta. Trascinala per posizionarla.",
+  editor_sign_added: "Signature added. Drag it to position.",
     faq_q1: "Quali strumenti posso usare per modificare un PDF online gratuitamente?",
     faq_a1: "Con editPDF puoi modificare testo, aggiungere immagini, inserire firme digitali, annotare documenti e molto altro. Tutto dal tuo browser.",
     faq_q2: "Come posso condividere un PDF dopo averlo modificato?",
@@ -1745,6 +1752,7 @@ export const translations: Translations = {
     editor_sign_image_upload: "Klik om afbeelding te uploaden",
     editor_sign_image_formats: "PNG, JPG, GIF ondersteund",
     editor_sign_image_added: "Handtekeningafbeelding toegevoegd. Sleep het naar de gewenste positie.",
+  editor_sign_added: "Signature added. Drag it to position.",
     faq_q1: "Welke tools kan ik gebruiken om een PDF online gratis te bewerken?",
     faq_a1: "Met editPDF kunt u tekst bewerken, afbeeldingen toevoegen, digitale handtekeningen invoegen, documenten annoteren en nog veel meer. Alles via uw browser.",
     faq_q2: "Hoe kan ik een PDF delen nadat ik hem heb bewerkt?",
@@ -1963,6 +1971,7 @@ export const translations: Translations = {
     editor_sign_image_upload: "Kliknij, aby przesłać obraz",
     editor_sign_image_formats: "PNG, JPG, GIF obsługiwane",
     editor_sign_image_added: "Obraz podpisu dodany. Przeciągnij go, aby go ustawić.",
+  editor_sign_added: "Signature added. Drag it to position.",
     faq_q1: "Jakich narzędzi mogę użyć do edycji PDF online za darmo?",
     faq_a1: "Z editPDF możesz edytować tekst, dodawać obrazy, wstawiać podpisy cyfrowe, adnotować dokumenty i wiele więcej. Wszystko z przeglądarki.",
     faq_q2: "Jak mogę udostępnić PDF po edycji?",
@@ -2181,6 +2190,7 @@ export const translations: Translations = {
     editor_sign_image_upload: "Нажмите, чтобы загрузить изображение",
     editor_sign_image_formats: "PNG, JPG, GIF поддерживаются",
     editor_sign_image_added: "Изображение подписи добавлено. Перетащите его для позиционирования.",
+  editor_sign_added: "Signature added. Drag it to position.",
     faq_q1: "Какие инструменты я могу использовать для редактирования PDF онлайн бесплатно?",
     faq_a1: "С editPDF вы можете редактировать текст, добавлять изображения, вставлять цифровые подписи, аннотировать документы и многое другое. Всё через браузер.",
     faq_q2: "Как поделиться PDF после редактирования?",
@@ -2399,6 +2409,7 @@ export const translations: Translations = {
     editor_sign_image_upload: "点击上传图片",
     editor_sign_image_formats: "支持PNG、JPG、GIF",
     editor_sign_image_added: "签名图片已添加。拖动它以定位。",
+  editor_sign_added: "Signature added. Drag it to position.",
     faq_q1: "我可以使用哪些工具免费在线编辑PDF？",
     faq_a1: "使用editPDF，您可以编辑文字、添加图片、插入数字签名、注释文档等等。一切都在浏览器中完成。",
     faq_q2: "编辑后如何分享PDF？",
