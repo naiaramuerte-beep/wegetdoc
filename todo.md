@@ -59,7 +59,7 @@
 - [x] Selector de idioma en Navbar (dropdown con banderas, desktop + mobile)
 - [ ] Selector de idioma en Footer
 - [x] Traducir textos de Navbar, Footer, Home hero y secciones principales
-- [ ] Traducir PaywallModal y textos de precios
+- [x] Traducir PaywallModal y textos de precios
 - [x] Preservar rutas relativas al cambiar de idioma
 
 ## Auth propia (email+password+Google)
@@ -306,3 +306,7 @@
 - [ ] Procedimiento tRPC admin: getStripeMode, setStripeMode
 - [ ] Botón toggle en panel admin con indicador visual (verde=test, rojo=live)
 - [ ] Aplicar modo test/live en todos los endpoints de Stripe (checkout, webhook, setup intent)
+
+## Bugs i18n
+- [ ] Bug: PaywallModal no se traduce al idioma activo (aparece siempre en inglés)
+- [ ] Bug: Edit Text — texto original no se borra al exportar (solo se superpone el nuevo texto)

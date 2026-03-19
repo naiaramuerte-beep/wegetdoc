@@ -1,14 +1,7 @@
-/**
- * PaywallModal — Diseño idéntico a pdfe.com:
+/*
+ * PaywallModal — Diseño idéntico a pdfe.com con soporte i18n completo:
  * 1. Sin cuenta → pantalla de login (Google / Email)
- * 2. Con cuenta → modal de pago con:
- *    - Título "Your document is ready!" con check verde
- *    - Importe "0,50 € — Trial plan" arriba a la derecha
- *    - Preview del documento a la izquierda
- *    - Tabs Card / Google Pay
- *    - Formulario Stripe Elements limpio
- *    - Checkbox legal con texto de renovación automática
- *    - Botón negro "Pay and download"
+ * 2. Con cuenta → modal de pago con Stripe Elements
  */
 import { useState, useEffect } from "react";
 import { X, Check, Loader2, Mail, CreditCard, ArrowRight } from "lucide-react";
@@ -17,6 +10,7 @@ import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { usePdfFile } from "@/contexts/PdfFileContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Elements,
   CardElement,
@@ -45,6 +39,7 @@ function CheckoutForm({
   onSuccess: () => void;
   pdfData?: { base64: string; name: string; size: number };
 }) {
+  const { t } = useLanguage();
   const stripe = useStripe();
   const elements = useElements();
   const [agreed, setAgreed] = useState(false);
@@ -64,18 +59,18 @@ function CheckoutForm({
       setCustomerId(result.customerId);
     }).catch((err) => {
       console.error("Failed to create SetupIntent:", err);
-      toast.error("Error loading payment form");
+      toast.error(t.paywall_loading_form);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSubmit = async () => {
     if (!stripe || !elements || !clientSecret || !customerId) {
-      toast.error("Payment form not ready. Please wait.");
+      toast.error(t.paywall_loading_form);
       return;
     }
     if (!agreed) {
-      toast.error("Please accept the terms and conditions to continue");
+      toast.error(t.paywall_legal_text.slice(0, 60) + "...");
       return;
     }
 
@@ -125,7 +120,7 @@ function CheckoutForm({
       await confirmSubscription.mutateAsync({ paymentMethodId, customerId });
       await utils.subscription.status.invalidate();
 
-      toast.success("Subscription activated! Downloading your document...");
+      toast.success(t.paywall_doc_ready + " " + t.paywall_processing);
       onSuccess();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Payment error";
@@ -140,8 +135,8 @@ function CheckoutForm({
       {/* Amount row */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <p className="text-xs text-gray-500 mb-0.5">Amount to be paid</p>
-          <p className="text-xs font-medium text-gray-400">Trial plan</p>
+          <p className="text-xs text-gray-500 mb-0.5">{t.paywall_amount_label}</p>
+          <p className="text-xs font-medium text-gray-400">{t.paywall_trial_plan}</p>
         </div>
         <p className="text-2xl font-bold text-gray-900">0,50 €</p>
       </div>
@@ -183,7 +178,7 @@ function CheckoutForm({
       {activeTab === "card" && (
         <div className="space-y-4 mb-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Card number</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.paywall_card_number}</label>
             <div
               className="border rounded-lg px-3 py-3.5"
               style={{ borderColor: "#e2e8f0", backgroundColor: "#fff" }}
@@ -207,7 +202,7 @@ function CheckoutForm({
               ) : (
                 <div className="flex items-center gap-2 text-sm text-gray-400">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Loading payment form...
+                  {t.paywall_loading_form}
                 </div>
               )}
             </div>
@@ -218,7 +213,7 @@ function CheckoutForm({
       {/* Google Pay placeholder */}
       {activeTab === "gpay" && (
         <div className="mb-5 p-4 rounded-lg bg-gray-50 border border-gray-200 text-center text-sm text-gray-500">
-          Google Pay will be available after completing the trial setup.
+          {t.paywall_gpay_soon}
         </div>
       )}
 
@@ -231,12 +226,7 @@ function CheckoutForm({
           className="mt-0.5 w-4 h-4 rounded flex-shrink-0 cursor-pointer accent-gray-900"
         />
         <span className="text-xs leading-relaxed text-gray-500">
-          By checking this box, you agree to be bound by our{" "}
-          <a href="/terms" className="underline text-gray-700 hover:text-gray-900">Terms and Conditions</a>{" "}
-          and acknowledge our{" "}
-          <a href="/privacy" className="underline text-gray-700 hover:text-gray-900">Privacy Policy</a>.{" "}
-          If you don't cancel at least 1 hour before the end of your 7-day trial, you will automatically be charged{" "}
-          <strong>49,95 €</strong> each month until you cancel in your settings. For customer support, send an e-mail to{" "}
+          {t.paywall_legal_text}{" "}
           <a href="mailto:support@editpdf.online" className="underline text-gray-700 hover:text-gray-900">support@editpdf.online</a>
         </span>
       </label>
@@ -254,10 +244,10 @@ function CheckoutForm({
         {isLoading ? (
           <>
             <Loader2 className="w-5 h-5 animate-spin" />
-            Processing...
+            {t.paywall_processing}
           </>
         ) : (
-          "Pay and download"
+          t.paywall_pay_download
         )}
       </button>
     </div>
@@ -268,10 +258,11 @@ function CheckoutForm({
 export default function PaywallModal({
   isOpen,
   onClose,
-  action = "download",
+  action,
   pdfData,
   onPaymentSuccess,
 }: PaywallModalProps) {
+  const { t } = useLanguage();
   const { isAuthenticated } = useAuth();
   const { savePdfToSession, setPendingPaywall, pendingFile } = usePdfFile();
   const [step, setStep] = useState<Step>(isAuthenticated ? "plans" : "auth-choice");
@@ -280,6 +271,7 @@ export default function PaywallModal({
   if (!isOpen) return null;
 
   const currentStep = isAuthenticated ? "plans" : step;
+  const actionLabel = action ?? t.paywall_pay_download.toLowerCase();
 
   const handleGoogleLogin = async () => {
     if (pendingFile) {
@@ -291,7 +283,7 @@ export default function PaywallModal({
 
   const handleEmailContinue = async () => {
     if (!emailInput.trim() || !emailInput.includes("@")) {
-      toast.error("Please enter a valid email");
+      toast.error(t.paywall_enter_email);
       return;
     }
     if (pendingFile) {
@@ -332,10 +324,10 @@ export default function PaywallModal({
                 <CreditCard className="w-7 h-7 text-white" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Create an account to {action}
+                {t.paywall_create_account}
               </h2>
               <p className="text-sm text-gray-500">
-                Sign up in seconds and choose a plan to continue
+                {t.paywall_sign_up_seconds}
               </p>
             </div>
             <div className="space-y-3 max-w-sm mx-auto">
@@ -349,11 +341,11 @@ export default function PaywallModal({
                   <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
                   <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
                 </svg>
-                Continue with Google
+                {t.paywall_continue_google}
               </button>
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-gray-200" />
-                <span className="text-xs text-gray-400">or</span>
+                <span className="text-xs text-gray-400">{t.paywall_or}</span>
                 <div className="flex-1 h-px bg-gray-200" />
               </div>
               <button
@@ -361,14 +353,14 @@ export default function PaywallModal({
                 className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl border-2 border-gray-200 font-semibold text-sm text-gray-700 bg-white hover:border-gray-400 transition-all"
               >
                 <Mail className="w-4 h-4" />
-                Continue with Email
+                {t.paywall_continue_email}
               </button>
             </div>
             <p className="text-center text-xs mt-5 text-gray-400">
-              By continuing, you agree to our{" "}
-              <a href="/terms" className="underline text-gray-600">Terms</a>{" "}
-              and{" "}
-              <a href="/privacy" className="underline text-gray-600">Privacy Policy</a>
+              {t.paywall_by_continuing}{" "}
+              <a href="/terms" className="underline text-gray-600">{t.paywall_terms}</a>{" "}
+              {t.paywall_or}{" "}
+              <a href="/privacy" className="underline text-gray-600">{t.paywall_privacy}</a>
             </p>
           </div>
         )}
@@ -377,8 +369,8 @@ export default function PaywallModal({
         {currentStep === "email-form" && (
           <div className="p-8">
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Enter your email</h2>
-              <p className="text-sm text-gray-500">We'll send you a link to sign in</p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">{t.paywall_enter_email}</h2>
+              <p className="text-sm text-gray-500">{t.paywall_email_link}</p>
             </div>
             <div className="max-w-sm mx-auto space-y-4">
               <input
@@ -394,13 +386,13 @@ export default function PaywallModal({
                 className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gray-900 text-white font-bold text-sm hover:bg-gray-800 transition-colors"
               >
                 <ArrowRight className="w-4 h-4" />
-                Continue
+                {t.paywall_continue}
               </button>
               <button
                 onClick={() => setStep("auth-choice")}
                 className="w-full text-sm text-gray-400 hover:text-gray-700 py-2 transition-colors"
               >
-                ← Back
+                {t.paywall_back}
               </button>
             </div>
           </div>
@@ -442,10 +434,10 @@ export default function PaywallModal({
                   <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
                     <Check className="w-3 h-3 text-white" />
                   </div>
-                  <span className="text-sm font-semibold text-green-600">Your document is ready!</span>
+                  <span className="text-sm font-semibold text-green-600">{t.paywall_doc_ready}</span>
                 </div>
                 <h2 className="text-lg font-bold text-gray-900 leading-tight">
-                  One step left to get your document
+                  {t.paywall_one_step}
                 </h2>
               </div>
             </div>

@@ -194,11 +194,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const [noteText, setNoteText] = useState("");
 
   // Edit-text tool state
-  const [nativeTextBlocks, setNativeTextBlocks] = useState<NativeTextBlock[]>([]);
+  // allNativeTextBlocks: Map<pageNum, NativeTextBlock[]> — persists edits across page navigation
+  const [allNativeTextBlocks, setAllNativeTextBlocks] = useState<Map<number, NativeTextBlock[]>>(new Map());
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [editingBlockText, setEditingBlockText] = useState("");
   const [editTextColor, setEditTextColor] = useState("#000000");
-  const [nativeTextPage, setNativeTextPage] = useState<number>(0); // which page was loaded
+  // Derived: blocks for the current page
+  const nativeTextBlocks = allNativeTextBlocks.get(currentPage) ?? [];
 
   const viewerRef = useRef<HTMLDivElement>(null);
   const viewerContainerRef = useRef<HTMLDivElement>(null);
@@ -360,8 +362,25 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         page: pageNum,
       });
     }
-    setNativeTextBlocks(blocks);
-    setNativeTextPage(pageNum);
+    // Only set blocks for this page if not already loaded (preserve existing edits)
+    setAllNativeTextBlocks(prev => {
+      const existing = prev.get(pageNum);
+      if (existing && existing.length > 0) {
+        // Merge: keep editedStr from existing blocks matched by str+position
+        const merged = blocks.map(newBlock => {
+          const match = existing.find(
+            ex => ex.str === newBlock.str && Math.abs(ex.x - newBlock.x) < 2 && Math.abs(ex.y - newBlock.y) < 2
+          );
+          return match ? { ...newBlock, editedStr: match.editedStr, fontColor: match.fontColor } : newBlock;
+        });
+        const next = new Map(prev);
+        next.set(pageNum, merged);
+        return next;
+      }
+      const next = new Map(prev);
+      next.set(pageNum, blocks);
+      return next;
+    });
   }, [pdfDoc, scale]);
 
   // Reload text blocks when page or scale changes while edit-text is active
@@ -1100,7 +1119,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       }
     }
     // Apply native text edits: cover original text with white rect, draw new text
-    const editedBlocks = nativeTextBlocks.filter(b => b.editedStr !== undefined);
+    // Collect edited blocks from ALL pages (not just the current page)
+    const editedBlocks: NativeTextBlock[] = [];
+    allNativeTextBlocks.forEach(pageBlocks => {
+      pageBlocks.filter(b => b.editedStr !== undefined).forEach(b => editedBlocks.push(b));
+    });
     for (const block of editedBlocks) {
       const page = doc.getPage(block.page - 1);
       const { height: pageH } = page.getSize();
@@ -1802,11 +1825,17 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
-                        setNativeTextBlocks(prev => prev.map(b =>
-                          b.id === editingBlockId
-                            ? { ...b, editedStr: editingBlockText, fontColor: editTextColor }
-                            : b
-                        ));
+                        setAllNativeTextBlocks(prev => {
+                          const pageBlocks = prev.get(currentPage) ?? [];
+                          const updated = pageBlocks.map((b: NativeTextBlock) =>
+                            b.id === editingBlockId
+                              ? { ...b, editedStr: editingBlockText, fontColor: editTextColor }
+                              : b
+                          );
+                          const next = new Map(prev);
+                          next.set(currentPage, updated);
+                          return next;
+                        });
                         setEditingBlockId(null);
                         toast.success("Texto actualizado. Se aplicará al descargar.");
                       }}
@@ -1817,9 +1846,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     </button>
                     <button
                       onClick={() => {
-                        setNativeTextBlocks(prev => prev.map(b =>
-                          b.id === editingBlockId ? { ...b, editedStr: undefined, fontColor: undefined } : b
-                        ));
+                        setAllNativeTextBlocks(prev => {
+                          const pageBlocks = prev.get(currentPage) ?? [];
+                          const updated = pageBlocks.map((b: NativeTextBlock) =>
+                            b.id === editingBlockId ? { ...b, editedStr: undefined, fontColor: undefined } : b
+                          );
+                          const next = new Map(prev);
+                          next.set(currentPage, updated);
+                          return next;
+                        });
                         setEditingBlockId(null);
                       }}
                       className="flex-1 py-1.5 rounded text-xs border font-medium"
