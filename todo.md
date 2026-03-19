@@ -250,3 +250,6 @@
 ## i18n - Textos hardcodeados en PdfEditor
 - [x] Traducir "Selecciona una herramienta para comenzar" y textos del estado vacío
 - [x] Traducir todos los textos hardcodeados del editor (tooltips, mensajes, etc.) - 10 idiomas
+
+## Bug CRÍTICO - Editar texto
+- [x] Herramienta "Editar texto": corregido — coordenadas PDF directas + editor inline sobre el bloque + auto-guardado al perder foco

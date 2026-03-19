@@ -49,11 +49,17 @@ interface NativeTextBlock {
   id: string;
   str: string;
   editedStr?: string; // if set, this replaces str on export
-  x: number; // in PDF points
-  y: number; // in PDF points (from bottom)
+  // Canvas pixel coordinates (for overlay display)
+  x: number;
+  y: number;
   width: number;
   height: number;
-  fontSize: number;
+  fontSize: number; // font size in canvas pixels
+  // PDF point coordinates (for export) — stored separately to avoid scale confusion
+  pdfX: number;      // x in PDF points
+  pdfY: number;      // y baseline in PDF points (from bottom of page)
+  pdfWidth: number;  // width in PDF points
+  pdfFontSize: number; // font size in PDF points
   pageHeight: number; // page height in PDF points
   page: number; // 1-indexed page number
   fontColor?: string; // hex color e.g. "#000000"
@@ -341,23 +347,30 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     for (const item of content.items as any[]) {
       if (!item.str || !item.str.trim()) continue;
       // item.transform = [a, b, c, d, e, f] where (e,f) is bottom-left in PDF points (from bottom)
-      const [a, b, c, d, e, f] = item.transform as number[];
-      const fontSize = Math.sqrt(a * a + b * b); // approximate font size from transform
+      const [a, b, , , e, f] = item.transform as number[];
+      const pdfFontSize = Math.sqrt(a * a + b * b); // font size in PDF points
       const pdfPageHeight = vp.height / scale; // page height in PDF points
-      // Convert PDF point coords to canvas pixel coords
+      const pdfWidth = item.width ?? item.str.length * pdfFontSize * 0.6;
+      // Canvas pixel coords (for overlay display)
       // PDF y is from bottom; canvas y is from top
       const canvasX = e * scale;
-      const canvasY = (pdfPageHeight - f) * scale - fontSize * scale;
-      const canvasW = (item.width ?? item.str.length * fontSize * 0.6) * scale;
-      const canvasH = fontSize * scale * 1.2;
+      const canvasY = (pdfPageHeight - f) * scale - pdfFontSize * scale;
+      const canvasW = pdfWidth * scale;
+      const canvasH = pdfFontSize * scale * 1.4;
       blocks.push({
         id: Math.random().toString(36).slice(2),
         str: item.str,
+        // Canvas coords
         x: canvasX,
         y: canvasY,
         width: Math.max(canvasW, 20),
         height: Math.max(canvasH, 14),
-        fontSize: fontSize * scale,
+        fontSize: pdfFontSize * scale,
+        // PDF point coords (used directly at export — no scale conversion needed)
+        pdfX: e,
+        pdfY: f,           // baseline y from bottom of page (PDF coordinate system)
+        pdfWidth: Math.max(pdfWidth, 10),
+        pdfFontSize: Math.max(pdfFontSize, 6),
         pageHeight: pdfPageHeight,
         page: pageNum,
       });
@@ -1120,51 +1133,40 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       }
     }
     // Apply native text edits: cover original text with white rect, draw new text
-    // Collect edited blocks from ALL pages (not just the current page)
+    // Collect edited blocks from ALL pages
     const editedBlocks: NativeTextBlock[] = [];
     allNativeTextBlocks.forEach(pageBlocks => {
       pageBlocks.filter(b => b.editedStr !== undefined).forEach(b => editedBlocks.push(b));
     });
     for (const block of editedBlocks) {
       const page = doc.getPage(block.page - 1);
-      // block coords are stored in canvas pixels (multiplied by scale during load)
-      // Convert back to PDF points by dividing by scale
-      const pdfX = block.x / scale;
-      const pdfW = block.width / scale;
-      // block.y is canvas-top-based: canvasY = (pdfPageHeight - f) * scale - fontSize * scale
-      // So: pdfPageHeight - f = block.y/scale + fontSize_pts
-      // => f (PDF bottom of text) = pdfPageHeight - block.y/scale - fontSize_pts
-      // block.fontSize is stored as fontSize_pts * scale, so fontSize_pts = block.fontSize / scale
-      const fontSizePts = block.fontSize / scale;
-      const pdfH = block.height / scale; // height in PDF points
-      // f is the PDF y-coordinate of the text baseline (from bottom of page)
-      const f = block.pageHeight - (block.y / scale) - fontSizePts;
-      // The white cover rect should start at f (baseline) and extend upward by fontSizePts
-      // Add padding to fully cover descenders and ascenders
-      const rectY = f - fontSizePts * 0.3; // extend below baseline for descenders
-      const rectH = pdfH + fontSizePts * 0.3; // extend above for ascenders
+      // Use stored PDF point coordinates directly (no scale conversion needed)
+      const pdfX = block.pdfX;
+      const pdfY = block.pdfY;      // baseline y from bottom of page
+      const pdfW = block.pdfWidth;
+      const fontSizePts = block.pdfFontSize;
       // Cover original text with white rectangle
+      // Rect starts below baseline (for descenders) and extends above (for ascenders)
       page.drawRectangle({
         x: pdfX - 2,
-        y: rectY,
+        y: pdfY - fontSizePts * 0.25,  // below baseline for descenders
         width: pdfW + 4,
-        height: rectH + 2,
+        height: fontSizePts * 1.4,      // full line height
         color: rgb(1, 1, 1),
         opacity: 1,
       });
-      // Draw replacement text
+      // Draw replacement text at the original baseline position
       const hexColor = block.fontColor ?? "#000000";
       const tr = parseInt(hexColor.slice(1, 3), 16) / 255;
       const tg = parseInt(hexColor.slice(3, 5), 16) / 255;
       const tb = parseInt(hexColor.slice(5, 7), 16) / 255;
-      const textSize = Math.max(fontSizePts, 6);
       page.drawText(block.editedStr!, {
         x: pdfX,
-        y: f,
-        size: textSize,
+        y: pdfY,
+        size: fontSizePts,
         font,
         color: rgb(tr, tg, tb),
-        maxWidth: pdfW + 20,
+        maxWidth: pdfW + 40,
       });
     }
     return doc.save();
@@ -2393,24 +2395,88 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setEditingBlockId(block.id);
-                    setEditingBlockText(block.editedStr ?? block.str);
-                    setShowMobilePanel(true);
+                    if (editingBlockId !== block.id) {
+                      setEditingBlockId(block.id);
+                      setEditingBlockText(block.editedStr ?? block.str);
+                      setShowMobilePanel(true);
+                    }
                   }}
                   title={block.editedStr !== undefined ? `Editado: "${block.editedStr}"` : `Clic para editar: "${block.str}"`}
                 >
-                  {/* Show edited text preview */}
-                  {block.editedStr !== undefined && (
+                  {/* Inline editor: appears directly on the block when selected */}
+                  {editingBlockId === block.id ? (
+                    <input
+                      autoFocus
+                      value={editingBlockText}
+                      onChange={e => setEditingBlockText(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === "Enter") {
+                          // Save on Enter
+                          setAllNativeTextBlocks(prev => {
+                            const pageBlocks = prev.get(block.page) ?? [];
+                            const updated = pageBlocks.map((b: NativeTextBlock) =>
+                              b.id === block.id
+                                ? { ...b, editedStr: editingBlockText, fontColor: editTextColor }
+                                : b
+                            );
+                            const next = new Map(prev);
+                            next.set(block.page, updated);
+                            return next;
+                          });
+                          setEditingBlockId(null);
+                          toast.success("Texto actualizado");
+                        } else if (e.key === "Escape") {
+                          setEditingBlockId(null);
+                        }
+                        e.stopPropagation();
+                      }}
+                      onBlur={() => {
+                        // Auto-save on blur
+                        if (editingBlockText !== block.str || block.editedStr !== undefined) {
+                          setAllNativeTextBlocks(prev => {
+                            const pageBlocks = prev.get(block.page) ?? [];
+                            const updated = pageBlocks.map((b: NativeTextBlock) =>
+                              b.id === block.id
+                                ? { ...b, editedStr: editingBlockText, fontColor: editTextColor }
+                                : b
+                            );
+                            const next = new Map(prev);
+                            next.set(block.page, updated);
+                            return next;
+                          });
+                        }
+                        setEditingBlockId(null);
+                      }}
+                      onClick={e => e.stopPropagation()}
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        width: "100%",
+                        height: "100%",
+                        fontSize: Math.min(block.fontSize, 14),
+                        color: editTextColor,
+                        background: "white",
+                        border: "none",
+                        outline: "none",
+                        padding: "0 2px",
+                        fontFamily: "Helvetica, Arial, sans-serif",
+                        zIndex: 30,
+                        boxSizing: "border-box",
+                      }}
+                    />
+                  ) : (
+                    /* Show edited text preview or original text */
                     <span style={{
                       fontSize: Math.min(block.fontSize, 12),
-                      color: block.fontColor ?? editTextColor,
+                      color: block.editedStr !== undefined ? (block.fontColor ?? editTextColor) : "transparent",
                       whiteSpace: "nowrap",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       padding: "0 2px",
                       fontWeight: 500,
+                      width: "100%",
                     }}>
-                      {block.editedStr}
+                      {block.editedStr ?? block.str}
                     </span>
                   )}
                 </div>
