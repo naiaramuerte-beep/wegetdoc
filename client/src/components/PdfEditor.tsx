@@ -24,6 +24,14 @@ import { usePdfFile } from "@/contexts/PdfFileContext";
 import * as pdfjsLib from "pdfjs-dist";
 import { PDFDocument, rgb, StandardFonts, degrees } from "pdf-lib";
 
+// Browser-safe base64 encoder for Uint8Array (replaces Node.js Buffer.from().toString('base64'))
+function uint8ToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
@@ -966,7 +974,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     try {
       const doc = await PDFDocument.load(pdfBytes as Uint8Array);
       const compressed = await doc.save({ useObjectStreams: true });
-      const blob = new Blob([Buffer.from(compressed)], { type: "application/pdf" });
+      const blob = new Blob([compressed.buffer as ArrayBuffer], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a"); a.href = url;
       a.download = `compressed_${file?.name ?? "document.pdf"}`;
@@ -1059,7 +1067,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const page = doc.addPage([img.width, img.height]);
       page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
       const pdfOut = await doc.save();
-      const blob = new Blob([Buffer.from(pdfOut)], { type: "application/pdf" });
+      const blob = new Blob([pdfOut.buffer as ArrayBuffer], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a"); a.href = url;
       a.download = f.name.replace(/\.[^.]+$/, "") + ".pdf";
@@ -1090,7 +1098,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         pages.forEach(p => merged.addPage(p));
       }
       const out = await merged.save();
-      const blob = new Blob([Buffer.from(out)], { type: "application/pdf" });
+      const blob = new Blob([out.buffer as ArrayBuffer], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a"); a.href = url;
       a.download = "merged.pdf"; a.click(); URL.revokeObjectURL(url);
@@ -1115,7 +1123,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       pages2.forEach(p => part2.addPage(p));
       for (const [i, doc] of [[1, part1], [2, part2]] as [number, PDFDocument][]) {
         const out = await doc.save();
-        const blob = new Blob([Buffer.from(out)], { type: "application/pdf" });
+        const blob = new Blob([out.buffer as ArrayBuffer], { type: "application/pdf" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a"); a.href = url;
         a.download = `part${i}_${file?.name ?? "document.pdf"}`; a.click();
@@ -1333,7 +1341,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         try {
           const out = await buildAnnotatedPdf();
           if (out) {
-            const base64 = Buffer.from(out).toString("base64");
+            const base64 = uint8ToBase64(out);
             const docName = file?.name ?? "document.pdf";
             const docSize = out.byteLength;
             setPdfDataForPaywall({ base64, name: docName, size: docSize });
@@ -1355,7 +1363,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     try {
       const out = await buildAnnotatedPdf();
       if (!out) throw new Error("Failed to build PDF");
-      const blob = new Blob([Buffer.from(out)], { type: "application/pdf" });
+      const blob = new Blob([out.buffer as ArrayBuffer], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a"); a.href = url;
       a.download = file?.name ?? "document.pdf";
@@ -2696,7 +2704,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             const out = await buildAnnotatedPdf();
             if (!out) return null;
             return {
-              base64: Buffer.from(out).toString("base64"),
+              base64: uint8ToBase64(out),
               name: file?.name ?? "document.pdf",
               size: out.byteLength,
             };
