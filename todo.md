@@ -309,3 +309,6 @@
 - [x] Restaurar PDF editado desde sessionStorage tras el login y pasarlo al PaywallModal
 - [x] Subir PDF editado a S3 durante el pago (en CheckoutForm) y guardarlo en DB
 - [x] Tras el pago, el documento ya aparece en el panel del usuario listo para descargar
+
+## Bug rotación de páginas
+- [x] Bug: rotar página solo funciona una vez, no permite rotar múltiples veces consecutivas

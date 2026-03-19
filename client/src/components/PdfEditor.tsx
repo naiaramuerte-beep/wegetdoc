@@ -1137,10 +1137,23 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const page = doc.getPage(currentPage - 1);
       page.setRotation(degrees((page.getRotation().angle + 90) % 360));
       const out = await doc.save();
-      const newBytes = new Uint8Array(out).slice(); // .slice() ensures independent ArrayBuffer
+      const newBytes = new Uint8Array(out).slice();
       setPdfBytes(newBytes);
-      const newDoc = await pdfjsLib.getDocument({ data: newBytes }).promise;
+      // Use a fresh .slice() copy so pdf.js doesn't reuse cached document
+      const newDoc = await pdfjsLib.getDocument({ data: newBytes.slice() }).promise;
       setPdfDoc(newDoc);
+      // Update thumbnail for the rotated page
+      const rotatedPage = await newDoc.getPage(currentPage);
+      const vp = rotatedPage.getViewport({ scale: 0.4 });
+      const c = document.createElement("canvas");
+      c.width = vp.width; c.height = vp.height;
+      const ctx = c.getContext("2d")!;
+      await rotatedPage.render({ canvas: c, viewport: vp } as any).promise;
+      setThumbnails(prev => {
+        const updated = [...prev];
+        updated[currentPage - 1] = c.toDataURL();
+        return updated;
+      });
       toast.success("Página rotada", { id: "rotate" });
     } catch {
       toast.error("Error al rotar", { id: "rotate" });
@@ -1158,7 +1171,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const out = await doc.save();
       const newBytes = new Uint8Array(out).slice(); // .slice() ensures independent ArrayBuffer
       setPdfBytes(newBytes);
-      const newDoc = await pdfjsLib.getDocument({ data: newBytes }).promise;
+      const newDoc = await pdfjsLib.getDocument({ data: newBytes.slice() }).promise;
       setPdfDoc(newDoc);
       setTotalPages(doc.getPageCount() - 1);
       if (currentPage > 1) setCurrentPage(p => p - 1);
