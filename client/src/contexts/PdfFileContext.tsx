@@ -2,8 +2,13 @@
    PdfFileContext — shares the uploaded PDF file between pages
    Also persists PDF bytes in sessionStorage so the file survives
    an OAuth redirect (login flow) and is restored on return.
+
+   IMPORTANT: Uses a module-level ref (pendingFileRef) in addition
+   to React state so that EditorPage can read the file synchronously
+   on mount, avoiding a race condition on mobile where the context
+   state update hasn't flushed yet when the new route renders.
    ============================================================= */
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 
 const SESSION_KEY_PDF = "pdfpro_pending_pdf_b64";
 const SESSION_KEY_NAME = "pdfpro_pending_pdf_name";
@@ -20,6 +25,9 @@ interface PdfFileContextValue {
   pendingPaywall: boolean;
   /** Save PDF bytes to sessionStorage before OAuth redirect */
   savePdfToSession: (file: File) => Promise<void>;
+  /** Synchronous ref — always reflects the latest pendingFile value */
+  pendingFileRef: React.MutableRefObject<File | null>;
+  pendingToolRef: React.MutableRefObject<string | null>;
 }
 
 const PdfFileContext = createContext<PdfFileContextValue>({
@@ -30,12 +38,18 @@ const PdfFileContext = createContext<PdfFileContextValue>({
   setPendingPaywall: () => {},
   pendingPaywall: false,
   savePdfToSession: async () => {},
+  pendingFileRef: { current: null },
+  pendingToolRef: { current: null },
 });
 
 export function PdfFileProvider({ children }: { children: ReactNode }) {
   const [pendingFile, setPendingFileState] = useState<File | null>(null);
   const [pendingTool, setPendingToolState] = useState<string | null>(null);
   const [pendingPaywall, setPendingPaywallState] = useState(false);
+
+  // Refs for synchronous access (avoids race condition on mobile)
+  const pendingFileRef = useRef<File | null>(null);
+  const pendingToolRef = useRef<string | null>(null);
 
   // On mount, try to restore PDF from sessionStorage (after OAuth redirect)
   useEffect(() => {
@@ -51,6 +65,7 @@ export function PdfFileProvider({ children }: { children: ReactNode }) {
         for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
         const blob = new Blob([byteArr], { type: "application/pdf" });
         const file = new File([blob], name, { type: "application/pdf" });
+        pendingFileRef.current = file;
         setPendingFileState(file);
         sessionStorage.removeItem(SESSION_KEY_PDF);
         sessionStorage.removeItem(SESSION_KEY_NAME);
@@ -62,6 +77,7 @@ export function PdfFileProvider({ children }: { children: ReactNode }) {
     }
 
     if (tool) {
+      pendingToolRef.current = tool;
       setPendingToolState(tool);
       sessionStorage.removeItem(SESSION_KEY_TOOL);
     }
@@ -72,8 +88,15 @@ export function PdfFileProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const setPendingFile = (f: File | null) => setPendingFileState(f);
-  const setPendingTool = (t: string | null) => setPendingToolState(t);
+  const setPendingFile = (f: File | null) => {
+    pendingFileRef.current = f;
+    setPendingFileState(f);
+  };
+
+  const setPendingTool = (t: string | null) => {
+    pendingToolRef.current = t;
+    setPendingToolState(t);
+  };
 
   const setPendingPaywall = (open: boolean) => {
     setPendingPaywallState(open);
@@ -107,6 +130,8 @@ export function PdfFileProvider({ children }: { children: ReactNode }) {
       pendingPaywall,
       setPendingPaywall,
       savePdfToSession,
+      pendingFileRef,
+      pendingToolRef,
     }}>
       {children}
     </PdfFileContext.Provider>

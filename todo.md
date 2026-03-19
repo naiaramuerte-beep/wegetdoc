@@ -316,3 +316,6 @@
 
 ## Bug móvil: subida de archivo no funciona
 - [x] Bug: en móvil al pulsar "Upload PDF to edit" no pasa nada y desaparece el header
+
+## Bug móvil: seleccionar archivo no abre el editor
+- [x] Bug: en móvil el selector de archivos se abre pero al seleccionar el archivo no navega al editor
