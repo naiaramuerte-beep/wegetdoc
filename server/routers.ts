@@ -55,7 +55,7 @@ import {
   deleteBlogPost,
 } from "./db";
 import { storagePut } from "./storage";
-import { sendPaymentConfirmationEmail } from "./email";
+import { sendPaymentConfirmationEmail, sendCancellationEmail } from "./email";
 
 const getStripe = (testMode = false) =>
   new Stripe(
@@ -334,6 +334,16 @@ export const appRouter = router({
         currentPeriodEnd: sub.currentPeriodEnd ?? undefined,
         cancelAtPeriodEnd: true,
       });
+      // Send cancellation confirmation email (non-blocking)
+      const user = ctx.user;
+      if (user.email && sub.currentPeriodEnd) {
+        sendCancellationEmail({
+          to: user.email,
+          name: user.name || "Usuario",
+          accessUntilDate: sub.currentPeriodEnd,
+          reactivateUrl: "https://editpdf.online/es/dashboard?tab=billing",
+        }).catch((err: unknown) => console.error("[Email] Cancellation email failed:", err));
+      }
       return { success: true };
     }),
 

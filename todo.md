@@ -344,3 +344,4 @@
 - [ ] Página pública de cancelación de suscripción
 - [ ] Email de confirmación automático post-pago
 - [ ] Términos actualizados con sección de suscripción y cargos recurrentes
+- [x] Email de confirmación de cancelación de suscripción con fecha de acceso y enlace de reactivación
