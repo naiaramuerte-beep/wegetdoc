@@ -131,7 +131,7 @@ export default function Footer() {
                 { href: "/privacy", label: "Política de privacidad" },
                 { href: "/cookies", label: "Política de cookies" },
                 { href: "/gdpr", label: "RGPD" },
-                { href: "/unsubscribe", label: "Cancelar suscripción" },
+                { href: "/cancelar-suscripcion", label: "Cancelar suscripción" },
               ].map((link) => (
                 <li key={link.href}>
                   <a

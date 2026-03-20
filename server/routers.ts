@@ -55,6 +55,7 @@ import {
   deleteBlogPost,
 } from "./db";
 import { storagePut } from "./storage";
+import { sendPaymentConfirmationEmail } from "./email";
 
 const getStripe = (testMode = false) =>
   new Stripe(
@@ -445,6 +446,22 @@ export const appRouter = router({
           cancelAtPeriodEnd: false,
         });
 
+        // Send confirmation email (non-blocking)
+        if (user.email) {
+          sendPaymentConfirmationEmail({
+            to: user.email,
+            name: user.name || "Usuario",
+            trialEndDate: trialEnd,
+            cancelUrl: "https://editpdf.online/cancelar-suscripcion",
+          }).catch((err) => console.error("[Email] Confirmation email failed:", err));
+        }
+        // Notify owner of new subscription
+        import("./_core/notification").then(({ notifyOwner }) => {
+          notifyOwner({
+            title: "\uD83D\uDCB3 Nuevo pago \u2014 editPDF",
+            content: `Usuario: ${user.name || "An\u00F3nimo"} (${user.email || "sin email"})\nPlan: Trial 7 d\u00EDas \u2192 49,90\u20AC/mes\nFin de prueba: ${trialEnd.toLocaleDateString("es-ES")}`,
+          }).catch(() => {});
+        }).catch(() => {});
         return { success: true, subscriptionId: subscription.id };
       }),
 

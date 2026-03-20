@@ -337,3 +337,10 @@
 
 ## Indicador de progreso en checkout
 - [x] Mostrar pasos animados durante el pago: "Verificando tarjeta" → "Activando suscripción" → "Guardando documento..."
+
+## Cumplimiento Stripe (anti-ban)
+- [ ] Texto de autorización de cargo recurrente en el botón de pago
+- [ ] Enlace "Cancelar suscripción" en el footer (sin login)
+- [ ] Página pública de cancelación de suscripción
+- [ ] Email de confirmación automático post-pago
+- [ ] Términos actualizados con sección de suscripción y cargos recurrentes
