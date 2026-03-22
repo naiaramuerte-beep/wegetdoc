@@ -3,7 +3,7 @@
    Dark hero + social proof + urgency + benefits
    ============================================================= */
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
@@ -48,6 +48,25 @@ export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fake active users counter — fluctuates between 120K and 145K
+  const [activeUsers, setActiveUsers] = useState(127843);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveUsers(prev => {
+        const delta = Math.floor(Math.random() * 200) - 80; // -80 to +120
+        const next = prev + delta;
+        // Clamp between 120000 and 145000
+        return Math.min(145000, Math.max(120000, next));
+      });
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const formatUsers = (n: number) => {
+    if (n >= 1000) return (n / 1000).toFixed(1).replace('.0', '') + 'K';
+    return n.toString();
+  };
   const { setPendingFile, setPendingTool } = usePdfFile();
   const { lang, t } = useLanguage();
   const [, navigate] = useLocation();
@@ -194,9 +213,9 @@ export default function Home() {
           {/* Trust badges row */}
           <div className="flex flex-wrap justify-center gap-3 mb-8">
             {[
-              { icon: Star, text: t.hero_trust_rating, color: "oklch(0.85 0.15 80)" },
-              { icon: Users, text: t.hero_trust_users, color: "oklch(0.75 0.10 260)" },
-              { icon: CheckCircle2, text: t.hero_trust_free, color: "oklch(0.75 0.15 145)" },
+              { icon: null, text: t.hero_trust_rating, iconColor: "#00B67A", textColor: "#00B67A" },
+              { icon: Users, text: t.hero_trust_users, iconColor: "oklch(0.75 0.10 260)", textColor: "oklch(0.85 0.01 250)" },
+              { icon: CheckCircle2, text: t.hero_badge_instant, iconColor: "oklch(0.75 0.15 145)", textColor: "oklch(0.85 0.01 250)" },
             ].map((badge, i) => (
               <div
                 key={i}
@@ -204,11 +223,11 @@ export default function Home() {
                 style={{
                   backgroundColor: "oklch(1 0 0 / 0.07)",
                   border: "1px solid oklch(1 0 0 / 0.12)",
-                  color: badge.color,
+                  color: badge.textColor,
                   fontFamily: "'DM Sans', sans-serif",
                 }}
               >
-                <badge.icon className="w-4 h-4" />
+                {badge.icon && <badge.icon className="w-4 h-4" style={{ color: badge.iconColor }} />}
                 {badge.text}
               </div>
             ))}
@@ -249,14 +268,6 @@ export default function Home() {
               className="hidden"
               onChange={handleFileInput}
             />
-
-            {/* Urgency line above drop zone */}
-            <p
-              className="text-center text-sm mb-3 font-medium"
-              style={{ color: "oklch(0.75 0.15 145)", fontFamily: "'DM Sans', sans-serif" }}
-            >
-              ✓ {t.urgency_trial}
-            </p>
 
             <div
               onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
@@ -316,7 +327,7 @@ export default function Home() {
 
               {/* Feature badges */}
               <div className="flex flex-wrap justify-center gap-2">
-                {[t.hero_badge_free, t.hero_badge_no_card, t.hero_badge_instant].map((badge, i) => (
+                {[t.hero_badge_free, t.hero_badge_no_card].map((badge, i) => (
                   <span
                     key={i}
                     className="flex items-center gap-1 text-xs px-3 py-1 rounded-full font-medium"
@@ -330,18 +341,24 @@ export default function Home() {
                     {badge}
                   </span>
                 ))}
+                {/* Animated active users counter */}
+                <span
+                  className="flex items-center gap-1 text-xs px-3 py-1 rounded-full font-medium"
+                  style={{
+                    backgroundColor: "oklch(1 0 0 / 0.08)",
+                    color: "oklch(0.75 0.08 260)",
+                    border: "1px solid oklch(1 0 0 / 0.10)",
+                  }}
+                >
+                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse inline-block" />
+                  {formatUsers(activeUsers)} {t.hero_users_now ?? "active users now"}
+                </span>
               </div>
 
               <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>{t.hero_max_size_detail}</p>
             </div>
 
-            {/* Urgency line below */}
-            <p
-              className="text-center text-xs mt-3"
-              style={{ color: "oklch(0.55 0.03 250)", fontFamily: "'DM Sans', sans-serif" }}
-            >
-              {t.urgency_then}
-            </p>
+
           </div>
         </div>
 
@@ -738,13 +755,7 @@ export default function Home() {
           >
             {t.cta_subtitle}
           </p>
-          {/* Urgency line */}
-          <p
-            className="text-sm mb-8 font-medium"
-            style={{ color: "oklch(0.75 0.15 145)" }}
-          >
-            ✓ {t.urgency_trial}
-          </p>
+
           <button
             className="inline-flex items-center gap-2 px-10 py-4 rounded-xl font-bold text-white text-base transition-all duration-200 shadow-lg"
             style={{
@@ -767,7 +778,7 @@ export default function Home() {
             <ArrowRight className="w-5 h-5" />
           </button>
           <p className="text-xs mt-4" style={{ color: "oklch(0.50 0.02 250)" }}>
-            {t.urgency_then}
+            {t.hero_max_size_detail}
           </p>
         </div>
       </section>

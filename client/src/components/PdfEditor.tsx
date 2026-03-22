@@ -482,18 +482,40 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTool, currentPage, scale, pdfDoc]);
 
-  // Handle file drop / select
-  const handleFile = useCallback((f: File) => {
+  // Handle file drop / select — auto-converts non-PDF files to PDF via server
+  const handleFile = useCallback(async (f: File) => {
     const isPdf = f.name.toLowerCase().endsWith(".pdf") || f.type === "application/pdf";
-    if (!isPdf) {
-      // Non-PDF files: show a friendly message and don't try to load as PDF
-      toast.error(t.editor_toast_only_pdf ?? "Please upload a PDF file. To convert other formats, use the conversion tools.");
+    if (isPdf) {
+      setFile(f);
+      loadPdf(f);
+      toast.success(t.editor_toast_pdf_loaded ?? "PDF loaded successfully");
       return;
     }
-    setFile(f);
-    loadPdf(f);
-    toast.success(t.editor_toast_pdf_loaded ?? "PDF loaded successfully");
-  }, [loadPdf]);
+    // Non-PDF: send to server for conversion
+    const toastId = toast.loading(t.editor_toast_converting ?? "Converting to PDF...");
+    try {
+      const formData = new FormData();
+      formData.append("file", f);
+      const resp = await fetch("/api/documents/convert-upload", { method: "POST", body: formData });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(err.error || "Conversion failed");
+      }
+      const { pdfBase64, name } = await resp.json();
+      // Convert base64 to Blob and load as PDF
+      const binary = atob(pdfBase64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const pdfBlob = new Blob([bytes], { type: "application/pdf" });
+      const pdfFile = new File([pdfBlob], name, { type: "application/pdf" });
+      setFile(pdfFile);
+      loadPdf(pdfFile);
+      toast.success(t.editor_toast_converted ?? "File converted to PDF successfully", { id: toastId });
+    } catch (err) {
+      toast.error(t.editor_toast_convert_error ?? "Could not convert file. Please try a PDF file.", { id: toastId });
+      console.error("[ConvertUpload]", err);
+    }
+  }, [loadPdf, t]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -1440,17 +1462,17 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.10)" }}>
           <FileText className="w-8 h-8" style={{ color: "oklch(0.55 0.22 260)" }} />
         </div>
-        <p className="text-lg font-semibold mb-1" style={{ color: "oklch(0.55 0.22 260)" }}>Arrastra tu archivo PDF aquí</p>
-        <p className="text-sm mb-4" style={{ color: "oklch(0.55 0.03 250)" }}>o</p>
+        <p className="text-lg font-semibold mb-1" style={{ color: "oklch(0.55 0.22 260)" }}>{t.hero_drag_here}</p>
+        <p className="text-sm mb-4" style={{ color: "oklch(0.55 0.03 250)" }}>{t.editor_or ?? "o"}</p>
         <button
           className="px-6 py-2.5 rounded-lg text-white font-semibold text-sm"
           style={{ backgroundColor: "oklch(0.18 0.04 250)" }}
           onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
         >
-          <Upload className="w-4 h-4 inline mr-2" />Subir PDF para editar
+          <Upload className="w-4 h-4 inline mr-2" />{t.hero_upload_btn}
         </button>
-        <p className="text-xs mt-3" style={{ color: "oklch(0.60 0.02 250)" }}>Hasta 100 MB</p>
-        <input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+        <p className="text-xs mt-3" style={{ color: "oklch(0.60 0.02 250)" }}>{t.hero_max_size}</p>
+        <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.html,.txt" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
       </div>
     );
   }

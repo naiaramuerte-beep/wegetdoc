@@ -13,6 +13,7 @@ import { serveStatic, setupVite } from "./vite";
 import { getUserById, upsertSubscription, getBlogPosts, createDocument } from "../db";
 import { storagePut, storageGet } from "../storage";
 import { sdk } from "./sdk";
+import { convertToPdf, isConvertibleType, ACCEPTED_EXTENSIONS } from "../convertToPdf";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -237,6 +238,27 @@ ${allUrls.map(u => `  <url>
     } catch (err) {
       console.error("[ClaimTemp] Error:", err);
       res.status(500).json({ error: "Claim failed" });
+    }
+  });
+
+  // ── REST endpoint for file conversion + upload (any supported type → PDF) ──────
+  const convertUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
+  app.post("/api/documents/convert-upload", convertUpload.single("file"), async (req, res) => {
+    try {
+      const file = req.file;
+      if (!file) { res.status(400).json({ error: "No file" }); return; }
+      const mimeType = file.mimetype || "application/octet-stream";
+      if (!isConvertibleType(mimeType)) {
+        res.status(415).json({ error: `Unsupported file type: ${mimeType}` }); return;
+      }
+      const { pdfBuffer, converted } = await convertToPdf(file.buffer, mimeType, file.originalname);
+      // Return the PDF as base64 so the frontend can load it directly
+      const base64 = pdfBuffer.toString("base64");
+      const originalName = file.originalname.replace(/\.[^.]+$/, ".pdf");
+      res.json({ success: true, pdfBase64: base64, name: originalName, converted });
+    } catch (err) {
+      console.error("[ConvertUpload] Error:", err);
+      res.status(500).json({ error: `Conversion failed: ${(err as Error).message}` });
     }
   });
 
