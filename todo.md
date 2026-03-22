@@ -363,3 +363,11 @@
 - [x] Añadir nuevas claves i18n para textos de conversión en 10 idiomas
 - [x] Sección de beneficios orientada a valor (no features técnicas)
 - [x] Urgencia sutil y trust signals en el hero
+
+## Correcciones i18n y Pricing (Sesión actual - 22/03/2026)
+- [x] Corregir errores de sintaxis en i18n.ts (comillas tipográficas en faq_a7 en todos los idiomas)
+- [x] Actualizar página de Pricing para usar sistema i18n (useLanguage hook)
+- [x] Corregir precios en i18n.ts: 49,90 €/mes y 0,00 € trial en todos los idiomas
+- [x] Agregar traducciones de pricing_feature_*, pricing_faq_*, pricing_popular, etc. en 10 idiomas
+- [x] Agregar FAQ de cancelación de suscripción (faq_q7/faq_a7) en 10 idiomas
+- [x] Página de Pricing completamente i18n-ready

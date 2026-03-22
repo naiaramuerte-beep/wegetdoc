@@ -1,6 +1,7 @@
 /* =============================================================
    PDFPro Pricing Page — Deep Navy Pro design
    Two plans: Trial + Monthly, with feature comparison table
+   Fully i18n-ready using LanguageContext
    ============================================================= */
 
 import { useState } from "react";
@@ -11,55 +12,56 @@ import Footer from "@/components/Footer";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-
-const features = [
-  { name: "Convertir sin límites", trial: false, monthly: true },
-  { name: "Editar sin límites", trial: false, monthly: true },
-  { name: "Organizar en carpetas", trial: false, monthly: true },
-  { name: "Almacenar PDFs más de 24 horas", trial: false, monthly: true },
-  { name: "Colaborar con tu equipo", trial: false, monthly: true },
-  { name: "Crear notas", trial: true, monthly: true },
-  { name: "Gestionar páginas", trial: true, monthly: true },
-  { name: "Firmar documentos", trial: true, monthly: true },
-  { name: "Editar imágenes", trial: true, monthly: true },
-  { name: "Editar objetos y formas", trial: true, monthly: true },
-  { name: "Resaltar textos", trial: true, monthly: true },
-  { name: "Proteger tus documentos", trial: true, monthly: true },
-];
-
-const pricingFaqs = [
-  {
-    question: "¿Puedo probar todas las funciones durante el período de prueba?",
-    answer:
-      "Durante el período de prueba de 7 días tendrás acceso a las funciones básicas de edición. Para acceder a todas las funciones sin límites, como conversiones ilimitadas y almacenamiento extendido, necesitarás el plan mensual.",
-  },
-  {
-    question: "¿Qué ocurre después de que terminen los 7 días de prueba?",
-    answer:
-      "Al finalizar el período de prueba, tu plan se renovará automáticamente al plan mensual. Puedes cancelar en cualquier momento antes de que finalice el período de prueba para evitar el cargo.",
-  },
-  {
-    question: "¿Hay algún compromiso con la suscripción mensual?",
-    answer:
-      "No, no hay ningún compromiso a largo plazo. Puedes cancelar tu suscripción mensual en cualquier momento y seguirás teniendo acceso hasta el final del período de facturación actual.",
-  },
-  {
-    question: "¿Puedo cancelar mi suscripción en cualquier momento?",
-    answer:
-      "Sí, puedes cancelar tu suscripción en cualquier momento desde la configuración de tu cuenta. No hay penalizaciones por cancelación.",
-  },
-  {
-    question: "¿Puedo solicitar un reembolso por una suscripción no utilizada?",
-    answer:
-      "Evaluamos las solicitudes de reembolso caso por caso. Si tienes algún problema con tu suscripción, contacta con nuestro equipo de soporte y haremos todo lo posible para ayudarte.",
-  },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Pricing() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
+  const { t } = useLanguage();
   const createCheckout = trpc.subscription.createCheckout.useMutation();
+
+  const features = [
+    { name: t.pricing_feature_convert ?? "Unlimited conversions", trial: false, monthly: true },
+    { name: t.pricing_feature_edit ?? "Unlimited editing", trial: false, monthly: true },
+    { name: t.pricing_feature_folders ?? "Organize in folders", trial: false, monthly: true },
+    { name: t.pricing_feature_storage ?? "Store PDFs over 24 hours", trial: false, monthly: true },
+    { name: t.pricing_feature_team ?? "Team collaboration", trial: false, monthly: true },
+    { name: t.pricing_feature_notes ?? "Create notes", trial: true, monthly: true },
+    { name: t.pricing_feature_pages ?? "Manage pages", trial: true, monthly: true },
+    { name: t.pricing_feature_sign ?? "Sign documents", trial: true, monthly: true },
+    { name: t.pricing_feature_images ?? "Edit images", trial: true, monthly: true },
+    { name: t.pricing_feature_shapes ?? "Edit objects & shapes", trial: true, monthly: true },
+    { name: t.pricing_feature_highlight ?? "Highlight text", trial: true, monthly: true },
+    { name: t.pricing_feature_protect ?? "Protect documents", trial: true, monthly: true },
+  ];
+
+  const pricingFaqs = [
+    {
+      question: t.pricing_faq_q1 ?? "Can I try all features during the trial?",
+      answer: t.pricing_faq_a1 ?? "During the 7-day trial you have access to basic editing features. For unlimited access, you'll need the monthly plan.",
+    },
+    {
+      question: t.pricing_faq_q2 ?? "What happens after the 7-day trial?",
+      answer: t.pricing_faq_a2 ?? "After the trial, your plan automatically renews to the monthly plan. You can cancel anytime before the trial ends.",
+    },
+    {
+      question: t.pricing_faq_q3 ?? "Is there any commitment with the monthly subscription?",
+      answer: t.pricing_faq_a3 ?? "No long-term commitment. Cancel your monthly subscription anytime and you'll retain access until the end of the billing period.",
+    },
+    {
+      question: t.pricing_faq_q4 ?? "Can I cancel my subscription at any time?",
+      answer: t.pricing_faq_a4 ?? "Yes, you can cancel anytime from your account settings. No cancellation penalties.",
+    },
+    {
+      question: t.pricing_faq_q5 ?? "Can I request a refund for an unused subscription?",
+      answer: t.pricing_faq_a5 ?? "We evaluate refund requests case by case. Contact our support team and we'll do our best to help.",
+    },
+    {
+      question: t.faq_q7,
+      answer: t.faq_a7,
+    },
+  ];
 
   const handleSubscribe = async (plan: "trial" | "monthly") => {
     if (!isAuthenticated) {
@@ -73,11 +75,11 @@ export default function Pricing() {
         origin: window.location.origin,
       });
       if (result.url) {
-        toast.info("Redirigiendo al pago seguro...");
+        toast.info(t.pricing_redirecting ?? "Redirecting to secure payment...");
         window.open(result.url, "_blank");
       }
     } catch {
-      toast.error("Error al procesar el pago. Inténtalo de nuevo.");
+      toast.error(t.pricing_error ?? "Error processing payment. Please try again.");
     } finally {
       setLoadingPlan(null);
     }
@@ -94,13 +96,13 @@ export default function Pricing() {
             className="text-4xl md:text-5xl font-extrabold mb-4"
             style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
           >
-            Elige el plan que mejor se adapte a ti
+            {t.pricing_title}
           </h1>
           <p
             className="text-base"
             style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
           >
-            Comienza gratis y actualiza cuando lo necesites
+            {t.pricing_subtitle}
           </p>
         </div>
       </section>
@@ -129,7 +131,7 @@ export default function Pricing() {
                   }}
                 >
                   <Zap className="w-3 h-3" />
-                  Más popular
+                  {t.pricing_popular ?? "Most popular"}
                 </span>
               </div>
 
@@ -144,7 +146,7 @@ export default function Pricing() {
                   className="text-xl font-bold"
                   style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
                 >
-                  Plan de prueba
+                  {t.pricing_trial_name}
                 </h2>
               </div>
 
@@ -153,13 +155,13 @@ export default function Pricing() {
                   className="text-4xl font-extrabold"
                   style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
                 >
-                  0,00 €
+                  {t.pricing_trial_price}
                 </span>
                 <span
                   className="text-sm ml-1"
                   style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
                 >
-                  / 7 días gratis
+                  / {t.pricing_trial_period}
                 </span>
               </div>
 
@@ -167,7 +169,7 @@ export default function Pricing() {
                 className="text-sm leading-relaxed mb-6 flex-1"
                 style={{ color: "oklch(0.45 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
               >
-                Accede gratis durante 7 días. Sin cargo inicial. Después del período de prueba, el plan se renueva automáticamente a 49,90€/mes. Puedes cancelar en cualquier momento.
+                {t.pricing_trial_desc}
               </p>
 
               <button
@@ -185,7 +187,14 @@ export default function Pricing() {
                 onClick={() => handleSubscribe("trial")}
                 disabled={loadingPlan === "trial"}
               >
-                {loadingPlan === "trial" ? <><Loader2 className="w-4 h-4 animate-spin" /> Procesando...</> : "Empezar gratis 7 días"}
+                {loadingPlan === "trial" ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {t.paywall_processing}
+                  </span>
+                ) : (
+                  t.pricing_cta_trial
+                )}
               </button>
             </div>
 
@@ -209,7 +218,7 @@ export default function Pricing() {
                   className="text-xl font-bold"
                   style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
                 >
-                  Plan mensual
+                  {t.pricing_monthly_name}
                 </h2>
               </div>
 
@@ -218,13 +227,13 @@ export default function Pricing() {
                   className="text-4xl font-extrabold"
                   style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
                 >
-                  49,90 €
+                  {t.pricing_monthly_price}
                 </span>
                 <span
                   className="text-sm ml-1"
                   style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
                 >
-                  / mes
+                  / {t.pricing_monthly_period}
                 </span>
               </div>
 
@@ -232,13 +241,13 @@ export default function Pricing() {
                 className="text-sm mb-1"
                 style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
               >
-                Facturado mensualmente
+                {t.pricing_billed_monthly ?? "Billed monthly"}
               </p>
               <p
                 className="text-sm leading-relaxed mb-6 flex-1"
                 style={{ color: "oklch(0.45 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
               >
-                Se renovará automáticamente a menos que canceles la suscripción.
+                {t.pricing_monthly_desc}
               </p>
 
               <button
@@ -260,7 +269,14 @@ export default function Pricing() {
                 onClick={() => handleSubscribe("monthly")}
                 disabled={loadingPlan === "monthly"}
               >
-                {loadingPlan === "monthly" ? <><Loader2 className="w-4 h-4 animate-spin" /> Procesando...</> : "Suscribirse por 49,90 €/mes"}
+                {loadingPlan === "monthly" ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {t.paywall_processing}
+                  </span>
+                ) : (
+                  t.pricing_cta_monthly
+                )}
               </button>
             </div>
           </div>
@@ -277,7 +293,7 @@ export default function Pricing() {
             className="text-2xl md:text-3xl font-bold mb-8"
             style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
           >
-            Descubre qué incluye cada plan
+            {t.pricing_compare_title ?? "Discover what each plan includes"}
           </h2>
 
           <div
@@ -296,19 +312,19 @@ export default function Pricing() {
                 className="text-sm font-semibold"
                 style={{ color: "oklch(0.35 0.02 250)", fontFamily: "'Sora', sans-serif" }}
               >
-                Funciones principales
+                {t.pricing_features_col ?? "Main features"}
               </div>
               <div
                 className="text-sm font-semibold text-center"
                 style={{ color: "oklch(0.55 0.22 260)", fontFamily: "'Sora', sans-serif" }}
               >
-                Plan de prueba
+                {t.pricing_trial_name}
               </div>
               <div
                 className="text-sm font-semibold text-center"
                 style={{ color: "oklch(0.15 0.03 250)", fontFamily: "'Sora', sans-serif" }}
               >
-                Plan mensual
+                {t.pricing_monthly_name}
               </div>
             </div>
 
@@ -355,7 +371,7 @@ export default function Pricing() {
             className="text-2xl md:text-3xl font-bold mb-8"
             style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
           >
-            Preguntas frecuentes
+            {t.faq_title}
           </h2>
 
           <div className="space-y-3">
