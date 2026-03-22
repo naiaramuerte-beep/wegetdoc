@@ -303,6 +303,8 @@ export type TranslationKeys = {
   editor_toast_password_required: string;
   editor_toast_protecting: string;
   editor_toast_protect_error: string;
+  editor_toast_protected: string;
+  editor_toast_protect_timeout: string;
   editor_toast_converting: string;
   editor_toast_converted: string;
   editor_toast_convert_error: string;
@@ -566,6 +568,8 @@ export const translations: Translations = {
     editor_toast_password_required: "Introduce una contraseña",
     editor_toast_protecting: "Protegiendo PDF...",
     editor_toast_protect_error: "Error al proteger",
+    editor_toast_protected: "PDF protegido y descargado",
+    editor_toast_protect_timeout: "La protección tardó demasiado",
     editor_toast_converting: "Convirtiendo...",
     editor_toast_converted: "Página exportada",
     editor_toast_convert_error: "Error al convertir",
@@ -888,6 +892,8 @@ export const translations: Translations = {
     editor_toast_password_required: "Enter a password",
     editor_toast_protecting: "Protecting PDF...",
     editor_toast_protect_error: "Error protecting",
+    editor_toast_protected: "PDF protected and downloaded",
+    editor_toast_protect_timeout: "Protection timed out",
     editor_toast_converting: "Converting...",
     editor_toast_converted: "Page exported",
     editor_toast_convert_error: "Error converting",
@@ -1211,6 +1217,8 @@ export const translations: Translations = {
     editor_toast_password_required: "Entrez un mot de passe",
     editor_toast_protecting: "Protection du PDF...",
     editor_toast_protect_error: "Erreur lors de la protection",
+    editor_toast_protected: "PDF protégé et téléchargé",
+    editor_toast_protect_timeout: "La protection a expiré",
     editor_toast_converting: "Conversion...",
     editor_toast_converted: "Page exportée",
     editor_toast_convert_error: "Erreur lors de la conversion",
@@ -1534,6 +1542,8 @@ export const translations: Translations = {
     editor_toast_password_required: "Passwort eingeben",
     editor_toast_protecting: "PDF wird geschützt...",
     editor_toast_protect_error: "Fehler beim Schützen",
+    editor_toast_protected: "PDF geschützt und heruntergeladen",
+    editor_toast_protect_timeout: "Schutz hat zu lange gedauert",
     editor_toast_converting: "Konvertierung...",
     editor_toast_converted: "Seite exportiert",
     editor_toast_convert_error: "Fehler beim Konvertieren",
@@ -1857,6 +1867,8 @@ export const translations: Translations = {
     editor_toast_password_required: "Digite uma senha",
     editor_toast_protecting: "Protegendo PDF...",
     editor_toast_protect_error: "Erro ao proteger",
+    editor_toast_protected: "PDF protegido e baixado",
+    editor_toast_protect_timeout: "Proteção demorou muito",
     editor_toast_converting: "Convertendo...",
     editor_toast_converted: "Página exportada",
     editor_toast_convert_error: "Erro ao converter",
@@ -2180,6 +2192,8 @@ export const translations: Translations = {
     editor_toast_password_required: "Inserisci una password",
     editor_toast_protecting: "Protezione PDF...",
     editor_toast_protect_error: "Errore nella protezione",
+    editor_toast_protected: "PDF protetto e scaricato",
+    editor_toast_protect_timeout: "La protezione ha impiegato troppo",
     editor_toast_converting: "Conversione...",
     editor_toast_converted: "Pagina esportata",
     editor_toast_convert_error: "Errore nella conversione",
@@ -2503,6 +2517,8 @@ export const translations: Translations = {
     editor_toast_password_required: "Voer een wachtwoord in",
     editor_toast_protecting: "PDF beveiligen...",
     editor_toast_protect_error: "Fout bij beveiligen",
+    editor_toast_protected: "PDF beveiligd en gedownload",
+    editor_toast_protect_timeout: "Beveiliging duurde te lang",
     editor_toast_converting: "Converteren...",
     editor_toast_converted: "Pagina geëxporteerd",
     editor_toast_convert_error: "Fout bij converteren",
@@ -2826,6 +2842,8 @@ export const translations: Translations = {
     editor_toast_password_required: "Wprowadź hasło",
     editor_toast_protecting: "Zabezpieczanie PDF...",
     editor_toast_protect_error: "Błąd podczas zabezpieczania",
+    editor_toast_protected: "PDF zabezpieczony i pobrany",
+    editor_toast_protect_timeout: "Zabezpieczanie trwało zbyt długo",
     editor_toast_converting: "Konwersja...",
     editor_toast_converted: "Strona wyeksportowana",
     editor_toast_convert_error: "Błąd podczas konwersji",
@@ -3149,6 +3167,8 @@ export const translations: Translations = {
     editor_toast_password_required: "Введите пароль",
     editor_toast_protecting: "Защита PDF...",
     editor_toast_protect_error: "Ошибка при защите",
+    editor_toast_protected: "PDF защищён и скачан",
+    editor_toast_protect_timeout: "Защита заняла слишком много времени",
     editor_toast_converting: "Конвертация...",
     editor_toast_converted: "Страница экспортирована",
     editor_toast_convert_error: "Ошибка при конвертации",
@@ -3472,6 +3492,8 @@ export const translations: Translations = {
     editor_toast_password_required: "请输入密码",
     editor_toast_protecting: "正在保护PDF...",
     editor_toast_protect_error: "保护时出错",
+    editor_toast_protected: "PDF已保护并下载",
+    editor_toast_protect_timeout: "保护超时",
     editor_toast_converting: "转换中...",
     editor_toast_converted: "页面已导出",
     editor_toast_convert_error: "转换时出错",

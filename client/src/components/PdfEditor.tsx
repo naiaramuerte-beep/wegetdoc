@@ -1180,10 +1180,53 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     if (password !== confirmPassword) { toast.error(t.editor_protect_passwords_mismatch ?? "Passwords do not match"); return; }
     toast.loading(t.editor_toast_protecting ?? "Protecting PDF...", { id: "protect" });
     try {
-      // pdf-lib doesn't support encryption natively; inform user
-      toast.info(t.editor_toast_protect_error ?? "Password protection requires server processing. Coming soon.", { id: "protect" });
-    } catch {
-      toast.error(t.editor_toast_protect_error ?? "Error protecting", { id: "protect" });
+      // 1. Get final PDF bytes (with all annotations/edits applied)
+      const finalBytes = await buildAnnotatedPdf();
+      if (!finalBytes) { toast.error(t.editor_toast_protect_error ?? "Error protecting", { id: "protect" }); return; }
+
+      // 2. Send to server for AES encryption via pikepdf
+      const formData = new FormData();
+      const blob = new Blob([finalBytes.buffer as ArrayBuffer], { type: "application/pdf" });
+      const filename = file?.name ?? "document.pdf";
+      formData.append("file", blob, filename);
+      formData.append("password", password);
+      formData.append("algo", encryptionAlgo);
+      formData.append("filename", filename);
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 60000);
+      let resp: Response;
+      try {
+        resp = await fetch("/api/documents/protect", {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(err.error || "Server error");
+      }
+
+      // 3. Download the protected PDF
+      const protectedBlob = await resp.blob();
+      const url = URL.createObjectURL(protectedBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename.replace(/\.pdf$/i, "") + "_protected.pdf";
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast.success(t.editor_toast_protected ?? "PDF protected and downloaded", { id: "protect" });
+    } catch (err) {
+      const msg = err instanceof Error && err.name === "AbortError"
+        ? (t.editor_toast_protect_timeout ?? "Protection timed out")
+        : (t.editor_toast_protect_error ?? "Error protecting PDF");
+      toast.error(msg, { id: "protect" });
     }
   };
 

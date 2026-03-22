@@ -406,3 +406,8 @@
 - [x] Corregir: pdfjs worker usa local (Vite) en lugar de CDN externo para evitar n.toHex error
 - [x] Corregir: ACCEPTED_MIME_TYPES/EXTENSIONS movidos fuera del componente Home (evita recreación en cada render)
 - [x] Corregir: email de confirmación de pago mostraba 0,50€ → corregido a 0,00€
+
+## Nuevas tareas completadas (22/03/2026 v2)
+- [x] FAQ cancelación: añadida pregunta faq_q7/faq_a7 en Home y Pricing (paso a paso: login → Facturación → Cancelar + contacto si no pueden acceder)
+- [x] Protección con contraseña: implementado cifrado real con pikepdf (AES-256, AES-128, ARC4) en el servidor
+- [x] Pincel confirmado funcionando en móvil por el usuario

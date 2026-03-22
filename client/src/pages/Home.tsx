@@ -132,6 +132,7 @@ export default function Home() {
     { question: t.faq_q4, answer: t.faq_a4 },
     { question: t.faq_q5, answer: t.faq_a5 },
     { question: t.faq_q6, answer: t.faq_a6 },
+    { question: t.faq_q7, answer: t.faq_a7 },
   ];
 
   // ─── Benefits data ────────────────────────────────────────

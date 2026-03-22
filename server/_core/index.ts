@@ -311,6 +311,68 @@ ${allUrls.map(u => `  <url>
     }
   });
 
+  // ── REST endpoint for PDF password protection (uses pikepdf via Python) ────────
+  const protectUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
+  app.post("/api/documents/protect", protectUpload.single("file"), async (req, res) => {
+    try {
+      const file = req.file;
+      if (!file) { res.status(400).json({ error: "No file" }); return; }
+      const password = req.body.password as string;
+      const algo = (req.body.algo as string) || "256-AES";
+      if (!password) { res.status(400).json({ error: "Password required" }); return; }
+
+      // Map algorithm to pikepdf R value:
+      // R=4 → 128-bit AES, R=6 → 256-bit AES, R=3 → 128-bit RC4 (ARC-FOUR)
+      let R: number;
+      if (algo === "128-AES") R = 4;
+      else if (algo === "256-AES") R = 6;
+      else R = 3; // 128-ARC4
+
+      const { execFile } = await import("child_process");
+      const { promisify } = await import("util");
+      const { tmpdir } = await import("os");
+      const { join } = await import("path");
+      const { writeFile, readFile, unlink } = await import("fs/promises");
+      const execFileAsync = promisify(execFile);
+
+      const tmpIn = join(tmpdir(), `protect_in_${Date.now()}.pdf`);
+      const tmpOut = join(tmpdir(), `protect_out_${Date.now()}.pdf`);
+      const tmpPy = join(tmpdir(), `protect_${Date.now()}.py`);
+
+      await writeFile(tmpIn, file.buffer);
+      await writeFile(tmpPy, [
+        "import pikepdf, sys",
+        "pdf = pikepdf.open(sys.argv[1])",
+        "pdf.save(sys.argv[2], encryption=pikepdf.Encryption(owner=sys.argv[3] + '_owner', user=sys.argv[3], R=int(sys.argv[4])))",
+        "pdf.close()",
+      ].join("\n"));
+
+      // Build a clean environment without PYTHONHOME/PYTHONPATH so that
+      // the system python3 (/usr/bin/python3.11) uses its own site-packages
+      // where pikepdf is installed (not the Manus agent's Python 3.13 venv).
+      const cleanEnv = { ...process.env };
+      delete cleanEnv.PYTHONHOME;
+      delete cleanEnv.PYTHONPATH;
+      delete cleanEnv.NUITKA_PYTHONPATH;
+      try {
+        await execFileAsync("python3", [tmpPy, tmpIn, tmpOut, password, String(R)], { timeout: 30000, env: cleanEnv });
+        const protectedBytes = await readFile(tmpOut);
+        const originalName = (req.body.filename as string) || file.originalname || "document.pdf";
+        const protectedName = originalName.replace(/\.pdf$/i, "") + "_protected.pdf";
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `attachment; filename="${protectedName}"`);
+        res.send(protectedBytes);
+      } finally {
+        unlink(tmpIn).catch(() => {});
+        unlink(tmpOut).catch(() => {});
+        unlink(tmpPy).catch(() => {});
+      }
+    } catch (err) {
+      console.error("[Protect] Error:", err);
+      res.status(500).json({ error: "Failed to protect PDF" });
+    }
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",
