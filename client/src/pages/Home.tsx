@@ -1,6 +1,6 @@
 /* =============================================================
-   PDFPro Home Page — Deep Navy Pro design
-   Hero integrates the real PdfEditor component
+   editPDF Home Page — Conversion-Optimised Design
+   Dark hero + social proof + urgency + benefits
    ============================================================= */
 
 import { useState, useRef, useCallback } from "react";
@@ -21,6 +21,12 @@ import {
   Download,
   Edit3,
   Layers,
+  Shield,
+  Zap,
+  Monitor,
+  Star,
+  Users,
+  CheckCircle2,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -46,7 +52,7 @@ export default function Home() {
   const { lang, t } = useLanguage();
   const [, navigate] = useLocation();
 
-  // ─── Tool definitions (inside component to use t.) ─────────
+  // ─── Tool definitions ─────────────────────────────────────
   const editAndSignTools = [
     { icon: Type, label: t.tool_edit_text, tool: "text" },
     { icon: PenTool, label: t.tool_add_sign, tool: "sign" },
@@ -80,7 +86,7 @@ export default function Home() {
     { id: "convertToPdf", label: t.tools_tab_to_pdf, tools: convertToPdfTools },
   ];
 
-  // ─── FAQ data (inside component to use t.) ─────────────────
+  // ─── FAQ data ─────────────────────────────────────────────
   const faqs = [
     { question: t.faq_q1, answer: t.faq_a1 },
     { question: t.faq_q2, answer: t.faq_a2 },
@@ -90,7 +96,15 @@ export default function Home() {
     { question: t.faq_q6, answer: t.faq_a6 },
   ];
 
-  // ─── Features data (inside component to use t.) ────────────
+  // ─── Benefits data ────────────────────────────────────────
+  const benefits = [
+    { icon: Zap, title: t.benefit1_title, desc: t.benefit1_desc },
+    { icon: Shield, title: t.benefit2_title, desc: t.benefit2_desc },
+    { icon: Edit3, title: t.benefit3_title, desc: t.benefit3_desc },
+    { icon: Monitor, title: t.benefit4_title, desc: t.benefit4_desc },
+  ];
+
+  // ─── Features data ────────────────────────────────────────
   const features = [
     { title: t.feature1_title, subtitle: t.feature1_subtitle, description: t.feature1_desc, image: FEATURE_IMAGES[0] },
     { title: t.feature2_title, subtitle: t.feature2_subtitle, description: t.feature2_desc, image: FEATURE_IMAGES[1] },
@@ -101,14 +115,11 @@ export default function Home() {
   const activeCategory = allToolsCategories.find((c) => c.id === activeTab)!;
 
   const openEditor = useCallback((file: File, tool?: string) => {
-    // Validate that the file is a PDF
     const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
     if (!isPdf) {
-      // Show error without navigating - user stays on home page
       import('sonner').then(({ toast }) => {
         toast.error('Solo se admiten archivos PDF. Por favor, sube un archivo .pdf');
       });
-      // Reset file input so user can try again
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
@@ -129,7 +140,6 @@ export default function Home() {
     if (f) openEditor(f);
   };
 
-  // Tools that don't require a pre-existing PDF file
   const FILE_FREE_TOOLS = ["jpg-to-pdf", "png-to-pdf", "word-to-pdf", "excel-to-pdf", "ppt-to-pdf"];
 
   const scrollToEditor = (tool?: string) => {
@@ -145,30 +155,75 @@ export default function Home() {
     }
   };
 
+  // Navy brand colors
+  const navy = "oklch(0.18 0.04 250)";
+  const navyMid = "oklch(0.22 0.05 250)";
+  const navyLight = "oklch(0.28 0.05 250)";
+  const blue = "oklch(0.55 0.22 260)";
+  const blueLight = "oklch(0.62 0.18 280)";
+
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "oklch(0.98 0.005 250)" }}>
       <Navbar />
 
-      {/* ── HERO ───────────────────────────────────────────── */}
-      <section className="relative py-12 md:py-20 overflow-hidden">
+      {/* ── HERO — dark background, conversion-focused ─────── */}
+      <section
+        className="relative overflow-hidden"
+        style={{ backgroundColor: navy }}
+      >
+        {/* Background texture */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background:
-              "radial-gradient(ellipse at 50% 100%, oklch(0.55 0.22 260 / 0.10) 0%, transparent 65%)",
+            backgroundImage: `radial-gradient(circle at 20% 50%, oklch(0.55 0.22 260 / 0.12) 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, oklch(0.55 0.22 260 / 0.08) 0%, transparent 40%),
+              radial-gradient(circle at 60% 80%, oklch(0.35 0.10 260 / 0.10) 0%, transparent 40%)`,
+          }}
+        />
+        {/* Subtle grid pattern */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-5"
+          style={{
+            backgroundImage: `linear-gradient(oklch(0.8 0.05 260) 1px, transparent 1px),
+              linear-gradient(90deg, oklch(0.8 0.05 260) 1px, transparent 1px)`,
+            backgroundSize: "60px 60px",
           }}
         />
 
-        <div className="container relative z-10">
-          <div className="text-center max-w-3xl mx-auto mb-8">
+        <div className="container relative z-10 py-14 md:py-20">
+          {/* Trust badges row */}
+          <div className="flex flex-wrap justify-center gap-3 mb-8">
+            {[
+              { icon: Star, text: t.hero_trust_rating, color: "oklch(0.85 0.15 80)" },
+              { icon: Users, text: t.hero_trust_users, color: "oklch(0.75 0.10 260)" },
+              { icon: CheckCircle2, text: t.hero_trust_free, color: "oklch(0.75 0.15 145)" },
+            ].map((badge, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium"
+                style={{
+                  backgroundColor: "oklch(1 0 0 / 0.07)",
+                  border: "1px solid oklch(1 0 0 / 0.12)",
+                  color: badge.color,
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                <badge.icon className="w-4 h-4" />
+                {badge.text}
+              </div>
+            ))}
+          </div>
+
+          {/* Main headline */}
+          <div className="text-center max-w-4xl mx-auto mb-10">
             <h1
-              className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-4"
-              style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
+              className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-5"
+              style={{ fontFamily: "'Sora', sans-serif", color: "white" }}
             >
               {t.hero_title_1}{" "}
               <span
                 style={{
-                  background: "linear-gradient(135deg, oklch(0.55 0.22 260), oklch(0.62 0.18 280))",
+                  background: `linear-gradient(135deg, ${blue}, ${blueLight})`,
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
@@ -178,15 +233,15 @@ export default function Home() {
               </span>
             </h1>
             <p
-              className="text-lg md:text-xl"
-              style={{ color: "oklch(0.45 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+              className="text-lg md:text-xl max-w-2xl mx-auto"
+              style={{ color: "oklch(0.80 0.03 250)", fontFamily: "'DM Sans', sans-serif" }}
             >
               {t.hero_subtitle}
             </p>
           </div>
 
           {/* ── DROP ZONE ── */}
-          <div id="editor-section" className="max-w-2xl mx-auto">
+          <div id="editor-section" className="max-w-xl mx-auto">
             <input
               ref={fileInputRef}
               type="file"
@@ -194,50 +249,153 @@ export default function Home() {
               className="hidden"
               onChange={handleFileInput}
             />
+
+            {/* Urgency line above drop zone */}
+            <p
+              className="text-center text-sm mb-3 font-medium"
+              style={{ color: "oklch(0.75 0.15 145)", fontFamily: "'DM Sans', sans-serif" }}
+            >
+              ✓ {t.urgency_trial}
+            </p>
+
             <div
               onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
               onDragLeave={() => setIsDraggingOver(false)}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className="cursor-pointer rounded-3xl flex flex-col items-center justify-center gap-4 py-12 px-8 transition-all duration-200"
+              className="cursor-pointer rounded-2xl flex flex-col items-center justify-center gap-5 py-10 px-8 transition-all duration-300"
               style={{
-                border: `2px dashed ${isDraggingOver ? "oklch(0.55 0.22 260)" : "oklch(0.80 0.05 260)"}`,
+                border: `2px dashed ${isDraggingOver ? blue : "oklch(0.55 0.22 260 / 0.50)"}`,
                 backgroundColor: isDraggingOver
-                  ? "oklch(0.55 0.22 260 / 0.06)"
-                  : "oklch(1 0 0)",
-                boxShadow: "0 4px 32px oklch(0.18 0.04 250 / 0.06)",
+                  ? "oklch(0.55 0.22 260 / 0.12)"
+                  : "oklch(1 0 0 / 0.05)",
+                boxShadow: isDraggingOver
+                  ? `0 0 40px oklch(0.55 0.22 260 / 0.30)`
+                  : `0 0 0px transparent`,
               }}
             >
+              {/* Animated icon */}
               <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.10)" }}
+                className="w-20 h-20 rounded-2xl flex items-center justify-center"
+                style={{
+                  backgroundColor: "oklch(0.55 0.22 260 / 0.15)",
+                  border: "1px solid oklch(0.55 0.22 260 / 0.30)",
+                  animation: "pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+                }}
               >
-                <FileText className="w-8 h-8" style={{ color: "oklch(0.55 0.22 260)" }} />
+                <FileText className="w-10 h-10" style={{ color: blue }} />
               </div>
+
               <div className="text-center">
-                <p className="font-semibold text-lg" style={{ color: "oklch(0.55 0.22 260)" }}>
+                <p className="font-bold text-xl mb-1" style={{ color: "white", fontFamily: "'Sora', sans-serif" }}>
                   {t.hero_drag_here}
                 </p>
-                <p className="text-sm mt-1" style={{ color: "oklch(0.55 0.05 250)" }}>{t.hero_or}</p>
+                <p className="text-sm" style={{ color: "oklch(0.65 0.03 250)" }}>{t.hero_or}</p>
               </div>
+
+              {/* Main CTA button */}
               <button
-                className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white transition-all"
-                style={{ backgroundColor: "oklch(0.18 0.04 250)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.25 0.04 250)")}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "oklch(0.18 0.04 250)")}
+                className="flex items-center gap-2 px-8 py-4 rounded-xl font-bold text-white text-base transition-all duration-200 shadow-lg"
+                style={{
+                  background: `linear-gradient(135deg, ${blue}, ${blueLight})`,
+                  boxShadow: `0 8px 24px oklch(0.55 0.22 260 / 0.40)`,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = `0 12px 32px oklch(0.55 0.22 260 / 0.55)`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = `0 8px 24px oklch(0.55 0.22 260 / 0.40)`;
+                }}
               >
-                <Upload className="w-4 h-4" />
+                <Upload className="w-5 h-5" />
                 {t.hero_upload_btn}
+                <ArrowRight className="w-5 h-5" />
               </button>
-              {/* Mensaje de conversión */}
-              <div
-                className="flex items-start gap-2 rounded-xl px-4 py-3 text-sm max-w-sm text-center"
-                style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.07)", color: "oklch(0.40 0.10 260)" }}
-              >
-                <span>✨ {t.hero_any_file}</span>
+
+              {/* Feature badges */}
+              <div className="flex flex-wrap justify-center gap-2">
+                {[t.hero_badge_free, t.hero_badge_no_card, t.hero_badge_instant].map((badge, i) => (
+                  <span
+                    key={i}
+                    className="flex items-center gap-1 text-xs px-3 py-1 rounded-full font-medium"
+                    style={{
+                      backgroundColor: "oklch(1 0 0 / 0.08)",
+                      color: "oklch(0.75 0.08 260)",
+                      border: "1px solid oklch(1 0 0 / 0.10)",
+                    }}
+                  >
+                    <CheckCircle2 className="w-3 h-3" style={{ color: "oklch(0.75 0.15 145)" }} />
+                    {badge}
+                  </span>
+                ))}
               </div>
-              <p className="text-xs" style={{ color: "oklch(0.6 0.02 250)" }}>{t.hero_max_size_detail}</p>
+
+              <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>{t.hero_max_size_detail}</p>
             </div>
+
+            {/* Urgency line below */}
+            <p
+              className="text-center text-xs mt-3"
+              style={{ color: "oklch(0.55 0.03 250)", fontFamily: "'DM Sans', sans-serif" }}
+            >
+              {t.urgency_then}
+            </p>
+          </div>
+        </div>
+
+        {/* Wave divider */}
+        <div className="relative h-12 overflow-hidden" style={{ marginBottom: "-1px" }}>
+          <svg
+            viewBox="0 0 1440 48"
+            xmlns="http://www.w3.org/2000/svg"
+            className="absolute bottom-0 w-full"
+            preserveAspectRatio="none"
+          >
+            <path
+              d="M0,48 C360,0 1080,0 1440,48 L1440,48 L0,48 Z"
+              fill="oklch(0.98 0.005 250)"
+            />
+          </svg>
+        </div>
+      </section>
+
+      {/* ── SOCIAL PROOF BAR ───────────────────────────────── */}
+      <section
+        className="py-6 border-b"
+        style={{ backgroundColor: "oklch(0.98 0.005 250)", borderColor: "oklch(0.90 0.01 250)" }}
+      >
+        <div className="container">
+          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16">
+            {[
+              { value: "2.3M+", label: t.hero_social_pdfs, icon: FileText },
+              { value: "★ 4.8", label: t.hero_social_rating, icon: Star },
+              { value: "180K+", label: t.hero_social_users, icon: Users },
+            ].map((stat, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.10)" }}
+                >
+                  <stat.icon className="w-5 h-5" style={{ color: blue }} />
+                </div>
+                <div>
+                  <div
+                    className="font-extrabold text-xl leading-none"
+                    style={{ color: navy, fontFamily: "'Sora', sans-serif" }}
+                  >
+                    {stat.value}
+                  </div>
+                  <div
+                    className="text-xs mt-0.5"
+                    style={{ color: "oklch(0.55 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    {stat.label}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -248,7 +406,7 @@ export default function Home() {
           <div className="text-center mb-10">
             <h2
               className="text-3xl md:text-4xl font-bold mb-3"
-              style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
+              style={{ fontFamily: "'Sora', sans-serif", color: navy }}
             >
               {t.tools_title}
             </h2>
@@ -273,16 +431,9 @@ export default function Home() {
                   className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
                   style={{
                     fontFamily: "'DM Sans', sans-serif",
-                    backgroundColor:
-                      activeTab === cat.id ? "oklch(0.18 0.04 250)" : "transparent",
-                    color:
-                      activeTab === cat.id
-                        ? "white"
-                        : "oklch(0.45 0.02 250)",
-                    boxShadow:
-                      activeTab === cat.id
-                        ? "0 2px 8px oklch(0.18 0.04 250 / 0.3)"
-                        : "none",
+                    backgroundColor: activeTab === cat.id ? navy : "transparent",
+                    color: activeTab === cat.id ? "white" : "oklch(0.45 0.02 250)",
+                    boxShadow: activeTab === cat.id ? `0 2px 8px oklch(0.18 0.04 250 / 0.3)` : "none",
                   }}
                 >
                   {cat.label}
@@ -318,15 +469,9 @@ export default function Home() {
                   className="w-12 h-12 rounded-xl flex items-center justify-center"
                   style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.08)" }}
                 >
-                  <tool.icon
-                    className="w-5 h-5"
-                    style={{ color: "oklch(0.55 0.22 260)" }}
-                  />
+                  <tool.icon className="w-5 h-5" style={{ color: blue }} />
                 </div>
-                <span
-                  className="text-xs font-medium leading-tight"
-                  style={{ color: "oklch(0.25 0.03 250)" }}
-                >
+                <span className="text-xs font-medium leading-tight" style={{ color: "oklch(0.25 0.03 250)" }}>
                   {tool.label}
                 </span>
               </button>
@@ -336,16 +481,9 @@ export default function Home() {
           <div className="text-center">
             <button
               className="inline-flex items-center gap-2 px-8 py-3 rounded-lg text-white font-semibold text-sm transition-all duration-200"
-              style={{
-                backgroundColor: "oklch(0.18 0.04 250)",
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "oklch(0.18 0.04 250)")
-              }
+              style={{ backgroundColor: navy, fontFamily: "'DM Sans', sans-serif" }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = blue)}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = navy)}
               onClick={() => scrollToEditor()}
             >
               <Upload className="w-4 h-4" />
@@ -355,44 +493,84 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── BENEFITS — why choose us ───────────────────────── */}
+      <section className="py-16 md:py-20" style={{ backgroundColor: "oklch(1 0 0)" }}>
+        <div className="container">
+          <div className="text-center mb-12">
+            <h2
+              className="text-3xl md:text-4xl font-bold mb-3"
+              style={{ fontFamily: "'Sora', sans-serif", color: navy }}
+            >
+              {t.benefits_title}
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {benefits.map((b, i) => (
+              <div
+                key={i}
+                className="flex flex-col gap-4 p-6 rounded-2xl transition-all duration-200"
+                style={{
+                  backgroundColor: "oklch(0.98 0.005 250)",
+                  border: "1px solid oklch(0.91 0.01 250)",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.borderColor = "oklch(0.55 0.22 260 / 0.35)";
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = "0 8px 32px oklch(0.55 0.22 260 / 0.08)";
+                  (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.borderColor = "oklch(0.91 0.01 250)";
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
+                  (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
+                }}
+              >
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ background: `linear-gradient(135deg, ${blue}, ${blueLight})` }}
+                >
+                  <b.icon className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3
+                    className="font-bold text-base mb-2"
+                    style={{ fontFamily: "'Sora', sans-serif", color: navy }}
+                  >
+                    {b.title}
+                  </h3>
+                  <p
+                    className="text-sm leading-relaxed"
+                    style={{ color: "oklch(0.48 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    {b.desc}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── HOW IT WORKS ───────────────────────────────────── */}
-      <section id="how-it-works" className="py-16 md:py-24">
+      <section id="how-it-works" className="py-16 md:py-20" style={{ backgroundColor: "oklch(0.97 0.006 250)" }}>
         <div className="container">
           <div className="mb-12">
             <h2
               className="text-3xl md:text-4xl font-bold mb-3"
-              style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
+              style={{ fontFamily: "'Sora', sans-serif", color: navy }}
             >
               {t.how_title}
             </h2>
-            <p
-              className="text-base"
-              style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
-            >
+            <p className="text-base" style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}>
               {t.how_subtitle}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
             {[
-              {
-                step: "1",
-                icon: Upload,
-                title: t.how_step1_title,
-                desc: t.how_step1_desc,
-              },
-              {
-                step: "2",
-                icon: Edit3,
-                title: t.how_step2_title,
-                desc: t.how_step2_desc,
-              },
-              {
-                step: "3",
-                icon: Download,
-                title: t.how_step3_title,
-                desc: t.how_step3_desc,
-              },
+              { step: "1", icon: Upload, title: t.how_step1_title, desc: t.how_step1_desc },
+              { step: "2", icon: Edit3, title: t.how_step2_title, desc: t.how_step2_desc },
+              { step: "3", icon: Download, title: t.how_step3_title, desc: t.how_step3_desc },
             ].map((item, i) => (
               <div
                 key={i}
@@ -406,10 +584,7 @@ export default function Home() {
                 <div className="flex items-center gap-3">
                   <div
                     className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-                    style={{
-                      backgroundColor: "oklch(0.18 0.04 250)",
-                      fontFamily: "'Sora', sans-serif",
-                    }}
+                    style={{ background: `linear-gradient(135deg, ${blue}, ${blueLight})`, fontFamily: "'Sora', sans-serif" }}
                   >
                     {item.step}
                   </div>
@@ -417,29 +592,14 @@ export default function Home() {
                     className="w-10 h-10 rounded-xl flex items-center justify-center"
                     style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.08)" }}
                   >
-                    <item.icon
-                      className="w-5 h-5"
-                      style={{ color: "oklch(0.55 0.22 260)" }}
-                    />
+                    <item.icon className="w-5 h-5" style={{ color: blue }} />
                   </div>
                 </div>
                 <div>
-                  <h3
-                    className="font-bold text-lg mb-2"
-                    style={{
-                      fontFamily: "'Sora', sans-serif",
-                      color: "oklch(0.15 0.03 250)",
-                    }}
-                  >
+                  <h3 className="font-bold text-lg mb-2" style={{ fontFamily: "'Sora', sans-serif", color: navy }}>
                     {item.title}
                   </h3>
-                  <p
-                    className="text-sm leading-relaxed"
-                    style={{
-                      color: "oklch(0.50 0.02 250)",
-                      fontFamily: "'DM Sans', sans-serif",
-                    }}
-                  >
+                  <p className="text-sm leading-relaxed" style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}>
                     {item.desc}
                   </p>
                 </div>
@@ -450,16 +610,9 @@ export default function Home() {
           <div className="text-center">
             <button
               className="inline-flex items-center gap-2 px-8 py-3 rounded-lg text-white font-semibold text-sm transition-all duration-200"
-              style={{
-                backgroundColor: "oklch(0.18 0.04 250)",
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "oklch(0.18 0.04 250)")
-              }
+              style={{ backgroundColor: navy, fontFamily: "'DM Sans', sans-serif" }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = blue)}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = navy)}
               onClick={() => scrollToEditor()}
             >
               <Upload className="w-4 h-4" />
@@ -469,23 +622,17 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── WHY CHOOSE US ──────────────────────────────────── */}
-      <section
-        className="py-16 md:py-24"
-        style={{ backgroundColor: "oklch(0.97 0.006 250)" }}
-      >
+      {/* ── WHY CHOOSE US — feature showcase ──────────────── */}
+      <section className="py-16 md:py-24" style={{ backgroundColor: "oklch(1 0 0)" }}>
         <div className="container">
           <div className="mb-12">
             <h2
               className="text-3xl md:text-4xl font-bold mb-3"
-              style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
+              style={{ fontFamily: "'Sora', sans-serif", color: navy }}
             >
               {t.features_why_title}
             </h2>
-            <p
-              className="text-base"
-              style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
-            >
+            <p className="text-base" style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}>
               {t.features_why_subtitle}
             </p>
           </div>
@@ -494,53 +641,25 @@ export default function Home() {
             {features.map((feature, i) => (
               <div
                 key={i}
-                className={`flex flex-col ${
-                  i % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
-                } gap-8 items-center py-10 border-b`}
+                className={`flex flex-col ${i % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"} gap-8 items-center py-10 border-b`}
                 style={{ borderColor: "oklch(0.88 0.01 250)" }}
               >
                 <div className="flex-1">
-                  <h3
-                    className="text-xl font-bold mb-2"
-                    style={{
-                      color: "oklch(0.55 0.22 260)",
-                      fontFamily: "'Sora', sans-serif",
-                    }}
-                  >
+                  <h3 className="text-xl font-bold mb-2" style={{ color: blue, fontFamily: "'Sora', sans-serif" }}>
                     {feature.title}
                   </h3>
-                  <p
-                    className="font-semibold text-lg mb-3"
-                    style={{
-                      color: "oklch(0.15 0.03 250)",
-                      fontFamily: "'Sora', sans-serif",
-                    }}
-                  >
+                  <p className="font-semibold text-lg mb-3" style={{ color: navy, fontFamily: "'Sora', sans-serif" }}>
                     {feature.subtitle}
                   </p>
-                  <p
-                    className="text-sm leading-relaxed"
-                    style={{
-                      color: "oklch(0.45 0.02 250)",
-                      fontFamily: "'DM Sans', sans-serif",
-                    }}
-                  >
+                  <p className="text-sm leading-relaxed" style={{ color: "oklch(0.45 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}>
                     {feature.description}
                   </p>
                 </div>
-
                 <div
                   className="flex-shrink-0 w-full md:w-64 h-48 rounded-2xl overflow-hidden"
-                  style={{
-                    backgroundColor: "oklch(0.22 0.04 250)",
-                    boxShadow: "0 8px 32px oklch(0.18 0.04 250 / 0.12)",
-                  }}
+                  style={{ backgroundColor: "oklch(0.22 0.04 250)", boxShadow: "0 8px 32px oklch(0.18 0.04 250 / 0.12)" }}
                 >
-                  <img
-                    src={feature.image}
-                    alt={feature.title}
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={feature.image} alt={feature.title} className="w-full h-full object-cover" />
                 </div>
               </div>
             ))}
@@ -549,12 +668,12 @@ export default function Home() {
       </section>
 
       {/* ── FAQ ────────────────────────────────────────────── */}
-      <section id="faq" className="py-16 md:py-24">
+      <section id="faq" className="py-16 md:py-24" style={{ backgroundColor: "oklch(0.97 0.006 250)" }}>
         <div className="container max-w-3xl mx-auto">
           <div className="text-center mb-12">
             <h2
               className="text-3xl md:text-4xl font-bold mb-3"
-              style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
+              style={{ fontFamily: "'Sora', sans-serif", color: navy }}
             >
               {t.faq_title}
             </h2>
@@ -574,36 +693,19 @@ export default function Home() {
                   className="w-full flex items-center justify-between px-6 py-4 text-left"
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
                 >
-                  <span
-                    className="font-semibold text-sm pr-4"
-                    style={{
-                      color: "oklch(0.15 0.03 250)",
-                      fontFamily: "'Sora', sans-serif",
-                    }}
-                  >
+                  <span className="font-semibold text-sm pr-4" style={{ color: navy, fontFamily: "'Sora', sans-serif" }}>
                     {faq.question}
                   </span>
                   {openFaq === i ? (
-                    <ChevronUp
-                      className="w-4 h-4 flex-shrink-0"
-                      style={{ color: "oklch(0.55 0.22 260)" }}
-                    />
+                    <ChevronUp className="w-4 h-4 flex-shrink-0" style={{ color: blue }} />
                   ) : (
-                    <ChevronDown
-                      className="w-4 h-4 flex-shrink-0"
-                      style={{ color: "oklch(0.50 0.02 250)" }}
-                    />
+                    <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: "oklch(0.50 0.02 250)" }} />
                   )}
                 </button>
                 {openFaq === i && (
                   <div
                     className="px-6 pb-4"
-                    style={{
-                      color: "oklch(0.45 0.02 250)",
-                      fontFamily: "'DM Sans', sans-serif",
-                      fontSize: "0.875rem",
-                      lineHeight: "1.6",
-                    }}
+                    style={{ color: "oklch(0.45 0.02 250)", fontFamily: "'DM Sans', sans-serif", fontSize: "0.875rem", lineHeight: "1.6" }}
                   >
                     {faq.answer}
                   </div>
@@ -614,12 +716,16 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── FINAL CTA ──────────────────────────────────────── */}
-      <section
-        className="py-16 md:py-20"
-        style={{ backgroundColor: "oklch(0.18 0.04 250)" }}
-      >
-        <div className="container text-center">
+      {/* ── FINAL CTA — dark, conversion-focused ───────────── */}
+      <section className="relative py-16 md:py-20 overflow-hidden" style={{ backgroundColor: navy }}>
+        {/* Background glow */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `radial-gradient(ellipse at 50% 100%, oklch(0.55 0.22 260 / 0.20) 0%, transparent 60%)`,
+          }}
+        />
+        <div className="container relative z-10 text-center">
           <h2
             className="text-3xl md:text-4xl font-bold text-white mb-4"
             style={{ fontFamily: "'Sora', sans-serif" }}
@@ -627,30 +733,42 @@ export default function Home() {
             {t.cta_title}
           </h2>
           <p
-            className="text-base mb-8 max-w-xl mx-auto"
+            className="text-base mb-3 max-w-xl mx-auto"
             style={{ color: "oklch(0.70 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
           >
             {t.cta_subtitle}
           </p>
+          {/* Urgency line */}
+          <p
+            className="text-sm mb-8 font-medium"
+            style={{ color: "oklch(0.75 0.15 145)" }}
+          >
+            ✓ {t.urgency_trial}
+          </p>
           <button
-            className="inline-flex items-center gap-2 px-8 py-3 rounded-lg font-semibold text-sm transition-all duration-200"
+            className="inline-flex items-center gap-2 px-10 py-4 rounded-xl font-bold text-white text-base transition-all duration-200 shadow-lg"
             style={{
-              backgroundColor: "oklch(0.55 0.22 260)",
-              color: "white",
+              background: `linear-gradient(135deg, ${blue}, ${blueLight})`,
+              boxShadow: `0 8px 32px oklch(0.55 0.22 260 / 0.45)`,
               fontFamily: "'DM Sans', sans-serif",
             }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "oklch(0.48 0.22 260)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)")
-            }
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = `0 14px 40px oklch(0.55 0.22 260 / 0.60)`;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = `0 8px 32px oklch(0.55 0.22 260 / 0.45)`;
+            }}
             onClick={() => scrollToEditor()}
           >
-            <Upload className="w-4 h-4" />
+            <Upload className="w-5 h-5" />
             {t.cta_btn}
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-5 h-5" />
           </button>
+          <p className="text-xs mt-4" style={{ color: "oklch(0.50 0.02 250)" }}>
+            {t.urgency_then}
+          </p>
         </div>
       </section>
 

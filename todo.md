@@ -357,3 +357,9 @@
 - [x] Todos los toast del editor usan traducciones (no hardcodeados en español)
 - [x] Panel protección con contraseña mejorado: confirmación + algoritmo de cifrado (128-AES, 256-AES, ARC-FOUR)
 - [x] Textos legales del paywall actualizados en todos los idiomas (0,00€ trial gratuito)
+
+## Rediseño Home orientado a conversión (CRO)
+- [x] Hero oscuro con fondo navy, CTA grande, barra de social proof
+- [x] Añadir nuevas claves i18n para textos de conversión en 10 idiomas
+- [x] Sección de beneficios orientada a valor (no features técnicas)
+- [x] Urgencia sutil y trust signals en el hero
