@@ -270,15 +270,18 @@ function CheckoutForm({
         {/* Amount row */}
         <div className="flex items-center justify-between mb-5 pb-4 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-              <CreditCard className="w-5 h-5 text-[#1a3c6e]" />
+            <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0">
+              <span className="text-lg">🎁</span>
             </div>
             <div>
-              <p className="text-sm font-semibold text-slate-800">{t.paywall_amount_label}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-slate-800">100% Discount</p>
+                <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">New User</span>
+              </div>
               <p className="text-xs text-slate-400">{t.paywall_trial_plan}</p>
             </div>
           </div>
-          <p className="text-2xl font-bold text-[#1a3c6e]">0,50 €</p>
+          <p className="text-2xl font-bold text-orange-500">0,00 €</p>
         </div>
 
         {/* Payment method tabs */}
@@ -347,7 +350,7 @@ function CheckoutForm({
             </div>
             {/* Bank verification notice */}
             <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-              Tu banco puede mostrar una verificación de 0,00€. El cargo real de 0,50€ aparecerá confirmado en breve.
+              Tu banco puede mostrar una verificación de 0,00€. No se realizará ningún cargo durante los 7 días de prueba.
             </p>
           </div>
         )}
@@ -407,7 +410,7 @@ function CheckoutForm({
           <div className="mb-4 rounded-xl border border-slate-100 bg-slate-50 p-4">
             {([
               { key: "card",         label: "Verificando tarjeta...",      icon: "💳" },
-              { key: "subscription", label: "Activando suscripción...",    icon: "✅" },
+              { key: "subscription", label: "Procesando...",               icon: "⚙️" },
               { key: "saving",       label: "Guardando tu documento...",   icon: "📄" },
               { key: "done",         label: "¡Todo listo!",                icon: "🎉" },
             ] as const).map((step, idx, arr) => {
@@ -462,7 +465,7 @@ function CheckoutForm({
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
               {progressStep === "saving" ? "Guardando tu documento..." :
-               progressStep === "subscription" ? "Activando suscripción..." :
+               progressStep === "subscription" ? "Procesando..." :
                progressStep === "done" ? "¡Completado!" :
                "Verificando tarjeta..."}
             </>

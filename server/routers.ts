@@ -401,29 +401,7 @@ export const appRouter = router({
           invoice_settings: { default_payment_method: input.paymentMethodId },
         });
 
-        // 3. Charge 0,50€ immediately (trial fee) using the real Price ID
-        const trialPayment = await stripe.paymentIntents.create({
-          amount: 50, // 0,50€ in cents
-          currency: "eur",
-          customer: input.customerId,
-          payment_method: input.paymentMethodId,
-          confirm: true,
-          off_session: true,
-          description: "editPDF — Acceso 7 días (0,50€)",
-          metadata: {
-            user_id: user.id.toString(),
-            type: "trial_fee",
-          },
-        });
-
-        if (trialPayment.status !== "succeeded") {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "El pago de 0,50€ no se pudo procesar. Por favor, revisa los datos de tu tarjeta.",
-          });
-        }
-
-        // 4. Create subscription with real Price ID (49,90€/month) and 7-day trial
+        // 3. Create subscription with real Price ID (49,90€/month) and 7-day FREE trial (0,00€)
         // Price IDs from Stripe Dashboard:
         // Monthly 49,90€: price_1TCdbn2WMuUgq7vD74v0mclA
         // One-time 0,50€: price_1TCdcV2WMuUgq7vD5X99lzED
@@ -469,7 +447,7 @@ export const appRouter = router({
         import("./_core/notification").then(({ notifyOwner }) => {
           notifyOwner({
             title: "\uD83D\uDCB3 Nuevo pago \u2014 editPDF",
-            content: `Usuario: ${user.name || "An\u00F3nimo"} (${user.email || "sin email"})\nPlan: Trial 7 d\u00EDas \u2192 49,90\u20AC/mes\nFin de prueba: ${trialEnd.toLocaleDateString("es-ES")}`,
+            content: `Usuario: ${user.name || "An\u00F3nimo"} (${user.email || "sin email"})\nPlan: Trial 7 d\u00EDas GRATIS \u2192 49,90\u20AC/mes\nFin de prueba: ${trialEnd.toLocaleDateString("es-ES")}`,
           }).catch(() => {});
         }).catch(() => {});
         return { success: true, subscriptionId: subscription.id };

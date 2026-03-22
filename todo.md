@@ -352,3 +352,8 @@
 - [x] Implementar callback /api/auth/google/callback para Google OAuth propio
 - [x] Actualizar frontend (AuthModal + PaywallModal) para usar el nuevo flujo de Google OAuth
 - [ ] Publicar y verificar que el login muestra "editPDF" en la pantalla de Google
+- [x] Cambiar checkout a trial gratuito 0,00€ (eliminar cobro de 0,50€, mostrar 100% Discount - New User)
+- [x] Corregir bug eliminar página (no se eliminaba realmente)
+- [x] Todos los toast del editor usan traducciones (no hardcodeados en español)
+- [x] Panel protección con contraseña mejorado: confirmación + algoritmo de cifrado (128-AES, 256-AES, ARC-FOUR)
+- [x] Textos legales del paywall actualizados en todos los idiomas (0,00€ trial gratuito)

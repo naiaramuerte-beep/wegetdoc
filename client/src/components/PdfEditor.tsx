@@ -190,7 +190,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
   // Protect state
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [encryptionAlgo, setEncryptionAlgo] = useState<"128-AES" | "256-AES" | "128-ARC4">("128-AES");
 
   // Find state
   const [searchQuery, setSearchQuery] = useState("");
@@ -284,11 +287,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // ── Save PDF to My Documents ──────────────────────────────
   const savePdf = async () => {
     if (!isAuthenticated) {
-      toast.error("Inicia sesión para guardar documentos");
+      toast.error(t.editor_toast_login_required ?? "Sign in to save documents");
       return;
     }
     if (!pdfBytes) {
-      toast.error("No hay PDF cargado");
+      toast.error(t.editor_toast_no_pdf ?? "No PDF loaded");
       return;
     }
     setIsSaving(true);
@@ -335,7 +338,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const headerSlice = bytes.slice(0, 1024);
     const headerStr = String.fromCharCode(...Array.from(headerSlice));
     if (!headerStr.includes("%PDF")) {
-      toast.error("El archivo no es un PDF válido. Por favor, sube un archivo PDF.");
+      toast.error(t.editor_toast_invalid_pdf ?? "The file is not a valid PDF. Please upload a PDF file.");
       return;
     }
     setPdfBytes(bytes);
@@ -484,12 +487,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const isPdf = f.name.toLowerCase().endsWith(".pdf") || f.type === "application/pdf";
     if (!isPdf) {
       // Non-PDF files: show a friendly message and don't try to load as PDF
-      toast.error("Por favor sube un archivo PDF. Para convertir otros formatos, usa las herramientas de conversión.");
+      toast.error(t.editor_toast_only_pdf ?? "Please upload a PDF file. To convert other formats, use the conversion tools.");
       return;
     }
     setFile(f);
     loadPdf(f);
-    toast.success("PDF cargado correctamente");
+    toast.success(t.editor_toast_pdf_loaded ?? "PDF loaded successfully");
   }, [loadPdf]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -778,12 +781,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const c = signCanvasRef.current!;
     const dataUrl = c.toDataURL();
     addAnnotation({ type: "signature", dataUrl, x: 100, y: 100, width: 200, height: 80, page: currentPage });
-    toast.success("Signature added. Drag it to position.");
+    toast.success(t.editor_sign_added ?? "Signature added. Drag it to position.");
     // Keep sign tool active so user can add multiple signatures
   };
   // Generate a cursive-style signature from a typed name using canvas
   const placeNameSignature = () => {
-    if (!signName.trim()) { toast.error("Type your name first"); return; }
+    if (!signName.trim()) { toast.error(t.editor_toast_sign_name_required ?? "Type your name first"); return; }
     const c = document.createElement("canvas");
     const fontSize = 48;
     // Estimate width based on font
@@ -804,12 +807,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     ctx.fillText(signName, 8, 46);
     const dataUrl = c.toDataURL();
     addAnnotation({ type: "signature", dataUrl, x: 100, y: 100, width: Math.max(220, signName.length * 32), height: 90, page: currentPage });
-    toast.success("Signature added. Drag it to position.");
+    toast.success(t.editor_sign_added ?? "Signature added. Drag it to position.");
   };
 
   // Generate electronic signature block (name + date + legal text rendered to canvas)
   const placeESign = () => {
-    if (!eSignName.trim()) { toast.error("Escribe tu nombre completo"); return; }
+    if (!eSignName.trim()) { toast.error(t.editor_toast_sign_name_required ?? "Type your full name"); return; }
     const now = new Date();
     const dateStr = now.toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" });
     const timeStr = now.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
@@ -850,12 +853,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     ctx.fillText("Firma electrónica válida bajo Reglamento eIDAS (UE 910/2014)", 12, 100);
     const dataUrl = c.toDataURL();
     addAnnotation({ type: "signature", dataUrl, x: 80, y: 100, width: 320, height: 110, page: currentPage });
-    toast.success("✓ Firma electrónica insertada. Arrástrala a la posición deseada.");
+    toast.success(t.editor_toast_esign_added ?? "✓ Electronic signature inserted. Drag it to the desired position.");
   };
 
   // ── Add text ────────────────────────────────────────────
   const placeText = () => {
-    if (!textInput.trim()) { toast.error("Escribe el texto primero"); return; }
+    if (!textInput.trim()) { toast.error(t.editor_toast_text_required ?? "Type the text first"); return; }
     addAnnotation({
       type: "text", text: textInput, x: 80, y: 80,
       width: Math.max(100, textInput.length * (textSize * 0.6)),
@@ -863,25 +866,25 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       color: textColor, fontSize: textSize, fontFamily: textFont,
     });
     setTextInput("");
-    toast.success("Texto añadido. Arrástralo a la posición deseada.");
+    toast.success(t.editor_toast_image_added ?? "Text added. Drag it to position.");
     // Keep text tool active so user can add more text
   };
 
   const activateTextPlace = () => {
-    if (!textInput.trim()) { toast.error("Escribe el texto primero"); return; }
+    if (!textInput.trim()) { toast.error(t.editor_toast_text_required ?? "Type the text first"); return; }
     setClickToPlaceText(true);
     toast.info("Haz clic en el PDF donde quieres colocar el texto");
   };
 
   // ── Add note ──────────────────────────────────────────────────
   const placeNote = () => {
-    if (!noteText.trim()) { toast.error("Escribe la nota primero"); return; }
+    if (!noteText.trim()) { toast.error(t.editor_toast_note_required ?? "Write the note first"); return; }
     addAnnotation({
       type: "note", text: noteText, x: 80, y: 80,
       width: 200, height: 80, page: currentPage, color: "#FFF176",
     });
     setNoteText("");
-    toast.success("Nota añadida.");
+    toast.success(t.editor_toast_note_added ?? "Note added.");
     // Keep notes tool active
   };
 
@@ -895,7 +898,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         type: "image", dataUrl: ev.target?.result as string,
         x: 80, y: 80, width: 200, height: 150, page: currentPage,
       });
-      toast.success("Imagen añadida. Arrástrala a la posición deseada.");
+      toast.success(t.editor_toast_image_added ?? "Image added. Drag it to position.");
     };
     reader.readAsDataURL(f);
     // Keep image tool active
@@ -908,7 +911,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       // Encode fill info in the text field: "rect", "circle", "line", "rect-filled", "circle-filled"
       text: shapeFilled ? `${shapeType}-filled` : shapeType,
     });
-    toast.success("Forma añadida. Arrástrala a la posición deseada.");
+    toast.success(t.editor_toast_shape_added ?? "Shape added. Drag it to position.");
     // Keep shapes tool active so user can add multiple shapes
   }  // ── Dragging annotations ──────────────────────────────────────────────
   const startDrag = (e: React.MouseEvent, id: string) => {
@@ -970,7 +973,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const compressPdf = async () => {
     if (!pdfBytes) return;
     if (!isPremium) { setShowPaywall(true); return; }
-    toast.loading("Comprimiendo PDF...", { id: "compress" });
+    toast.loading(t.editor_toast_compressing ?? "Compressing PDF...", { id: "compress" });
     try {
       const doc = await PDFDocument.load(pdfBytes as Uint8Array);
       const compressed = await doc.save({ useObjectStreams: true });
@@ -979,23 +982,23 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const a = document.createElement("a"); a.href = url;
       a.download = `compressed_${file?.name ?? "document.pdf"}`;
       a.click(); URL.revokeObjectURL(url);
-      toast.success("PDF comprimido descargado", { id: "compress" });
+      toast.success(t.editor_toast_compressed ?? "Compressed PDF downloaded", { id: "compress" });
     } catch {
-      toast.error("Error al comprimir", { id: "compress" });
+      toast.error(t.editor_toast_compress_error ?? "Error compressing", { id: "compress" });
     }
   };
 
   // ── Protect with password ─────────────────────────────────────
   const protectPdf = async () => {
-    if (!pdfBytes || !password) { toast.error("Introduce una contraseña"); return; }
+    if (!pdfBytes || !password) { toast.error(t.editor_toast_password_required ?? "Enter a password"); return; }
+    if (password !== confirmPassword) { toast.error(t.editor_protect_passwords_mismatch ?? "Passwords do not match"); return; }
     if (!isPremium) { setShowPaywall(true); return; }
-    toast.loading("Protegiendo PDF...", { id: "protect" });
+    toast.loading(t.editor_toast_protecting ?? "Protecting PDF...", { id: "protect" });
     try {
-      const doc = await PDFDocument.load(pdfBytes as Uint8Array);
       // pdf-lib doesn't support encryption natively; inform user
-      toast.info("La protección con contraseña requiere procesamiento en servidor. Próximamente disponible.", { id: "protect" });
+      toast.info(t.editor_toast_protect_error ?? "Password protection requires server processing. Coming soon.", { id: "protect" });
     } catch {
-      toast.error("Error al proteger", { id: "protect" });
+      toast.error(t.editor_toast_protect_error ?? "Error protecting", { id: "protect" });
     }
   };
 
@@ -1003,7 +1006,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const convertToImage = async (format: "jpg" | "png") => {
     if (!pdfDoc) return;
     if (!isPremium) { setShowPaywall(true); return; }
-    toast.loading(`Convirtiendo a ${format.toUpperCase()}...`, { id: "convert" });
+    toast.loading(t.editor_toast_converting ?? `Converting to ${format.toUpperCase()}...`, { id: "convert" });
     try {
       const page = await pdfDoc.getPage(currentPage);
       const vp = page.getViewport({ scale: 2 });
@@ -1017,10 +1020,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         const a = document.createElement("a"); a.href = url;
         a.download = `page${currentPage}.${format}`;
         a.click(); URL.revokeObjectURL(url);
-        toast.success(`Página ${currentPage} exportada como ${format.toUpperCase()}`, { id: "convert" });
+        toast.success(t.editor_toast_converted ?? `Page ${currentPage} exported as ${format.toUpperCase()}`, { id: "convert" });
       }, mimeType, 0.92);
     } catch {
-      toast.error("Error al convertir", { id: "convert" });
+      toast.error(t.editor_toast_convert_error ?? "Error converting", { id: "convert" });
     }
   };
 
@@ -1028,7 +1031,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const convertAllToImages = async (format: "jpg" | "png") => {
     if (!pdfDoc) return;
     if (!isPremium) { setShowPaywall(true); return; }
-    toast.loading("Convirtiendo todas las páginas...", { id: "convertAll" });
+    toast.loading(t.editor_toast_converting ?? "Converting all pages...", { id: "convertAll" });
     try {
       for (let i = 1; i <= totalPages; i++) {
         const page = await pdfDoc.getPage(i);
@@ -1047,9 +1050,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           }, format === "jpg" ? "image/jpeg" : "image/png", 0.92);
         });
       }
-      toast.success(`${totalPages} páginas exportadas`, { id: "convertAll" });
+      toast.success(t.editor_toast_converted ?? `${totalPages} pages exported`, { id: "convertAll" });
     } catch {
-      toast.error("Error al convertir", { id: "convertAll" });
+      toast.error(t.editor_toast_convert_error ?? "Error converting", { id: "convertAll" });
     }
   };
 
@@ -1057,7 +1060,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const convertImageToPdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    toast.loading("Convirtiendo imagen a PDF...", { id: "img2pdf" });
+    toast.loading(t.editor_toast_converting ?? "Converting image to PDF...", { id: "img2pdf" });
     try {
       const doc = await PDFDocument.create();
       const bytes = new Uint8Array(await f.arrayBuffer());
@@ -1072,9 +1075,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const a = document.createElement("a"); a.href = url;
       a.download = f.name.replace(/\.[^.]+$/, "") + ".pdf";
       a.click(); URL.revokeObjectURL(url);
-      toast.success("PDF generado y descargado", { id: "img2pdf" });
+      toast.success(t.editor_toast_converted ?? "PDF generated and downloaded", { id: "img2pdf" });
     } catch {
-      toast.error("Error al convertir imagen", { id: "img2pdf" });
+      toast.error(t.editor_toast_convert_error ?? "Error converting image", { id: "img2pdf" });
     }
   };
 
@@ -1138,7 +1141,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // ── Rotate page ─────────────────────────────────────────────
   const rotatePage = async () => {
     if (!pdfBytes) return;
-    toast.loading("Rotando página...", { id: "rotate" });
+    toast.loading(t.editor_toast_rotating ?? "Rotating page...", { id: "rotate" });
     try {
       const safeBytes = pdfBytes.slice();
       const doc = await PDFDocument.load(safeBytes);
@@ -1162,30 +1165,39 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         updated[currentPage - 1] = c.toDataURL();
         return updated;
       });
-      toast.success("Página rotada", { id: "rotate" });
+      toast.success(t.editor_toast_rotated ?? "Page rotated", { id: "rotate" });
     } catch {
-      toast.error("Error al rotar", { id: "rotate" });
+      toast.error(t.editor_toast_rotate_error ?? "Error rotating", { id: "rotate" });
     }
   };
 
-  // ── Delete page ───────────────────────────────────────────────
+    // ── Delete page ─────────────────────────────────────────────
   const deletePage = async () => {
-    if (!pdfBytes || totalPages <= 1) { toast.error("No se puede eliminar la única página"); return; }
-    toast.loading("Eliminando página...", { id: "delpage" });
+    if (!pdfBytes || totalPages <= 1) { toast.error(t.editor_toast_only_page ?? "Cannot delete the only page"); return; }
+    toast.loading(t.editor_toast_deleting_page ?? "Deleting page...", { id: "delpage" });
     try {
       const safeBytes = pdfBytes.slice();
       const doc = await PDFDocument.load(safeBytes);
       doc.removePage(currentPage - 1);
       const out = await doc.save();
-      const newBytes = new Uint8Array(out).slice(); // .slice() ensures independent ArrayBuffer
+      const newBytes = new Uint8Array(out).slice();
       setPdfBytes(newBytes);
       const newDoc = await pdfjsLib.getDocument({ data: newBytes.slice() }).promise;
       setPdfDoc(newDoc);
-      setTotalPages(doc.getPageCount() - 1);
-      if (currentPage > 1) setCurrentPage(p => p - 1);
-      toast.success("Página eliminada", { id: "delpage" });
+      const newPageCount = doc.getPageCount(); // already removed, so this is the new count
+      setTotalPages(newPageCount);
+      const newCurrentPage = currentPage > newPageCount ? newPageCount : currentPage;
+      setCurrentPage(newCurrentPage);
+      // Rebuild thumbnails without the deleted page
+      setThumbnails(prev => prev.filter((_, i) => i !== currentPage - 1));
+      // Also remove annotations for the deleted page and shift others
+      setAnnotations(prev => prev
+        .filter(a => a.page !== currentPage)
+        .map(a => a.page > currentPage ? { ...a, page: a.page - 1 } : a)
+      );
+      toast.success(t.editor_toast_page_deleted ?? "Page deleted", { id: "delpage" });
     } catch {
-      toast.error("Error al eliminar página", { id: "delpage" });
+      toast.error(t.editor_toast_page_delete_error ?? "Error deleting page", { id: "delpage" });
     }
   };
 
@@ -1772,23 +1784,80 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       case "protect":
         return (
           <div className="p-4 flex flex-col gap-3">
-            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Proteger PDF</h3>
-            <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Establece una contraseña para proteger el acceso al documento:</p>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password} onChange={e => setPassword(e.target.value)}
-                placeholder={t.editor_protect_placeholder}
-                className="w-full border rounded px-3 py-2 text-sm pr-10"
-                style={{ borderColor: "oklch(0.80 0.05 260)" }}
-              />
-              <button onClick={() => setShowPassword(v => !v)} className="absolute right-2 top-2">
-                {showPassword ? <EyeOff className="w-4 h-4" style={{ color: "oklch(0.55 0.02 250)" }} /> : <Eye className="w-4 h-4" style={{ color: "oklch(0.55 0.02 250)" }} />}
+            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>{t.editor_protect_title}</h3>
+            <div className="border rounded-lg overflow-hidden" style={{ borderColor: "oklch(0.85 0.03 260)" }}>
+              <div className="px-3 py-2" style={{ backgroundColor: "oklch(0.96 0.01 260)" }}>
+                <p className="text-xs font-medium" style={{ color: "oklch(0.35 0.03 250)" }}>{t.editor_protect_desc}</p>
+              </div>
+              <div className="p-3 flex flex-col gap-2">
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password} onChange={e => setPassword(e.target.value)}
+                    placeholder={t.editor_protect_placeholder}
+                    className="w-full border rounded px-3 py-2 text-sm pr-10"
+                    style={{ borderColor: "oklch(0.80 0.05 260)" }}
+                  />
+                  <button onClick={() => setShowPassword(v => !v)} className="absolute right-2 top-2.5">
+                    {showPassword ? <EyeOff className="w-4 h-4" style={{ color: "oklch(0.55 0.02 250)" }} /> : <Eye className="w-4 h-4" style={{ color: "oklch(0.55 0.02 250)" }} />}
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder={t.editor_protect_confirm_placeholder}
+                    className="w-full border rounded px-3 py-2 text-sm pr-10"
+                    style={{ borderColor: confirmPassword && password !== confirmPassword ? "oklch(0.55 0.22 25)" : "oklch(0.80 0.05 260)" }}
+                  />
+                  <button onClick={() => setShowConfirmPassword(v => !v)} className="absolute right-2 top-2.5">
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" style={{ color: "oklch(0.55 0.02 250)" }} /> : <Eye className="w-4 h-4" style={{ color: "oklch(0.55 0.02 250)" }} />}
+                  </button>
+                </div>
+                {confirmPassword && password !== confirmPassword && (
+                  <p className="text-xs" style={{ color: "oklch(0.50 0.22 25)" }}>{t.editor_protect_passwords_mismatch}</p>
+                )}
+              </div>
+            </div>
+            <div className="border rounded-lg overflow-hidden" style={{ borderColor: "oklch(0.85 0.03 260)" }}>
+              <div className="px-3 py-2" style={{ backgroundColor: "oklch(0.96 0.01 260)" }}>
+                <p className="text-xs font-medium" style={{ color: "oklch(0.35 0.03 250)" }}>{t.editor_protect_algo_label}</p>
+              </div>
+              <div className="p-3 flex flex-col gap-1.5">
+                {(["128-AES", "256-AES", "128-ARC4"] as const).map(algo => (
+                  <label key={algo} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="encryptionAlgo"
+                      value={algo}
+                      checked={encryptionAlgo === algo}
+                      onChange={() => setEncryptionAlgo(algo)}
+                      className="accent-blue-600"
+                    />
+                    <span className="text-xs" style={{ color: "oklch(0.35 0.02 250)" }}>
+                      {algo === "128-AES" ? "128-bit AES" : algo === "256-AES" ? "256-bit AES" : "128-bit ARC-FOUR"}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setPassword(""); setConfirmPassword(""); }}
+                className="flex-1 py-2 rounded text-sm border font-medium"
+                style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.40 0.02 250)" }}
+              >
+                {t.editor_cancel_btn}
+              </button>
+              <button
+                onClick={protectPdf}
+                disabled={!password || password !== confirmPassword}
+                className="flex-1 py-2 rounded text-white text-sm font-semibold disabled:opacity-50"
+                style={{ backgroundColor: "oklch(0.25 0.03 250)" }}
+              >
+                {t.editor_protect_btn}
               </button>
             </div>
-            <button onClick={protectPdf} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>
-              <Lock className="w-4 h-4 inline mr-1" />Proteger PDF
-            </button>
           </div>
         );
       case "compress":
