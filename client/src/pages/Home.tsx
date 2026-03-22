@@ -133,11 +133,29 @@ export default function Home() {
 
   const activeCategory = allToolsCategories.find((c) => c.id === activeTab)!;
 
+  const ACCEPTED_MIME_TYPES = new Set([
+    'application/pdf',
+    'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/tiff',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'text/html', 'text/plain',
+  ]);
+
+  const ACCEPTED_EXTENSIONS = new Set([
+    '.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff',
+    '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.html', '.txt',
+  ]);
+
   const openEditor = useCallback((file: File, tool?: string) => {
-    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-    if (!isPdf) {
+    const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+    const isSupported = ACCEPTED_MIME_TYPES.has(file.type) || ACCEPTED_EXTENSIONS.has(ext);
+    if (!isSupported) {
       import('sonner').then(({ toast }) => {
-        toast.error('Solo se admiten archivos PDF. Por favor, sube un archivo .pdf');
+        toast.error('Formato no soportado. Sube un PDF, Word, Excel, PowerPoint, JPG o PNG.');
       });
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
@@ -264,7 +282,7 @@ export default function Home() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="application/pdf,.pdf"
+              accept="application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.html,.txt"
               className="hidden"
               onChange={handleFileInput}
             />

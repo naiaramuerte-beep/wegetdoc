@@ -397,12 +397,40 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
   useEffect(() => { renderPage(currentPage); }, [renderPage, currentPage]);
 
-  // Auto-load initialFile if provided─
+  // Auto-load initialFile if provided — converts non-PDF files first
   useEffect(() => {
-    if (initialFile) {
+    if (!initialFile) return;
+    const isPdf = initialFile.name.toLowerCase().endsWith(".pdf") || initialFile.type === "application/pdf";
+    if (isPdf) {
       setFile(initialFile);
       loadPdf(initialFile);
+      return;
     }
+    // Non-PDF: convert on server first
+    const toastId = toast.loading(t.editor_toast_converting ?? "Converting to PDF...");
+    (async () => {
+      try {
+        const formData = new FormData();
+        formData.append("file", initialFile);
+        const resp = await fetch("/api/documents/convert-upload", { method: "POST", body: formData });
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({ error: "Unknown error" }));
+          throw new Error(err.error || "Conversion failed");
+        }
+        const { pdfBase64, name } = await resp.json();
+        const binary = atob(pdfBase64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const pdfBlob = new Blob([bytes], { type: "application/pdf" });
+        const pdfFile = new File([pdfBlob], name, { type: "application/pdf" });
+        setFile(pdfFile);
+        loadPdf(pdfFile);
+        toast.success(t.editor_toast_converted ?? "File converted to PDF successfully", { id: toastId });
+      } catch (err) {
+        toast.error(t.editor_toast_convert_error ?? "Could not convert file.", { id: toastId });
+        console.error("[InitialFile Convert]", err);
+      }
+    })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialFile]);
 

@@ -371,3 +371,14 @@
 - [x] Agregar traducciones de pricing_feature_*, pricing_faq_*, pricing_popular, etc. en 10 idiomas
 - [x] Agregar FAQ de cancelación de suscripción (faq_q7/faq_a7) en 10 idiomas
 - [x] Página de Pricing completamente i18n-ready
+
+## Soporte multi-formato en dropzone (22/03/2026)
+- [x] Home dropzone: aceptar Word, Excel, PPT, JPG, PNG, GIF, WebP, BMP, TIFF, HTML, TXT además de PDF
+- [x] Home openEditor: eliminar bloqueo de archivos no-PDF, solo rechazar formatos no soportados
+- [x] PdfEditor initialFile: convertir automáticamente archivos no-PDF antes de cargar en el editor
+- [x] Verificado: conversión de TXT, JPG, DOCX a PDF funciona correctamente en el servidor
+
+## Soporte multi-formato en dropzone (22/03/2026)
+- [x] Home dropzone: aceptar Word, Excel, PPT, JPG, PNG y más además de PDF
+- [x] Home openEditor: eliminar bloqueo de archivos no-PDF
+- [x] PdfEditor initialFile: convertir automáticamente archivos no-PDF antes de cargar
