@@ -507,7 +507,9 @@ export default function PaywallModal({
       try { await saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size); } catch {}
     }
     setPendingPaywall(true);
-    window.location.href = getLoginUrl();
+    // Use direct Google OAuth (shows "editPDF" on Google consent screen)
+    const returnPath = window.location.pathname + window.location.search;
+    window.location.href = `/api/auth/google?origin=${encodeURIComponent(window.location.origin)}&returnPath=${encodeURIComponent(returnPath)}`;
   };
   const handleEmailContinue = async () => {
     if (!emailInput.trim() || !emailInput.includes("@")) {

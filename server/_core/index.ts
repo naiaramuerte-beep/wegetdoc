@@ -6,6 +6,7 @@ import Stripe from "stripe";
 import multer from "multer";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
+import { registerGoogleOAuthRoutes } from "./googleOauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -143,8 +144,10 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  // OAuth callback under /api/oauth/callback
+  // OAuth callback under /api/oauth/callback (Manus)
   registerOAuthRoutes(app);
+  // Google OAuth direct routes: /api/auth/google and /api/auth/google/callback
+  registerGoogleOAuthRoutes(app);
 
   // Sitemap.xml — dynamic, includes blog posts
   app.get("/sitemap.xml", async (_req, res) => {

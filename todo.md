@@ -345,3 +345,10 @@
 - [ ] Email de confirmación automático post-pago
 - [ ] Términos actualizados con sección de suscripción y cargos recurrentes
 - [x] Email de confirmación de cancelación de suscripción con fecha de acceso y enlace de reactivación
+
+## Google OAuth propio (sin Manus)
+- [x] Configurar GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET como secrets
+- [x] Implementar endpoint /api/auth/google en el servidor
+- [x] Implementar callback /api/auth/google/callback para Google OAuth propio
+- [x] Actualizar frontend (AuthModal + PaywallModal) para usar el nuevo flujo de Google OAuth
+- [ ] Publicar y verificar que el login muestra "editPDF" en la pantalla de Google
