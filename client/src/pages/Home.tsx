@@ -41,6 +41,25 @@ const FEATURE_IMAGES = [
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/feature-collaborate-Xc5uwDNsachsgLjEBvw7Qp.webp",
 ];
 
+// ─── Accepted file types (module-level constants to avoid recreation on each render) ──
+const ACCEPTED_MIME_TYPES = new Set([
+  'application/pdf',
+  'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/tiff',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'text/html', 'text/plain',
+  'application/octet-stream', // generic binary — extension check handles actual validation
+]);
+
+const ACCEPTED_EXTENSIONS = new Set([
+  '.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff',
+  '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.html', '.txt',
+]);
+
 // ─── Component ─────────────────────────────────────────────────
 export default function Home() {
   let { user, loading, error, isAuthenticated, logout } = useAuth();
@@ -132,23 +151,6 @@ export default function Home() {
   ];
 
   const activeCategory = allToolsCategories.find((c) => c.id === activeTab)!;
-
-  const ACCEPTED_MIME_TYPES = new Set([
-    'application/pdf',
-    'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/tiff',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'application/vnd.ms-powerpoint',
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    'text/html', 'text/plain',
-  ]);
-
-  const ACCEPTED_EXTENSIONS = new Set([
-    '.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff',
-    '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.html', '.txt',
-  ]);
 
   const openEditor = useCallback((file: File, tool?: string) => {
     const ext = '.' + file.name.split('.').pop()?.toLowerCase();

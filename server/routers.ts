@@ -258,9 +258,7 @@ export const appRouter = router({
 
         // Price IDs from Stripe Dashboard (live):
         // Monthly 49,90€/mes: price_1TCdbn2WMuUgq7vD74v0mclA
-        // One-time 0,50€: price_1TCdcV2WMuUgq7vD5X99lzED
         const MONTHLY_PRICE_ID = "price_1TCdbn2WMuUgq7vD74v0mclA";
-        const TRIAL_FEE_PRICE_ID = "price_1TCdcV2WMuUgq7vD5X99lzED";
 
         // Use real Price ID instead of price_data to avoid creating duplicate prices
         const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
@@ -286,14 +284,10 @@ export const appRouter = router({
                 },
               };
 
-        // For trial plan: add 0,50€ one-time fee as invoice item so Stripe Checkout shows the correct amount
-        const addInvoiceItems =
-          plan === "trial" ? [{ price: TRIAL_FEE_PRICE_ID, quantity: 1 }] : [];
-
+        // Trial plan is FREE (0,00€) for 7 days, then 49,90€/month automatically
         const session = await stripe.checkout.sessions.create({
           mode: "subscription",
           line_items: lineItems,
-          ...(addInvoiceItems.length > 0 ? { add_invoice_items: addInvoiceItems } : {}),
           subscription_data: subscriptionData,
           customer_email: user.email || undefined,
           allow_promotion_codes: true,

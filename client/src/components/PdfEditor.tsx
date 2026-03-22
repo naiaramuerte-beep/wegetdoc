@@ -32,8 +32,12 @@ function uint8ToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+// Configure PDF.js worker — use local worker served by Vite to avoid CDN version mismatches
+// The worker file is copied to public/ by vite.config.ts so it's available at /pdf.worker.min.mjs
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url
+).href;
 
 // ── Font options ──────────────────────────────────────────────
 const FONT_OPTIONS = [
@@ -183,7 +187,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const [eraserSize, setEraserSize] = useState(30);
 
   // Drawing canvas state (brush, eraser, highlight)
-  const [isCanvasDrawing, setIsCanvasDrawing] = useState(false);
+  // isCanvasDrawing MUST be a ref (not state) to avoid stale closures in useCallback handlers
+  const isCanvasDrawingRef = useRef(false);
+  const setIsCanvasDrawing = useCallback((v: boolean) => { isCanvasDrawingRef.current = v; }, []);
   const [canvasDrawStart, setCanvasDrawStart] = useState({ x: 0, y: 0 });
   const [currentBrushPoints, setCurrentBrushPoints] = useState<{ x: number; y: number }[]>([]);
   const [dragPreview, setDragPreview] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
@@ -622,6 +628,116 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     };
   }, []);
 
+  // Touch equivalent for brush/eraser/highlight on mobile
+  const getCanvasPosFromTouch = useCallback((touch: React.Touch): { x: number; y: number } => {
+    const canvas = mainCanvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (touch.clientX - rect.left) * (canvas.width / rect.width),
+      y: (touch.clientY - rect.top) * (canvas.height / rect.height),
+    };
+  }, []);
+
+  const handleCanvasTouchStart = useCallback((e: React.TouchEvent) => {
+    if (activeTool !== "brush" && activeTool !== "eraser" && activeTool !== "highlight") return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const pos = getCanvasPosFromTouch(touch);
+    if (activeTool === "brush") {
+      setIsCanvasDrawing(true);
+      setCurrentBrushPoints([pos]);
+      const ctx = getDrawCtx();
+      if (ctx) {
+        ctx.beginPath();
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.moveTo(pos.x, pos.y);
+      }
+    } else {
+      setIsCanvasDrawing(true);
+      setCanvasDrawStart(pos);
+      setDragPreview({ x: pos.x, y: pos.y, w: 0, h: 0 });
+    }
+  }, [activeTool, brushColor, brushSize, getCanvasPosFromTouch, getDrawCtx]);
+
+  const handleCanvasTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isCanvasDrawingRef.current) return;
+    if (activeTool !== "brush" && activeTool !== "eraser" && activeTool !== "highlight") return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const pos = getCanvasPosFromTouch(touch);
+    if (activeTool === "brush") {
+      setCurrentBrushPoints(prev => [...prev, pos]);
+      const ctx = getDrawCtx();
+      if (ctx) { ctx.lineTo(pos.x, pos.y); ctx.stroke(); }
+    } else {
+      const x = Math.min(pos.x, canvasDrawStart.x);
+      const y = Math.min(pos.y, canvasDrawStart.y);
+      const w = Math.abs(pos.x - canvasDrawStart.x);
+      const h = Math.abs(pos.y - canvasDrawStart.y);
+      setDragPreview({ x, y, w, h });
+      const dc = drawingCanvasRef.current;
+      const ctx = getDrawCtx();
+      if (ctx && dc) {
+        redrawDrawingCanvas();
+        if (activeTool === "eraser") {
+          ctx.fillStyle = "rgba(255,255,255,0.85)";
+          ctx.fillRect(x, y, w, h);
+          ctx.strokeStyle = "#999";
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 4]);
+          ctx.strokeRect(x, y, w, h);
+          ctx.setLineDash([]);
+        } else {
+          ctx.fillStyle = highlightColor + "55";
+          ctx.fillRect(x, y, w, h);
+          ctx.strokeStyle = highlightColor;
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 4]);
+          ctx.strokeRect(x, y, w, h);
+          ctx.setLineDash([]);
+        }
+      }
+    }
+  }, [activeTool, getCanvasPosFromTouch, getDrawCtx, canvasDrawStart, highlightColor, redrawDrawingCanvas]);
+
+  const handleCanvasTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!isCanvasDrawingRef.current) return;
+    if (activeTool !== "brush" && activeTool !== "eraser" && activeTool !== "highlight") return;
+    e.preventDefault();
+    setIsCanvasDrawing(false);
+    if (activeTool === "brush" && currentBrushPoints.length > 1) {
+      const newAnn: Omit<Annotation, "id"> = {
+        type: "drawing", points: currentBrushPoints,
+        x: 0, y: 0, width: 0, height: 0,
+        page: currentPage, color: brushColor, strokeWidth: brushSize,
+      };
+      const id = Math.random().toString(36).slice(2);
+      setAnnotations(prev => { const next = [...prev, { ...newAnn, id }]; pushHistory(next); return next; });
+      setCurrentBrushPoints([]);
+    } else if (activeTool === "eraser" && dragPreview && dragPreview.w > 5 && dragPreview.h > 5) {
+      const newAnn: Omit<Annotation, "id"> = {
+        type: "eraser", x: dragPreview.x, y: dragPreview.y,
+        width: dragPreview.w, height: dragPreview.h, page: currentPage,
+      };
+      const id = Math.random().toString(36).slice(2);
+      setAnnotations(prev => { const next = [...prev, { ...newAnn, id }]; pushHistory(next); return next; });
+      setDragPreview(null);
+    } else if (activeTool === "highlight" && dragPreview && dragPreview.w > 5 && dragPreview.h > 5) {
+      const newAnn: Omit<Annotation, "id"> = {
+        type: "highlight", x: dragPreview.x, y: dragPreview.y,
+        width: dragPreview.w, height: dragPreview.h,
+        page: currentPage, color: highlightColor,
+      };
+      const id = Math.random().toString(36).slice(2);
+      setAnnotations(prev => { const next = [...prev, { ...newAnn, id }]; pushHistory(next); return next; });
+      setDragPreview(null);
+    }
+  }, [activeTool, currentBrushPoints, dragPreview, currentPage, brushColor, brushSize, highlightColor, pushHistory]);
+
   // ── Canvas mouse handlers (brush, eraser, highlight) ─────────
   const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
     const pos = getCanvasPos(e);
@@ -645,7 +761,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   }, [activeTool, brushColor, brushSize, getCanvasPos, getDrawCtx]);
 
   const handleCanvasMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isCanvasDrawing) return;
+    if (!isCanvasDrawingRef.current) return;
     const pos = getCanvasPos(e);
     if (activeTool === "brush") {
       setCurrentBrushPoints(prev => [...prev, pos]);
@@ -681,10 +797,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         }
       }
     }
-  }, [isCanvasDrawing, activeTool, getCanvasPos, getDrawCtx, canvasDrawStart, highlightColor, redrawDrawingCanvas]);
+  }, [activeTool, getCanvasPos, getDrawCtx, canvasDrawStart, highlightColor, redrawDrawingCanvas]);
 
   const handleCanvasMouseUp = useCallback((e: React.MouseEvent) => {
-    if (!isCanvasDrawing) return;
+    if (!isCanvasDrawingRef.current) return;
     setIsCanvasDrawing(false);
     const pos = getCanvasPos(e);
     if (activeTool === "brush" && currentBrushPoints.length > 1) {
@@ -714,7 +830,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       setAnnotations(prev => { const next = [...prev, { ...newAnn, id }]; pushHistory(next); return next; });
       setDragPreview(null);
     }
-  }, [isCanvasDrawing, activeTool, getCanvasPos, currentBrushPoints, dragPreview, currentPage, brushColor, brushSize, highlightColor, pushHistory]);
+  }, [activeTool, getCanvasPos, currentBrushPoints, dragPreview, currentPage, brushColor, brushSize, highlightColor, pushHistory]);
 
   const undo = useCallback(() => {
     if (historyIndex <= 0) { setAnnotations([]); return; }
@@ -1043,7 +1159,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // ── Compress ──────────────────────────────────────────────────
   const compressPdf = async () => {
     if (!pdfBytes) return;
-    if (!isPremium) { setShowPaywall(true); return; }
     toast.loading(t.editor_toast_compressing ?? "Compressing PDF...", { id: "compress" });
     try {
       const doc = await PDFDocument.load(pdfBytes as Uint8Array);
@@ -1063,7 +1178,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const protectPdf = async () => {
     if (!pdfBytes || !password) { toast.error(t.editor_toast_password_required ?? "Enter a password"); return; }
     if (password !== confirmPassword) { toast.error(t.editor_protect_passwords_mismatch ?? "Passwords do not match"); return; }
-    if (!isPremium) { setShowPaywall(true); return; }
     toast.loading(t.editor_toast_protecting ?? "Protecting PDF...", { id: "protect" });
     try {
       // pdf-lib doesn't support encryption natively; inform user
@@ -1076,7 +1190,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // ── Convert PDF to image ──────────────────────────────────────
   const convertToImage = async (format: "jpg" | "png") => {
     if (!pdfDoc) return;
-    if (!isPremium) { setShowPaywall(true); return; }
     toast.loading(t.editor_toast_converting ?? `Converting to ${format.toUpperCase()}...`, { id: "convert" });
     try {
       const page = await pdfDoc.getPage(currentPage);
@@ -1101,7 +1214,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // ── Convert all pages to images (ZIP) ────────────────────────
   const convertAllToImages = async (format: "jpg" | "png") => {
     if (!pdfDoc) return;
-    if (!isPremium) { setShowPaywall(true); return; }
     toast.loading(t.editor_toast_converting ?? "Converting all pages...", { id: "convertAll" });
     try {
       for (let i = 1; i <= totalPages; i++) {
@@ -1156,7 +1268,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const mergePdfs = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (!files.length || !pdfBytes) return;
-    if (!isPremium) { setShowPaywall(true); return; }
     toast.loading("Fusionando PDFs...", { id: "merge" });
     try {
       const merged = await PDFDocument.create();
@@ -1185,7 +1296,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // ── Split PDF ─────────────────────────────────────────────────
   const splitPdf = async (splitAt: number) => {
     if (!pdfBytes) return;
-    if (!isPremium) { setShowPaywall(true); return; }
     toast.loading("Dividiendo PDF...", { id: "split" });
     try {
       const original = await PDFDocument.load(pdfBytes);
@@ -2395,12 +2505,17 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     : activeTool === "highlight" ? "text"
                     : "default",
                   pointerEvents: (activeTool === "brush" || activeTool === "eraser" || activeTool === "highlight") ? "auto" : "none",
+                  touchAction: "none",
                   zIndex: 10,
                 }}
                 onMouseDown={handleCanvasMouseDown}
                 onMouseMove={handleCanvasMouseMove}
                 onMouseUp={handleCanvasMouseUp}
                 onMouseLeave={handleCanvasMouseUp}
+                onTouchStart={handleCanvasTouchStart}
+                onTouchMove={handleCanvasTouchMove}
+                onTouchEnd={handleCanvasTouchEnd}
+                onTouchCancel={handleCanvasTouchEnd}
               />
               {/* Annotation overlay */}
               <div

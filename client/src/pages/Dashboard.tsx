@@ -704,7 +704,7 @@ function BillingTab() {
             {isPremium ? (
               <div>
                 <p className="text-3xl font-bold text-white">
-                  {sub?.plan === "trial" ? "0,50€" : "49,90€"}
+                  {sub?.plan === "trial" ? "0,00€" : "49,90€"}
                 </p>
                 <p className={`text-xs ${sub?.cancelAtPeriodEnd ? "text-amber-200" : "text-blue-200"}`}>
                   {sub?.plan === "trial" ? "prueba 7 días" : "/ mes"}
@@ -782,7 +782,7 @@ function BillingTab() {
               className="border-2 border-blue-200 rounded-xl p-4 hover:border-blue-400 transition-colors cursor-pointer"
               onClick={() => checkoutMutation.mutate({ plan: "trial", origin: window.location.origin })}
             >
-              <p className="font-bold text-slate-800 text-lg">0,50€</p>
+              <p className="font-bold text-slate-800 text-lg">0,00€</p>
               <p className="text-blue-600 font-medium text-sm">Prueba 7 días</p>
               <p className="text-xs text-slate-500 mt-1">Acceso completo durante 7 días</p>
               <Button size="sm" className="w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white" disabled={checkoutMutation.isPending}>

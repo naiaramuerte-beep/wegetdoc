@@ -389,3 +389,20 @@
 - [x] Corregir: cliente lee resp.blob() en lugar de resp.json() + atob()
 - [x] Añadir AbortController con timeout de 90s para evitar colgadas indefinidas
 - [x] Añadir detección de tipo MIME por extensión en el servidor (fix para móvil que envía application/octet-stream)
+
+## Bugs Editor (v6) - 22/03/2026
+- [x] Bug: herramienta "Proteger PDF" pide registro/pago antes de usarla — eliminado paywall prematuro
+- [x] Bug: revisar todas las herramientas que bloquean antes de descargar — eliminados paywalls en comprimir, proteger, convertir a imagen, fusionar, dividir
+- [x] Bug: pincel no funciona en móvil — añadidos touch handlers (onTouchStart/Move/End) al canvas de dibujo
+- [x] Bug: pincel no funciona en PC — pendiente verificación en navegador real
+
+## Revisión completa del código (22/03/2026)
+- [x] Revisar todos los archivos principales del proyecto en busca de fallos
+- [x] Corregir: precio del trial 0,50€ → 0,00€ en Dashboard, Pricing, email.ts, products.ts, routers.ts y tests
+- [x] Corregir: enlace roto /contacto en CancelSubscription → ContactModal
+- [x] Corregir: ruta /gdpr faltante en App.tsx → añadida ruta a LegalPage
+- [x] Corregir: stale closure en pincel (isCanvasDrawing useState → useRef)
+- [x] Corregir: touch handlers del pincel usan isCanvasDrawingRef.current en lugar del valor capturado
+- [x] Corregir: pdfjs worker usa local (Vite) en lugar de CDN externo para evitar n.toHex error
+- [x] Corregir: ACCEPTED_MIME_TYPES/EXTENSIONS movidos fuera del componente Home (evita recreación en cada render)
+- [x] Corregir: email de confirmación de pago mostraba 0,50€ → corregido a 0,00€

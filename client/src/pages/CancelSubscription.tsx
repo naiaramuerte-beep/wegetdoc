@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ContactModal from "@/components/ContactModal";
 import {
   AlertTriangle, CheckCircle2, ChevronRight, ArrowLeft,
   XCircle, Clock, HelpCircle, DollarSign, Frown, Zap
@@ -28,6 +29,7 @@ export default function CancelSubscription() {
   const [step, setStep] = useState<Step>("reason");
   const [selectedReason, setSelectedReason] = useState<string>("");
   const [otherText, setOtherText] = useState("");
+  const [contactOpen, setContactOpen] = useState(false);
 
   const cancelMutation = trpc.subscription.cancel.useMutation({
     onSuccess: () => {
@@ -158,7 +160,7 @@ export default function CancelSubscription() {
                 <p className="text-sm font-semibold mb-1" style={{ color: "oklch(0.30 0.10 150)" }}>¿Sabías que puedes pausar tu suscripción?</p>
                 <p className="text-xs" style={{ color: "oklch(0.45 0.08 150)" }}>Contacta con soporte y pausamos tu cuenta hasta 3 meses sin perder tus documentos.</p>
                 <button
-                  onClick={() => navigate("/contacto")}
+                  onClick={() => setContactOpen(true)}
                   className="text-xs font-semibold mt-2 hover:underline"
                   style={{ color: "oklch(0.40 0.12 150)" }}
                 >
@@ -268,6 +270,7 @@ export default function CancelSubscription() {
       </div>
 
       <Footer />
+      <ContactModal open={contactOpen} onClose={() => setContactOpen(false)} />
     </div>
   );
 }
