@@ -382,3 +382,10 @@
 - [x] Home dropzone: aceptar Word, Excel, PPT, JPG, PNG y más además de PDF
 - [x] Home openEditor: eliminar bloqueo de archivos no-PDF
 - [x] PdfEditor initialFile: convertir automáticamente archivos no-PDF antes de cargar
+
+## Bug: conversión colgada en móvil (22/03/2026)
+- [x] Diagnosticar por qué la conversión se queda en "Convirtiendo..." indefinidamente en móvil
+- [x] Corregir: servidor devuelve PDF binario en lugar de base64 JSON (elimina 33% overhead + atob memory issues)
+- [x] Corregir: cliente lee resp.blob() en lugar de resp.json() + atob()
+- [x] Añadir AbortController con timeout de 90s para evitar colgadas indefinidas
+- [x] Añadir detección de tipo MIME por extensión en el servidor (fix para móvil que envía application/octet-stream)

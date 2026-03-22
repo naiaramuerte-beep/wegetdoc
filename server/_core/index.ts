@@ -248,14 +248,30 @@ ${allUrls.map(u => `  <url>
       const file = req.file;
       if (!file) { res.status(400).json({ error: "No file" }); return; }
       const mimeType = file.mimetype || "application/octet-stream";
-      if (!isConvertibleType(mimeType)) {
-        res.status(415).json({ error: `Unsupported file type: ${mimeType}` }); return;
+      // Also detect type from extension if mimetype is generic
+      const ext = (file.originalname || "").split(".").pop()?.toLowerCase() ?? "";
+      const extMimeMap: Record<string, string> = {
+        doc: "application/msword",
+        docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        xls: "application/vnd.ms-excel",
+        xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ppt: "application/vnd.ms-powerpoint",
+        pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png",
+        gif: "image/gif", webp: "image/webp", bmp: "image/bmp", tiff: "image/tiff",
+        html: "text/html", txt: "text/plain",
+      };
+      const resolvedMime = (mimeType === "application/octet-stream" && extMimeMap[ext]) ? extMimeMap[ext] : mimeType;
+      if (!isConvertibleType(resolvedMime)) {
+        res.status(415).json({ error: `Unsupported file type: ${resolvedMime}` }); return;
       }
-      const { pdfBuffer, converted } = await convertToPdf(file.buffer, mimeType, file.originalname);
-      // Return the PDF as base64 so the frontend can load it directly
-      const base64 = pdfBuffer.toString("base64");
+      const { pdfBuffer } = await convertToPdf(file.buffer, resolvedMime, file.originalname);
+      // Return the PDF as binary blob — more efficient than base64 JSON (avoids 33% overhead + atob memory issues on mobile)
       const originalName = file.originalname.replace(/\.[^.]+$/, ".pdf");
-      res.json({ success: true, pdfBase64: base64, name: originalName, converted });
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `inline; filename="${originalName}"`);
+      res.setHeader("X-Converted-Name", encodeURIComponent(originalName));
+      res.send(pdfBuffer);
     } catch (err) {
       console.error("[ConvertUpload] Error:", err);
       res.status(500).json({ error: `Conversion failed: ${(err as Error).message}` });

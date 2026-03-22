@@ -412,22 +412,33 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       try {
         const formData = new FormData();
         formData.append("file", initialFile);
-        const resp = await fetch("/api/documents/convert-upload", { method: "POST", body: formData });
+        // Use AbortController for timeout (90s for large files)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 90000);
+        const resp = await fetch("/api/documents/convert-upload", {
+          method: "POST",
+          body: formData,
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
         if (!resp.ok) {
           const err = await resp.json().catch(() => ({ error: "Unknown error" }));
           throw new Error(err.error || "Conversion failed");
         }
-        const { pdfBase64, name } = await resp.json();
-        const binary = atob(pdfBase64);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-        const pdfBlob = new Blob([bytes], { type: "application/pdf" });
+        // Server now returns binary PDF blob directly (no base64 overhead)
+        const pdfBlob = await resp.blob();
+        const nameHeader = resp.headers.get("X-Converted-Name");
+        const name = nameHeader ? decodeURIComponent(nameHeader) : initialFile.name.replace(/\.[^.]+$/, ".pdf");
         const pdfFile = new File([pdfBlob], name, { type: "application/pdf" });
         setFile(pdfFile);
-        loadPdf(pdfFile);
+        await loadPdf(pdfFile);
         toast.success(t.editor_toast_converted ?? "File converted to PDF successfully", { id: toastId });
-      } catch (err) {
-        toast.error(t.editor_toast_convert_error ?? "Could not convert file.", { id: toastId });
+      } catch (err: any) {
+        if (err?.name === "AbortError") {
+          toast.error(t.editor_toast_convert_error ?? "Conversion timed out. Please try a smaller file.", { id: toastId });
+        } else {
+          toast.error(t.editor_toast_convert_error ?? "Could not convert file.", { id: toastId });
+        }
         console.error("[InitialFile Convert]", err);
       }
     })();
@@ -524,23 +535,33 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     try {
       const formData = new FormData();
       formData.append("file", f);
-      const resp = await fetch("/api/documents/convert-upload", { method: "POST", body: formData });
+      // AbortController for 90s timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 90000);
+      const resp = await fetch("/api/documents/convert-upload", {
+        method: "POST",
+        body: formData,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({ error: "Unknown error" }));
         throw new Error(err.error || "Conversion failed");
       }
-      const { pdfBase64, name } = await resp.json();
-      // Convert base64 to Blob and load as PDF
-      const binary = atob(pdfBase64);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const pdfBlob = new Blob([bytes], { type: "application/pdf" });
+      // Server returns binary PDF blob directly (no base64 overhead)
+      const pdfBlob = await resp.blob();
+      const nameHeader = resp.headers.get("X-Converted-Name");
+      const name = nameHeader ? decodeURIComponent(nameHeader) : f.name.replace(/\.[^.]+$/, ".pdf");
       const pdfFile = new File([pdfBlob], name, { type: "application/pdf" });
       setFile(pdfFile);
-      loadPdf(pdfFile);
+      await loadPdf(pdfFile);
       toast.success(t.editor_toast_converted ?? "File converted to PDF successfully", { id: toastId });
-    } catch (err) {
-      toast.error(t.editor_toast_convert_error ?? "Could not convert file. Please try a PDF file.", { id: toastId });
+    } catch (err: any) {
+      if (err?.name === "AbortError") {
+        toast.error(t.editor_toast_convert_error ?? "Conversion timed out. Please try a smaller file.", { id: toastId });
+      } else {
+        toast.error(t.editor_toast_convert_error ?? "Could not convert file. Please try a PDF file.", { id: toastId });
+      }
       console.error("[ConvertUpload]", err);
     }
   }, [loadPdf, t]);
