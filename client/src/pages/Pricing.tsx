@@ -153,13 +153,13 @@ export default function Pricing() {
                   className="text-4xl font-extrabold"
                   style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
                 >
-                  0,50 €
+                  0,00 €
                 </span>
                 <span
                   className="text-sm ml-1"
                   style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
                 >
-                  / 7 días
+                  / 7 días gratis
                 </span>
               </div>
 
@@ -167,7 +167,7 @@ export default function Pricing() {
                 className="text-sm leading-relaxed mb-6 flex-1"
                 style={{ color: "oklch(0.45 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
               >
-                Con el plan de prueba de 7 días, puedes disfrutar del servicio con limitaciones antes de decidir actualizar al siguiente plan para desbloquear todas las funciones. Después de ese período, el plan se renueva automáticamente al plan mensual; puedes cancelar en cualquier momento.
+                Accede gratis durante 7 días. Sin cargo inicial. Después del período de prueba, el plan se renueva automáticamente a 49,90€/mes. Puedes cancelar en cualquier momento.
               </p>
 
               <button
@@ -185,7 +185,7 @@ export default function Pricing() {
                 onClick={() => handleSubscribe("trial")}
                 disabled={loadingPlan === "trial"}
               >
-                {loadingPlan === "trial" ? <><Loader2 className="w-4 h-4 animate-spin" /> Procesando...</> : "Iniciar prueba por 0,50 €"}
+                {loadingPlan === "trial" ? <><Loader2 className="w-4 h-4 animate-spin" /> Procesando...</> : "Empezar gratis 7 días"}
               </button>
             </div>
 
@@ -260,7 +260,7 @@ export default function Pricing() {
                 onClick={() => handleSubscribe("monthly")}
                 disabled={loadingPlan === "monthly"}
               >
-                {loadingPlan === "monthly" ? <><Loader2 className="w-4 h-4 animate-spin" /> Procesando...</> : "Suscribirse por 9,99 €/mes"}
+                {loadingPlan === "monthly" ? <><Loader2 className="w-4 h-4 animate-spin" /> Procesando...</> : "Suscribirse por 49,90 €/mes"}
               </button>
             </div>
           </div>
