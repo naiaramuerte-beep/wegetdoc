@@ -115,6 +115,42 @@
       ]
     }
     </script>
+    <!-- Google Consent Mode v2 — MUST run before gtag config -->
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+
+      // 1. Set default consent to denied for EEE users
+      gtag('consent', 'default', {
+        'ad_storage': 'denied',
+        'ad_user_data': 'denied',
+        'ad_personalization': 'denied',
+        'analytics_storage': 'denied',
+        'wait_for_update': 500
+      });
+
+      // 2. Enable URL passthrough for better measurement without cookies
+      gtag('set', 'url_passthrough', true);
+
+      // 3. Redact ad click data when ad_storage is denied
+      gtag('set', 'ads_data_redaction', true);
+
+      // 4. Check if user already gave consent (from our CookieBanner)
+      (function() {
+        try {
+          var consent = localStorage.getItem('editpdf_cookie_consent');
+          if (consent === 'all') {
+            gtag('consent', 'update', {
+              'ad_storage': 'granted',
+              'ad_user_data': 'granted',
+              'ad_personalization': 'granted',
+              'analytics_storage': 'granted'
+            });
+          }
+        } catch(e) {}
+      })();
+    </script>
+
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-S9PBPV95TL"></script>
     <script>

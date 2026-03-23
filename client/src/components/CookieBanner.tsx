@@ -45,33 +45,39 @@ export default function CookieBanner() {
     }
   }, []);
 
+  const updateGoogleConsent = (granted: boolean) => {
+    if (typeof window !== "undefined" && typeof (window as any).gtag === "function") {
+      const value = granted ? "granted" : "denied";
+      (window as any).gtag("consent", "update", {
+        ad_storage: value,
+        ad_user_data: value,
+        ad_personalization: value,
+        analytics_storage: value,
+      });
+    }
+  };
+
   const handleAcceptAll = () => {
     setCookieConsent("all");
+    updateGoogleConsent(true);
     setVisible(false);
   };
 
   const handleRejectNonEssential = () => {
     setCookieConsent("essential");
+    updateGoogleConsent(false);
     setVisible(false);
-    // Disable analytics if present
-    disableAnalytics();
   };
 
   const handleSaveSettings = () => {
     if (analyticsEnabled) {
       setCookieConsent("all");
+      updateGoogleConsent(true);
     } else {
       setCookieConsent("essential");
-      disableAnalytics();
+      updateGoogleConsent(false);
     }
     setVisible(false);
-  };
-
-  const disableAnalytics = () => {
-    // Disable Google Analytics if loaded
-    if (typeof window !== "undefined") {
-      (window as any)["ga-disable-GA_MEASUREMENT_ID"] = true;
-    }
   };
 
   if (!visible) return null;

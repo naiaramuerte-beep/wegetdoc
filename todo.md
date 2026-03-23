@@ -438,3 +438,6 @@
 - [x] Crear og-image.png atractiva para compartir en redes sociales
 - [x] Configurar meta tags OG en index.html con la imagen
 - [x] Diagnosticar y corregir persistencia de sesión (cookie/JWT no persiste entre visitas — añadido maxAge: ONE_YEAR_MS a cookies de login y register)
+
+## Google Consent Mode v2
+- [x] Implementar Google Consent Mode v2 vinculado al banner de cookies para cumplir EEE/Google Ads
