@@ -433,3 +433,8 @@
 ## Banner de cookies y robots.txt
 - [x] Crear componente CookieBanner con consentimiento de cookies (LSSI)
 - [x] Crear robots.txt bloqueando /dashboard, /admin y rutas internas
+
+## OG Image y persistencia de sesión
+- [x] Crear og-image.png atractiva para compartir en redes sociales
+- [x] Configurar meta tags OG en index.html con la imagen
+- [x] Diagnosticar y corregir persistencia de sesión (cookie/JWT no persiste entre visitas — añadido maxAge: ONE_YEAR_MS a cookies de login y register)
