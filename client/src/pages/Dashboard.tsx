@@ -298,6 +298,28 @@ function DocumentsTab() {
   const [, navigate] = useLocation();
   const { setPendingFile, setPendingTool } = usePdfFile();
 
+  // ── Download document as blob to avoid cross-origin download attribute being ignored ──
+  const handleDownloadDocument = async (doc: any) => {
+    if (!doc.fileUrl) { toast.error("No se puede descargar este documento"); return; }
+    try {
+      toast.loading("Preparando descarga...", { id: "download-doc" });
+      const response = await fetch(doc.fileUrl);
+      if (!response.ok) throw new Error("Error al descargar el documento");
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = doc.name || "document.pdf";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Documento descargado", { id: "download-doc" });
+    } catch (err) {
+      toast.error("Error al descargar el documento", { id: "download-doc" });
+    }
+  };
+
   const handleEditDocument = async (doc: any) => {
     if (!doc.fileUrl) { toast.error("No se puede abrir este documento"); return; }
     try {
@@ -442,11 +464,15 @@ function DocumentsTab() {
                   )}
                   {doc.fileUrl && (
                     isPremium ? (
-                      <a href={doc.fileUrl} download={doc.name} target="_blank" rel="noopener noreferrer">
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Descargar">
-                          <Download size={14} />
-                        </Button>
-                      </a>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0"
+                        title="Descargar"
+                        onClick={() => handleDownloadDocument(doc)}
+                      >
+                        <Download size={14} />
+                      </Button>
                     ) : (
                       <Button
                         size="sm"

@@ -444,3 +444,6 @@
 
 ## Google Ads Conversion Tracking
 - [x] Implementar evento gtag conversion (AW-18034146775/8NSFCKitgI4cENf7rJdD) al detectar ?payment=success en Dashboard
+
+## Fix descarga cross-origin Dashboard
+- [x] Corregir descarga de documentos en Dashboard: usar fetch+blob en lugar de <a download> para URLs de S3 cross-origin
