@@ -447,3 +447,8 @@
 
 ## Fix descarga cross-origin Dashboard
 - [x] Corregir descarga de documentos en Dashboard: usar fetch+blob en lugar de <a download> para URLs de S3 cross-origin
+
+## Google Ads compliance - Cloud SaaS messaging
+- [x] Ajustar Home para dejar claro que es un servicio en la nube (no software descargable)
+- [x] Añadir badges/textos como "100% Cloud-Based", "No Download Required", "Works in your browser"
+- [x] Asegurar que no haya lenguaje que sugiera descarga de software

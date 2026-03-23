@@ -231,6 +231,22 @@ export default function Home() {
         />
 
         <div className="container relative z-10 py-14 md:py-20">
+          {/* Cloud SaaS badge — prominent */}
+          <div className="flex justify-center mb-4">
+            <div
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold"
+              style={{
+                backgroundColor: "oklch(0.75 0.15 145 / 0.15)",
+                border: "1px solid oklch(0.75 0.15 145 / 0.35)",
+                color: "oklch(0.80 0.15 145)",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            >
+              <Monitor className="w-4 h-4" />
+              {t.hero_cloud_badge}
+            </div>
+          </div>
+
           {/* Trust badges row */}
           <div className="flex flex-wrap justify-center gap-3 mb-8">
             {[
@@ -656,6 +672,20 @@ export default function Home() {
               <Upload className="w-4 h-4" />
               {t.how_cta}
             </button>
+          </div>
+
+          {/* Cloud SaaS notice */}
+          <div
+            className="mt-10 flex items-center justify-center gap-3 px-6 py-4 rounded-xl mx-auto max-w-2xl"
+            style={{
+              backgroundColor: "oklch(0.55 0.22 260 / 0.06)",
+              border: "1px solid oklch(0.55 0.22 260 / 0.15)",
+            }}
+          >
+            <Monitor className="w-5 h-5 flex-shrink-0" style={{ color: blue }} />
+            <p className="text-sm" style={{ color: "oklch(0.40 0.03 250)", fontFamily: "'DM Sans', sans-serif" }}>
+              {t.cloud_notice}
+            </p>
           </div>
         </div>
       </section>
