@@ -441,3 +441,6 @@
 
 ## Google Consent Mode v2
 - [x] Implementar Google Consent Mode v2 vinculado al banner de cookies para cumplir EEE/Google Ads
+
+## Google Ads Conversion Tracking
+- [x] Implementar evento gtag conversion (AW-18034146775/8NSFCKitgI4cENf7rJdD) al detectar ?payment=success en Dashboard
