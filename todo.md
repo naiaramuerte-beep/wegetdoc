@@ -429,3 +429,7 @@
 - [x] Crear Política de Privacidad
 - [x] Crear Política de Cookies
 - [x] Crear página de cumplimiento RGPD
+
+## Banner de cookies y robots.txt
+- [x] Crear componente CookieBanner con consentimiento de cookies (LSSI)
+- [x] Crear robots.txt bloqueando /dashboard, /admin y rutas internas

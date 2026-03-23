@@ -355,6 +355,13 @@ export type TranslationKeys = {
   pricing_faq_q3: string; pricing_faq_a3: string;
   pricing_faq_q4: string; pricing_faq_a4: string;
   pricing_faq_q5: string; pricing_faq_a5: string;
+  cookie_banner_text: string;
+  cookie_banner_accept: string;
+  cookie_banner_reject: string;
+  cookie_banner_settings: string;
+  cookie_banner_necessary: string;
+  cookie_banner_analytics: string;
+  cookie_banner_more_info: string;
 };
 
 type Translations = Record<LangCode, TranslationKeys>;
@@ -685,6 +692,13 @@ export const translations: Translations = {
     pricing_faq_a4: "Sí, puedes cancelar tu suscripción en cualquier momento desde la configuración de tu cuenta. No hay penalizaciones por cancelación.",
     pricing_faq_q5: "¿Puedo solicitar un reembolso por una suscripción no utilizada?",
     pricing_faq_a5: "Evaluamos las solicitudes de reembolso caso por caso. Si tienes algún problema con tu suscripción, contacta con nuestro equipo de soporte y haremos todo lo posible para ayudarte.",
+    cookie_banner_text: "Utilizamos cookies propias y de terceros para mejorar tu experiencia de navegación y analizar el uso del sitio. Puedes aceptar todas las cookies, rechazar las no esenciales o configurar tus preferencias.",
+    cookie_banner_accept: "Aceptar todas",
+    cookie_banner_reject: "Solo esenciales",
+    cookie_banner_settings: "Configurar",
+    cookie_banner_necessary: "Cookies necesarias (siempre activas)",
+    cookie_banner_analytics: "Cookies de analítica",
+    cookie_banner_more_info: "Más información en nuestra",
   },
 
   en: {
@@ -1012,6 +1026,13 @@ export const translations: Translations = {
     pricing_faq_a4: "Yes, you can cancel anytime from your account settings. No cancellation penalties.",
     pricing_faq_q5: "Can I request a refund for an unused subscription?",
     pricing_faq_a5: "We evaluate refund requests case by case. Contact our support team and we will do our best to help you.",
+    cookie_banner_text: "We use our own and third-party cookies to improve your browsing experience and analyze site usage. You can accept all cookies, reject non-essential ones, or configure your preferences.",
+    cookie_banner_accept: "Accept all",
+    cookie_banner_reject: "Essential only",
+    cookie_banner_settings: "Settings",
+    cookie_banner_necessary: "Necessary cookies (always active)",
+    cookie_banner_analytics: "Analytics cookies",
+    cookie_banner_more_info: "More info in our",
   },
 
   fr: {
@@ -1340,6 +1361,13 @@ export const translations: Translations = {
     pricing_faq_a4: "Oui, vous pouvez annuler à tout moment depuis les paramètres de votre compte. Aucune pénalité d'annulation.",
     pricing_faq_q5: "Puis-je demander un remboursement pour un abonnement non utilisé ?",
     pricing_faq_a5: "Nous évaluons les demandes de remboursement au cas par cas. Contactez notre équipe d'assistance et nous ferons de notre mieux pour vous aider.",
+    cookie_banner_text: "Nous utilisons des cookies propres et tiers pour améliorer votre expérience de navigation et analyser l'utilisation du site. Vous pouvez accepter tous les cookies, refuser les non essentiels ou configurer vos préférences.",
+    cookie_banner_accept: "Tout accepter",
+    cookie_banner_reject: "Essentiels uniquement",
+    cookie_banner_settings: "Configurer",
+    cookie_banner_necessary: "Cookies nécessaires (toujours actifs)",
+    cookie_banner_analytics: "Cookies analytiques",
+    cookie_banner_more_info: "Plus d'informations dans notre",
   },
 
   de: {
@@ -1668,6 +1696,13 @@ export const translations: Translations = {
     pricing_faq_a4: "Ja, Sie können jederzeit über Ihre Kontoeinstellungen kündigen. Keine Stornierungsgebühren.",
     pricing_faq_q5: "Kann ich eine Rückerstattung für ein ungenutztes Abonnement beantragen?",
     pricing_faq_a5: "Wir prüfen Rückerstattungsanfragen von Fall zu Fall. Kontaktieren Sie unser Support-Team und wir werden unser Bestes tun, um Ihnen zu helfen.",
+    cookie_banner_text: "Wir verwenden eigene und Drittanbieter-Cookies, um Ihr Surferlebnis zu verbessern und die Nutzung der Website zu analysieren. Sie können alle Cookies akzeptieren, nicht wesentliche ablehnen oder Ihre Einstellungen konfigurieren.",
+    cookie_banner_accept: "Alle akzeptieren",
+    cookie_banner_reject: "Nur wesentliche",
+    cookie_banner_settings: "Einstellungen",
+    cookie_banner_necessary: "Notwendige Cookies (immer aktiv)",
+    cookie_banner_analytics: "Analyse-Cookies",
+    cookie_banner_more_info: "Mehr Informationen in unserer",
   },
 
   pt: {
@@ -1996,6 +2031,13 @@ export const translations: Translations = {
     pricing_faq_a4: "Sim, pode cancelar a qualquer momento nas definições da sua conta. Sem penalizações de cancelamento.",
     pricing_faq_q5: "Posso solicitar um reembolso por uma subscrição não utilizada?",
     pricing_faq_a5: "Avaliamos os pedidos de reembolso caso a caso. Contacte a nossa equipa de suporte e faremos o possível para o ajudar.",
+    cookie_banner_text: "Utilizamos cookies próprios e de terceiros para melhorar a sua experiência de navegação e analisar o uso do site. Pode aceitar todos os cookies, rejeitar os não essenciais ou configurar as suas preferências.",
+    cookie_banner_accept: "Aceitar todos",
+    cookie_banner_reject: "Apenas essenciais",
+    cookie_banner_settings: "Configurar",
+    cookie_banner_necessary: "Cookies necessários (sempre ativos)",
+    cookie_banner_analytics: "Cookies de análise",
+    cookie_banner_more_info: "Mais informações na nossa",
   },
 
   it: {
@@ -2324,6 +2366,13 @@ export const translations: Translations = {
     pricing_faq_a4: "Sì, puoi annullare in qualsiasi momento dalle impostazioni del tuo account. Nessuna penale di cancellazione.",
     pricing_faq_q5: "Posso richiedere un rimborso per un abbonamento non utilizzato?",
     pricing_faq_a5: "Valutiamo le richieste di rimborso caso per caso. Contatta il nostro team di supporto e faremo del nostro meglio per aiutarti.",
+    cookie_banner_text: "Utilizziamo cookie propri e di terze parti per migliorare la tua esperienza di navigazione e analizzare l'utilizzo del sito. Puoi accettare tutti i cookie, rifiutare quelli non essenziali o configurare le tue preferenze.",
+    cookie_banner_accept: "Accetta tutti",
+    cookie_banner_reject: "Solo essenziali",
+    cookie_banner_settings: "Configura",
+    cookie_banner_necessary: "Cookie necessari (sempre attivi)",
+    cookie_banner_analytics: "Cookie analitici",
+    cookie_banner_more_info: "Maggiori informazioni nella nostra",
   },
 
   nl: {
@@ -2652,6 +2701,13 @@ export const translations: Translations = {
     pricing_faq_a4: "Ja, u kunt op elk moment opzeggen via uw accountinstellingen. Geen annuleringskosten.",
     pricing_faq_q5: "Kan ik een terugbetaling aanvragen voor een ongebruikt abonnement?",
     pricing_faq_a5: "We evalueren terugbetalingsverzoeken geval per geval. Neem contact op met ons ondersteuningsteam en we doen ons best om u te helpen.",
+    cookie_banner_text: "Wij gebruiken eigen en externe cookies om uw browse-ervaring te verbeteren en het sitegebruik te analyseren. U kunt alle cookies accepteren, niet-essentiële weigeren of uw voorkeuren configureren.",
+    cookie_banner_accept: "Alles accepteren",
+    cookie_banner_reject: "Alleen essentieel",
+    cookie_banner_settings: "Instellingen",
+    cookie_banner_necessary: "Noodzakelijke cookies (altijd actief)",
+    cookie_banner_analytics: "Analytische cookies",
+    cookie_banner_more_info: "Meer informatie in ons",
   },
 
   pl: {
@@ -2980,6 +3036,13 @@ export const translations: Translations = {
     pricing_faq_a4: "Tak, możesz anulować w dowolnym momencie z ustawień konta. Brak kar za anulowanie.",
     pricing_faq_q5: "Czy mogę poprosić o zwrot pieniędzy za nieużywaną subskrypcję?",
     pricing_faq_a5: "Oceniamy wnioski o zwrot pieniędzy indywidualnie. Skontaktuj się z naszym zespołem wsparcia, a zrobimy wszystko, co w naszej mocy, aby Ci pomóc.",
+    cookie_banner_text: "Używamy własnych plików cookie i plików cookie stron trzecich, aby poprawić Twoje wrażenia z przeglądania i analizować korzystanie z witryny. Możesz zaakceptować wszystkie pliki cookie, odrzucić nieistotne lub skonfigurować swoje preferencje.",
+    cookie_banner_accept: "Zaakceptuj wszystkie",
+    cookie_banner_reject: "Tylko niezbędne",
+    cookie_banner_settings: "Konfiguruj",
+    cookie_banner_necessary: "Niezbędne pliki cookie (zawsze aktywne)",
+    cookie_banner_analytics: "Analityczne pliki cookie",
+    cookie_banner_more_info: "Więcej informacji w naszej",
   },
 
   ru: {
@@ -3308,6 +3371,13 @@ export const translations: Translations = {
     pricing_faq_a4: "Да, вы можете отменить в любое время в настройках аккаунта. Никаких штрафов за отмену.",
     pricing_faq_q5: "Могу ли я запросить возврат средств за неиспользованную подписку?",
     pricing_faq_a5: "Мы рассматриваем запросы на возврат средств в индивидуальном порядке. Свяжитесь с нашей службой поддержки, и мы сделаем всё возможное, чтобы помочь вам.",
+    cookie_banner_text: "Мы используем собственные и сторонние файлы cookie для улучшения вашего опыта просмотра и анализа использования сайта. Вы можете принять все файлы cookie, отклонить необязательные или настроить свои предпочтения.",
+    cookie_banner_accept: "Принять все",
+    cookie_banner_reject: "Только необходимые",
+    cookie_banner_settings: "Настроить",
+    cookie_banner_necessary: "Необходимые cookie (всегда активны)",
+    cookie_banner_analytics: "Аналитические cookie",
+    cookie_banner_more_info: "Подробнее в нашей",
   },
 
   zh: {
@@ -3636,6 +3706,13 @@ export const translations: Translations = {
     pricing_faq_a4: "是的，您可以随时从账户设置中取消。没有取消罚款。",
     pricing_faq_q5: "我可以申请未使用订阅的退款吗？",
     pricing_faq_a5: "我们逐案评估退款请求。请联系我们的支持团队，我们将尽力帮助您。",
+    cookie_banner_text: "我们使用自有和第三方Cookie来改善您的浏览体验并分析网站使用情况。您可以接受所有Cookie、拒绝非必要Cookie或配置您的偏好。",
+    cookie_banner_accept: "全部接受",
+    cookie_banner_reject: "仅必要",
+    cookie_banner_settings: "设置",
+    cookie_banner_necessary: "必要Cookie（始终活跃）",
+    cookie_banner_analytics: "分析Cookie",
+    cookie_banner_more_info: "更多信息请参阅我们的",
   },
 };
 

@@ -1,0 +1,7 @@
+Cookie banner verified:
+- Banner appears at bottom of page with backdrop blur
+- Shows cookie icon, text in Spanish, link to cookie policy
+- Three buttons: "Aceptar todas", "Solo esenciales", "Configurar"
+- Backdrop overlay dims the page behind
+- Design matches the dark navy theme
+- robots.txt created at /client/public/robots.txt

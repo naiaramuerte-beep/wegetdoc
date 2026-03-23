@@ -23,6 +23,7 @@ import Admin from "./pages/Admin";
 import LegalPage from "./pages/LegalPage";
 import EditorPage from "./pages/EditorPage";
 import CancelSubscription from "./pages/CancelSubscription";
+import CookieBanner from "./components/CookieBanner";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 
@@ -124,6 +125,7 @@ function App() {
             <TooltipProvider>
               <Toaster position="top-right" />
               <Router />
+              <CookieBanner />
             </TooltipProvider>
           </PdfFileProvider>
         </LanguageProvider>

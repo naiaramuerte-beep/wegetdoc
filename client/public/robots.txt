@@ -1,0 +1,23 @@
+# robots.txt for EDITPDF.ONLINE
+# https://editpdf.online
+
+User-agent: *
+Allow: /
+
+# Block internal/private pages
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /login
+Disallow: /signup
+Disallow: /payment/
+Disallow: /api/
+Disallow: /cancelar-suscripcion
+
+# Block language-prefixed internal pages
+Disallow: /*/dashboard
+Disallow: /*/admin
+Disallow: /*/payment/
+Disallow: /*/cancelar-suscripcion
+
+# Sitemap
+Sitemap: https://editpdf.online/sitemap.xml
