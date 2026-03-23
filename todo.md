@@ -423,3 +423,9 @@
 - [x] Bug: anotación seleccionada (cuadro azul) no se deselecciona al cambiar de herramienta o clic en zona vacía
 - [x] Bug: flujo de "Añadir texto" invertido — debería ser clic en PDF primero, luego escribir
 - [x] Bug: no se puede editar texto ya añadido (color, tamaño, fuente) al seleccionarlo
+
+## Textos legales EDITPDF.ONLINE
+- [x] Crear/actualizar Términos y Condiciones
+- [x] Crear Política de Privacidad
+- [x] Crear Política de Cookies
+- [x] Crear página de cumplimiento RGPD
