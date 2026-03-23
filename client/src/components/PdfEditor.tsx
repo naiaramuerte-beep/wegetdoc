@@ -179,6 +179,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const [textBold, setTextBold] = useState(false);
   const [textFont, setTextFont] = useState("Arial, sans-serif");
   const [clickToPlaceText, setClickToPlaceText] = useState(false);
+  const [editingTextId, setEditingTextId] = useState<string | null>(null); // inline text editing
 
   // Highlight state
   const [highlightColor, setHighlightColor] = useState("#FFFF00");
@@ -200,6 +201,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [encryptionAlgo, setEncryptionAlgo] = useState<"128-AES" | "256-AES" | "128-ARC4">("128-AES");
+  const [isProtecting, setIsProtecting] = useState(false);
+  const [protectProgress, setProtectProgress] = useState(0);
+  // Export state
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
+
+  // File conversion loading state
+  const [isConvertingFile, setIsConvertingFile] = useState(false);
+  const [convertFileProgress, setConvertFileProgress] = useState(0);
 
   // Find state
   const [searchQuery, setSearchQuery] = useState("");
@@ -412,13 +422,20 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       loadPdf(initialFile);
       return;
     }
-    // Non-PDF: convert on server first
-    const toastId = toast.loading(t.editor_toast_converting ?? "Converting to PDF...");
+    // Non-PDF: convert on server first — show full-screen loading overlay
+    setIsConvertingFile(true);
+    setConvertFileProgress(0);
+    // Simulate progress while waiting for server response
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+      progress += Math.random() * 8 + 2; // random increments
+      if (progress > 85) progress = 85; // cap at 85% until real completion
+      setConvertFileProgress(Math.round(progress));
+    }, 400);
     (async () => {
       try {
         const formData = new FormData();
         formData.append("file", initialFile);
-        // Use AbortController for timeout (90s for large files)
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 90000);
         const resp = await fetch("/api/documents/convert-upload", {
@@ -427,23 +444,29 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           signal: controller.signal,
         });
         clearTimeout(timeoutId);
+        clearInterval(progressInterval);
         if (!resp.ok) {
           const err = await resp.json().catch(() => ({ error: "Unknown error" }));
           throw new Error(err.error || "Conversion failed");
         }
-        // Server now returns binary PDF blob directly (no base64 overhead)
+        setConvertFileProgress(90);
         const pdfBlob = await resp.blob();
         const nameHeader = resp.headers.get("X-Converted-Name");
         const name = nameHeader ? decodeURIComponent(nameHeader) : initialFile.name.replace(/\.[^.]+$/, ".pdf");
         const pdfFile = new File([pdfBlob], name, { type: "application/pdf" });
+        setConvertFileProgress(95);
         setFile(pdfFile);
         await loadPdf(pdfFile);
-        toast.success(t.editor_toast_converted ?? "File converted to PDF successfully", { id: toastId });
+        setConvertFileProgress(100);
+        // Brief delay to show 100% before hiding
+        setTimeout(() => setIsConvertingFile(false), 500);
       } catch (err: any) {
+        clearInterval(progressInterval);
+        setIsConvertingFile(false);
         if (err?.name === "AbortError") {
-          toast.error(t.editor_toast_convert_error ?? "Conversion timed out. Please try a smaller file.", { id: toastId });
+          toast.error(t.editor_toast_convert_error ?? "Conversion timed out. Please try a smaller file.");
         } else {
-          toast.error(t.editor_toast_convert_error ?? "Could not convert file.", { id: toastId });
+          toast.error(t.editor_toast_convert_error ?? "Could not convert file.");
         }
         console.error("[InitialFile Convert]", err);
       }
@@ -536,12 +559,18 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       toast.success(t.editor_toast_pdf_loaded ?? "PDF loaded successfully");
       return;
     }
-    // Non-PDF: send to server for conversion
-    const toastId = toast.loading(t.editor_toast_converting ?? "Converting to PDF...");
+    // Non-PDF: show full-screen loading overlay with progress bar
+    setIsConvertingFile(true);
+    setConvertFileProgress(0);
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+      progress += Math.random() * 8 + 2;
+      if (progress > 85) progress = 85;
+      setConvertFileProgress(Math.round(progress));
+    }, 400);
     try {
       const formData = new FormData();
       formData.append("file", f);
-      // AbortController for 90s timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 90000);
       const resp = await fetch("/api/documents/convert-upload", {
@@ -550,23 +579,28 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
+      clearInterval(progressInterval);
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({ error: "Unknown error" }));
         throw new Error(err.error || "Conversion failed");
       }
-      // Server returns binary PDF blob directly (no base64 overhead)
+      setConvertFileProgress(90);
       const pdfBlob = await resp.blob();
       const nameHeader = resp.headers.get("X-Converted-Name");
       const name = nameHeader ? decodeURIComponent(nameHeader) : f.name.replace(/\.[^.]+$/, ".pdf");
       const pdfFile = new File([pdfBlob], name, { type: "application/pdf" });
+      setConvertFileProgress(95);
       setFile(pdfFile);
       await loadPdf(pdfFile);
-      toast.success(t.editor_toast_converted ?? "File converted to PDF successfully", { id: toastId });
+      setConvertFileProgress(100);
+      setTimeout(() => setIsConvertingFile(false), 500);
     } catch (err: any) {
+      clearInterval(progressInterval);
+      setIsConvertingFile(false);
       if (err?.name === "AbortError") {
-        toast.error(t.editor_toast_convert_error ?? "Conversion timed out. Please try a smaller file.", { id: toastId });
+        toast.error(t.editor_toast_convert_error ?? "Conversion timed out. Please try a smaller file.");
       } else {
-        toast.error(t.editor_toast_convert_error ?? "Could not convert file. Please try a PDF file.", { id: toastId });
+        toast.error(t.editor_toast_convert_error ?? "Could not convert file. Please try a PDF file.");
       }
       console.error("[ConvertUpload]", err);
     }
@@ -1132,27 +1166,33 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
   // ── Click to place text on PDF ────────────────────────────────
   const handleOverlayClick = (e: React.MouseEvent) => {
-    // Only deselect if clicking directly on the overlay background (not on an annotation)
+    // Deselect annotation when clicking directly on the overlay background (not on a child annotation)
+    if (e.target === e.currentTarget) {
+      setSelectedId(null);
+    }
     if (activeTool === "pointer") {
-      // e.target is the overlay div itself (not a child annotation)
-      if (e.target === e.currentTarget) setSelectedId(null);
       return;
     }
-    if (activeTool === "text" && clickToPlaceText && textInput.trim()) {
+    if (activeTool === "text") {
+      // Click on PDF to place a new text annotation and start inline editing
       const overlay = overlayRef.current!.getBoundingClientRect();
       const x = e.clientX - overlay.left;
       const y = e.clientY - overlay.top;
-      addAnnotation({
-        type: "text", text: textInput,
+      const initialText = textInput.trim() || "";
+      const newId = Math.random().toString(36).slice(2);
+      const newAnn: Annotation = {
+        id: newId,
+        type: "text", text: initialText,
         x, y,
-        width: Math.max(100, textInput.length * (textSize * 0.6)),
-        height: textSize + 8, page: currentPage,
+        width: Math.max(150, initialText.length * (textSize * 0.6)),
+        height: textSize + 16, page: currentPage,
         color: textColor, fontSize: textSize, fontFamily: textFont,
-      });
-      setClickToPlaceText(false);
+      };
+      setAnnotations(prev => { const next = [...prev, newAnn]; pushHistory(next); return next; });
+      setSelectedId(newId);
+      setEditingTextId(newId);
       setTextInput("");
-      setActiveTool("pointer");
-      toast.success("Texto colocado");
+      setClickToPlaceText(false);
     }
   };
 
@@ -1178,12 +1218,21 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const protectPdf = async () => {
     if (!pdfBytes || !password) { toast.error(t.editor_toast_password_required ?? "Enter a password"); return; }
     if (password !== confirmPassword) { toast.error(t.editor_protect_passwords_mismatch ?? "Passwords do not match"); return; }
-    toast.loading(t.editor_toast_protecting ?? "Protecting PDF...", { id: "protect" });
+    setIsProtecting(true);
+    setProtectProgress(5);
+    const progressInterval = setInterval(() => {
+      setProtectProgress(prev => prev < 40 ? prev + 2 : prev < 85 ? prev + 0.8 : prev);
+    }, 80);
     try {
       // 1. Get final PDF bytes (with all annotations/edits applied)
       const finalBytes = await buildAnnotatedPdf();
-      if (!finalBytes) { toast.error(t.editor_toast_protect_error ?? "Error protecting", { id: "protect" }); return; }
-
+      if (!finalBytes) {
+        clearInterval(progressInterval);
+        setIsProtecting(false); setProtectProgress(0);
+        toast.error(t.editor_toast_protect_error ?? "Error protecting");
+        return;
+      }
+      setProtectProgress(45);
       // 2. Send to server for AES encryption via pikepdf
       const formData = new FormData();
       const blob = new Blob([finalBytes.buffer as ArrayBuffer], { type: "application/pdf" });
@@ -1192,7 +1241,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       formData.append("password", password);
       formData.append("algo", encryptionAlgo);
       formData.append("filename", filename);
-
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 60000);
       let resp: Response;
@@ -1206,12 +1254,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       } finally {
         clearTimeout(timeout);
       }
-
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({ error: "Unknown error" }));
         throw new Error(err.error || "Server error");
       }
-
+      setProtectProgress(90);
       // 3. Download the protected PDF
       const protectedBlob = await resp.blob();
       const url = URL.createObjectURL(protectedBlob);
@@ -1220,13 +1267,75 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       a.download = filename.replace(/\.pdf$/i, "") + "_protected.pdf";
       a.click();
       URL.revokeObjectURL(url);
-
-      toast.success(t.editor_toast_protected ?? "PDF protected and downloaded", { id: "protect" });
+      setProtectProgress(100);
+      setTimeout(() => { setIsProtecting(false); setProtectProgress(0); }, 1500);
+      toast.success(t.editor_toast_protected ?? "PDF protected and downloaded");
     } catch (err) {
+      clearInterval(progressInterval);
+      setIsProtecting(false); setProtectProgress(0);
       const msg = err instanceof Error && err.name === "AbortError"
         ? (t.editor_toast_protect_timeout ?? "Protection timed out")
         : (t.editor_toast_protect_error ?? "Error protecting PDF");
-      toast.error(msg, { id: "protect" });
+      toast.error(msg);
+    } finally {
+      clearInterval(progressInterval);
+    }
+  };
+  // ── Export PDF to Word/Excel/PPT ──────────────────────────────
+  const exportPdf = async (format: "docx" | "xlsx" | "pptx") => {
+    if (!pdfBytes) { toast.error("No PDF loaded"); return; }
+    setIsExporting(true);
+    setExportProgress(5);
+    const progressInterval = setInterval(() => {
+      setExportProgress(prev => prev < 30 ? prev + 3 : prev < 80 ? prev + 0.8 : prev);
+    }, 100);
+    try {
+      const finalBytes = await buildAnnotatedPdf();
+      if (!finalBytes) throw new Error("Failed to build PDF");
+      setExportProgress(35);
+      const formData = new FormData();
+      const blob = new Blob([finalBytes.buffer as ArrayBuffer], { type: "application/pdf" });
+      const filename = file?.name ?? "document.pdf";
+      formData.append("file", blob, filename);
+      formData.append("format", format);
+      formData.append("filename", filename);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 120000);
+      let resp: Response;
+      try {
+        resp = await fetch("/api/documents/export", {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(err.error || "Server error");
+      }
+      setExportProgress(90);
+      const exportedBlob = await resp.blob();
+      const url = URL.createObjectURL(exportedBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename.replace(/\.pdf$/i, "") + "." + format;
+      a.click();
+      URL.revokeObjectURL(url);
+      setExportProgress(100);
+      setTimeout(() => { setIsExporting(false); setExportProgress(0); }, 1500);
+      toast.success(`PDF exported as .${format}`);
+    } catch (err) {
+      clearInterval(progressInterval);
+      setIsExporting(false); setExportProgress(0);
+      const msg = err instanceof Error && err.name === "AbortError"
+        ? "Export timed out (the file may be too large)"
+        : `Error exporting: ${err instanceof Error ? err.message : "Unknown error"}`;
+      toast.error(msg);
+    } finally {
+      clearInterval(progressInterval);
     }
   };
 
@@ -1651,6 +1760,47 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const FILE_FREE_TOOLS_SET = new Set(["jpg-to-pdf", "png-to-pdf", "word-to-pdf", "excel-to-pdf", "ppt-to-pdf"]);
   const isFileFreeMode = initialTool && FILE_FREE_TOOLS_SET.has(initialTool) && !file;
 
+  // Full-screen conversion loading overlay
+  if (isConvertingFile) {
+    return (
+      <div className="w-full rounded-2xl flex flex-col items-center justify-center py-20 px-8 text-center" style={{ backgroundColor: "oklch(0.98 0.005 250)", border: "2px solid oklch(0.90 0.03 260)" }}>
+        {/* Animated file icon */}
+        <div className="relative mb-6">
+          <div className="w-20 h-20 rounded-2xl flex items-center justify-center" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.10)" }}>
+            <FileText className="w-10 h-10 animate-pulse" style={{ color: "oklch(0.55 0.22 260)" }} />
+          </div>
+          {/* Spinning ring around icon */}
+          <div className="absolute inset-0 w-20 h-20 rounded-2xl animate-spin" style={{ border: "3px solid transparent", borderTopColor: "oklch(0.55 0.22 260)", animationDuration: "1.5s" }} />
+        </div>
+        {/* Title */}
+        <p className="text-xl font-bold mb-2" style={{ color: "oklch(0.18 0.04 250)" }}>
+          {t.editor_toast_converting ?? "Convirtiendo..."}
+        </p>
+        <p className="text-sm mb-6" style={{ color: "oklch(0.50 0.02 250)" }}>
+          {initialFile?.name ?? ""}
+        </p>
+        {/* Progress bar */}
+        <div className="w-full max-w-xs mb-3">
+          <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: "oklch(0.92 0.02 260)" }}>
+            <div
+              className="h-full rounded-full transition-all duration-300 ease-out"
+              style={{
+                width: `${convertFileProgress}%`,
+                backgroundColor: convertFileProgress === 100 ? "oklch(0.55 0.18 145)" : "oklch(0.55 0.22 260)",
+              }}
+            />
+          </div>
+          <div className="flex justify-between mt-1.5">
+            <span className="text-xs font-medium" style={{ color: "oklch(0.45 0.02 250)" }}>
+              {convertFileProgress < 30 ? (t.editor_converting_uploading ?? "Subiendo archivo...") : convertFileProgress < 85 ? (t.editor_converting_processing ?? "Procesando...") : convertFileProgress < 100 ? (t.editor_converting_finishing ?? "Finalizando...") : (t.editor_toast_converted ?? "Convertido")}
+            </span>
+            <span className="text-xs font-semibold" style={{ color: "oklch(0.55 0.22 260)" }}>{convertFileProgress}%</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!file || !pdfDoc) {
     // Note: file-free mode is handled below after renderToolPanel is defined
     if (!isFileFreeMode) return (
@@ -1856,27 +2006,63 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             </div>
           </div>
         );
-      case "text":
+      case "text": {
+        // Find the selected text annotation (if any)
+        const selectedTextAnn = selectedId ? annotations.find(a => a.id === selectedId && a.type === "text") : null;
+        const isEditingExisting = !!selectedTextAnn;
+
+        // Sync panel changes to the selected annotation in real-time
+        const updateSelectedTextProp = (prop: Partial<Annotation>) => {
+          if (!selectedTextAnn) return;
+          setAnnotations(prev => prev.map(a => a.id === selectedTextAnn.id ? { ...a, ...prop } : a));
+        };
+
         return (
           <div className="flex flex-col">
             {ActionBar}
             <div className="p-4 flex flex-col gap-3">
-            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Añadir texto</h3>
-            <textarea
-              value={textInput} onChange={e => setTextInput(e.target.value)}
-              placeholder={t.editor_text_placeholder}
-              rows={3}
-              className="w-full rounded border p-2 text-sm resize-none"
-              style={{ borderColor: "oklch(0.80 0.05 260)", fontFamily: textFont }}
-            />
+            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>
+              {isEditingExisting ? "Editar texto" : "Añadir texto"}
+            </h3>
+
+            {/* Instruction when no text is selected */}
+            {!isEditingExisting && (
+              <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.06)", color: "oklch(0.35 0.02 250)" }}>
+                <strong>Cómo usar:</strong> Haz clic en cualquier parte del PDF para colocar un nuevo texto. Puedes configurar el formato antes o después.
+              </div>
+            )}
+
+            {/* Text content — editable for selected annotation */}
+            {isEditingExisting && (
+              <div>
+                <label className="text-xs block mb-1" style={{ color: "oklch(0.50 0.02 250)" }}>Contenido</label>
+                <textarea
+                  value={selectedTextAnn.text ?? ""}
+                  onChange={e => {
+                    const val = e.target.value;
+                    updateSelectedTextProp({ text: val, width: Math.max(150, val.length * ((selectedTextAnn.fontSize ?? 14) * 0.6)), height: Math.max((selectedTextAnn.fontSize ?? 14) + 16, val.split("\n").length * ((selectedTextAnn.fontSize ?? 14) * 1.3) + 16) });
+                  }}
+                  onBlur={() => pushHistory(annotationsRef.current)}
+                  placeholder={t.editor_text_placeholder}
+                  rows={3}
+                  className="w-full rounded border p-2 text-sm resize-none"
+                  style={{ borderColor: "oklch(0.80 0.05 260)", fontFamily: selectedTextAnn.fontFamily ?? textFont, color: selectedTextAnn.color ?? textColor }}
+                />
+              </div>
+            )}
+
             {/* Font selector */}
             <div>
               <label className="text-xs block mb-1" style={{ color: "oklch(0.50 0.02 250)" }}>Fuente</label>
               <select
-                value={textFont}
-                onChange={e => setTextFont(e.target.value)}
+                value={isEditingExisting ? (selectedTextAnn.fontFamily ?? textFont) : textFont}
+                onChange={e => {
+                  const val = e.target.value;
+                  setTextFont(val);
+                  if (isEditingExisting) updateSelectedTextProp({ fontFamily: val });
+                }}
                 className="w-full border rounded px-2 py-1.5 text-xs"
-                style={{ borderColor: "oklch(0.80 0.05 260)", fontFamily: textFont }}
+                style={{ borderColor: "oklch(0.80 0.05 260)", fontFamily: isEditingExisting ? (selectedTextAnn.fontFamily ?? textFont) : textFont }}
               >
                 {FONT_OPTIONS.map(f => (
                   <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</option>
@@ -1885,31 +2071,58 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             </div>
             <div className="flex gap-2 items-center">
               <label className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Color</label>
-              <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0" />
+              <input
+                type="color"
+                value={isEditingExisting ? (selectedTextAnn.color ?? textColor) : textColor}
+                onChange={e => {
+                  const val = e.target.value;
+                  setTextColor(val);
+                  if (isEditingExisting) updateSelectedTextProp({ color: val });
+                }}
+                className="w-8 h-8 rounded cursor-pointer border-0"
+              />
               <label className="text-xs ml-2" style={{ color: "oklch(0.50 0.02 250)" }}>Tamaño</label>
-              <input type="number" value={textSize} onChange={e => setTextSize(Number(e.target.value))} min={8} max={72} className="w-14 border rounded px-1 py-0.5 text-xs" style={{ borderColor: "oklch(0.80 0.05 260)" }} />
+              <input
+                type="number"
+                value={isEditingExisting ? (selectedTextAnn.fontSize ?? textSize) : textSize}
+                onChange={e => {
+                  const val = Number(e.target.value);
+                  setTextSize(val);
+                  if (isEditingExisting) updateSelectedTextProp({ fontSize: val, height: Math.max(val + 16, (selectedTextAnn.text ?? "").split("\n").length * (val * 1.3) + 16) });
+                }}
+                min={8} max={120}
+                className="w-14 border rounded px-1 py-0.5 text-xs"
+                style={{ borderColor: "oklch(0.80 0.05 260)" }}
+              />
             </div>
-            {/* Preview */}
-            {textInput && (
-              <div className="p-2 rounded border text-sm" style={{ borderColor: "oklch(0.88 0.02 250)", fontFamily: textFont, fontSize: Math.min(textSize, 16), color: textColor }}>
-                {textInput}
+
+            {/* Actions */}
+            {isEditingExisting ? (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setEditingTextId(selectedTextAnn.id); }}
+                  className="flex-1 py-2 rounded text-white text-xs font-semibold"
+                  style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
+                >
+                  Editar en el PDF
+                </button>
+                <button
+                  onClick={() => { setSelectedId(null); setEditingTextId(null); }}
+                  className="flex-1 py-2 rounded text-xs border font-medium"
+                  style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.40 0.02 250)" }}
+                >
+                  Deseleccionar
+                </button>
+              </div>
+            ) : (
+              <div className="p-2 rounded text-center text-xs" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.08)", color: "oklch(0.40 0.15 260)" }}>
+                Haz clic en el PDF para colocar texto
               </div>
             )}
-            <div className="flex gap-2">
-              <button
-                onClick={activateTextPlace}
-                className="flex-1 py-2 rounded text-white text-xs font-semibold"
-                style={{ backgroundColor: clickToPlaceText ? "oklch(0.45 0.22 260)" : "oklch(0.55 0.22 260)" }}
-              >
-                {clickToPlaceText ? t.editor_text_click_active : t.editor_text_click_to_place}
-              </button>
-              <button onClick={placeText} className="flex-1 py-2 rounded text-xs border font-medium" style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.40 0.02 250)" }}>
-                Centro
-              </button>
-            </div>
             </div>
           </div>
         );
+      }
       case "highlight":
         return (
           <div className="flex flex-col">
@@ -2065,21 +2278,37 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 ))}
               </div>
             </div>
+            {/* Progress bar */}
+            {isProtecting && (
+              <div className="flex flex-col gap-1.5">
+                <div className="flex justify-between text-xs" style={{ color: "oklch(0.45 0.02 250)" }}>
+                  <span>{protectProgress < 100 ? (t.editor_toast_protecting ?? "Protecting PDF...") : (t.editor_toast_protected ?? "Protected!")}</span>
+                  <span>{Math.round(protectProgress)}%</span>
+                </div>
+                <div className="w-full rounded-full overflow-hidden" style={{ height: 6, backgroundColor: "oklch(0.90 0.02 260)" }}>
+                  <div
+                    className="h-full rounded-full transition-all duration-200"
+                    style={{ width: `${protectProgress}%`, backgroundColor: protectProgress === 100 ? "oklch(0.55 0.18 145)" : "oklch(0.55 0.22 260)" }}
+                  />
+                </div>
+              </div>
+            )}
             <div className="flex gap-2">
               <button
                 onClick={() => { setPassword(""); setConfirmPassword(""); }}
-                className="flex-1 py-2 rounded text-sm border font-medium"
+                disabled={isProtecting}
+                className="flex-1 py-2 rounded text-sm border font-medium disabled:opacity-40"
                 style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.40 0.02 250)" }}
               >
                 {t.editor_cancel_btn}
               </button>
               <button
                 onClick={protectPdf}
-                disabled={!password || password !== confirmPassword}
+                disabled={!password || password !== confirmPassword || isProtecting}
                 className="flex-1 py-2 rounded text-white text-sm font-semibold disabled:opacity-50"
                 style={{ backgroundColor: "oklch(0.25 0.03 250)" }}
               >
-                {t.editor_protect_btn}
+                {isProtecting ? `${Math.round(protectProgress)}%` : t.editor_protect_btn}
               </button>
             </div>
           </div>
@@ -2336,21 +2565,51 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       case "convert-excel":
       case "convert-ppt":
       case "convert-html": {
+        const isHtml = activeTool === "convert-html";
+        const exportFmt = activeTool === "convert-word" ? "docx" : activeTool === "convert-excel" ? "xlsx" : activeTool === "convert-ppt" ? "pptx" : "html";
         const targetFmt = activeTool === "convert-word" ? "Word (.docx)" : activeTool === "convert-excel" ? "Excel (.xlsx)" : activeTool === "convert-ppt" ? "PowerPoint (.pptx)" : "HTML";
         return (
           <div className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>PDF a {targetFmt}</h3>
-            <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Convierte este PDF al formato {targetFmt}:</p>
-            <div className="rounded-xl p-4 border text-center" style={{ borderColor: "oklch(0.85 0.05 260 / 0.4)", backgroundColor: "oklch(0.55 0.22 260 / 0.04)" }}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.10)" }}>
-                <FileText className="w-5 h-5" style={{ color: "oklch(0.55 0.22 260)" }} />
+            {isHtml ? (
+              <div className="rounded-xl p-4 border text-center" style={{ borderColor: "oklch(0.85 0.05 260 / 0.4)", backgroundColor: "oklch(0.55 0.22 260 / 0.04)" }}>
+                <p className="text-sm font-semibold mb-1" style={{ color: "oklch(0.25 0.03 250)" }}>Próximamente</p>
+                <p className="text-xs" style={{ color: "oklch(0.55 0.02 250)" }}>La conversión a HTML estará disponible en breve.</p>
               </div>
-              <p className="text-sm font-semibold mb-1" style={{ color: "oklch(0.25 0.03 250)" }}>Próximamente</p>
-              <p className="text-xs mb-3" style={{ color: "oklch(0.55 0.02 250)" }}>La conversión de PDF a {targetFmt} estará disponible con suscripción activa. Preserva el formato, fuentes y diseño original.</p>
-              <button onClick={() => setShowPaywall(true)} className="py-2 px-4 rounded text-white text-xs font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>
-                Ver planes
-              </button>
-            </div>
+            ) : (
+              <>
+                <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>
+                  {activeTool === "convert-word" ? "Extrae texto, imágenes y formato del PDF y los convierte a un documento Word editable." : activeTool === "convert-excel" ? "Detecta tablas y datos del PDF y los exporta a una hoja de cálculo Excel." : "Convierte cada página del PDF en una diapositiva de PowerPoint."}
+                </p>
+                {/* Progress bar */}
+                {isExporting && (
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between text-xs" style={{ color: "oklch(0.45 0.02 250)" }}>
+                      <span>{exportProgress < 100 ? `Exportando a ${targetFmt}...` : "¡Exportado!"}</span>
+                      <span>{Math.round(exportProgress)}%</span>
+                    </div>
+                    <div className="w-full rounded-full overflow-hidden" style={{ height: 6, backgroundColor: "oklch(0.90 0.02 260)" }}>
+                      <div
+                        className="h-full rounded-full transition-all duration-200"
+                        style={{ width: `${exportProgress}%`, backgroundColor: exportProgress === 100 ? "oklch(0.55 0.18 145)" : "oklch(0.55 0.22 260)" }}
+                      />
+                    </div>
+                  </div>
+                )}
+                <button
+                  onClick={() => exportPdf(exportFmt as "docx" | "xlsx" | "pptx")}
+                  disabled={!pdfBytes || isExporting}
+                  className="py-2.5 px-4 rounded text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+                  style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
+                >
+                  <Download className="w-4 h-4" />
+                  {isExporting ? `Exportando... ${Math.round(exportProgress)}%` : `Convertir a ${targetFmt}`}
+                </button>
+                <p className="text-xs" style={{ color: "oklch(0.60 0.02 250)" }}>
+                  La conversión puede tardar unos segundos dependiendo del tamaño del PDF.
+                </p>
+              </>
+            )}
           </div>
         );
       }
@@ -2425,7 +2684,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             { id: "move" as ToolName, icon: Move, label: t.editor_move },
             { id: "notes" as ToolName, icon: StickyNote, label: t.editor_notes },
           ].map(({ id, icon, label }) => (
-            <ToolBtn key={id} icon={icon} label={label} active={activeTool === id} onClick={() => { setActiveTool(id); setShowMobilePanel(true); }} />
+            <ToolBtn key={id} icon={icon} label={label} active={activeTool === id} onClick={() => { setActiveTool(id); setSelectedId(null); setShowMobilePanel(true); }} />
           ))}
         </div>
         {/* Page actions */}
@@ -2566,8 +2825,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 className="absolute inset-0"
                 style={{
                   cursor: activeTool === "pointer" ? "default"
-                    : (activeTool === "text" && clickToPlaceText) ? "crosshair"
-                    : activeTool === "text" ? "default"
+                    : activeTool === "text" ? "text"
                     : "default",
                   zIndex: 20,
                   pointerEvents: (activeTool === "brush" || activeTool === "eraser" || activeTool === "highlight") ? "none" : "auto",
@@ -2618,7 +2876,18 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       setIsDragging(true);
                       setDragOffset({ x: touch.clientX - overlay.left - ann.x, y: touch.clientY - overlay.top - ann.y });
                     }}
-                    onClick={(e) => { e.stopPropagation(); setSelectedId(ann.id); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedId(ann.id);
+                      // When clicking a text annotation, switch to text tool and load its properties
+                      if (ann.type === "text") {
+                        setActiveTool("text");
+                        setTextColor(ann.color ?? "#000000");
+                        setTextSize(ann.fontSize ?? 14);
+                        setTextFont(ann.fontFamily ?? "Arial, sans-serif");
+                        setTextInput(ann.text ?? "");
+                      }
+                    }}
                   >
                     {/* Delete button — top-right corner when selected */}
                     {selectedId === ann.id && (
@@ -2653,9 +2922,72 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       <img src={ann.dataUrl} alt="img" style={{ width: "100%", height: "100%", objectFit: "contain" }} draggable={false} />
                     )}
                     {ann.type === "text" && (
-                      <span style={{ fontSize: ann.fontSize ?? 14, color: ann.color ?? "#000", fontFamily: ann.fontFamily ?? "Arial, sans-serif", whiteSpace: "pre-wrap", display: "block", lineHeight: 1.2 }}>
-                        {ann.text}
-                      </span>
+                      editingTextId === ann.id ? (
+                        <textarea
+                          autoFocus
+                          value={ann.text ?? ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setAnnotations(prev => prev.map(a => a.id === ann.id ? { ...a, text: val, width: Math.max(150, val.length * ((ann.fontSize ?? 14) * 0.6)), height: Math.max((ann.fontSize ?? 14) + 16, val.split("\n").length * ((ann.fontSize ?? 14) * 1.3) + 16) } : a));
+                          }}
+                          onBlur={() => {
+                            // Remove empty text annotations on blur
+                            const current = annotations.find(a => a.id === ann.id);
+                            if (current && !current.text?.trim()) {
+                              setAnnotations(prev => prev.filter(a => a.id !== ann.id));
+                              setSelectedId(null);
+                            } else {
+                              pushHistory(annotationsRef.current);
+                            }
+                            setEditingTextId(null);
+                          }}
+                          onKeyDown={(e) => {
+                            e.stopPropagation();
+                            if (e.key === "Escape") {
+                              setEditingTextId(null);
+                              const current = annotations.find(a => a.id === ann.id);
+                              if (current && !current.text?.trim()) {
+                                setAnnotations(prev => prev.filter(a => a.id !== ann.id));
+                                setSelectedId(null);
+                              }
+                            }
+                          }}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            fontSize: ann.fontSize ?? 14,
+                            color: ann.color ?? "#000",
+                            fontFamily: ann.fontFamily ?? "Arial, sans-serif",
+                            whiteSpace: "pre-wrap",
+                            display: "block",
+                            lineHeight: 1.3,
+                            width: "100%",
+                            height: "100%",
+                            border: "none",
+                            outline: "none",
+                            background: "rgba(255,255,255,0.85)",
+                            resize: "none",
+                            padding: 2,
+                            margin: 0,
+                          }}
+                          placeholder="Escribe aquí..."
+                        />
+                      ) : (
+                        <span
+                          style={{ fontSize: ann.fontSize ?? 14, color: ann.color ?? "#000", fontFamily: ann.fontFamily ?? "Arial, sans-serif", whiteSpace: "pre-wrap", display: "block", lineHeight: 1.2, cursor: "text", minHeight: "1em" }}
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            setEditingTextId(ann.id);
+                            setActiveTool("text");
+                            setTextColor(ann.color ?? "#000000");
+                            setTextSize(ann.fontSize ?? 14);
+                            setTextFont(ann.fontFamily ?? "Arial, sans-serif");
+                            setTextInput(ann.text ?? "");
+                          }}
+                        >
+                          {ann.text || "Escribe aquí..."}
+                        </span>
+                      )
                     )}
                     {ann.type === "highlight" && (
                       <div style={{ width: "100%", height: "100%", backgroundColor: ann.color ?? "#FFFF00", opacity: 0.4, borderRadius: 2 }} />
@@ -2948,7 +3280,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           ].map(({ id, icon: Icon, label }) => (
             <button
               key={id}
-              onClick={() => { setActiveTool(id); setShowMobilePanel(true); }}
+              onClick={() => { setActiveTool(id); setSelectedId(null); setShowMobilePanel(true); }}
               className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg shrink-0 transition-all"
               style={{
                 color: activeTool === id ? "oklch(0.55 0.22 260)" : "oklch(0.35 0.02 250)",

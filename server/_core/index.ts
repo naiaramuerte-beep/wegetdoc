@@ -373,6 +373,99 @@ ${allUrls.map(u => `  <url>
     }
   });
 
+  // ── REST endpoint for PDF export (PDF → Word/Excel/PPT) ─────────────────────────
+  const exportUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
+  app.post("/api/documents/export", exportUpload.single("file"), async (req, res) => {
+    try {
+      const file = req.file;
+      if (!file) { res.status(400).json({ error: "No file" }); return; }
+      const format = (req.body.format as string) || "docx";
+      if (!["docx", "xlsx", "pptx"].includes(format)) {
+        res.status(400).json({ error: "Unsupported format" }); return;
+      }
+      const { execFile } = await import("child_process");
+      const { promisify } = await import("util");
+      const { tmpdir } = await import("os");
+      const { join } = await import("path");
+      const { writeFile, readFile, unlink } = await import("fs/promises");
+      const execFileAsync = promisify(execFile);
+      const ts = Date.now();
+      const tmpIn = join(tmpdir(), `export_in_${ts}.pdf`);
+      const tmpOut = join(tmpdir(), `export_out_${ts}.${format}`);
+      const tmpPy = join(tmpdir(), `export_${ts}.py`);
+      await writeFile(tmpIn, file.buffer);
+      let pyLines: string[];
+      if (format === "docx") {
+        pyLines = [
+          "from pdf2docx import Converter",
+          "import sys",
+          "cv = Converter(sys.argv[1])",
+          "cv.convert(sys.argv[2], start=0, end=None)",
+          "cv.close()",
+        ];
+      } else if (format === "xlsx") {
+        pyLines = [
+          "import fitz, openpyxl, sys",
+          "doc = fitz.open(sys.argv[1])",
+          "wb = openpyxl.Workbook()",
+          "ws = wb.active",
+          "for page_num in range(len(doc)):",
+          "    page = doc[page_num]",
+          "    tabs = page.find_tables()",
+          "    found = False",
+          "    for tab in tabs:",
+          "        found = True",
+          "        for row in tab.extract():",
+          "            ws.append([cell if cell else '' for cell in row])",
+          "    if not found:",
+          "        text = page.get_text()",
+          "        for line in text.split('\\n'):",
+          "            if line.strip():",
+          "                ws.append([line.strip()])",
+          "wb.save(sys.argv[2])",
+        ];
+      } else {
+        // pptx via LibreOffice impress_pdf_import
+        pyLines = [
+          "import subprocess, sys, os, shutil, tempfile, glob",
+          "tmpdir = tempfile.mkdtemp()",
+          "subprocess.run(['libreoffice', '--headless', '--norestore', '--nologo',",
+          "    '--infilter=impress_pdf_import', '--convert-to', 'pptx',",
+          "    '--outdir', tmpdir, sys.argv[1]], check=True)",
+          "files = glob.glob(os.path.join(tmpdir, '*.pptx'))",
+          "if files: shutil.copy(files[0], sys.argv[2])",
+          "shutil.rmtree(tmpdir, ignore_errors=True)",
+        ];
+      }
+      await writeFile(tmpPy, pyLines.join("\n"));
+      const cleanEnv = { ...process.env };
+      delete cleanEnv.PYTHONHOME;
+      delete cleanEnv.PYTHONPATH;
+      delete cleanEnv.NUITKA_PYTHONPATH;
+      try {
+        await execFileAsync("python3", [tmpPy, tmpIn, tmpOut], { timeout: 120000, env: cleanEnv });
+        const outputBytes = await readFile(tmpOut);
+        const originalName = (req.body.filename as string) || file.originalname || "document.pdf";
+        const baseName = originalName.replace(/\.pdf$/i, "");
+        const mimeTypes: Record<string, string> = {
+          docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        };
+        res.setHeader("Content-Type", mimeTypes[format]);
+        res.setHeader("Content-Disposition", `attachment; filename="${baseName}.${format}"`);
+        res.send(outputBytes);
+      } finally {
+        unlink(tmpIn).catch(() => {});
+        unlink(tmpOut).catch(() => {});
+        unlink(tmpPy).catch(() => {});
+      }
+    } catch (err) {
+      console.error("[Export] Error:", err);
+      res.status(500).json({ error: "Failed to export PDF" });
+    }
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",

@@ -411,3 +411,15 @@
 - [x] FAQ cancelación: añadida pregunta faq_q7/faq_a7 en Home y Pricing (paso a paso: login → Facturación → Cancelar + contacto si no pueden acceder)
 - [x] Protección con contraseña: implementado cifrado real con pikepdf (AES-256, AES-128, ARC4) en el servidor
 - [x] Pincel confirmado funcionando en móvil por el usuario
+
+## Mejoras v6
+- [ ] Exportar PDF a Word (.docx) usando LibreOffice en el servidor
+- [ ] Exportar PDF a Excel (.xlsx) usando LibreOffice en el servidor
+- [ ] Barra de progreso animada en el panel de protección con contraseña
+- [ ] Selector de idioma en el Footer
+
+## UX: Pantalla de carga al convertir archivos
+- [x] Reemplazar toast "Convirtiendo..." por overlay de carga completo con barra de progreso animada en la Home
+- [x] Bug: anotación seleccionada (cuadro azul) no se deselecciona al cambiar de herramienta o clic en zona vacía
+- [x] Bug: flujo de "Añadir texto" invertido — debería ser clic en PDF primero, luego escribir
+- [x] Bug: no se puede editar texto ya añadido (color, tamaño, fuente) al seleccionarlo
