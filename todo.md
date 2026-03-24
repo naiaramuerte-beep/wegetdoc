@@ -458,3 +458,15 @@
 - [x] Reescribir Tools.tsx para usar sistema i18n (useLanguage hook) en lugar de textos hardcodeados en español
 - [x] Añadir claves i18n faltantes para la página Tools: categorías, descripciones de herramientas, textos de la página
 - [x] Reescribir Footer.tsx para usar sistema i18n (useLanguage hook) en lugar de textos hardcodeados en español
+
+## Rebranding editPDF → PDFUp (pdfup.io)
+- [x] Rebrand: Cambiar nombre de "editPDF" a "PDFUp" en Navbar
+- [x] Rebrand: Cambiar nombre en Footer
+- [x] Rebrand: Cambiar nombre en Home.tsx (hero, textos)
+- [x] Rebrand: Cambiar nombre en meta tags y título de página
+- [x] Rebrand: Cambiar nombre en todas las traducciones i18n (10 idiomas)
+- [x] Rebrand: Generar nuevo logo/favicon para PDFUp
+- [x] Rebrand: Actualizar VITE_APP_TITLE a "PDFUp" (requiere cambio manual en Settings)
+- [x] Rebrand: Cambiar nombre en páginas de Pricing, Blog, FAQ, etc.
+- [x] Rebrand: Cambiar nombre en AuthModal, PaywallModal, Dashboard
+- [x] Rebrand: Nuevo dominio pdfup.io configurado

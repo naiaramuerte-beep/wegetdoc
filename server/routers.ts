@@ -335,7 +335,7 @@ export const appRouter = router({
           to: user.email,
           name: user.name || "Usuario",
           accessUntilDate: sub.currentPeriodEnd,
-          reactivateUrl: "https://editpdf.online/es/dashboard?tab=billing",
+          reactivateUrl: "https://pdfup.io/es/dashboard?tab=billing",
         }).catch((err: unknown) => console.error("[Email] Cancellation email failed:", err));
       }
       return { success: true };
@@ -434,13 +434,13 @@ export const appRouter = router({
             to: user.email,
             name: user.name || "Usuario",
             trialEndDate: trialEnd,
-            cancelUrl: "https://editpdf.online/cancelar-suscripcion",
+            cancelUrl: "https://pdfup.io/cancelar-suscripcion",
           }).catch((err) => console.error("[Email] Confirmation email failed:", err));
         }
         // Notify owner of new subscription
         import("./_core/notification").then(({ notifyOwner }) => {
           notifyOwner({
-            title: "\uD83D\uDCB3 Nuevo pago \u2014 editPDF",
+            title: "\uD83D\uDCB3 Nuevo pago \u2014 PDFUp",
             content: `Usuario: ${user.name || "An\u00F3nimo"} (${user.email || "sin email"})\nPlan: Trial 7 d\u00EDas GRATIS \u2192 49,90\u20AC/mes\nFin de prueba: ${trialEnd.toLocaleDateString("es-ES")}`,
           }).catch(() => {});
         }).catch(() => {});

@@ -1,5 +1,5 @@
 /* =============================================================
-   PDFPro Tools Page — All PDF tools in one place
+   PDFUp Tools Page — All PDF tools in one place
    Deep Navy Pro design — fully i18n-ready
    ============================================================= */
 

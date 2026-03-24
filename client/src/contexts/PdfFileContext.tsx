@@ -8,13 +8,13 @@
    tempKey string in sessionStorage (avoids 5MB quota issues).
    ============================================================= */
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-const SESSION_KEY_PDF = "pdfpro_pending_pdf_b64";
-const SESSION_KEY_NAME = "pdfpro_pending_pdf_name";
-const SESSION_KEY_TOOL = "pdfpro_pending_tool";
-const SESSION_KEY_PAYWALL = "pdfpro_open_paywall";
+const SESSION_KEY_PDF = "pdfup_pending_pdf_b64";
+const SESSION_KEY_NAME = "pdfup_pending_pdf_name";
+const SESSION_KEY_TOOL = "pdfup_pending_tool";
+const SESSION_KEY_PAYWALL = "pdfup_open_paywall";
 // Keys for the EDITED PDF temp reference (S3 key, not base64)
-const SESSION_KEY_TEMP_KEY = "pdfpro_edited_temp_key";
-const SESSION_KEY_TEMP_NAME = "pdfpro_edited_temp_name";
+const SESSION_KEY_TEMP_KEY = "pdfup_edited_temp_key";
+const SESSION_KEY_TEMP_NAME = "pdfup_edited_temp_name";
 
 interface PdfFileContextValue {
   pendingFile: File | null;

@@ -485,7 +485,7 @@ export default function BlogAdmin() {
                   id="metaTitle"
                   value={form.metaTitle}
                   onChange={(e) => setForm((f) => ({ ...f, metaTitle: e.target.value }))}
-                  placeholder="Cómo editar PDF online gratis | editPDF"
+                  placeholder="Cómo editar PDF online gratis | PDFUp"
                   className="mt-1 text-sm"
                   maxLength={70}
                 />
@@ -499,7 +499,7 @@ export default function BlogAdmin() {
                   id="metaDescription"
                   value={form.metaDescription}
                   onChange={(e) => setForm((f) => ({ ...f, metaDescription: e.target.value }))}
-                  placeholder="Aprende a editar cualquier PDF online sin instalar nada. Guía paso a paso con editPDF.online..."
+                  placeholder="Aprende a editar cualquier PDF online sin instalar nada. Guía paso a paso con PDFUp.online..."
                   className="mt-1 text-sm resize-none"
                   rows={3}
                   maxLength={170}
@@ -512,7 +512,7 @@ export default function BlogAdmin() {
                   <p className="text-sm font-medium text-blue-600 truncate">
                     {form.metaTitle || form.title}
                   </p>
-                  <p className="text-xs text-green-700">editpdf.online/blog/{form.slug || "slug"}</p>
+                  <p className="text-xs text-green-700">pdfup.io/blog/{form.slug || "slug"}</p>
                   <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
                     {form.metaDescription || form.excerpt || "Sin descripción"}
                   </p>

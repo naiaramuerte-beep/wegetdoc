@@ -1,5 +1,5 @@
 /* =============================================================
-   PDFPro Pricing Page — Deep Navy Pro design
+   PDFUp Pricing Page — Deep Navy Pro design
    Two plans: Trial + Monthly, with feature comparison table
    Fully i18n-ready using LanguageContext
    ============================================================= */

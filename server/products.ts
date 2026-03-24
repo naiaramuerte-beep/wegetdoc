@@ -1,5 +1,5 @@
 /**
- * editPDF — Stripe Products & Prices
+ * PDFUp — Stripe Products & Prices
  * Model: FREE 7-day trial → 49,90€/month subscription after 7 days
  * Stripe collects card details but charges 0,00€ immediately.
  * After 7 days, the subscription renews automatically at 49,90€/month.

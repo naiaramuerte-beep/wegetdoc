@@ -1,5 +1,5 @@
 /* =============================================================
-   PDFPro — Modal de contacto
+   PDFUp — Modal de contacto
    Se abre desde el menú de navegación
    ============================================================= */
 import { useState } from "react";

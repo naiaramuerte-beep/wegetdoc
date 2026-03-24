@@ -387,11 +387,11 @@ function CheckoutForm({
             <span className="text-xs leading-relaxed text-slate-600">
               {t.paywall_legal_text}{" "}
               <a
-                href="mailto:support@editpdf.online"
+                href="mailto:support@pdfup.io"
                 className="underline text-slate-700 hover:text-slate-900"
                 onClick={(e) => e.stopPropagation()}
               >
-                support@editpdf.online
+                support@pdfup.io
               </a>
             </span>
           </label>
@@ -510,7 +510,7 @@ export default function PaywallModal({
       try { await saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size); } catch {}
     }
     setPendingPaywall(true);
-    // Use direct Google OAuth (shows "editPDF" on Google consent screen)
+    // Use direct Google OAuth (shows "PDFUp" on Google consent screen)
     const returnPath = window.location.pathname + window.location.search;
     window.location.href = `/api/auth/google?origin=${encodeURIComponent(window.location.origin)}&returnPath=${encodeURIComponent(returnPath)}`;
   };

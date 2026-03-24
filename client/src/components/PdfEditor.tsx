@@ -1,5 +1,5 @@
 /* =============================================================
-   PDFPro PdfEditor — Professional layout matching pdfe.com
+   PDFUp PdfEditor — Professional layout matching pdfe.com
    Top toolbar | Left thumbnails | Center viewer | Right tool panel
    All tools functional: sign, text, highlight, compress, convert, protect
    ============================================================= */

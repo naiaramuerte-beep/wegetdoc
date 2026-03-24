@@ -1,5 +1,5 @@
 /* =============================================================
-   PDFPro UploadZone — Drag & Drop PDF upload area
+   PDFUp UploadZone — Drag & Drop PDF upload area
    Deep Navy Pro design: dashed blue border, hover glow effect
    ============================================================= */
 

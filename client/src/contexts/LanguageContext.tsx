@@ -1,5 +1,5 @@
 /* =============================================================
-   PDFPro LanguageContext
+   PDFUp LanguageContext
    Provides current language, translations and language switcher
    ============================================================= */
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";

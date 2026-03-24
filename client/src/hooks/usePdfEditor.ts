@@ -1,5 +1,5 @@
 /* =============================================================
-   PDFPro — usePdfEditor hook
+   PDFUp — usePdfEditor hook
    Manages PDF state: loaded file, pages, current tool, etc.
    ============================================================= */
 

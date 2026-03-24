@@ -1,5 +1,5 @@
 /* =============================================================
-   PDFPro — Dashboard de usuario
+   PDFUp — Dashboard de usuario
    Pestañas: Mi Cuenta | Mis Documentos | Equipo | Facturación
    ============================================================= */
 import { useState, useEffect } from "react";

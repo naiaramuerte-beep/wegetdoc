@@ -1,5 +1,5 @@
 /* =============================================================
-   PDFPro AuthModal — Sign Up + Login estilo pdfe.com
+   PDFUp AuthModal — Sign Up + Login estilo pdfe.com
    ============================================================= */
 import { useState, useEffect } from "react";
 import { X, Eye, EyeOff, Mail, Lock, User as UserIcon, Loader2 } from "lucide-react";
@@ -250,7 +250,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
               <div className="flex-1 h-px bg-gray-200" />
             </div>
 
-            {/* Google button — uses direct Google OAuth (shows "editPDF" on consent screen) */}
+            {/* Google button — uses direct Google OAuth (shows "PDFUp" on consent screen) */}
             <a
               href={`/api/auth/google?origin=${encodeURIComponent(window.location.origin)}&returnPath=${encodeURIComponent(window.location.pathname + window.location.search)}`}
               className="w-full py-2.5 rounded-lg border border-gray-200 text-sm font-semibold text-gray-700 flex items-center justify-center gap-2.5 hover:bg-gray-50 transition-colors"

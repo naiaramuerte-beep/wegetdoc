@@ -1,5 +1,5 @@
 /* =============================================================
-   PDFPro Email Service — Resend integration
+   PDFUp Email Service — Resend integration
    Sends transactional emails for payment confirmation, etc.
    ============================================================= */
 
@@ -9,7 +9,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Sender address — use onboarding@resend.dev for testing,
 // change to a verified domain address in production
-const FROM_ADDRESS = "editPDF <onboarding@resend.dev>";
+const FROM_ADDRESS = "PDFUp <onboarding@resend.dev>";
 
 /**
  * Send a payment confirmation email after a successful subscription
@@ -41,7 +41,7 @@ export async function sendPaymentConfirmationEmail({
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Confirmación de pago — editPDF</title>
+  <title>Confirmación de pago — PDFUp</title>
 </head>
 <body style="margin:0;padding:0;background:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4f8;padding:40px 0;">
@@ -63,7 +63,7 @@ export async function sendPaymentConfirmationEmail({
                 ✅ ¡Pago confirmado!
               </h1>
               <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">
-                Hola <strong>${name}</strong>, tu período de prueba de 7 días ha comenzado. Ya tienes acceso completo a todas las funciones de editPDF.
+                Hola <strong>${name}</strong>, tu período de prueba de 7 días ha comenzado. Ya tienes acceso completo a todas las funciones de PDFUp.
               </p>
 
               <!-- Summary box -->
@@ -111,7 +111,7 @@ export async function sendPaymentConfirmationEmail({
               <table cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
                 <tr>
                   <td style="padding-right:12px;">
-                    <a href="https://editpdf.online/es/dashboard" style="display:inline-block;background:#1a3c6e;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;">
+                    <a href="https://pdfup.io/es/dashboard" style="display:inline-block;background:#1a3c6e;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;">
                       Ir a mi panel
                     </a>
                   </td>
@@ -128,10 +128,10 @@ export async function sendPaymentConfirmationEmail({
           <tr>
             <td style="background:#f8faff;padding:24px 40px;border-top:1px solid #e2e8f0;">
               <p style="margin:0 0 8px;color:#94a3b8;font-size:12px;line-height:1.6;">
-                Has recibido este email porque completaste una compra en <a href="https://editpdf.online" style="color:#1a3c6e;">editpdf.online</a>. Si no reconoces esta compra, contacta con nosotros en <a href="mailto:support@editpdf.online" style="color:#1a3c6e;">support@editpdf.online</a>.
+                Has recibido este email porque completaste una compra en <a href="https://pdfup.io" style="color:#1a3c6e;">pdfup.io</a>. Si no reconoces esta compra, contacta con nosotros en <a href="mailto:support@pdfup.io" style="color:#1a3c6e;">support@pdfup.io</a>.
               </p>
               <p style="margin:0;color:#94a3b8;font-size:12px;">
-                © 2026 editPDF — <a href="https://editpdf.online/es/terms" style="color:#94a3b8;">Términos de uso</a> · <a href="https://editpdf.online/es/privacy" style="color:#94a3b8;">Privacidad</a> · <a href="${cancelUrl}" style="color:#94a3b8;">Cancelar suscripción</a>
+                © 2026 PDFUp — <a href="https://pdfup.io/es/terms" style="color:#94a3b8;">Términos de uso</a> · <a href="https://pdfup.io/es/privacy" style="color:#94a3b8;">Privacidad</a> · <a href="${cancelUrl}" style="color:#94a3b8;">Cancelar suscripción</a>
               </p>
             </td>
           </tr>
@@ -147,7 +147,7 @@ export async function sendPaymentConfirmationEmail({
     const result = await resend.emails.send({
       from: FROM_ADDRESS,
       to,
-      subject: "✅ Confirmación de pago — editPDF (prueba 7 días)",
+      subject: "✅ Confirmación de pago — PDFUp (prueba 7 días)",
       html,
     });
 
@@ -190,7 +190,7 @@ export async function sendCancellationEmail({
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Suscripción cancelada — editPDF</title>
+  <title>Suscripción cancelada — PDFUp</title>
 </head>
 <body style="margin:0;padding:0;background:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4f8;padding:40px 0;">
@@ -221,7 +221,7 @@ export async function sendCancellationEmail({
                   <td style="padding:20px 24px;">
                     <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#166534;text-transform:uppercase;letter-spacing:0.5px;">✅ Tu acceso continúa</p>
                     <p style="margin:0;color:#15803d;font-size:15px;line-height:1.6;">
-                      Aunque has cancelado, seguirás teniendo acceso completo a todas las funciones de editPDF hasta el <strong>${formattedDate}</strong>. No se realizará ningún cargo adicional.
+                      Aunque has cancelado, seguirás teniendo acceso completo a todas las funciones de PDFUp hasta el <strong>${formattedDate}</strong>. No se realizará ningún cargo adicional.
                     </p>
                   </td>
                 </tr>
@@ -240,7 +240,7 @@ export async function sendCancellationEmail({
                     </a>
                   </td>
                   <td>
-                    <a href="https://editpdf.online/es/dashboard" style="display:inline-block;background:#ffffff;color:#1a3c6e;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;border:1.5px solid #1a3c6e;">
+                    <a href="https://pdfup.io/es/dashboard" style="display:inline-block;background:#ffffff;color:#1a3c6e;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;border:1.5px solid #1a3c6e;">
                       Ir a mi panel
                     </a>
                   </td>
@@ -248,7 +248,7 @@ export async function sendCancellationEmail({
               </table>
 
               <p style="margin:0 0 8px;color:#94a3b8;font-size:13px;line-height:1.6;">
-                ¿Tuviste algún problema o quieres contarnos por qué cancelaste? Escríbenos a <a href="mailto:support@editpdf.online" style="color:#1a3c6e;">support@editpdf.online</a> — tu opinión nos ayuda a mejorar.
+                ¿Tuviste algún problema o quieres contarnos por qué cancelaste? Escríbenos a <a href="mailto:support@pdfup.io" style="color:#1a3c6e;">support@pdfup.io</a> — tu opinión nos ayuda a mejorar.
               </p>
             </td>
           </tr>
@@ -256,7 +256,7 @@ export async function sendCancellationEmail({
           <tr>
             <td style="background:#f8faff;padding:24px 40px;border-top:1px solid #e2e8f0;">
               <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.6;">
-                © 2026 editPDF — <a href="https://editpdf.online/es/terms" style="color:#94a3b8;">Términos de uso</a> · <a href="https://editpdf.online/es/privacy" style="color:#94a3b8;">Privacidad</a>
+                © 2026 PDFUp — <a href="https://pdfup.io/es/terms" style="color:#94a3b8;">Términos de uso</a> · <a href="https://pdfup.io/es/privacy" style="color:#94a3b8;">Privacidad</a>
               </p>
             </td>
           </tr>
@@ -272,7 +272,7 @@ export async function sendCancellationEmail({
     const result = await resend.emails.send({
       from: FROM_ADDRESS,
       to,
-      subject: "Tu suscripción a editPDF ha sido cancelada",
+      subject: "Tu suscripción a PDFUp ha sido cancelada",
       html,
     });
 

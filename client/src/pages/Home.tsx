@@ -1,5 +1,5 @@
 /* =============================================================
-   editPDF Home Page — Conversion-Optimised Design
+   PDFUp Home Page — Conversion-Optimised Design
    Dark hero + social proof + urgency + benefits
    ============================================================= */
 

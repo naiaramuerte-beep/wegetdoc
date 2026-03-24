@@ -19,8 +19,8 @@ describe("Google OAuth credentials", () => {
 
   it("should build a valid Google auth URL", () => {
     const clientId = process.env.GOOGLE_CLIENT_ID ?? "";
-    const redirectUri = "https://editpdf.online/api/auth/google/callback";
-    const state = Buffer.from(JSON.stringify({ origin: "https://editpdf.online", returnPath: "/" })).toString("base64url");
+    const redirectUri = "https://pdfup.io/api/auth/google/callback";
+    const state = Buffer.from(JSON.stringify({ origin: "https://pdfup.io", returnPath: "/" })).toString("base64url");
 
     const params = new URLSearchParams({
       client_id: clientId,
@@ -32,6 +32,6 @@ describe("Google OAuth credentials", () => {
 
     const url = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
     expect(url).toContain("accounts.google.com");
-    expect(url).toContain(encodeURIComponent("editpdf.online"));
+    expect(url).toContain(encodeURIComponent("pdfup.io"));
   });
 });

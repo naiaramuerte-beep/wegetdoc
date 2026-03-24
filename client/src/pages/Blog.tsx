@@ -12,7 +12,7 @@ export default function Blog() {
 
   // SEO meta tags
   useEffect(() => {
-    document.title = "Blog — editPDF | Guías, tutoriales y consejos sobre PDF";
+    document.title = "Blog — PDFUp | Guías, tutoriales y consejos sobre PDF";
     const setMeta = (name: string, content: string, prop = false) => {
       const attr = prop ? "property" : "name";
       let el = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement | null;
@@ -23,13 +23,13 @@ export default function Blog() {
       }
       el.setAttribute("content", content);
     };
-    setMeta("description", "Aprende a editar, convertir, firmar y proteger PDFs con nuestras guías paso a paso. Tutoriales gratuitos para sacar el máximo partido a editPDF.online.");
-    setMeta("og:title", "Blog — editPDF | Guías y tutoriales sobre PDF", true);
+    setMeta("description", "Aprende a editar, convertir, firmar y proteger PDFs con nuestras guías paso a paso. Tutoriales gratuitos para sacar el máximo partido a PDFUp.online.");
+    setMeta("og:title", "Blog — PDFUp | Guías y tutoriales sobre PDF", true);
     setMeta("og:description", "Guías, tutoriales y consejos sobre cómo trabajar con PDFs online. Todo lo que necesitas saber sobre edición, conversión y firma de documentos.", true);
     setMeta("og:type", "website", true);
-    setMeta("og:url", "https://editpdf.online/blog", true);
+    setMeta("og:url", "https://pdfup.io/blog", true);
     return () => {
-      document.title = "editPDF — Free Online PDF Editor";
+      document.title = "PDFUp — Free Online PDF Editor";
     };
   }, []);
 
@@ -135,7 +135,7 @@ export default function Blog() {
             <div className="container max-w-2xl text-center">
               <h2 className="text-2xl font-bold text-foreground mb-3">¿Listo para editar tu PDF?</h2>
               <p className="text-muted-foreground mb-6">
-                Prueba editPDF gratis — sin registro, sin instalación, directamente en tu navegador.
+                Prueba PDFUp gratis — sin registro, sin instalación, directamente en tu navegador.
               </p>
               <button
                 onClick={() => navigate("/")}

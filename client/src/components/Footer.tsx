@@ -1,5 +1,5 @@
 /* =============================================================
-   PDFPro Footer — Deep Navy Pro design — fully i18n-ready
+   PDFUp Footer — Deep Navy Pro design — fully i18n-ready
    Dark navy background, matching the navbar
    ============================================================= */
 
@@ -49,17 +49,12 @@ export default function Footer() {
           {/* Brand */}
           <div className="md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: accentColor }}
-              >
-                <FileText className="w-4 h-4 text-white" />
-              </div>
+              <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/pdfup-logo-oYTQ7E9iC37f25w5xrjfmW.webp" alt="PDFUp" width="32" height="32" className="rounded" />
               <span
                 className="text-white font-bold text-xl tracking-tight"
                 style={{ fontFamily: "'Sora', sans-serif" }}
               >
-                PDF<span style={{ color: accentColor }}>Pro</span>
+                PDF<span style={{ color: accentColor }}>Up</span>
               </span>
             </div>
             <p className="text-sm leading-relaxed" style={{ color: linkColor, fontFamily: "'DM Sans', sans-serif" }}>
@@ -87,7 +82,7 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* PDFPro links */}
+          {/* PDFUp links */}
           <div>
             <h4
               className="text-sm font-semibold text-white mb-4"
