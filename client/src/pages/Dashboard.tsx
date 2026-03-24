@@ -46,16 +46,6 @@ export default function Dashboard() {
       utils.subscription.status.invalidate();
       toast.success("¡Pago completado! Tu suscripción está activa. Ya puedes descargar tus documentos.");
 
-      // ── Google Ads Conversion Tracking ──────────────────────────
-      if (typeof window.gtag === 'function') {
-        window.gtag('event', 'conversion', {
-          'send_to': 'AW-18034146775/8NSFCKitgI4cENf7rJdD',
-          'value': 25.0,
-          'currency': 'EUR',
-          'transaction_id': `sub_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        });
-      }
-
       // Clean URL without reload
       const cleanUrl = window.location.pathname + "?tab=documents";
       window.history.replaceState({}, "", cleanUrl);

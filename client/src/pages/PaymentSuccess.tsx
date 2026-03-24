@@ -12,18 +12,6 @@ export default function PaymentSuccess() {
     // Invalidate subscription status so it refreshes
     utils.subscription.status.invalidate();
 
-    // ── Google Ads Conversion Tracking ──────────────────────────
-    // Fire conversion event when user lands on payment success page
-    // This means the user has entered their credit card and started the trial
-    if (typeof window.gtag === 'function') {
-      window.gtag('event', 'conversion', {
-        'send_to': 'AW-18034146775/8NSFCKitgI4cENf7rJdD',
-        'value': 25.0,
-        'currency': 'EUR',
-        'transaction_id': `sub_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      });
-    }
-
     // Detect lang from URL
     const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
     const lang = langMatch ? langMatch[1] : "es";

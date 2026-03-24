@@ -470,3 +470,9 @@
 - [x] Rebrand: Cambiar nombre en páginas de Pricing, Blog, FAQ, etc.
 - [x] Rebrand: Cambiar nombre en AuthModal, PaywallModal, Dashboard
 - [x] Rebrand: Nuevo dominio pdfup.io configurado
+
+## Reemplazo Google Analytics/Ads → Nuevo Google Tag
+- [x] Borrar código antiguo de Google Analytics (G-S9PBPV95TL, G-LKD51NK94C)
+- [x] Borrar código antiguo de Google Ads (AW-18034146775)
+- [x] Instalar nuevo Google Tag (G-XBH23TMG7K)
+- [x] Mantener Google Consent Mode v2 compatible con nuevo tag

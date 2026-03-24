@@ -532,15 +532,6 @@ export default function PaywallModal({
   };
 
   const handlePaymentSuccess = () => {
-    // ── Google Ads Conversion Tracking (inline Stripe Elements payment) ──
-    if (typeof window.gtag === 'function') {
-      window.gtag('event', 'conversion', {
-        'send_to': 'AW-18034146775/8NSFCKitgI4cENf7rJdD',
-        'value': 25.0,
-        'currency': 'EUR',
-        'transaction_id': `sub_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      });
-    }
     clearPendingEditedPdf();
     onClose();
     if (onPaymentSuccess) onPaymentSuccess();
