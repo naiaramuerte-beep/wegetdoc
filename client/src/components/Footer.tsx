@@ -1,12 +1,44 @@
 /* =============================================================
-   PDFPro Footer — Deep Navy Pro design
+   PDFPro Footer — Deep Navy Pro design — fully i18n-ready
    Dark navy background, matching the navbar
    ============================================================= */
 
 import { FileText, Facebook, Linkedin, Twitter } from "lucide-react";
-import { Link } from "wouter";
+import { useLanguage, LANGUAGES } from "@/contexts/LanguageContext";
+
+const socialBg = "oklch(0.25 0.04 250)";
+const socialColor = "oklch(0.70 0.02 250)";
+const accentColor = "oklch(0.55 0.22 260)";
+const linkColor = "oklch(0.60 0.02 250)";
 
 export default function Footer() {
+  const { lang, t, switchLang } = useLanguage();
+
+  const pdfproLinks = [
+    { href: `/${lang}/pricing`, label: t.nav_pricing },
+    { href: `/${lang}/blog`, label: "Blog" },
+    { href: `/${lang}#how-it-works`, label: t.footer_how },
+    { href: `/${lang}#faq`, label: t.footer_faq },
+    { href: "#contact", label: t.nav_contact },
+  ];
+
+  const legalLinks = [
+    { href: `/${lang}/terms`, label: t.footer_terms },
+    { href: `/${lang}/privacy`, label: t.footer_privacy },
+    { href: `/${lang}/cookies`, label: t.footer_cookies },
+    { href: `/${lang}/gdpr`, label: t.footer_gdpr },
+    { href: `/${lang}/cancelar-suscripcion`, label: t.footer_unsubscribe },
+  ];
+
+  const toolLinks = [
+    { href: `/${lang}`, label: t.footer_editor },
+    { href: `/${lang}/tools`, label: t.footer_convert },
+    { href: `/${lang}`, label: t.footer_compress },
+    { href: `/${lang}`, label: t.footer_merge },
+    { href: `/${lang}`, label: t.footer_split },
+    { href: `/${lang}`, label: t.footer_sign },
+  ];
+
   return (
     <footer
       className="w-full pt-12 pb-8"
@@ -19,7 +51,7 @@ export default function Footer() {
             <div className="flex items-center gap-2 mb-4">
               <div
                 className="w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
+                style={{ backgroundColor: accentColor }}
               >
                 <FileText className="w-4 h-4 text-white" />
               </div>
@@ -27,58 +59,31 @@ export default function Footer() {
                 className="text-white font-bold text-xl tracking-tight"
                 style={{ fontFamily: "'Sora', sans-serif" }}
               >
-                PDF<span style={{ color: "oklch(0.55 0.22 260)" }}>Pro</span>
+                PDF<span style={{ color: accentColor }}>Pro</span>
               </span>
             </div>
-            <p className="text-sm leading-relaxed" style={{ color: "oklch(0.60 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}>
-              El editor de PDF online gratuito más completo. Convierte, edita y firma tus documentos desde cualquier dispositivo.
+            <p className="text-sm leading-relaxed" style={{ color: linkColor, fontFamily: "'DM Sans', sans-serif" }}>
+              {t.footer_desc}
             </p>
             <div className="flex items-center gap-3 mt-4">
-              <a
-                href="#"
-                className="w-8 h-8 rounded-md flex items-center justify-center transition-colors duration-200"
-                style={{ backgroundColor: "oklch(0.25 0.04 250)", color: "oklch(0.70 0.02 250)" }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)";
-                  e.currentTarget.style.color = "white";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "oklch(0.25 0.04 250)";
-                  e.currentTarget.style.color = "oklch(0.70 0.02 250)";
-                }}
-              >
-                <Facebook className="w-4 h-4" />
-              </a>
-              <a
-                href="#"
-                className="w-8 h-8 rounded-md flex items-center justify-center transition-colors duration-200"
-                style={{ backgroundColor: "oklch(0.25 0.04 250)", color: "oklch(0.70 0.02 250)" }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)";
-                  e.currentTarget.style.color = "white";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "oklch(0.25 0.04 250)";
-                  e.currentTarget.style.color = "oklch(0.70 0.02 250)";
-                }}
-              >
-                <Linkedin className="w-4 h-4" />
-              </a>
-              <a
-                href="#"
-                className="w-8 h-8 rounded-md flex items-center justify-center transition-colors duration-200"
-                style={{ backgroundColor: "oklch(0.25 0.04 250)", color: "oklch(0.70 0.02 250)" }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)";
-                  e.currentTarget.style.color = "white";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "oklch(0.25 0.04 250)";
-                  e.currentTarget.style.color = "oklch(0.70 0.02 250)";
-                }}
-              >
-                <Twitter className="w-4 h-4" />
-              </a>
+              {[Facebook, Linkedin, Twitter].map((Icon, idx) => (
+                <a
+                  key={idx}
+                  href="#"
+                  className="w-8 h-8 rounded-md flex items-center justify-center transition-colors duration-200"
+                  style={{ backgroundColor: socialBg, color: socialColor }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = accentColor;
+                    e.currentTarget.style.color = "white";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = socialBg;
+                    e.currentTarget.style.color = socialColor;
+                  }}
+                >
+                  <Icon className="w-4 h-4" />
+                </a>
+              ))}
             </div>
           </div>
 
@@ -88,27 +93,17 @@ export default function Footer() {
               className="text-sm font-semibold text-white mb-4"
               style={{ fontFamily: "'Sora', sans-serif" }}
             >
-              editPDF
+              {t.footer_col_pdfpro}
             </h4>
             <ul className="space-y-2">
-              {[
-                { href: "/pricing", label: "Precios" },
-                { href: "/blog", label: "Blog" },
-                { href: "/#how-it-works", label: "Cómo funciona" },
-                { href: "/#faq", label: "FAQ" },
-                { href: "#contact", label: "Contacto" },
-              ].map((link) => (
+              {pdfproLinks.map((link) => (
                 <li key={link.href}>
                   <a
                     href={link.href}
                     className="text-sm transition-colors duration-200"
-                    style={{ color: "oklch(0.60 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.color = "oklch(0.55 0.22 260)")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.color = "oklch(0.60 0.02 250)")
-                    }
+                    style={{ color: linkColor, fontFamily: "'DM Sans', sans-serif" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = accentColor)}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = linkColor)}
                   >
                     {link.label}
                   </a>
@@ -123,27 +118,17 @@ export default function Footer() {
               className="text-sm font-semibold text-white mb-4"
               style={{ fontFamily: "'Sora', sans-serif" }}
             >
-              Legal
+              {t.footer_col_legal}
             </h4>
             <ul className="space-y-2">
-              {[
-                { href: "/terms", label: "Términos de uso" },
-                { href: "/privacy", label: "Política de privacidad" },
-                { href: "/cookies", label: "Política de cookies" },
-                { href: "/gdpr", label: "RGPD" },
-                { href: "/cancelar-suscripcion", label: "Cancelar suscripción" },
-              ].map((link) => (
+              {legalLinks.map((link) => (
                 <li key={link.href}>
                   <a
                     href={link.href}
                     className="text-sm transition-colors duration-200"
-                    style={{ color: "oklch(0.60 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.color = "oklch(0.55 0.22 260)")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.color = "oklch(0.60 0.02 250)")
-                    }
+                    style={{ color: linkColor, fontFamily: "'DM Sans', sans-serif" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = accentColor)}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = linkColor)}
                   >
                     {link.label}
                   </a>
@@ -152,34 +137,23 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Herramientas */}
+          {/* Tools */}
           <div>
             <h4
               className="text-sm font-semibold text-white mb-4"
               style={{ fontFamily: "'Sora', sans-serif" }}
             >
-              Herramientas
+              {t.footer_col_tools}
             </h4>
             <ul className="space-y-2">
-              {[
-                { href: "/", label: "Editor de PDF" },
-                { href: "/", label: "Convertir PDF" },
-                { href: "/", label: "Comprimir PDF" },
-                { href: "/", label: "Fusionar PDF" },
-                { href: "/", label: "Dividir PDF" },
-                { href: "/", label: "Firmar PDF" },
-              ].map((link, i) => (
+              {toolLinks.map((link, i) => (
                 <li key={i}>
                   <a
                     href={link.href}
                     className="text-sm transition-colors duration-200"
-                    style={{ color: "oklch(0.60 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.color = "oklch(0.55 0.22 260)")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.color = "oklch(0.60 0.02 250)")
-                    }
+                    style={{ color: linkColor, fontFamily: "'DM Sans', sans-serif" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = accentColor)}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = linkColor)}
                   >
                     {link.label}
                   </a>
@@ -195,34 +169,25 @@ export default function Footer() {
             className="text-xs"
             style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
           >
-            © 2026 editPDF. Todos los derechos reservados.
+            {t.footer_copyright}
           </p>
           <div className="flex items-center gap-4">
             <select
-              className="text-xs rounded-md px-2 py-1 border"
+              className="text-xs rounded-md px-2 py-1 border cursor-pointer"
               style={{
                 backgroundColor: "oklch(0.22 0.04 250)",
                 color: "oklch(0.70 0.02 250)",
                 borderColor: "oklch(0.30 0.04 250)",
                 fontFamily: "'DM Sans', sans-serif",
               }}
+              value={lang}
+              onChange={(e) => switchLang(e.target.value as any)}
             >
-              <option>🌐 Español</option>
-              <option>🌐 English</option>
-              <option>🌐 Français</option>
-            </select>
-            <select
-              className="text-xs rounded-md px-2 py-1 border"
-              style={{
-                backgroundColor: "oklch(0.22 0.04 250)",
-                color: "oklch(0.70 0.02 250)",
-                borderColor: "oklch(0.30 0.04 250)",
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-            >
-              <option>$ USD</option>
-              <option>€ EUR</option>
-              <option>£ GBP</option>
+              {LANGUAGES.map((l) => (
+                <option key={l.code} value={l.code}>
+                  {l.flag} {l.name}
+                </option>
+              ))}
             </select>
           </div>
         </div>

@@ -416,7 +416,7 @@
 - [ ] Exportar PDF a Word (.docx) usando LibreOffice en el servidor
 - [ ] Exportar PDF a Excel (.xlsx) usando LibreOffice en el servidor
 - [ ] Barra de progreso animada en el panel de protección con contraseña
-- [ ] Selector de idioma en el Footer
+- [x] Selector de idioma en el Footer
 
 ## UX: Pantalla de carga al convertir archivos
 - [x] Reemplazar toast "Convirtiendo..." por overlay de carga completo con barra de progreso animada en la Home
@@ -452,3 +452,9 @@
 - [x] Ajustar Home para dejar claro que es un servicio en la nube (no software descargable)
 - [x] Añadir badges/textos como "100% Cloud-Based", "No Download Required", "Works in your browser"
 - [x] Asegurar que no haya lenguaje que sugiera descarga de software
+
+## Bug: URL /en/ muestra contenido en español
+- [x] Corregir detección de idioma: la URL /en/ debe mostrar contenido en inglés, no usar el idioma del navegador
+- [x] Reescribir Tools.tsx para usar sistema i18n (useLanguage hook) en lugar de textos hardcodeados en español
+- [x] Añadir claves i18n faltantes para la página Tools: categorías, descripciones de herramientas, textos de la página
+- [x] Reescribir Footer.tsx para usar sistema i18n (useLanguage hook) en lugar de textos hardcodeados en español
