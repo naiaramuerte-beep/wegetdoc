@@ -550,3 +550,6 @@
 
 ## Google Ads ID
 - [x] Reemplazar ID Google Ads AW-18038662610 por AW-18038723667
+
+## Consent Mode
+- [x] Cambiar analytics_storage a granted por defecto en Consent Mode v2

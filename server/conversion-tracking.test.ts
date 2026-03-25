@@ -35,7 +35,7 @@ describe("Google Ads Conversion Tracking", () => {
     );
     expect(html).toContain("gtag('consent', 'default'");
     expect(html).toContain("'ad_storage': 'denied'");
-    expect(html).toContain("'analytics_storage': 'denied'");
+    expect(html).toContain("'analytics_storage': 'granted'");
     expect(html).toContain("wait_for_update");
   });
 

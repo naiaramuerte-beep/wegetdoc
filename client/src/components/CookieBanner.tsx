@@ -47,12 +47,12 @@ export default function CookieBanner() {
 
   const updateGoogleConsent = (granted: boolean) => {
     if (typeof window !== "undefined" && typeof (window as any).gtag === "function") {
-      const value = granted ? "granted" : "denied";
+      const adValue = granted ? "granted" : "denied";
       (window as any).gtag("consent", "update", {
-        ad_storage: value,
-        ad_user_data: value,
-        ad_personalization: value,
-        analytics_storage: value,
+        ad_storage: adValue,
+        ad_user_data: adValue,
+        ad_personalization: adValue,
+        analytics_storage: "granted", // Always keep analytics enabled
       });
     }
   };
