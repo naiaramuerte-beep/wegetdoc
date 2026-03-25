@@ -536,3 +536,8 @@
 - [x] Backend: endpoints register y login por email+contraseña (sin tocar Google OAuth)
 - [x] Frontend: formulario email+contraseña en PaywallModal (sin tocar flujo Google ni descarga)
 - [x] Sesión: crear cookie JWT tras registro/login exitoso
+
+## Info de pagos en panel admin
+- [x] Endpoint backend: obtener info de pagos/suscripción por usuario desde Stripe
+- [x] Columnas de pago en tabla de admin: estado suscripción, Stripe ID, intentos de pago
+- [x] Detalle expandible o modal con historial de pagos del usuario (link directo a Stripe Dashboard)

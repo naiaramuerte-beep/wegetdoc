@@ -87,14 +87,35 @@ export async function getUserById(id: number) {
 export async function getAllUsers(search?: string) {
   const db = await getDb();
   if (!db) return [];
+  const cols = {
+    id: users.id,
+    openId: users.openId,
+    name: users.name,
+    email: users.email,
+    loginMethod: users.loginMethod,
+    role: users.role,
+    country: users.country,
+    language: users.language,
+    createdAt: users.createdAt,
+    updatedAt: users.updatedAt,
+    lastSignedIn: users.lastSignedIn,
+    // Subscription info
+    subStatus: subscriptions.status,
+    subPlan: subscriptions.plan,
+    stripeCustomerId: subscriptions.stripeCustomerId,
+    stripeSubscriptionId: subscriptions.stripeSubscriptionId,
+    currentPeriodEnd: subscriptions.currentPeriodEnd,
+    cancelAtPeriodEnd: subscriptions.cancelAtPeriodEnd,
+  };
   if (search) {
     return db
-      .select()
+      .select(cols)
       .from(users)
+      .leftJoin(subscriptions, eq(users.id, subscriptions.userId))
       .where(like(users.email, `%${search}%`))
       .orderBy(desc(users.createdAt));
   }
-  return db.select().from(users).orderBy(desc(users.createdAt));
+  return db.select(cols).from(users).leftJoin(subscriptions, eq(users.id, subscriptions.userId)).orderBy(desc(users.createdAt));
 }
 
 // ─── Subscriptions ────────────────────────────────────────────

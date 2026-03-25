@@ -392,12 +392,12 @@ export default function Admin() {
                 </div>
               </div>
 
-              <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#1e2433" }}>
-                <table className="w-full text-sm">
+              <div className="rounded-xl border overflow-x-auto" style={{ borderColor: "#1e2433" }}>
+                <table className="w-full text-sm min-w-[1300px]">
                   <thead>
                     <tr style={{ backgroundColor: "#0a0d14" }}>
-                      {["ID", "Nombre", "Email", "Rol", "Registro", "Último acceso", "Acciones"].map((h) => (
-                        <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-400">
+                      {["ID", "Nombre", "Email", "Rol", "Suscripción", "Plan", "Stripe ID", "Vence", "Registro", "Último acceso", "Acciones"].map((h) => (
+                        <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-400 whitespace-nowrap">
                           {h}
                         </th>
                       ))}
@@ -406,7 +406,7 @@ export default function Admin() {
                   <tbody>
                     {usersQ.isLoading ? (
                       <tr>
-                        <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
+                        <td colSpan={11} className="px-4 py-8 text-center text-gray-400">
                           Cargando...
                         </td>
                       </tr>
@@ -419,8 +419,8 @@ export default function Admin() {
                         }}
                       >
                         <td className="px-4 py-3 text-gray-400 text-xs">{u.id}</td>
-                        <td className="px-4 py-3 text-white font-medium">{u.name ?? "—"}</td>
-                        <td className="px-4 py-3 text-gray-300">{u.email ?? "—"}</td>
+                        <td className="px-4 py-3 text-white font-medium">{u.name ?? "\u2014"}</td>
+                        <td className="px-4 py-3 text-gray-300">{u.email ?? "\u2014"}</td>
                         <td className="px-4 py-3">
                           <span
                             className="px-2 py-0.5 rounded text-xs font-medium"
@@ -431,6 +431,54 @@ export default function Admin() {
                           >
                             {u.role}
                           </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {u.subStatus ? (
+                            <span
+                              className="px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap"
+                              style={{
+                                backgroundColor:
+                                  u.subStatus === "active" || u.subStatus === "trialing" ? "#10b98120" :
+                                  u.subStatus === "canceled" ? "#ef444420" :
+                                  u.subStatus === "past_due" ? "#f59e0b20" :
+                                  u.subStatus === "incomplete" ? "#6366f120" : "#1e2433",
+                                color:
+                                  u.subStatus === "active" || u.subStatus === "trialing" ? "#34d399" :
+                                  u.subStatus === "canceled" ? "#f87171" :
+                                  u.subStatus === "past_due" ? "#fbbf24" :
+                                  u.subStatus === "incomplete" ? "#a5b4fc" : "#94a3b8",
+                              }}
+                            >
+                              {u.subStatus === "active" ? "\u2705 Activa" :
+                               u.subStatus === "trialing" ? "\u23F3 Trial" :
+                               u.subStatus === "canceled" ? "\u274C Cancelada" :
+                               u.subStatus === "past_due" ? "\u26A0\uFE0F Impago" :
+                               u.subStatus === "incomplete" ? "\u23F3 Incompleta" : u.subStatus}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-500">Sin suscripci\u00f3n</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-gray-400 text-xs">
+                          {u.subPlan ?? "\u2014"}
+                        </td>
+                        <td className="px-4 py-3 text-xs">
+                          {u.stripeCustomerId ? (
+                            <a
+                              href={`https://dashboard.stripe.com/customers/${u.stripeCustomerId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-400 hover:text-blue-300 hover:underline font-mono"
+                              title={u.stripeCustomerId}
+                            >
+                              {u.stripeCustomerId.slice(0, 14)}...
+                            </a>
+                          ) : (
+                            <span className="text-gray-500">\u2014</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">
+                          {u.currentPeriodEnd ? new Date(u.currentPeriodEnd).toLocaleDateString("es-ES") : "\u2014"}
                         </td>
                         <td className="px-4 py-3 text-gray-400 text-xs">
                           {new Date(u.createdAt).toLocaleDateString("es-ES")}
