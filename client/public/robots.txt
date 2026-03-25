@@ -1,5 +1,5 @@
-# robots.txt for EDITPDF.ONLINE
-# https://editpdf.online
+# robots.txt for PDFUP.IO
+# https://pdfup.io
 
 User-agent: *
 Allow: /
@@ -20,4 +20,4 @@ Disallow: /*/payment/
 Disallow: /*/cancelar-suscripcion
 
 # Sitemap
-Sitemap: https://editpdf.online/sitemap.xml
+Sitemap: https://pdfup.io/sitemap.xml

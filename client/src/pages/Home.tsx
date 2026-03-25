@@ -3,7 +3,7 @@
    Dark hero + social proof + urgency + benefits
    ============================================================= */
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
@@ -24,8 +24,6 @@ import {
   Shield,
   Zap,
   Monitor,
-  Star,
-  Users,
   CheckCircle2,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -68,24 +66,7 @@ export default function Home() {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fake active users counter — fluctuates between 120K and 145K
-  const [activeUsers, setActiveUsers] = useState(127843);
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveUsers(prev => {
-        const delta = Math.floor(Math.random() * 200) - 80; // -80 to +120
-        const next = prev + delta;
-        // Clamp between 120000 and 145000
-        return Math.min(145000, Math.max(120000, next));
-      });
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
 
-  const formatUsers = (n: number) => {
-    if (n >= 1000) return (n / 1000).toFixed(1).replace('.0', '') + 'K';
-    return n.toString();
-  };
   const { setPendingFile, setPendingTool } = usePdfFile();
   const { lang, t } = useLanguage();
   const [, navigate] = useLocation();
@@ -250,8 +231,8 @@ export default function Home() {
           {/* Trust badges row */}
           <div className="flex flex-wrap justify-center gap-3 mb-8">
             {[
-              { icon: null, text: t.hero_trust_rating, iconColor: "#00B67A", textColor: "#00B67A" },
-              { icon: Users, text: t.hero_trust_users, iconColor: "oklch(0.75 0.10 260)", textColor: "oklch(0.85 0.01 250)" },
+              { icon: Shield, text: (t as any).hero_trust_secure ?? "Secure & encrypted", iconColor: "#00B67A", textColor: "#00B67A" },
+              { icon: Monitor, text: (t as any).hero_trust_browser ?? "Works in any browser", iconColor: "oklch(0.75 0.10 260)", textColor: "oklch(0.85 0.01 250)" },
               { icon: CheckCircle2, text: t.hero_badge_instant, iconColor: "oklch(0.75 0.15 145)", textColor: "oklch(0.85 0.01 250)" },
             ].map((badge, i) => (
               <div
@@ -378,18 +359,7 @@ export default function Home() {
                     {badge}
                   </span>
                 ))}
-                {/* Animated active users counter */}
-                <span
-                  className="flex items-center gap-1 text-xs px-3 py-1 rounded-full font-medium"
-                  style={{
-                    backgroundColor: "oklch(1 0 0 / 0.08)",
-                    color: "oklch(0.75 0.08 260)",
-                    border: "1px solid oklch(1 0 0 / 0.10)",
-                  }}
-                >
-                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse inline-block" />
-                  {formatUsers(activeUsers)} {t.hero_users_now ?? "active users now"}
-                </span>
+
               </div>
 
               <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>{t.hero_max_size_detail}</p>
@@ -423,9 +393,9 @@ export default function Home() {
         <div className="container">
           <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16">
             {[
-              { value: "2.3M+", label: t.hero_social_pdfs, icon: FileText },
-              { value: "★ 4.8", label: t.hero_social_rating, icon: Star },
-              { value: "180K+", label: t.hero_social_users, icon: Users },
+              { value: "15+", label: (t as any).hero_social_tools ?? "PDF tools available", icon: FileText },
+              { value: "100%", label: (t as any).hero_social_browser ?? "Browser-based", icon: Shield },
+              { value: "0", label: (t as any).hero_social_install ?? "Installation required", icon: CheckCircle2 },
             ].map((stat, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div

@@ -477,3 +477,16 @@
 - [x] Instalar nuevo Google Tag (G-XBH23TMG7K)
 - [x] Mantener Google Consent Mode v2 compatible con nuevo tag
 - [x] Corregir ID de Google Tag: G-XBH23TMG7K → G-XBHZ3TMG7K
+
+## Auditoría de seguridad - Google Ads malware flag
+- [x] Escanear scripts externos y recursos de terceros
+- [x] Revisar redirecciones y descargas automáticas
+- [x] Buscar código ofuscado o sospechoso
+- [x] Verificar prácticas engañosas (fake counters, fake reviews)
+- [x] Eliminar contenido SEO oculto (cloaking) de index.html
+- [x] Eliminar contador falso de usuarios activos
+- [x] Reemplazar estadísticas falsas (2.3M, 4.8 rating, 180K) por datos reales
+- [x] Reemplazar CTA engañoso ("Únete a millones") en 10 idiomas
+- [x] Actualizar robots.txt con dominio pdfup.io
+- [x] Verificar con Google Safe Browsing (limpio) y VirusTotal (0/94)
+- [x] Preparar informe de auditoría y plantilla de apelación para Google Ads
