@@ -344,6 +344,12 @@ export default function Home() {
                 <ArrowRight className="w-5 h-5" />
               </button>
 
+              {/* Auto-conversion info — directly under CTA */}
+              <p className="flex items-center justify-center gap-1.5 text-xs" style={{ color: "oklch(0.65 0.03 250)" }}>
+                <RefreshCw className="w-3 h-3 shrink-0" style={{ color: "oklch(0.70 0.15 260)" }} />
+                {t.hero_auto_convert}
+              </p>
+
               {/* Feature badges */}
               <div className="flex flex-wrap justify-center gap-2">
                 {[t.hero_badge_free, t.hero_badge_no_card].map((badge, i) => (
@@ -364,17 +370,6 @@ export default function Home() {
               </div>
 
               <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>{t.hero_max_size_detail}</p>
-
-              {/* Auto-conversion info */}
-              <div
-                className="flex items-center gap-2 mt-1 px-3 py-1.5 rounded-full"
-                style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.10)", border: "1px solid oklch(0.55 0.22 260 / 0.20)" }}
-              >
-                <RefreshCw className="w-3 h-3 shrink-0" style={{ color: "oklch(0.70 0.15 260)" }} />
-                <span className="text-xs font-medium" style={{ color: "oklch(0.75 0.08 260)" }}>
-                  {t.hero_auto_convert}
-                </span>
-              </div>
             </div>
 
 
