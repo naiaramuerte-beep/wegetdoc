@@ -21,15 +21,16 @@ export default function EditorPage() {
   // so we don't redirect prematurely after an OAuth login redirect.
   useEffect(() => {
     if (isRestoringFromSession) return; // Wait for session restoration
-    if (!pendingFile && !isFileFree) {
+    // Don't redirect if pendingPaywall is true (user returning from OAuth login)
+    if (!pendingFile && !isFileFree && !pendingPaywall) {
       const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
       const lang = langMatch ? langMatch[1] : "es";
       navigate(`/${lang}`);
     }
-  }, [pendingFile, isFileFree, navigate, isRestoringFromSession]);
+  }, [pendingFile, isFileFree, navigate, isRestoringFromSession, pendingPaywall]);
 
   // Show navbar while loading/redirecting to avoid blank page without header
-  if (isRestoringFromSession || (!pendingFile && !isFileFree)) {
+  if (isRestoringFromSession || (!pendingFile && !isFileFree && !pendingPaywall)) {
     return (
       <div className="flex flex-col min-h-screen">
         <Navbar />

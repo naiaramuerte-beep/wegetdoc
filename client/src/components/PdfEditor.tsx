@@ -536,37 +536,82 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // 1. Auto-save the document to user panel (using pendingEditedPdf from session)
   // 2. If premium → trigger download immediately
   // 3. If not premium → open paywall
-  // NOTE: We check both initialOpenPaywall prop AND sessionStorage flag.
-  // The prop may be cleared before this effect runs, so sessionStorage is the reliable source.
+  //
+  // APPROACH: On mount, check sessionStorage for "pdfup_pending_action". If found,
+  // start a polling interval that waits for isAuthenticated to become true.
+  // This avoids the React useEffect dependency race condition entirely.
+  const autoResumeTriggeredRef = useRef(false);
+  const isAuthenticatedRef = useRef(isAuthenticated);
+  const pdfDocRef = useRef(pdfDoc);
+  const pendingEditedPdfRef = useRef(pendingEditedPdf);
+  const isPremiumRef = useRef(isPremium);
+  const pdfBytesRef = useRef(pdfBytes);
+  // Keep refs in sync
+  useEffect(() => { isAuthenticatedRef.current = isAuthenticated; }, [isAuthenticated]);
+  useEffect(() => { pdfDocRef.current = pdfDoc; }, [pdfDoc]);
+  useEffect(() => { pendingEditedPdfRef.current = pendingEditedPdf; }, [pendingEditedPdf]);
+  useEffect(() => { isPremiumRef.current = isPremium; }, [isPremium]);
+  useEffect(() => { pdfBytesRef.current = pdfBytes; }, [pdfBytes]);
+
   useEffect(() => {
-    if (paywallOpenedRef.current) return;
-    if (!pdfDoc) return;
-    // Check multiple signals for pending paywall
+    // Only run once on mount
     const pendingAction = sessionStorage.getItem("pdfup_pending_action");
-    const shouldAutoResume = initialOpenPaywall || pendingAction === "download";
-    if (!shouldAutoResume) return;
-    // If not authenticated yet, wait — the effect will re-run when isAuthenticated changes
-    if (!isAuthenticated) return;
+    const hasPendingPaywall = initialOpenPaywall || pendingAction === "download";
+    if (!hasPendingPaywall || autoResumeTriggeredRef.current) return;
 
-    paywallOpenedRef.current = true;
-    sessionStorage.removeItem("pdfup_pending_action");
-    onPaywallOpened?.();
+    console.log("[autoResume] Detected pending action, starting poll...");
 
-    // Auto-save the edited PDF to user panel and decide next step
-    const autoResumeDownload = async () => {
+    // Poll every 300ms until isAuthenticated is true
+    // (auth.me query takes ~100-300ms to resolve after page load)
+    let attempts = 0;
+    const maxAttempts = 50; // 15 seconds max
+    const interval = setInterval(async () => {
+      attempts++;
+      const authed = isAuthenticatedRef.current;
+      const hasPdf = pdfDocRef.current || pendingEditedPdfRef.current;
+
+      console.log(`[autoResume] Poll #${attempts}: authed=${authed}, hasPdf=${!!hasPdf}`);
+
+      if (attempts >= maxAttempts) {
+        console.log("[autoResume] Timed out waiting for auth/pdf");
+        clearInterval(interval);
+        sessionStorage.removeItem("pdfup_pending_action");
+        return;
+      }
+
+      // Need auth. PDF is optional (we can open paywall without it if we have pendingEditedPdf)
+      if (!authed) return;
+      // Need either a loaded PDF or a pendingEditedPdf from S3
+      if (!hasPdf) {
+        // If we've waited 3+ seconds and still no PDF, open paywall anyway
+        if (attempts < 10) return;
+      }
+
+      // All conditions met — trigger!
+      clearInterval(interval);
+      if (autoResumeTriggeredRef.current) return;
+      autoResumeTriggeredRef.current = true;
+      sessionStorage.removeItem("pdfup_pending_action");
+      onPaywallOpened?.();
+
+      console.log("[autoResume] Triggering auto-resume download flow");
       toast.loading("Guardando documento en tu panel...", { id: "auto-resume" });
 
+      const currentPendingEdited = pendingEditedPdfRef.current;
+      const currentPdfBytes = pdfBytesRef.current;
+      const currentIsPremium = isPremiumRef.current;
+
       // If we have a pending edited PDF from S3 temp, claim it
-      if (pendingEditedPdf) {
+      if (currentPendingEdited) {
         try {
           const resp = await fetch("/api/documents/claim-temp", {
             method: "POST",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              tempKey: pendingEditedPdf.tempKey,
-              name: pendingEditedPdf.name,
-              paymentStatus: isPremium ? "paid" : "pending",
+              tempKey: currentPendingEdited.tempKey,
+              name: currentPendingEdited.name,
+              paymentStatus: currentIsPremium ? "paid" : "pending",
             }),
           });
           if (resp.ok) {
@@ -577,8 +622,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           console.error("[autoResume] claim-temp failed:", err);
         }
         clearPendingEditedPdf();
-      } else if (pdfBytes) {
-        // Fallback: build and auto-save from current editor state
+      } else if (currentPdfBytes) {
         try {
           const out = await buildAnnotatedPdf();
           if (out) {
@@ -593,7 +637,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       toast.dismiss("auto-resume");
 
       // If premium → download immediately
-      if (isPremium) {
+      if (currentIsPremium) {
         toast.loading("Preparando descarga...", { id: "dl" });
         try {
           const out = await buildAnnotatedPdf();
@@ -608,7 +652,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       }
 
       // Not premium → prepare paywall data and open it
-      if (pdfBytes) {
+      if (currentPdfBytes) {
         try {
           const out = await buildAnnotatedPdf();
           if (out) {
@@ -621,12 +665,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         } catch {}
       }
       setShowPaywall(true);
-    };
+    }, 300);
 
-    // Small delay to ensure editor is fully ready
-    const timer = setTimeout(autoResumeDownload, 500);
-    return () => clearTimeout(timer);
-  }, [isAuthenticated, pdfDoc, initialOpenPaywall, isPremium, pendingEditedPdf]);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run ONLY on mount
 
   // ── Load native text blocks for Edit-Text tool ──────────────
   const loadNativeTextBlocks = useCallback(async (pageNum: number) => {

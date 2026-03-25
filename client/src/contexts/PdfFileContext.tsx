@@ -60,7 +60,10 @@ export function PdfFileProvider({ children }: { children: ReactNode }) {
   // isRestoringFromSession: true while we're restoring from sessionStorage
   const [isRestoringFromSession, setIsRestoringFromSession] = useState(() => {
     try {
-      return !!sessionStorage.getItem(SESSION_KEY_PDF);
+      // Check for ANY session restoration signal: original PDF, paywall flag, or pending action
+      return !!sessionStorage.getItem(SESSION_KEY_PDF) ||
+             sessionStorage.getItem(SESSION_KEY_PAYWALL) === "1" ||
+             sessionStorage.getItem("pdfup_pending_action") === "download";
     } catch {
       return false;
     }
