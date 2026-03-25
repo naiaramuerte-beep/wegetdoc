@@ -503,3 +503,17 @@
 - [x] Fix logo icon: replace solid white block with SVG showing document + arrow detail
 - [x] Generate full PDFUp logo image (icon + text) for Google Ads
 - [x] Bug fix: uploaded images show in thumbnail but appear blank in main editor canvas
+
+## Flujo completo descarga (rework)
+- [x] DB: paymentStatus field añadido a tabla documents + markDocumentsPaid helper
+- [x] Backend: endpoint /api/documents/auto-save (sube PDF a S3, crea registro con paymentStatus)
+- [x] Backend: markDocumentsPaid() llamado en confirmSubscription
+- [x] Frontend: botón Descargar inteligente (no logueado → auth + continuar, logueado sin pago → paywall, logueado + pagado → descarga directa)
+- [x] Frontend: persistir intención de descarga (pending_action=download) en sessionStorage antes de auth
+- [x] Frontend: auto-guardar documento en panel del usuario al primer click en Descargar
+- [x] Frontend: tras auth exitoso, retomar automáticamente la acción pendiente (abrir pago o descargar)
+- [x] Frontend: PaywallModal con preview del documento
+- [x] Frontend: descarga inmediata si usuario autenticado + documento pagado
+- [x] Frontend: auto-descarga tras pago exitoso en PaywallModal
+- [ ] Panel usuario: botón descargar si pagado, botón pagar si pendiente
+- [ ] Verificar flujo completo end-to-end en producción

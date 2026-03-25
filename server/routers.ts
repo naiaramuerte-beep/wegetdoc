@@ -53,6 +53,7 @@ import {
   createBlogPost,
   updateBlogPost,
   deleteBlogPost,
+  markDocumentsPaid,
 } from "./db";
 import { storagePut } from "./storage";
 import { sendPaymentConfirmationEmail, sendCancellationEmail } from "./email";
@@ -444,6 +445,9 @@ export const appRouter = router({
             content: `Usuario: ${user.name || "An\u00F3nimo"} (${user.email || "sin email"})\nPlan: Trial 7 d\u00EDas GRATIS \u2192 49,90\u20AC/mes\nFin de prueba: ${trialEnd.toLocaleDateString("es-ES")}`,
           }).catch(() => {});
         }).catch(() => {});
+        // Mark all pending documents as paid now that user has active subscription
+        await markDocumentsPaid(user.id);
+
         return { success: true, subscriptionId: subscription.id };
       }),
 

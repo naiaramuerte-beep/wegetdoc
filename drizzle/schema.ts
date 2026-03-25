@@ -61,6 +61,8 @@ export const documents = mysqlTable("documents", {
   fileUrl: text("fileUrl").notNull(),
   fileSize: int("fileSize").default(0).notNull(),
   folderId: int("folderId"),
+  /** Payment status: pending = saved but not yet paid, paid = user has active subscription */
+  paymentStatus: mysqlEnum("paymentStatus", ["pending", "paid"]).default("pending").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

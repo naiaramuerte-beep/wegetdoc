@@ -203,6 +203,7 @@ export async function createDocument(data: {
   fileUrl: string;
   fileSize: number;
   folderId?: number;
+  paymentStatus?: "pending" | "paid";
 }) {
   const db = await getDb();
   if (!db) return null;
@@ -212,7 +213,16 @@ export async function createDocument(data: {
   return result[0] ?? null;
 }
 
-export async function updateDocument(docId: number, userId: number, data: { name?: string; fileKey?: string; fileUrl?: string; fileSize?: number }) {
+/** Mark all pending documents for a user as paid (called after subscription activation) */
+export async function markDocumentsPaid(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(documents).set({ paymentStatus: "paid" }).where(
+    and(eq(documents.userId, userId), eq(documents.paymentStatus, "pending"))
+  );
+}
+
+export async function updateDocument(docId: number, userId: number, data: { name?: string; fileKey?: string; fileUrl?: string; fileSize?: number; paymentStatus?: "pending" | "paid" }) {
   const db = await getDb();
   if (!db) return;
   await db.update(documents).set(data).where(and(eq(documents.id, docId), eq(documents.userId, userId)));

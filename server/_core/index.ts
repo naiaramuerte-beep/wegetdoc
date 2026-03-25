@@ -10,7 +10,7 @@ import { registerGoogleOAuthRoutes } from "./googleOauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { getUserById, upsertSubscription, getBlogPosts, createDocument } from "../db";
+import { getUserById, upsertSubscription, getBlogPosts, createDocument, userHasActiveSubscription } from "../db";
 import { storagePut, storageGet } from "../storage";
 import { sdk } from "./sdk";
 import { convertToPdf, isConvertibleType, ACCEPTED_EXTENSIONS } from "../convertToPdf";
@@ -227,12 +227,14 @@ ${allUrls.map(u => `  <url>
       const buffer = Buffer.from(await fileResp.arrayBuffer());
       const permanentKey = `docs/${userId}/${Date.now()}-${name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
       const { url: permanentUrl } = await storagePut(permanentKey, buffer, "application/pdf");
+      const paymentStatus = (req.body.paymentStatus === "paid") ? "paid" as const : "pending" as const;
       const doc = await createDocument({
         userId,
         name,
         fileKey: permanentKey,
         fileUrl: permanentUrl,
         fileSize: buffer.length,
+        paymentStatus,
       });
       res.json({ success: true, doc });
     } catch (err) {
@@ -296,6 +298,7 @@ ${allUrls.map(u => `  <url>
       const folderId = req.body.folderId ? parseInt(req.body.folderId) : undefined;
       const key = `docs/${userId}/${Date.now()}-${name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
       const { url } = await storagePut(key, file.buffer, "application/pdf");
+      const paymentStatus = (req.body.paymentStatus === "paid") ? "paid" as const : "pending" as const;
       const doc = await createDocument({
         userId,
         name,
@@ -303,11 +306,46 @@ ${allUrls.map(u => `  <url>
         fileUrl: url,
         fileSize: file.size,
         folderId,
+        paymentStatus,
       });
       res.json({ success: true, doc });
     } catch (err) {
       console.error("[Upload] Error:", err);
       res.status(500).json({ error: "Upload failed" });
+    }
+  });
+
+  // ── REST endpoint for auto-saving document on first download click ────────────
+  // This saves the document to the user's panel with paymentStatus=pending
+  // Called when authenticated user clicks download and doc is not yet saved
+  app.post("/api/documents/auto-save", pdfUpload.single("file"), async (req, res) => {
+    try {
+      let userId: number;
+      try {
+        const user = await sdk.authenticateRequest(req as any);
+        userId = user.id;
+      } catch {
+        res.status(401).json({ error: "Unauthorized" }); return;
+      }
+      const file = req.file;
+      if (!file) { res.status(400).json({ error: "No file" }); return; }
+      const name = (req.body.name as string) || file.originalname || "document.pdf";
+      const key = `docs/${userId}/${Date.now()}-${name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      const { url } = await storagePut(key, file.buffer, "application/pdf");
+      // Check if user has active subscription
+      const isPremium = await userHasActiveSubscription(userId);
+      const doc = await createDocument({
+        userId,
+        name,
+        fileKey: key,
+        fileUrl: url,
+        fileSize: file.size,
+        paymentStatus: isPremium ? "paid" : "pending",
+      });
+      res.json({ success: true, doc, isPremium });
+    } catch (err) {
+      console.error("[AutoSave] Error:", err);
+      res.status(500).json({ error: "Auto-save failed" });
     }
   });
 

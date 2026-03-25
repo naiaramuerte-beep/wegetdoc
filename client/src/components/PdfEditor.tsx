@@ -332,7 +332,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const isPremium = subData?.isPremium ?? false;
   const { t } = useLanguage();
   const { isAuthenticated } = useAuth();
-  const { saveEditedPdfToSession } = usePdfFile();
+  const { saveEditedPdfToSession, savePdfToSession, setPendingPaywall, pendingFile, pendingEditedPdf, clearPendingEditedPdf, pendingPaywall: ctxPendingPaywall } = usePdfFile();
+  // Track the saved document ID so we don't re-save on every download click
+  const [savedDocId, setSavedDocId] = useState<number | null>(null);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [, navigate] = useLocation();
   const [isSaving, setIsSaving] = useState(false);
 
@@ -528,14 +531,97 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialFile]);
 
-  // Open paywall automatically after login redirect (when initialOpenPaywall is true)
+  // ── Post-login auto-continuation ──────────────────────────────────────────
+  // After OAuth redirect, if user had a pending download intent:
+  // 1. Auto-save the document to user panel (using pendingEditedPdf from session)
+  // 2. If premium → trigger download immediately
+  // 3. If not premium → open paywall
   useEffect(() => {
-    if (initialOpenPaywall && pdfDoc && !paywallOpenedRef.current) {
-      paywallOpenedRef.current = true;
+    if (!isAuthenticated || !pdfDoc || paywallOpenedRef.current) return;
+    // Check for pending download action
+    const pendingAction = sessionStorage.getItem("pdfup_pending_action");
+    const shouldAutoResume = initialOpenPaywall || pendingAction === "download";
+    if (!shouldAutoResume) return;
+
+    paywallOpenedRef.current = true;
+    sessionStorage.removeItem("pdfup_pending_action");
+    onPaywallOpened?.();
+
+    // Auto-save the edited PDF to user panel and decide next step
+    const autoResumeDownload = async () => {
+      toast.loading("Guardando documento en tu panel...", { id: "auto-resume" });
+
+      // If we have a pending edited PDF from S3 temp, claim it
+      if (pendingEditedPdf) {
+        try {
+          const resp = await fetch("/api/documents/claim-temp", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              tempKey: pendingEditedPdf.tempKey,
+              name: pendingEditedPdf.name,
+              paymentStatus: isPremium ? "paid" : "pending",
+            }),
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data.doc?.id) setSavedDocId(data.doc.id);
+          }
+        } catch (err) {
+          console.error("[autoResume] claim-temp failed:", err);
+        }
+        clearPendingEditedPdf();
+      } else if (pdfBytes) {
+        // Fallback: build and auto-save from current editor state
+        try {
+          const out = await buildAnnotatedPdf();
+          if (out) {
+            const result = await autoSaveDocument(out);
+            if (result?.docId) setSavedDocId(result.docId);
+          }
+        } catch (err) {
+          console.error("[autoResume] auto-save failed:", err);
+        }
+      }
+
+      toast.dismiss("auto-resume");
+
+      // If premium → download immediately
+      if (isPremium) {
+        toast.loading("Preparando descarga...", { id: "dl" });
+        try {
+          const out = await buildAnnotatedPdf();
+          if (out) {
+            triggerDownload(out);
+            toast.success("PDF descargado correctamente", { id: "dl" });
+          }
+        } catch {
+          toast.error("Error al descargar", { id: "dl" });
+        }
+        return;
+      }
+
+      // Not premium → prepare paywall data and open it
+      if (pdfBytes) {
+        try {
+          const out = await buildAnnotatedPdf();
+          if (out) {
+            setPdfDataForPaywall({
+              base64: uint8ToBase64(out),
+              name: file?.name ?? "document.pdf",
+              size: out.byteLength,
+            });
+          }
+        } catch {}
+      }
       setShowPaywall(true);
-      onPaywallOpened?.();
-    }
-  }, [initialOpenPaywall, pdfDoc, onPaywallOpened]);
+    };
+
+    // Small delay to ensure editor is fully ready
+    const timer = setTimeout(autoResumeDownload, 500);
+    return () => clearTimeout(timer);
+  }, [isAuthenticated, pdfDoc, initialOpenPaywall, isPremium, pendingEditedPdf]);
 
   // ── Load native text blocks for Edit-Text tool ──────────────
   const loadNativeTextBlocks = useCallback(async (pageNum: number) => {
@@ -1731,46 +1817,105 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       setIsSearching(false);
     }
   };
-  // ── Download with annotations ─────────────────────────────────────────────────────────────────────────────────
-  const downloadPdf = async () => {
-    if (!isPremium) {
-      // Build PDF and pass to paywall so it can be uploaded to S3 before checkout
-      if (pdfBytes) {
-        toast.loading("Preparando documento...", { id: "dl" });
-        try {
-          const out = await buildAnnotatedPdf();
-          if (out) {
-            const base64 = uint8ToBase64(out);
-            const docName = file?.name ?? "document.pdf";
-            const docSize = out.byteLength;
-            setPdfDataForPaywall({ base64, name: docName, size: docSize });
-            // Also persist in sessionStorage so it survives login redirect
-            saveEditedPdfToSession(base64, docName, docSize);
+  // ── Helper: auto-save document to user panel ──────────────────────────────
+  const autoSaveDocument = async (pdfOut: Uint8Array): Promise<{ docId: number; isPremium: boolean } | null> => {
+    try {
+      const safeBuffer = pdfOut.buffer.slice(pdfOut.byteOffset, pdfOut.byteOffset + pdfOut.byteLength) as ArrayBuffer;
+      const blob = new Blob([safeBuffer], { type: "application/pdf" });
+      const formData = new FormData();
+      formData.append("file", blob, file?.name ?? "document.pdf");
+      formData.append("name", file?.name ?? "document.pdf");
+      const resp = await fetch("/api/documents/auto-save", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      return { docId: data.doc?.id, isPremium: data.isPremium };
+    } catch (err) {
+      console.error("[autoSaveDocument]", err);
+      return null;
+    }
+  };
 
-            // PDF data is passed to PaywallModal which uploads it AFTER payment succeeds
-          }
-          toast.dismiss("dl");
-        } catch {
-          toast.dismiss("dl");
-        }
-      }
-      setShowPaywall(true);
+  // ── Helper: trigger browser download ──────────────────────────────
+  const triggerDownload = (pdfOut: Uint8Array) => {
+    const blob = new Blob([pdfOut.buffer.slice(pdfOut.byteOffset, pdfOut.byteOffset + pdfOut.byteLength) as ArrayBuffer], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url;
+    a.download = file?.name ?? "document.pdf";
+    a.click(); URL.revokeObjectURL(url);
+  };
+
+  // ── Download with annotations (SMART BUTTON) ─────────────────────────────────
+  const downloadPdf = async () => {
+    if (!pdfBytes) return;
+    toast.loading("Preparando documento...", { id: "dl" });
+
+    // Step 1: Build the annotated PDF
+    let pdfOut: Uint8Array | null = null;
+    try {
+      pdfOut = await buildAnnotatedPdf();
+      if (!pdfOut) throw new Error("Failed to build PDF");
+    } catch {
+      toast.error("Error al generar el PDF", { id: "dl" });
       return;
     }
-    if (!pdfBytes) return;
-    toast.loading("Preparando descarga...", { id: "dl" });
+
+    const base64 = uint8ToBase64(pdfOut);
+    const docName = file?.name ?? "document.pdf";
+    const docSize = pdfOut.byteLength;
+
+    // Step 2: If NOT authenticated → save to S3 temp, persist intent, redirect to login
+    if (!isAuthenticated) {
+      toast.loading("Guardando documento...", { id: "dl" });
+      try {
+        // Save original PDF to session so editor can restore after login
+        if (pendingFile) {
+          await savePdfToSession(pendingFile);
+        }
+        // Save edited PDF to S3 temp
+        await saveEditedPdfToSession(base64, docName, docSize);
+        // Mark pending download intent
+        setPendingPaywall(true);
+        sessionStorage.setItem("pdfup_pending_action", "download");
+      } catch (err) {
+        console.error("[downloadPdf] save before login failed:", err);
+      }
+      toast.dismiss("dl");
+      // Redirect to Google OAuth login
+      const returnPath = window.location.pathname + window.location.search;
+      window.location.href = `/api/auth/google?origin=${encodeURIComponent(window.location.origin)}&returnPath=${encodeURIComponent(returnPath)}`;
+      return;
+    }
+
+    // Step 3: User IS authenticated
+    setIsAutoSaving(true);
     try {
-      const out = await buildAnnotatedPdf();
-      if (!out) throw new Error("Failed to build PDF");
-      const blob = new Blob([out.buffer as ArrayBuffer], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href = url;
-      a.download = file?.name ?? "document.pdf";
-      a.click(); URL.revokeObjectURL(url);
-      toast.success("PDF descargado correctamente", { id: "dl" });
+      // Auto-save document to user panel
+      const result = await autoSaveDocument(pdfOut);
+      if (result?.docId) {
+        setSavedDocId(result.docId);
+      }
+
+      // Step 4: If premium → download immediately
+      if (isPremium || result?.isPremium) {
+        triggerDownload(pdfOut);
+        toast.success("PDF descargado correctamente", { id: "dl" });
+        setIsAutoSaving(false);
+        return;
+      }
+
+      // Step 5: Not premium → show paywall with PDF data
+      setPdfDataForPaywall({ base64, name: docName, size: docSize });
+      toast.dismiss("dl");
+      setShowPaywall(true);
     } catch (err) {
-      console.error(err);
-      toast.error("Error al generar el PDF", { id: "dl" });
+      console.error("[downloadPdf]", err);
+      toast.error("Error al preparar la descarga", { id: "dl" });
+    } finally {
+      setIsAutoSaving(false);
     }
   };
 
@@ -3396,14 +3541,27 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             return null;
           }
         }}
-        onPaymentSuccess={() => {
-          // After successful payment, redirect to dashboard documents
-          // The PDF was already uploaded to S3 during checkout
+        onPaymentSuccess={async () => {
+          // After successful payment: auto-download the PDF immediately
           setShowPaywall(false);
-          toast.success("¡Pago completado! Tu documento está disponible en tu panel.");
-          const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
-          const lang = langMatch ? langMatch[1] : "es";
-          navigate(`/${lang}/dashboard?tab=documents&payment=success`);
+          toast.loading("Preparando descarga...", { id: "post-pay-dl" });
+          try {
+            const out = await buildAnnotatedPdf();
+            if (out) {
+              triggerDownload(out);
+              toast.success("¡Pago completado! PDF descargado correctamente.", { id: "post-pay-dl" });
+            } else {
+              toast.success("¡Pago completado! Tu documento está en tu panel.", { id: "post-pay-dl" });
+              const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
+              const lang = langMatch ? langMatch[1] : "es";
+              navigate(`/${lang}/dashboard?tab=documents`);
+            }
+          } catch {
+            toast.success("¡Pago completado! Tu documento está en tu panel.", { id: "post-pay-dl" });
+            const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
+            const lang = langMatch ? langMatch[1] : "es";
+            navigate(`/${lang}/dashboard?tab=documents`);
+          }
         }}
       />
     </div>
