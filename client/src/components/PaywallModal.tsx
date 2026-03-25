@@ -209,6 +209,21 @@ function CheckoutForm({
 
       setProgressStep("done");
       toast.success(t.paywall_doc_ready + " " + t.paywall_processing);
+
+      // Google Ads conversion tracking
+      if (typeof window.gtag === "function") {
+        window.gtag("event", "conversion", {
+          send_to: "AW-18038662610/IUjxCNKbjI8cENLLwJLD",
+          value: 1.0,
+          currency: "EUR",
+          transaction_id: "",
+          new_customer: true,
+        });
+        window.gtag("event", "ads_conversion_purchase", {
+          new_customer: true,
+        });
+      }
+
       onSuccess();
     } catch (err: unknown) {
       setProgressStep("idle");
