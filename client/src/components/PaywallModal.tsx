@@ -525,6 +525,8 @@ export default function PaywallModal({
       try { await saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size); } catch {}
     }
     setPendingPaywall(true);
+    // Also set the pending action flag so the auto-resume useEffect has a reliable signal
+    sessionStorage.setItem("pdfup_pending_action", "download");
     // Use direct Google OAuth (shows "PDFUp" on Google consent screen)
     const returnPath = window.location.pathname + window.location.search;
     window.location.href = `/api/auth/google?origin=${encodeURIComponent(window.location.origin)}&returnPath=${encodeURIComponent(returnPath)}`;
@@ -543,6 +545,7 @@ export default function PaywallModal({
       try { await saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size); } catch {}
     }
     setPendingPaywall(true);
+    sessionStorage.setItem("pdfup_pending_action", "download");
     window.location.href = getLoginUrl();
   };
 

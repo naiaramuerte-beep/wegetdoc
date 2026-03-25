@@ -536,14 +536,17 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // 1. Auto-save the document to user panel (using pendingEditedPdf from session)
   // 2. If premium → trigger download immediately
   // 3. If not premium → open paywall
+  // NOTE: We check both initialOpenPaywall prop AND sessionStorage flag.
+  // The prop may be cleared before this effect runs, so sessionStorage is the reliable source.
   useEffect(() => {
-    console.log("[autoResume] check:", { isAuthenticated, hasPdfDoc: !!pdfDoc, paywallOpened: paywallOpenedRef.current, initialOpenPaywall, pendingAction: sessionStorage.getItem("pdfup_pending_action") });
-    if (!isAuthenticated || !pdfDoc || paywallOpenedRef.current) return;
-    // Check for pending download action
+    if (paywallOpenedRef.current) return;
+    if (!pdfDoc) return;
+    // Check multiple signals for pending paywall
     const pendingAction = sessionStorage.getItem("pdfup_pending_action");
     const shouldAutoResume = initialOpenPaywall || pendingAction === "download";
-    console.log("[autoResume] shouldAutoResume:", shouldAutoResume, { initialOpenPaywall, pendingAction });
     if (!shouldAutoResume) return;
+    // If not authenticated yet, wait — the effect will re-run when isAuthenticated changes
+    if (!isAuthenticated) return;
 
     paywallOpenedRef.current = true;
     sessionStorage.removeItem("pdfup_pending_action");
@@ -1874,6 +1877,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       // Store PDF data so the paywall modal can use it after login
       setPdfDataForPaywall({ base64, name: docName, size: docSize });
       sessionStorage.setItem("pdfup_pending_action", "download");
+      // Also save the original PDF file to session so it survives OAuth redirect
+      if (file) {
+        try { await savePdfToSession(file); } catch {}
+      }
       toast.dismiss("dl");
       setShowPaywall(true);
       return;
