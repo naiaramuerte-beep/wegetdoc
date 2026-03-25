@@ -537,10 +537,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // 2. If premium → trigger download immediately
   // 3. If not premium → open paywall
   useEffect(() => {
+    console.log("[autoResume] check:", { isAuthenticated, hasPdfDoc: !!pdfDoc, paywallOpened: paywallOpenedRef.current, initialOpenPaywall, pendingAction: sessionStorage.getItem("pdfup_pending_action") });
     if (!isAuthenticated || !pdfDoc || paywallOpenedRef.current) return;
     // Check for pending download action
     const pendingAction = sessionStorage.getItem("pdfup_pending_action");
     const shouldAutoResume = initialOpenPaywall || pendingAction === "download";
+    console.log("[autoResume] shouldAutoResume:", shouldAutoResume, { initialOpenPaywall, pendingAction });
     if (!shouldAutoResume) return;
 
     paywallOpenedRef.current = true;

@@ -170,7 +170,11 @@ export function registerGoogleOAuthRoutes(app: Express) {
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
       console.log(`[Google OAuth] User logged in: ${user.email} (${user.openId})`);
-      res.redirect(302, returnPath);
+      console.log(`[Google OAuth] State decoded - origin: ${origin}, returnPath: ${returnPath}`);
+      console.log(`[Google OAuth] Cookie set with options:`, JSON.stringify(cookieOptions));
+      console.log(`[Google OAuth] Redirecting to: ${origin}${returnPath}`);
+      // Use full origin + returnPath so user returns to the correct page
+      res.redirect(302, `${origin}${returnPath}`);
     } catch (err) {
       console.error("[Google OAuth] Callback error:", err);
       res.redirect(302, "/?error=google_auth_failed");
