@@ -52,7 +52,15 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
         <div className="container flex items-center justify-between h-14 md:h-16">
           {/* Logo */}
           <Link href={`/${lang}`} className="flex items-center gap-1 group shrink-0">
-            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/pdfup-logo-oYTQ7E9iC37f25w5xrjfmW.webp" alt="PDFUp" width="32" height="32" className="shrink-0 rounded" style={{ filter: 'brightness(0) invert(1)' }} />
+            <svg width="28" height="32" viewBox="0 0 28 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+              {/* Document body with folded corner */}
+              <path d="M2 0H19L26 7V30C26 31.1 25.1 32 24 32H2C0.9 32 0 31.1 0 30V2C0 0.9 0.9 0 2 0Z" fill="white" fillOpacity="0.15" />
+              <path d="M2 0H19L26 7V30C26 31.1 25.1 32 24 32H2C0.9 32 0 31.1 0 30V2C0 0.9 0.9 0 2 0Z" stroke="white" strokeWidth="1.5" />
+              {/* Folded corner */}
+              <path d="M19 0V5C19 6.1 19.9 7 21 7H26" stroke="white" strokeWidth="1.5" />
+              {/* Upload arrow */}
+              <path d="M13 24V13M13 13L8.5 17.5M13 13L17.5 17.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
             <span
               className="tracking-tight leading-none"
               style={{ fontFamily: "'Sora', sans-serif" }}

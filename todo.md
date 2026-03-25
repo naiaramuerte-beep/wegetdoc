@@ -500,3 +500,5 @@
 
 ## Logo icon visibility fix
 - [x] Change logo arrow icon to white color so it contrasts with dark blue navbar background
+- [x] Fix logo icon: replace solid white block with SVG showing document + arrow detail
+- [x] Generate full PDFUp logo image (icon + text) for Google Ads
