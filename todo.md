@@ -493,3 +493,4 @@
 
 ## Google Ads Conversion Tracking (nueva cuenta)
 - [x] Añadir evento gtag('event', 'ads_conversion_purchase') al completar pago exitoso
+- [x] Añadir etiqueta Google Ads AW-18038662610 en index.html
