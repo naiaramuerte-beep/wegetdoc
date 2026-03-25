@@ -497,3 +497,6 @@
 - [x] Añadir evento de conversión Google Ads con send_to AW-18038662610/IUjxCNKbjI8cENLLwJLD
 - [x] Reemplazar todas las referencias de editpdf.online por pdfup.io en todo el proyecto
 - [x] Preparar textos de anuncios Google Ads para pdfup.io
+
+## Logo icon visibility fix
+- [x] Change logo arrow icon to white color so it contrasts with dark blue navbar background

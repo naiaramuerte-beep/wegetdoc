@@ -49,7 +49,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/pdfup-logo-oYTQ7E9iC37f25w5xrjfmW.webp" alt="PDFUp" width="32" height="32" className="rounded" />
+              <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/pdfup-logo-oYTQ7E9iC37f25w5xrjfmW.webp" alt="PDFUp" width="32" height="32" className="rounded" style={{ filter: 'brightness(0) invert(1)' }} />
               <span
                 className="text-white font-bold text-xl tracking-tight"
                 style={{ fontFamily: "'Sora', sans-serif" }}

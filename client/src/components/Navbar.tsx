@@ -52,7 +52,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
         <div className="container flex items-center justify-between h-14 md:h-16">
           {/* Logo */}
           <Link href={`/${lang}`} className="flex items-center gap-1 group shrink-0">
-            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/pdfup-logo-oYTQ7E9iC37f25w5xrjfmW.webp" alt="PDFUp" width="32" height="32" className="shrink-0 rounded" />
+            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/pdfup-logo-oYTQ7E9iC37f25w5xrjfmW.webp" alt="PDFUp" width="32" height="32" className="shrink-0 rounded" style={{ filter: 'brightness(0) invert(1)' }} />
             <span
               className="tracking-tight leading-none"
               style={{ fontFamily: "'Sora', sans-serif" }}
