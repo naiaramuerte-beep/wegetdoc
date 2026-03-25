@@ -556,3 +556,16 @@
 
 ## Bug: No such setupintent
 - [x] Corregir error 'No such setupintent' al pagar en modo test
+
+## Fix Stripe publishable key dinámica
+- [ ] Crear endpoint para devolver la publishable key según modo test/live
+- [ ] Actualizar PaywallModal para cargar Stripe con la key dinámica
+
+## Precio trial
+- [ ] Cambiar precio del trial de 0,00€ a 0,50€
+
+## Cambio precio trial 0,00€ → 0,50€
+- [x] Cambiar precio trial de 0,00€ a 0,50€ en toda la web (10 idiomas + PaywallModal + Dashboard + backend)
+- [x] Cambiar pricing_trial_period de "prueba gratuita" a "prueba 7 días" en todos los idiomas
+- [x] Actualizar texto de verificación bancaria en PaywallModal
+- [x] Cambiar "100% Discount" a "99% Discount" en PaywallModal

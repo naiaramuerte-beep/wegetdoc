@@ -223,6 +223,15 @@ export const appRouter = router({
 
   // ─── Subscriptions ─────────────────────────────────────────────
   subscription: router({
+    // Returns the correct Stripe publishable key based on test/live mode
+    stripeConfig: publicProcedure.query(async () => {
+      const testMode = await isStripeTestMode();
+      const publishableKey = testMode
+        ? (process.env.VITE_STRIPE_PUBLISHABLE_KEY || "")
+        : (process.env.VITE_STRIPE_LIVE_PUBLISHABLE_KEY || process.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
+      return { publishableKey, testMode };
+    }),
+
     status: publicProcedure.query(async ({ ctx }) => {
       // Public procedure: returns isPremium:false for unauthenticated users
       // This prevents triggering the global auth redirect when loading the editor
@@ -285,7 +294,7 @@ export const appRouter = router({
                 },
               };
 
-        // Trial plan is FREE (0,00€) for 7 days, then 49,90€/month automatically
+        // Trial plan is FREE (0,50€) for 7 days, then 49,90€/month automatically
         const session = await stripe.checkout.sessions.create({
           mode: "subscription",
           line_items: lineItems,
@@ -406,7 +415,7 @@ export const appRouter = router({
           invoice_settings: { default_payment_method: input.paymentMethodId },
         });
 
-        // 3. Create subscription with real Price ID (49,90€/month) and 7-day FREE trial (0,00€)
+        // 3. Create subscription with real Price ID (49,90€/month) and 7-day FREE trial (0,50€)
         // Price IDs from Stripe Dashboard:
         // Monthly 49,90€: price_1TCdbn2WMuUgq7vD74v0mclA
         // One-time 0,50€: price_1TCdcV2WMuUgq7vD5X99lzED

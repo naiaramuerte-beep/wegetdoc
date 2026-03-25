@@ -130,7 +130,7 @@ describe("stripe.liveKeys", () => {
   it("Price IDs are correctly configured in products.ts", async () => {
     const { STRIPE_PRICE_IDS } = await import("./products");
     expect(STRIPE_PRICE_IDS.monthly).toBe("price_1TCdbn2WMuUgq7vD74v0mclA");
-    // Trial is now FREE (0,00€) — no activation fee price ID needed
+    // Trial is now FREE (0,50€) — no activation fee price ID needed
   });
 });
 

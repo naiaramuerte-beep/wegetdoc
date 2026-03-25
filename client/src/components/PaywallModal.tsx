@@ -290,13 +290,13 @@ function CheckoutForm({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold text-slate-800">100% Discount</p>
+                <p className="text-sm font-semibold text-slate-800">99% Discount</p>
                 <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">New User</span>
               </div>
               <p className="text-xs text-slate-400">{t.paywall_trial_plan}</p>
             </div>
           </div>
-          <p className="text-2xl font-bold text-orange-500">0,00 €</p>
+          <p className="text-2xl font-bold text-orange-500">0,50 €</p>
         </div>
 
         {/* Payment method tabs */}
@@ -365,7 +365,7 @@ function CheckoutForm({
             </div>
             {/* Bank verification notice */}
             <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-              Tu banco puede mostrar una verificación de 0,00€. No se realizará ningún cargo durante los 7 días de prueba.
+              Se cobrará 0,50€ como pago de activación del período de prueba de 7 días.
             </p>
           </div>
         )}

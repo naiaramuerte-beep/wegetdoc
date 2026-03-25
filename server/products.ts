@@ -1,7 +1,7 @@
 /**
  * PDFUp — Stripe Products & Prices
  * Model: FREE 7-day trial → 49,90€/month subscription after 7 days
- * Stripe collects card details but charges 0,00€ immediately.
+ * Stripe collects card details but charges 0,50€ immediately.
  * After 7 days, the subscription renews automatically at 49,90€/month.
  *
  * Price IDs (live):
@@ -18,7 +18,7 @@ export const PLANS = {
   trial: {
     id: "trial",
     name: "Acceso 7 días",
-    description: "0,00€ hoy, luego 49,90€/mes. Cancela cuando quieras.",
+    description: "0,50€ hoy, luego 49,90€/mes. Cancela cuando quieras.",
     activationPrice: 0,
     monthlyPrice: 49.90,
     currency: "eur",
