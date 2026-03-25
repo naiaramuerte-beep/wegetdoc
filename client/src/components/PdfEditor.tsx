@@ -21,7 +21,35 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import PaywallModal from "./PaywallModal";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePdfFile } from "@/contexts/PdfFileContext";
-import * as pdfjsLib from "pdfjs-dist";
+// Polyfill Uint8Array.prototype.toHex (TC39 proposal) — needed by pdfjs-dist v5+
+// Some browsers (Chromium < 140, Firefox, Safari) don't support it yet.
+if (typeof (Uint8Array.prototype as any)["toHex"] !== "function") {
+  (Uint8Array.prototype as any)["toHex"] = function () {
+    return Array.from(this as Uint8Array)
+      .map((b: number) => b.toString(16).padStart(2, "0"))
+      .join("");
+  };
+}
+if (typeof (Uint8Array.prototype as any)["setFromHex"] !== "function") {
+  (Uint8Array.prototype as any)["setFromHex"] = function (hexString: string) {
+    const bytes = new Uint8Array(hexString.length / 2);
+    for (let i = 0; i < hexString.length; i += 2) {
+      bytes[i / 2] = parseInt(hexString.substring(i, i + 2), 16);
+    }
+    this.set(bytes);
+    return { read: hexString.length, written: bytes.length };
+  };
+}
+if (typeof (Uint8Array as any)["fromHex"] !== "function") {
+  (Uint8Array as any)["fromHex"] = function (hexString: string) {
+    const bytes = new Uint8Array(hexString.length / 2);
+    for (let i = 0; i < hexString.length; i += 2) {
+      bytes[i / 2] = parseInt(hexString.substring(i, i + 2), 16);
+    }
+    return bytes;
+  };
+}
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import { PDFDocument, rgb, StandardFonts, degrees } from "pdf-lib";
 
 // Browser-safe base64 encoder for Uint8Array (replaces Node.js Buffer.from().toString('base64'))
@@ -35,7 +63,7 @@ function uint8ToBase64(bytes: Uint8Array): string {
 // Configure PDF.js worker — use local worker served by Vite to avoid CDN version mismatches
 // The worker file is copied to public/ by vite.config.ts so it's available at /pdf.worker.min.mjs
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
+  "pdfjs-dist/legacy/build/pdf.worker.min.mjs",
   import.meta.url
 ).href;
 
@@ -242,6 +270,16 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const viewerRef = useRef<HTMLDivElement>(null);
   const viewerContainerRef = useRef<HTMLDivElement>(null);
   const mainCanvasRef = useRef<HTMLCanvasElement>(null);
+  // Callback ref to detect when canvas mounts and trigger initial render
+  const mainCanvasCallbackRef = useCallback((node: HTMLCanvasElement | null) => {
+    mainCanvasRef.current = node;
+    if (node) {
+      // Trigger render on next frame to ensure layout is complete
+      requestAnimationFrame(() => {
+        window.dispatchEvent(new CustomEvent('pdf-canvas-mounted'));
+      });
+    }
+  }, []);
   const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -412,6 +450,22 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
 
   useEffect(() => { renderPage(currentPage); }, [renderPage, currentPage]);
+
+  // Force render when pdfDoc first becomes available OR when canvas mounts
+  useEffect(() => {
+    if (pdfDoc && mainCanvasRef.current) {
+      renderPage(currentPage);
+    }
+    // Listen for canvas mount event (canvas may mount AFTER pdfDoc is set)
+    const handleCanvasMounted = () => {
+      if (pdfDoc && mainCanvasRef.current) {
+        renderPage(currentPage);
+      }
+    };
+    window.addEventListener('pdf-canvas-mounted', handleCanvasMounted);
+    return () => window.removeEventListener('pdf-canvas-mounted', handleCanvasMounted);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pdfDoc, renderPage, currentPage]);
 
   // Auto-load initialFile if provided — converts non-PDF files first
   useEffect(() => {
@@ -2796,7 +2850,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               ref={viewerRef}
               style={{ display: "inline-block" }}
             >
-              <canvas ref={mainCanvasRef} className="block" />
+              <canvas ref={mainCanvasCallbackRef} className="block" />
               {/* Drawing canvas for brush/eraser/highlight */}
               <canvas
                 ref={drawingCanvasRef}
