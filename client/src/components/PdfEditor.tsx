@@ -406,7 +406,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     setAnnotations([]);
     setHistory([]);
     setHistoryIndex(-1);
-    setActiveTool("pointer");
+    setActiveTool("text");
     // Generate thumbnails
     const thumbs: string[] = [];
     for (let i = 1; i <= Math.min(doc.numPages, 20); i++) {
