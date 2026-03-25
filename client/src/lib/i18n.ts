@@ -176,6 +176,7 @@ export type TranslationKeys = {
   hero_badge_free: string;
   hero_badge_no_card: string;
   hero_badge_instant: string;
+  hero_auto_convert: string;
   hero_users_now: string;
   editor_or: string;
   hero_social_pdfs: string;
@@ -747,6 +748,7 @@ export const translations: Translations = {
     hero_badge_free: "🔒 Cifrado SSL 256-bit",
     hero_badge_no_card: "⚡ Herramienta Profesional",
     hero_badge_instant: "✓ Sin instalación",
+    hero_auto_convert: "Sube cualquier archivo y se convertirá a PDF automáticamente",
     hero_users_now: "usuarios activos ahora",
     editor_or: "o",
     hero_social_pdfs: "herramientas PDF",
@@ -1130,6 +1132,7 @@ export const translations: Translations = {
     hero_badge_free: "🔒 SSL 256-bit Encrypted",
     hero_badge_no_card: "⚡ Professional Tool",
     hero_badge_instant: "✓ No installation",
+    hero_auto_convert: "Upload any file and it will be automatically converted to PDF",
     hero_users_now: "active users now",
     editor_or: "or",
     hero_social_pdfs: "PDFs edited today",
@@ -1514,6 +1517,7 @@ export const translations: Translations = {
     hero_badge_free: "🔒 Chiffrement SSL 256-bit",
     hero_badge_no_card: "⚡ Outil Professionnel",
     hero_badge_instant: "✓ Sans installation",
+    hero_auto_convert: "Téléchargez n'importe quel fichier et il sera automatiquement converti en PDF",
     hero_users_now: "utilisateurs actifs maintenant",
     editor_or: "ou",
     hero_social_pdfs: "PDFs édités aujourd'hui",
@@ -1898,6 +1902,7 @@ export const translations: Translations = {
     hero_badge_free: "🔒 SSL 256-Bit-Verschlüsselung",
     hero_badge_no_card: "⚡ Professionelles Werkzeug",
     hero_badge_instant: "✓ Keine Installation",
+    hero_auto_convert: "Laden Sie eine beliebige Datei hoch und sie wird automatisch in PDF konvertiert",
     hero_users_now: "aktive Nutzer jetzt",
     editor_or: "oder",
     hero_social_pdfs: "heute bearbeitete PDFs",
@@ -2282,6 +2287,7 @@ export const translations: Translations = {
     hero_badge_free: "🔒 Criptografia SSL 256-bit",
     hero_badge_no_card: "⚡ Ferramenta Profissional",
     hero_badge_instant: "✓ Sem instalação",
+    hero_auto_convert: "Carregue qualquer arquivo e ele será convertido automaticamente para PDF",
     hero_users_now: "usuários ativos agora",
     editor_or: "ou",
     hero_social_pdfs: "PDFs editados hoje",
@@ -2666,6 +2672,7 @@ export const translations: Translations = {
     hero_badge_free: "🔒 Crittografia SSL 256-bit",
     hero_badge_no_card: "⚡ Strumento Professionale",
     hero_badge_instant: "✓ Nessuna installazione",
+    hero_auto_convert: "Carica qualsiasi file e verrà convertito automaticamente in PDF",
     hero_users_now: "utenti attivi ora",
     editor_or: "o",
     hero_social_pdfs: "PDF modificati oggi",
@@ -3050,6 +3057,7 @@ export const translations: Translations = {
     hero_badge_free: "🔒 SSL 256-bit versleuteling",
     hero_badge_no_card: "⚡ Professioneel hulpmiddel",
     hero_badge_instant: "✓ Geen installatie",
+    hero_auto_convert: "Upload elk bestand en het wordt automatisch geconverteerd naar PDF",
     hero_users_now: "actieve gebruikers nu",
     editor_or: "of",
     hero_social_pdfs: "PDF's vandaag bewerkt",
@@ -3434,6 +3442,7 @@ export const translations: Translations = {
     hero_badge_free: "🔒 Szyfrowanie SSL 256-bit",
     hero_badge_no_card: "⚡ Profesjonalne narzędzie",
     hero_badge_instant: "✓ Bez instalacji",
+    hero_auto_convert: "Prześlij dowolny plik, a zostanie automatycznie przekonwertowany na PDF",
     hero_users_now: "aktywnych użytkowników teraz",
     editor_or: "lub",
     hero_social_pdfs: "PDF-ów edytowanych dziś",
@@ -3818,6 +3827,7 @@ export const translations: Translations = {
     hero_badge_free: "🔒 Шифрование SSL 256-бит",
     hero_badge_no_card: "⚡ Профессиональный инструмент",
     hero_badge_instant: "✓ Без установки",
+    hero_auto_convert: "Загрузите любой файл, и он будет автоматически конвертирован в PDF",
     hero_users_now: "активных пользователей сейчас",
     editor_or: "или",
     hero_social_pdfs: "PDF отредактировано сегодня",
@@ -4202,6 +4212,7 @@ export const translations: Translations = {
     hero_badge_free: "🔒 SSL 256位加密",
     hero_badge_no_card: "⚡ 专业工具",
     hero_badge_instant: "✓ 无需安装",
+    hero_auto_convert: "上传任何文件，将自动转换为PDF",
     hero_users_now: "当前活跃用户",
     editor_or: "或",
     hero_social_pdfs: "今日编辑的PDF",
