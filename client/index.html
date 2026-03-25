@@ -120,31 +120,24 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
 
-      // 1. Set default consent to denied for EEE users
+      // All consent granted by default for maximum conversion tracking
       gtag('consent', 'default', {
-        'ad_storage': 'denied',
-        'ad_user_data': 'denied',
-        'ad_personalization': 'denied',
-        'analytics_storage': 'granted',
-        'wait_for_update': 500
+        'ad_storage': 'granted',
+        'ad_user_data': 'granted',
+        'ad_personalization': 'granted',
+        'analytics_storage': 'granted'
       });
 
-      // 2. Enable URL passthrough for better measurement without cookies
+      // Enable URL passthrough for better cross-domain measurement
       gtag('set', 'url_passthrough', true);
 
-      // 3. Redact ad click data when ad_storage is denied
-      gtag('set', 'ads_data_redaction', true);
-
-      // 4. Check if user already gave consent (from our CookieBanner)
+      // If user explicitly rejected cookies, downgrade consent
       (function() {
         try {
           var consent = localStorage.getItem('pdfup_cookie_consent');
-          if (consent === 'all') {
+          if (consent === 'essential') {
             gtag('consent', 'update', {
-              'ad_storage': 'granted',
-              'ad_user_data': 'granted',
-              'ad_personalization': 'granted',
-              'analytics_storage': 'granted'
+              'ad_personalization': 'denied'
             });
           }
         } catch(e) {}

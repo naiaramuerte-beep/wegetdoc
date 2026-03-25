@@ -12,17 +12,15 @@ export default function PaymentSuccess() {
     // Invalidate subscription status so it refreshes
     utils.subscription.status.invalidate();
 
-    // Google Ads conversion tracking
+    // Google Ads conversion tracking — use session_id from URL as transaction_id
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id") || `pmt_${Date.now()}`;
     if (typeof window.gtag === "function") {
       window.gtag("event", "conversion", {
         send_to: "AW-18038723667/IUjxCNKbjI8cENLLwJLD",
-        value: 1.0,
+        value: 0.50,
         currency: "EUR",
-        transaction_id: "",
-        new_customer: true,
-      });
-      window.gtag("event", "ads_conversion_purchase", {
-        new_customer: true,
+        transaction_id: sessionId,
       });
     }
 

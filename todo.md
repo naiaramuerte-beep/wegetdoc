@@ -570,3 +570,5 @@
 - [x] Actualizar texto de verificación bancaria en PaywallModal
 - [x] Cambiar "100% Discount" a "99% Discount" en PaywallModal
 - [x] Fix: 3D Secure muestra 0€ en lugar de 0,50€ — cambiar de SetupIntent a cobro real de 0,50€
+- [x] No es bug: dos usuarios pagaron correctamente
+- [x] Fix: Google Ads no registra conversiones — consent mode cambiado a granted, transaction_id real, value 0.50€

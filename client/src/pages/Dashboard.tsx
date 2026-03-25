@@ -46,17 +46,14 @@ export default function Dashboard() {
       utils.subscription.status.invalidate();
       toast.success("¡Pago completado! Tu suscripción está activa. Ya puedes descargar tus documentos.");
 
-      // Google Ads conversion tracking
+      // Google Ads conversion tracking — use session_id from URL as transaction_id
+      const sessionId = params.get("session_id") || `pmt_${Date.now()}`;
       if (typeof window.gtag === "function") {
         window.gtag("event", "conversion", {
           send_to: "AW-18038723667/IUjxCNKbjI8cENLLwJLD",
-          value: 1.0,
+          value: 0.50,
           currency: "EUR",
-          transaction_id: "",
-          new_customer: true,
-        });
-        window.gtag("event", "ads_conversion_purchase", {
-          new_customer: true,
+          transaction_id: sessionId,
         });
       }
 

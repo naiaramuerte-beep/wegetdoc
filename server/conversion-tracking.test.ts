@@ -28,30 +28,33 @@ describe("Google Ads Conversion Tracking", () => {
     expect(html).not.toContain("G-LKD51NK94C");
   });
 
-  it("index.html contains Google Consent Mode v2 setup", () => {
+  it("index.html has consent mode with ad_storage granted by default", () => {
     const html = readFileSync(
       join(__dirname, "../client/index.html"),
       "utf-8"
     );
     expect(html).toContain("gtag('consent', 'default'");
-    expect(html).toContain("'ad_storage': 'denied'");
+    expect(html).toContain("'ad_storage': 'granted'");
+    expect(html).toContain("'ad_user_data': 'granted'");
     expect(html).toContain("'analytics_storage': 'granted'");
-    expect(html).toContain("wait_for_update");
+    // Should NOT have ad_storage denied anymore
+    expect(html).not.toContain("'ad_storage': 'denied'");
+    expect(html).not.toContain("'ad_user_data': 'denied'");
   });
 
-  it("PaymentSuccess.tsx fires conversion event with correct send_to", () => {
+  it("PaymentSuccess.tsx fires conversion event with correct send_to and transaction_id", () => {
     const src = readFileSync(
       join(__dirname, "../client/src/pages/PaymentSuccess.tsx"),
       "utf-8"
     );
     expect(src).toContain('window.gtag("event", "conversion"');
     expect(src).toContain(`send_to: "${CONVERSION_SEND_TO}"`);
-    expect(src).toContain("value: 1.0");
+    expect(src).toContain("value: 0.50");
     expect(src).toContain('currency: "EUR"');
-    expect(src).toContain("transaction_id");
+    expect(src).toContain("transaction_id: sessionId");
   });
 
-  it("Dashboard.tsx fires conversion event when payment=success", () => {
+  it("Dashboard.tsx fires conversion event when payment=success with transaction_id", () => {
     const src = readFileSync(
       join(__dirname, "../client/src/pages/Dashboard.tsx"),
       "utf-8"
@@ -59,19 +62,21 @@ describe("Google Ads Conversion Tracking", () => {
     expect(src).toContain('params.get("payment") === "success"');
     expect(src).toContain('window.gtag("event", "conversion"');
     expect(src).toContain(`send_to: "${CONVERSION_SEND_TO}"`);
-    expect(src).toContain("value: 1.0");
+    expect(src).toContain("value: 0.50");
     expect(src).toContain('currency: "EUR"');
+    expect(src).toContain("transaction_id: sessionId");
   });
 
-  it("PaywallModal.tsx fires conversion event on inline payment success", () => {
+  it("PaywallModal.tsx fires conversion event with real subscriptionId", () => {
     const src = readFileSync(
       join(__dirname, "../client/src/components/PaywallModal.tsx"),
       "utf-8"
     );
     expect(src).toContain('window.gtag("event", "conversion"');
     expect(src).toContain(`send_to: "${CONVERSION_SEND_TO}"`);
-    expect(src).toContain("value: 1.0");
+    expect(src).toContain("value: 0.50");
     expect(src).toContain('currency: "EUR"');
+    expect(src).toContain("transaction_id: subscriptionId");
   });
 
   it("gtag type declaration exists for TypeScript", () => {
@@ -81,5 +86,15 @@ describe("Google Ads Conversion Tracking", () => {
     );
     expect(dts).toContain("gtag");
     expect(dts).toContain("Window");
+  });
+
+  it("CookieBanner keeps ad_storage granted even when user rejects", () => {
+    const src = readFileSync(
+      join(__dirname, "../client/src/components/CookieBanner.tsx"),
+      "utf-8"
+    );
+    // ad_storage and ad_user_data should always be granted
+    expect(src).toContain('ad_storage: "granted"');
+    expect(src).toContain('ad_user_data: "granted"');
   });
 });

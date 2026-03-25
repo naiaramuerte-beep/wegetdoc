@@ -47,12 +47,13 @@ export default function CookieBanner() {
 
   const updateGoogleConsent = (granted: boolean) => {
     if (typeof window !== "undefined" && typeof (window as any).gtag === "function") {
-      const adValue = granted ? "granted" : "denied";
+      // Always keep ad_storage and ad_user_data granted for conversion tracking
+      // Only toggle ad_personalization based on user preference
       (window as any).gtag("consent", "update", {
-        ad_storage: adValue,
-        ad_user_data: adValue,
-        ad_personalization: adValue,
-        analytics_storage: "granted", // Always keep analytics enabled
+        ad_storage: "granted",
+        ad_user_data: "granted",
+        ad_personalization: granted ? "granted" : "denied",
+        analytics_storage: "granted",
       });
     }
   };
