@@ -19,6 +19,7 @@ import {
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import PaywallModal from "./PaywallModal";
+import { encryptPDF } from "@pdfsmaller/pdf-encrypt-lite";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePdfFile } from "@/contexts/PdfFileContext";
 // Polyfill Uint8Array.prototype.toHex (TC39 proposal) — needed by pdfjs-dist v5+
@@ -1384,7 +1385,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
   };
 
-  // ── Compress ──────────────────────────────────────────────────
+  // ── Compress ──────────────────────────────────────────────────────
   const compressPdf = async () => {
     if (!pdfBytes) return;
     toast.loading(t.editor_toast_compressing ?? "Compressing PDF...", { id: "compress" });
@@ -1392,11 +1393,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const doc = await PDFDocument.load(pdfBytes as Uint8Array);
       const compressed = await doc.save({ useObjectStreams: true });
       const blob = new Blob([compressed.buffer as ArrayBuffer], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href = url;
-      a.download = `compressed_${file?.name ?? "document.pdf"}`;
-      a.click(); URL.revokeObjectURL(url);
-      toast.success(t.editor_toast_compressed ?? "Compressed PDF downloaded", { id: "compress" });
+      const downloadName = `compressed_${file?.name ?? "document.pdf"}`;
+      await guardedDownload(blob, downloadName, "compress");
     } catch {
       toast.error(t.editor_toast_compress_error ?? "Error compressing", { id: "compress" });
     }
@@ -1421,50 +1419,22 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         return;
       }
       setProtectProgress(45);
-      // 2. Send to server for AES encryption via pikepdf
-      const formData = new FormData();
-      const blob = new Blob([finalBytes.buffer as ArrayBuffer], { type: "application/pdf" });
-      const filename = file?.name ?? "document.pdf";
-      formData.append("file", blob, filename);
-      formData.append("password", password);
-      formData.append("algo", encryptionAlgo);
-      formData.append("filename", filename);
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 60000);
-      let resp: Response;
-      try {
-        resp = await fetch("/api/documents/protect", {
-          method: "POST",
-          body: formData,
-          credentials: "include",
-          signal: controller.signal,
-        });
-      } finally {
-        clearTimeout(timeout);
-      }
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ error: "Unknown error" }));
-        throw new Error(err.error || "Server error");
-      }
+      // 2. Encrypt client-side using pdf-encrypt-lite (RC4 128-bit)
+      const ownerPw = password + "_owner";
+      const encryptedBytes = await encryptPDF(finalBytes, password, ownerPw);
       setProtectProgress(90);
-      // 3. Download the protected PDF
-      const protectedBlob = await resp.blob();
-      const url = URL.createObjectURL(protectedBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename.replace(/\.pdf$/i, "") + "_protected.pdf";
-      a.click();
-      URL.revokeObjectURL(url);
+      // 3. Download the protected PDF via paywall guard
+      const filename = file?.name ?? "document.pdf";
+      const protectedBlob = new Blob([encryptedBytes.buffer as ArrayBuffer], { type: "application/pdf" });
+      const downloadName = filename.replace(/\.pdf$/i, "") + "_protected.pdf";
+      clearInterval(progressInterval);
       setProtectProgress(100);
       setTimeout(() => { setIsProtecting(false); setProtectProgress(0); }, 1500);
-      toast.success(t.editor_toast_protected ?? "PDF protected and downloaded");
+      await guardedDownload(protectedBlob, downloadName, "protect");
     } catch (err) {
       clearInterval(progressInterval);
       setIsProtecting(false); setProtectProgress(0);
-      const msg = err instanceof Error && err.name === "AbortError"
-        ? (t.editor_toast_protect_timeout ?? "Protection timed out")
-        : (t.editor_toast_protect_error ?? "Error protecting PDF");
-      toast.error(msg);
+      toast.error(t.editor_toast_protect_error ?? "Error protecting PDF");
     } finally {
       clearInterval(progressInterval);
     }
@@ -1506,15 +1476,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       }
       setExportProgress(90);
       const exportedBlob = await resp.blob();
-      const url = URL.createObjectURL(exportedBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename.replace(/\.pdf$/i, "") + "." + format;
-      a.click();
-      URL.revokeObjectURL(url);
+      const downloadName = filename.replace(/\.pdf$/i, "") + "." + format;
       setExportProgress(100);
       setTimeout(() => { setIsExporting(false); setExportProgress(0); }, 1500);
-      toast.success(`PDF exported as .${format}`);
+      await guardedDownload(exportedBlob, downloadName, "export");
     } catch (err) {
       clearInterval(progressInterval);
       setIsExporting(false); setExportProgress(0);
@@ -1538,13 +1503,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       c.width = vp.width; c.height = vp.height;
       await page.render({ canvas: c, viewport: vp } as any).promise;
       const mimeType = format === "jpg" ? "image/jpeg" : "image/png";
-      c.toBlob((blob) => {
+      c.toBlob(async (blob) => {
         if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a"); a.href = url;
-        a.download = `page${currentPage}.${format}`;
-        a.click(); URL.revokeObjectURL(url);
-        toast.success(t.editor_toast_converted ?? `Page ${currentPage} exported as ${format.toUpperCase()}`, { id: "convert" });
+        const downloadName = `page${currentPage}.${format}`;
+        await guardedDownload(blob, downloadName, "convert");
       }, mimeType, 0.92);
     } catch {
       toast.error(t.editor_toast_convert_error ?? "Error converting", { id: "convert" });
@@ -1563,17 +1525,17 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         c.width = vp.width; c.height = vp.height;
         await page.render({ canvas: c, viewport: vp } as any).promise;
         await new Promise<void>((res) => {
-          c.toBlob((blob) => {
+          c.toBlob(async (blob) => {
             if (!blob) { res(); return; }
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a"); a.href = url;
-            a.download = `page${i}.${format}`;
-            a.click(); URL.revokeObjectURL(url);
+            const downloadName = `page${i}.${format}`;
+            await guardedDownload(blob, downloadName, "convertAll");
             setTimeout(res, 300);
           }, format === "jpg" ? "image/jpeg" : "image/png", 0.92);
         });
+        // If paywall was shown (not premium), stop after first page
+        if (!isPremium) break;
       }
-      toast.success(t.editor_toast_converted ?? `${totalPages} pages exported`, { id: "convertAll" });
+      if (isPremium) toast.success(t.editor_toast_converted ?? `${totalPages} pages exported`, { id: "convertAll" });
     } catch {
       toast.error(t.editor_toast_convert_error ?? "Error converting", { id: "convertAll" });
     }
@@ -1594,11 +1556,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
       const pdfOut = await doc.save();
       const blob = new Blob([pdfOut.buffer as ArrayBuffer], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href = url;
-      a.download = f.name.replace(/\.[^.]+$/, "") + ".pdf";
-      a.click(); URL.revokeObjectURL(url);
-      toast.success(t.editor_toast_converted ?? "PDF generated and downloaded", { id: "img2pdf" });
+      const downloadName = f.name.replace(/\.[^.]+$/, "") + ".pdf";
+      await guardedDownload(blob, downloadName, "img2pdf");
     } catch {
       toast.error(t.editor_toast_convert_error ?? "Error converting image", { id: "img2pdf" });
     }
@@ -1624,10 +1583,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       }
       const out = await merged.save();
       const blob = new Blob([out.buffer as ArrayBuffer], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href = url;
-      a.download = "merged.pdf"; a.click(); URL.revokeObjectURL(url);
-      toast.success("PDFs fusionados y descargados", { id: "merge" });
+      await guardedDownload(blob, "merged.pdf", "merge");
     } catch {
       toast.error("Error al fusionar", { id: "merge" });
     }
@@ -1648,12 +1604,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       for (const [i, doc] of [[1, part1], [2, part2]] as [number, PDFDocument][]) {
         const out = await doc.save();
         const blob = new Blob([out.buffer as ArrayBuffer], { type: "application/pdf" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a"); a.href = url;
-        a.download = `part${i}_${file?.name ?? "document.pdf"}`; a.click();
-        URL.revokeObjectURL(url);
+        const downloadName = `part${i}_${file?.name ?? "document.pdf"}`;
+        await guardedDownload(blob, downloadName, "split");
+        // If paywall was shown (not premium), stop after first part
+        if (!isPremium) break;
       }
-      toast.success("PDF dividido en 2 partes", { id: "split" });
     } catch {
       toast.error("Error al dividir", { id: "split" });
     }
@@ -1888,12 +1843,52 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   };
 
   // ── Helper: trigger browser download ──────────────────────────────
-  const triggerDownload = (pdfOut: Uint8Array) => {
+  const triggerDownload = (pdfOut: Uint8Array, downloadName?: string) => {
     const blob = new Blob([pdfOut.buffer.slice(pdfOut.byteOffset, pdfOut.byteOffset + pdfOut.byteLength) as ArrayBuffer], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url;
-    a.download = file?.name ?? "document.pdf";
+    a.download = downloadName ?? file?.name ?? "document.pdf";
     a.click(); URL.revokeObjectURL(url);
+  };
+
+  // ── Helper: trigger browser download for any blob ──────────────────────────────
+  const triggerBlobDownload = (blob: Blob, downloadName: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url;
+    a.download = downloadName;
+    a.click(); URL.revokeObjectURL(url);
+  };
+
+  // ── Ref to store pending tool download (blob + filename) for post-payment ──
+  const pendingToolDownloadRef = useRef<{ blob: Blob; name: string } | null>(null);
+
+  // ── Guarded download: checks auth + premium, opens paywall if needed ──
+  const guardedDownload = async (blob: Blob, downloadName: string, toastId: string) => {
+    // If premium → download immediately
+    if (isPremium) {
+      triggerBlobDownload(blob, downloadName);
+      toast.success("Descarga completada", { id: toastId });
+      return;
+    }
+
+    // Store the pending download for after payment
+    pendingToolDownloadRef.current = { blob, name: downloadName };
+
+    // Build paywall data from current PDF
+    const pdfOut = await buildAnnotatedPdf();
+    if (pdfOut) {
+      const base64 = uint8ToBase64(pdfOut);
+      const docName = file?.name ?? "document.pdf";
+      setPdfDataForPaywall({ base64, name: docName, size: pdfOut.byteLength });
+    }
+
+    if (!isAuthenticated) {
+      sessionStorage.setItem("pdfup_pending_action", "download");
+      if (file) { try { await savePdfToSession(file); } catch {} }
+    }
+
+    toast.dismiss(toastId);
+    setShowPaywall(true);
   };
 
   // ── Download with annotations (SMART BUTTON) ─────────────────────────────────
@@ -2499,21 +2494,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 <p className="text-xs font-medium" style={{ color: "oklch(0.35 0.03 250)" }}>{t.editor_protect_algo_label}</p>
               </div>
               <div className="p-3 flex flex-col gap-1.5">
-                {(["128-AES", "256-AES", "128-ARC4"] as const).map(algo => (
-                  <label key={algo} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="encryptionAlgo"
-                      value={algo}
-                      checked={encryptionAlgo === algo}
-                      onChange={() => setEncryptionAlgo(algo)}
-                      className="accent-blue-600"
-                    />
-                    <span className="text-xs" style={{ color: "oklch(0.35 0.02 250)" }}>
-                      {algo === "128-AES" ? "128-bit AES" : algo === "256-AES" ? "256-bit AES" : "128-bit ARC-FOUR"}
-                    </span>
-                  </label>
-                ))}
+                <div className="flex items-center gap-2">
+                  <Lock className="w-3.5 h-3.5" style={{ color: "oklch(0.45 0.05 250)" }} />
+                  <span className="text-xs" style={{ color: "oklch(0.35 0.02 250)" }}>128-bit RC4</span>
+                </div>
               </div>
             </div>
             {/* Progress bar */}
@@ -3585,6 +3569,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           setShowPaywall(false);
           toast.loading("Preparando descarga...", { id: "post-pay-dl" });
           try {
+            // Check if there's a pending tool download (compress, protect, convert, etc.)
+            if (pendingToolDownloadRef.current) {
+              const { blob, name } = pendingToolDownloadRef.current;
+              triggerBlobDownload(blob, name);
+              pendingToolDownloadRef.current = null;
+              toast.success("¡Pago completado! Archivo descargado correctamente.", { id: "post-pay-dl" });
+              return;
+            }
+            // Otherwise, download the annotated PDF
             const out = await buildAnnotatedPdf();
             if (out) {
               triggerDownload(out);

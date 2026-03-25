@@ -572,3 +572,6 @@
 - [x] Fix: 3D Secure muestra 0€ en lugar de 0,50€ — cambiar de SetupIntent a cobro real de 0,50€
 - [x] No es bug: dos usuarios pagaron correctamente
 - [x] Fix: Google Ads no registra conversiones — consent mode cambiado a granted, transaction_id real, value 0.50€
+- [x] Bug: Herramienta comprimir PDF permite descargar gratis sin paywall
+- [x] Bug: Error al proteger PDF con contraseña (cambiado de pikepdf server a pdf-encrypt-lite client-side)
+- [x] Paywall guard en comprimir, proteger, convertir, fusionar, dividir, exportar, img2pdf — descarga solo si premium

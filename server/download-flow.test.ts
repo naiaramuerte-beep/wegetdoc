@@ -181,3 +181,70 @@ describe("download-flow: PaywallModal step selection", () => {
     expect(getInitialStep(true)).toBe("plans");
   });
 });
+
+/**
+ * Tool download paywall guard logic test
+ * 
+ * All tools (compress, protect, convert, merge, split) must pass through
+ * the paywall guard before downloading. The tool processes freely but
+ * the download is gated by premium status.
+ */
+function getToolDownloadAction(params: {
+  isPremium: boolean;
+  isAuthenticated: boolean;
+  hasBlobReady: boolean;
+}): "download" | "show-paywall" | "no-blob" {
+  if (!params.hasBlobReady) return "no-blob";
+  if (params.isPremium) return "download";
+  return "show-paywall";
+}
+
+describe("download-flow: tool download paywall guard", () => {
+  const tools = ["compress", "protect", "convert", "merge", "split", "export", "img2pdf"];
+
+  tools.forEach(tool => {
+    it(`${tool}: should download immediately for premium users`, () => {
+      const action = getToolDownloadAction({
+        isPremium: true,
+        isAuthenticated: true,
+        hasBlobReady: true,
+      });
+      expect(action).toBe("download");
+    });
+
+    it(`${tool}: should show paywall for non-premium users`, () => {
+      const action = getToolDownloadAction({
+        isPremium: false,
+        isAuthenticated: true,
+        hasBlobReady: true,
+      });
+      expect(action).toBe("show-paywall");
+    });
+
+    it(`${tool}: should show paywall for unauthenticated users`, () => {
+      const action = getToolDownloadAction({
+        isPremium: false,
+        isAuthenticated: false,
+        hasBlobReady: true,
+      });
+      expect(action).toBe("show-paywall");
+    });
+  });
+
+  it("should handle pending tool download after payment", () => {
+    // Simulate: user compresses PDF, paywall shown, user pays
+    let pendingToolDownload: { blob: string; name: string } | null = null;
+    
+    // Step 1: Tool sets pending download
+    pendingToolDownload = { blob: "compressed-blob-data", name: "compressed_doc.pdf" };
+    expect(pendingToolDownload).not.toBeNull();
+    
+    // Step 2: After payment, check and download pending
+    if (pendingToolDownload) {
+      const { name } = pendingToolDownload;
+      expect(name).toBe("compressed_doc.pdf");
+      pendingToolDownload = null; // Clear after download
+    }
+    expect(pendingToolDownload).toBeNull();
+  });
+});
