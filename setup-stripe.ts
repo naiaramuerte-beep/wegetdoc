@@ -1,5 +1,5 @@
 /**
- * Stripe Setup Script for editPDF
+ * Stripe Setup Script for PDFUp
  * Creates products and prices for:
  * 1. Trial plan: 0.50€ one-time + auto-renews at 49.95€/month after 7 days
  * 2. Monthly plan: 49.95€/month recurring subscription
@@ -18,10 +18,10 @@ async function main() {
 
   // ── 1. Create main subscription product ──────────────────────────────────
   const mainProduct = await stripe.products.create({
-    name: "editPDF Premium",
+    name: "PDFUp Premium",
     description: "Unlimited PDF editing, signing, converting, merging and compressing",
     metadata: {
-      app: "editpdf",
+      app: "pdfup",
     },
   });
   console.log("✓ Created product:", mainProduct.name, mainProduct.id);

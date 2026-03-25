@@ -495,3 +495,5 @@
 - [x] Añadir evento gtag('event', 'ads_conversion_purchase') al completar pago exitoso
 - [x] Añadir etiqueta Google Ads AW-18038662610 en index.html
 - [x] Añadir evento de conversión Google Ads con send_to AW-18038662610/IUjxCNKbjI8cENLLwJLD
+- [x] Reemplazar todas las referencias de editpdf.online por pdfup.io en todo el proyecto
+- [x] Preparar textos de anuncios Google Ads para pdfup.io
