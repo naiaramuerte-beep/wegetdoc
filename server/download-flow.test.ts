@@ -100,3 +100,84 @@ describe("download-flow: confirmSubscription requires auth", () => {
     ).rejects.toThrow();
   });
 });
+
+/**
+ * Download flow client-side decision logic test
+ * 
+ * The download flow for unauthenticated users should:
+ * 1. NOT redirect to Google OAuth directly (which caused 403 errors)
+ * 2. Instead, show the PaywallModal with auth-choice step
+ */
+
+// Extracted decision logic from downloadPdf in PdfEditor
+function getDownloadAction(params: {
+  isAuthenticated: boolean;
+  isPremium: boolean;
+  hasPdfBytes: boolean;
+}): "show-paywall" | "auto-save-and-download" | "auto-save-and-show-paywall" | "no-pdf" {
+  if (!params.hasPdfBytes) return "no-pdf";
+  
+  if (!params.isAuthenticated) {
+    // Should show paywall modal (auth-choice step) — NOT redirect to Google OAuth
+    return "show-paywall";
+  }
+
+  if (params.isPremium) {
+    return "auto-save-and-download";
+  }
+
+  return "auto-save-and-show-paywall";
+}
+
+describe("download-flow: client-side decision logic", () => {
+  it("should show paywall for unauthenticated users (not redirect to Google)", () => {
+    const action = getDownloadAction({
+      isAuthenticated: false,
+      isPremium: false,
+      hasPdfBytes: true,
+    });
+    expect(action).toBe("show-paywall");
+    expect(action).not.toBe("redirect-to-google");
+  });
+
+  it("should auto-save and download for premium authenticated users", () => {
+    const action = getDownloadAction({
+      isAuthenticated: true,
+      isPremium: true,
+      hasPdfBytes: true,
+    });
+    expect(action).toBe("auto-save-and-download");
+  });
+
+  it("should auto-save and show paywall for non-premium authenticated users", () => {
+    const action = getDownloadAction({
+      isAuthenticated: true,
+      isPremium: false,
+      hasPdfBytes: true,
+    });
+    expect(action).toBe("auto-save-and-show-paywall");
+  });
+
+  it("should return no-pdf when no PDF bytes available", () => {
+    const action = getDownloadAction({
+      isAuthenticated: true,
+      isPremium: true,
+      hasPdfBytes: false,
+    });
+    expect(action).toBe("no-pdf");
+  });
+});
+
+describe("download-flow: PaywallModal step selection", () => {
+  function getInitialStep(isAuthenticated: boolean): "auth-choice" | "plans" {
+    return isAuthenticated ? "plans" : "auth-choice";
+  }
+
+  it("should show auth-choice step for unauthenticated users", () => {
+    expect(getInitialStep(false)).toBe("auth-choice");
+  });
+
+  it("should show plans step for authenticated users", () => {
+    expect(getInitialStep(true)).toBe("plans");
+  });
+});

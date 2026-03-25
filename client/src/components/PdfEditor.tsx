@@ -1867,26 +1867,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const docName = file?.name ?? "document.pdf";
     const docSize = pdfOut.byteLength;
 
-    // Step 2: If NOT authenticated → save to S3 temp, persist intent, redirect to login
+    // Step 2: If NOT authenticated → show paywall modal (auth-choice step)
     if (!isAuthenticated) {
-      toast.loading("Guardando documento...", { id: "dl" });
-      try {
-        // Save original PDF to session so editor can restore after login
-        if (pendingFile) {
-          await savePdfToSession(pendingFile);
-        }
-        // Save edited PDF to S3 temp
-        await saveEditedPdfToSession(base64, docName, docSize);
-        // Mark pending download intent
-        setPendingPaywall(true);
-        sessionStorage.setItem("pdfup_pending_action", "download");
-      } catch (err) {
-        console.error("[downloadPdf] save before login failed:", err);
-      }
+      // Store PDF data so the paywall modal can use it after login
+      setPdfDataForPaywall({ base64, name: docName, size: docSize });
+      sessionStorage.setItem("pdfup_pending_action", "download");
       toast.dismiss("dl");
-      // Redirect to Google OAuth login
-      const returnPath = window.location.pathname + window.location.search;
-      window.location.href = `/api/auth/google?origin=${encodeURIComponent(window.location.origin)}&returnPath=${encodeURIComponent(returnPath)}`;
+      setShowPaywall(true);
       return;
     }
 

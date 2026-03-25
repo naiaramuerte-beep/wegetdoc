@@ -526,3 +526,4 @@
 ## Mobile UX - Hero Section
 - [x] Ocultar badges hero ("100% en la Nube", "Seguro y cifrado", "Funciona en cualquier navegador", "Sin instalación") en móvil para que el usuario vea directamente el título y la zona de subida sin scroll
 - [x] Añadir mensaje informativo en la drop zone indicando que cualquier archivo subido se convierte automáticamente a PDF
+- [x] Bug: Al descargar PDF editado, muestra "guardando documento" y luego redirige a página de Google con error 403
