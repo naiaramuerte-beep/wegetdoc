@@ -171,7 +171,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [scale, setScale] = useState(1.2);
-  const [activeTool, setActiveTool] = useState<ToolName>("text");
+  const [activeTool, setActiveTool] = useState<ToolName>("edit-text");
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -406,7 +406,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     setAnnotations([]);
     setHistory([]);
     setHistoryIndex(-1);
-    setActiveTool("text");
+    setActiveTool("edit-text");
     // Generate thumbnails
     const thumbs: string[] = [];
     for (let i = 1; i <= Math.min(doc.numPages, 20); i++) {
