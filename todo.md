@@ -528,3 +528,6 @@
 - [x] Añadir mensaje informativo en la drop zone indicando que cualquier archivo subido se convierte automáticamente a PDF
 - [x] Bug: Al descargar PDF editado, muestra "guardando documento" y luego redirige a página de Google con error 403
 - [x] Bug: Después de login con Google desde PaywallModal, redirige a home en vez de volver al editor con el PDF y mostrar paywall
+
+## Cambio herramienta por defecto
+- [x] Cambiar herramienta preseleccionada del editor de "puntero" a "editar texto"
