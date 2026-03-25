@@ -476,3 +476,4 @@
 - [x] Borrar código antiguo de Google Ads (AW-18034146775)
 - [x] Instalar nuevo Google Tag (G-XBH23TMG7K)
 - [x] Mantener Google Consent Mode v2 compatible con nuevo tag
+- [x] Corregir ID de Google Tag: G-XBH23TMG7K → G-XBHZ3TMG7K
