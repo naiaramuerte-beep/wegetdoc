@@ -490,3 +490,6 @@
 - [x] Actualizar robots.txt con dominio pdfup.io
 - [x] Verificar con Google Safe Browsing (limpio) y VirusTotal (0/94)
 - [x] Preparar informe de auditoría y plantilla de apelación para Google Ads
+
+## Google Ads Conversion Tracking (nueva cuenta)
+- [x] Añadir evento gtag('event', 'ads_conversion_purchase') al completar pago exitoso

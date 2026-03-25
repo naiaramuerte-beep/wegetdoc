@@ -12,6 +12,13 @@ export default function PaymentSuccess() {
     // Invalidate subscription status so it refreshes
     utils.subscription.status.invalidate();
 
+    // Google Ads conversion tracking
+    if (typeof window.gtag === "function") {
+      window.gtag("event", "ads_conversion_purchase", {
+        new_customer: true,
+      });
+    }
+
     // Detect lang from URL
     const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
     const lang = langMatch ? langMatch[1] : "es";

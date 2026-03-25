@@ -46,6 +46,13 @@ export default function Dashboard() {
       utils.subscription.status.invalidate();
       toast.success("¡Pago completado! Tu suscripción está activa. Ya puedes descargar tus documentos.");
 
+      // Google Ads conversion tracking
+      if (typeof window.gtag === "function") {
+        window.gtag("event", "ads_conversion_purchase", {
+          new_customer: true,
+        });
+      }
+
       // Clean URL without reload
       const cleanUrl = window.location.pathname + "?tab=documents";
       window.history.replaceState({}, "", cleanUrl);
