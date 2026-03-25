@@ -211,9 +211,9 @@ export default function Home() {
           }}
         />
 
-        <div className="container relative z-10 py-14 md:py-20">
-          {/* Cloud SaaS badge — prominent */}
-          <div className="flex justify-center mb-4">
+        <div className="container relative z-10 py-6 md:py-20">
+          {/* Cloud SaaS badge — prominent — hidden on mobile to save space */}
+          <div className="hidden md:flex justify-center mb-4">
             <div
               className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold"
               style={{
@@ -228,8 +228,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Trust badges row */}
-          <div className="flex flex-wrap justify-center gap-3 mb-8">
+          {/* Trust badges row — hidden on mobile to save space */}
+          <div className="hidden md:flex flex-wrap justify-center gap-3 mb-8">
             {[
               { icon: Shield, text: (t as any).hero_trust_secure ?? "Secure & encrypted", iconColor: "#00B67A", textColor: "#00B67A" },
               { icon: Monitor, text: (t as any).hero_trust_browser ?? "Works in any browser", iconColor: "oklch(0.75 0.10 260)", textColor: "oklch(0.85 0.01 250)" },
@@ -252,9 +252,9 @@ export default function Home() {
           </div>
 
           {/* Main headline */}
-          <div className="text-center max-w-4xl mx-auto mb-10">
+          <div className="text-center max-w-4xl mx-auto mb-6 md:mb-10">
             <h1
-              className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-5"
+              className="text-3xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-3 md:mb-5"
               style={{ fontFamily: "'Sora', sans-serif", color: "white" }}
             >
               {t.hero_title_1}{" "}
@@ -270,7 +270,7 @@ export default function Home() {
               </span>
             </h1>
             <p
-              className="text-lg md:text-xl max-w-2xl mx-auto"
+              className="text-sm md:text-xl max-w-2xl mx-auto"
               style={{ color: "oklch(0.80 0.03 250)", fontFamily: "'DM Sans', sans-serif" }}
             >
               {t.hero_subtitle}
@@ -292,7 +292,7 @@ export default function Home() {
               onDragLeave={() => setIsDraggingOver(false)}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className="cursor-pointer rounded-2xl flex flex-col items-center justify-center gap-5 py-10 px-8 transition-all duration-300"
+              className="cursor-pointer rounded-2xl flex flex-col items-center justify-center gap-3 md:gap-5 py-6 md:py-10 px-6 md:px-8 transition-all duration-300"
               style={{
                 border: `2px dashed ${isDraggingOver ? blue : "oklch(0.55 0.22 260 / 0.50)"}`,
                 backgroundColor: isDraggingOver
@@ -305,18 +305,18 @@ export default function Home() {
             >
               {/* Animated icon */}
               <div
-                className="w-20 h-20 rounded-2xl flex items-center justify-center"
+                className="w-14 h-14 md:w-20 md:h-20 rounded-2xl flex items-center justify-center"
                 style={{
                   backgroundColor: "oklch(0.55 0.22 260 / 0.15)",
                   border: "1px solid oklch(0.55 0.22 260 / 0.30)",
                   animation: "pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
                 }}
               >
-                <FileText className="w-10 h-10" style={{ color: blue }} />
+                <FileText className="w-7 h-7 md:w-10 md:h-10" style={{ color: blue }} />
               </div>
 
               <div className="text-center">
-                <p className="font-bold text-xl mb-1" style={{ color: "white", fontFamily: "'Sora', sans-serif" }}>
+                <p className="font-bold text-base md:text-xl mb-1" style={{ color: "white", fontFamily: "'Sora', sans-serif" }}>
                   {t.hero_drag_here}
                 </p>
                 <p className="text-sm" style={{ color: "oklch(0.65 0.03 250)" }}>{t.hero_or}</p>
@@ -324,7 +324,7 @@ export default function Home() {
 
               {/* Main CTA button */}
               <button
-                className="flex items-center gap-2 px-8 py-4 rounded-xl font-bold text-white text-base transition-all duration-200 shadow-lg"
+                className="flex items-center gap-2 px-6 py-3 md:px-8 md:py-4 rounded-xl font-bold text-white text-sm md:text-base transition-all duration-200 shadow-lg"
                 style={{
                   background: `linear-gradient(135deg, ${blue}, ${blueLight})`,
                   boxShadow: `0 8px 24px oklch(0.55 0.22 260 / 0.40)`,

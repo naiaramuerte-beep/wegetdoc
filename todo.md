@@ -522,3 +522,6 @@
 - [x] Actualizar páginas legales (Privacidad, Términos, Cookies, Reembolso) con nombre PDFUp y dominio pdfup.io
 - [x] Añadir botón "Pagar" en panel de documentos para docs con paymentStatus "pending"
 - [x] Corregir herramienta Mover del editor (verificada: funciona correctamente)
+
+## Mobile UX - Hero Section
+- [x] Ocultar badges hero ("100% en la Nube", "Seguro y cifrado", "Funciona en cualquier navegador", "Sin instalación") en móvil para que el usuario vea directamente el título y la zona de subida sin scroll
