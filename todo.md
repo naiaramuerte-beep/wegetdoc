@@ -531,3 +531,8 @@
 
 ## Cambio herramienta por defecto
 - [x] Cambiar herramienta preseleccionada del editor de "puntero" a "editar texto"
+
+## Registro/Login email propio (sin Manus OAuth)
+- [x] Backend: endpoints register y login por email+contraseña (sin tocar Google OAuth)
+- [x] Frontend: formulario email+contraseña en PaywallModal (sin tocar flujo Google ni descarga)
+- [x] Sesión: crear cookie JWT tras registro/login exitoso

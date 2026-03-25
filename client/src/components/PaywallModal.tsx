@@ -5,7 +5,7 @@
  * Checkbox obligatorio con borde rojo si no se acepta
  */
 import { useState, useEffect } from "react";
-import { X, Check, Loader2, Mail, CreditCard, ArrowRight, AlertCircle } from "lucide-react";
+import { X, Check, Loader2, Mail, CreditCard, ArrowRight, AlertCircle, Eye, EyeOff, Lock } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
@@ -508,6 +508,14 @@ export default function PaywallModal({
   const { savePdfToSession, setPendingPaywall, pendingFile, pendingEditedPdf, clearPendingEditedPdf, saveEditedPdfToSession } = usePdfFile();
   const [step, setStep] = useState<Step>(isAuthenticated ? "plans" : "auth-choice");
   const [emailInput, setEmailInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
+  const [nameInput, setNameInput] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [emailMode, setEmailMode] = useState<"register" | "login">("register");
+  const [emailLoading, setEmailLoading] = useState(false);
+  const registerMutation = trpc.auth.register.useMutation();
+  const loginMutation = trpc.auth.login.useMutation();
+  const { refresh } = useAuth();
 
   if (!isOpen) return null;
 
@@ -531,22 +539,38 @@ export default function PaywallModal({
     const returnPath = window.location.pathname + window.location.search;
     window.location.href = `/api/auth/google?origin=${encodeURIComponent(window.location.origin)}&returnPath=${encodeURIComponent(returnPath)}`;
   };
-  const handleEmailContinue = async () => {
+  const handleEmailSubmit = async () => {
     if (!emailInput.trim() || !emailInput.includes("@")) {
       toast.error(t.paywall_enter_email);
       return;
     }
-    // Save the original PDF file
-    if (pendingFile) {
-      try { await savePdfToSession(pendingFile); } catch {}
+    if (!passwordInput || passwordInput.length < 6) {
+      toast.error(t.paywall_password_min);
+      return;
     }
-    // Save the EDITED PDF (with annotations) so it survives the OAuth redirect
-    if (pdfData) {
-      try { await saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size); } catch {}
+    setEmailLoading(true);
+    try {
+      if (emailMode === "register") {
+        await registerMutation.mutateAsync({
+          email: emailInput.trim(),
+          password: passwordInput,
+          name: nameInput.trim() || undefined,
+        });
+      } else {
+        await loginMutation.mutateAsync({
+          email: emailInput.trim(),
+          password: passwordInput,
+        });
+      }
+      // Refresh auth state — cookie is set by the server
+      await refresh();
+      // Auth state is now updated, step will auto-switch to "plans"
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Error";
+      toast.error(message);
+    } finally {
+      setEmailLoading(false);
     }
-    setPendingPaywall(true);
-    sessionStorage.setItem("pdfup_pending_action", "download");
-    window.location.href = getLoginUrl();
   };
 
   const handlePaymentSuccess = () => {
@@ -622,29 +646,75 @@ export default function PaywallModal({
           </div>
         )}
 
-        {/* ── Email Form ── */}
+        {/* ── Email Form (register/login) ── */}
         {currentStep === "email-form" && (
           <div className="p-8">
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">{t.paywall_enter_email}</h2>
-              <p className="text-sm text-gray-500">{t.paywall_email_link}</p>
+              <div className="w-14 h-14 rounded-2xl bg-[#1a3c6e] flex items-center justify-center mx-auto mb-4">
+                <Lock className="w-7 h-7 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                {emailMode === "register" ? t.paywall_register : t.paywall_login}
+              </h2>
+              <p className="text-sm text-gray-500">
+                {emailMode === "register" ? t.paywall_sign_up_seconds : t.paywall_enter_email}
+              </p>
             </div>
-            <div className="max-w-sm mx-auto space-y-4">
+            <div className="max-w-sm mx-auto space-y-3">
+              {emailMode === "register" && (
+                <input
+                  type="text"
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  placeholder={t.paywall_name}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]"
+                />
+              )}
               <input
                 type="email"
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 placeholder="you@email.com"
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]"
-                onKeyDown={(e) => e.key === "Enter" && handleEmailContinue()}
               />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  placeholder={t.paywall_password}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]"
+                  onKeyDown={(e) => e.key === "Enter" && handleEmailSubmit()}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {emailMode === "register" && (
+                <p className="text-xs text-gray-400">{t.paywall_password_min}</p>
+              )}
               <button
-                onClick={handleEmailContinue}
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#1a3c6e] text-white font-bold text-sm hover:bg-[#15305a] transition-colors"
+                onClick={handleEmailSubmit}
+                disabled={emailLoading}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#1a3c6e] text-white font-bold text-sm hover:bg-[#15305a] transition-colors disabled:opacity-60"
               >
-                <ArrowRight className="w-4 h-4" />
-                {t.paywall_continue}
+                {emailLoading ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> {emailMode === "register" ? t.paywall_registering : t.paywall_logging_in}</>
+                ) : (
+                  <><ArrowRight className="w-4 h-4" /> {emailMode === "register" ? t.paywall_register : t.paywall_login}</>
+                )}
               </button>
+              <div className="text-center text-sm text-gray-500 pt-1">
+                {emailMode === "register" ? (
+                  <>{t.paywall_have_account}{" "}<button onClick={() => setEmailMode("login")} className="text-[#1a3c6e] font-semibold hover:underline">{t.paywall_login}</button></>
+                ) : (
+                  <>{t.paywall_no_account}{" "}<button onClick={() => setEmailMode("register")} className="text-[#1a3c6e] font-semibold hover:underline">{t.paywall_register}</button></>
+                )}
+              </div>
               <button
                 onClick={() => setStep("auth-choice")}
                 className="w-full text-sm text-gray-400 hover:text-gray-700 py-2 transition-colors"
