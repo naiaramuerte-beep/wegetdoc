@@ -544,3 +544,9 @@
 
 ## Hotjar
 - [x] Instalar código de tracking Hotjar (ID 6676659) en el head
+
+## Toggle modo test Stripe en admin
+- [ ] Toggle en panel admin para activar/desactivar modo test de Stripe
+
+## Google Ads ID
+- [x] Reemplazar ID Google Ads AW-18038662610 por AW-18038723667

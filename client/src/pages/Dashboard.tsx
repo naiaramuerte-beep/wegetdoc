@@ -49,7 +49,7 @@ export default function Dashboard() {
       // Google Ads conversion tracking
       if (typeof window.gtag === "function") {
         window.gtag("event", "conversion", {
-          send_to: "AW-18038662610/IUjxCNKbjI8cENLLwJLD",
+          send_to: "AW-18038723667/IUjxCNKbjI8cENLLwJLD",
           value: 1.0,
           currency: "EUR",
           transaction_id: "",

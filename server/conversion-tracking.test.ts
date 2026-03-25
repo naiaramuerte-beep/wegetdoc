@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";
 
-const CONVERSION_SEND_TO = "AW-18038662610/IUjxCNKbjI8cENLLwJLD";
-const GOOGLE_ADS_ID = "AW-18038662610";
+const CONVERSION_SEND_TO = "AW-18038723667/IUjxCNKbjI8cENLLwJLD";
+const GOOGLE_ADS_ID = "AW-18038723667";
 const GOOGLE_ANALYTICS_ID = "G-XBHZ3TMG7K";
 
 describe("Google Ads Conversion Tracking", () => {
@@ -23,6 +23,7 @@ describe("Google Ads Conversion Tracking", () => {
       "utf-8"
     );
     expect(html).not.toContain("AW-18034146775");
+    expect(html).not.toContain("AW-18038662610");
     expect(html).not.toContain("G-S9PBPV95TL");
     expect(html).not.toContain("G-LKD51NK94C");
   });

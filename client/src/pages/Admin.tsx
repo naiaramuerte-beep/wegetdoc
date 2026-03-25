@@ -766,6 +766,9 @@ export default function Admin() {
             <div className="space-y-6">
               <h2 className="text-lg font-semibold text-white">Ajustes del sitio</h2>
 
+              {/* Stripe Test Mode Toggle */}
+              <StripeTestModeToggle />
+
               {/* Stripe info */}
               <div
                 className="rounded-xl border p-5 space-y-4"
@@ -889,6 +892,83 @@ function SettingRow({
       >
         {saved ? "✓ Guardado" : "Guardar"}
       </button>
+    </div>
+  );
+}
+
+// ─── Stripe Test Mode Toggle ───────────────────────────────────────────
+function StripeTestModeToggle() {
+  const testModeQ = trpc.admin.getStripeTestMode.useQuery();
+  const setTestModeMut = trpc.admin.setStripeTestMode.useMutation({
+    onSuccess: (data) => {
+      testModeQ.refetch();
+      toast.success(
+        data.testMode
+          ? "Modo TEST activado — los pagos usan claves de prueba"
+          : "Modo LIVE activado — los pagos usan claves reales"
+      );
+    },
+    onError: () => toast.error("Error al cambiar el modo de Stripe"),
+  });
+
+  const isTestMode = testModeQ.data?.testMode ?? false;
+
+  return (
+    <div
+      className="rounded-xl border p-5"
+      style={{ backgroundColor: "#131720", borderColor: isTestMode ? "#f59e0b" : "#1e2433" }}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-10 h-10 rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: isTestMode ? "rgba(245,158,11,0.15)" : "rgba(16,185,129,0.15)" }}
+          >
+            <CreditCard size={18} style={{ color: isTestMode ? "#f59e0b" : "#10b981" }} />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-white flex items-center gap-2">
+              Modo de pago
+              <span
+                className="px-2 py-0.5 rounded-full text-xs font-bold"
+                style={{
+                  backgroundColor: isTestMode ? "rgba(245,158,11,0.2)" : "rgba(16,185,129,0.2)",
+                  color: isTestMode ? "#f59e0b" : "#10b981",
+                }}
+              >
+                {isTestMode ? "TEST" : "LIVE"}
+              </span>
+            </p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {isTestMode
+                ? "Los pagos son simulados. Usa tarjeta 4242 4242 4242 4242 para probar."
+                : "Los pagos son reales. Los clientes serán cobrados."}
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => setTestModeMut.mutate({ testMode: !isTestMode })}
+          disabled={setTestModeMut.isPending || testModeQ.isLoading}
+          className="relative w-14 h-7 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          style={{
+            backgroundColor: isTestMode ? "#f59e0b" : "#10b981",
+            opacity: setTestModeMut.isPending ? 0.6 : 1,
+          }}
+        >
+          <span
+            className="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform duration-200"
+            style={{ left: isTestMode ? "calc(100% - 1.625rem)" : "0.125rem" }}
+          />
+        </button>
+      </div>
+      {isTestMode && (
+        <div
+          className="mt-3 p-3 rounded-lg text-xs"
+          style={{ backgroundColor: "rgba(245,158,11,0.08)", color: "#f59e0b" }}
+        >
+          <strong>Tarjeta de prueba:</strong> 4242 4242 4242 4242 &mdash; Fecha: cualquier fecha futura &mdash; CVC: cualquier número de 3 dígitos
+        </div>
+      )}
     </div>
   );
 }
