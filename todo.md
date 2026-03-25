@@ -541,3 +541,6 @@
 - [x] Endpoint backend: obtener info de pagos/suscripción por usuario desde Stripe
 - [x] Columnas de pago en tabla de admin: estado suscripción, Stripe ID, intentos de pago
 - [x] Detalle expandible o modal con historial de pagos del usuario (link directo a Stripe Dashboard)
+
+## Hotjar
+- [x] Instalar código de tracking Hotjar (ID 6676659) en el head
