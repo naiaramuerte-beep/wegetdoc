@@ -517,3 +517,8 @@
 - [x] Frontend: auto-descarga tras pago exitoso en PaywallModal
 - [ ] Panel usuario: botón descargar si pagado, botón pagar si pendiente
 - [ ] Verificar flujo completo end-to-end en producción
+
+## Actualización branding PDFUp + mejoras pendientes
+- [x] Actualizar páginas legales (Privacidad, Términos, Cookies, Reembolso) con nombre PDFUp y dominio pdfup.io
+- [x] Añadir botón "Pagar" en panel de documentos para docs con paymentStatus "pending"
+- [x] Corregir herramienta Mover del editor (verificada: funciona correctamente)

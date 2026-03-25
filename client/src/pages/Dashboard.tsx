@@ -446,10 +446,18 @@ function DocumentsTab() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-800 truncate">{doc.name}</p>
-                    <p className="text-xs text-slate-400">
-                      {doc.fileSize ? `${(doc.fileSize / 1024 / 1024).toFixed(1)} MB · ` : ""}
-                      {new Date(doc.createdAt).toLocaleDateString("es-ES")}
-                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-xs text-slate-400">
+                        {doc.fileSize ? `${(doc.fileSize / 1024 / 1024).toFixed(1)} MB · ` : ""}
+                        {new Date(doc.createdAt).toLocaleDateString("es-ES")}
+                      </p>
+                      {!isPremium && doc.paymentStatus === "pending" && (
+                        <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">Pago pendiente</span>
+                      )}
+                      {doc.paymentStatus === "paid" && (
+                        <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">Pagado</span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -476,6 +484,17 @@ function DocumentsTab() {
                         onClick={() => handleDownloadDocument(doc)}
                       >
                         <Download size={14} />
+                      </Button>
+                    ) : doc.paymentStatus === "pending" ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 px-2 gap-1 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                        title="Pagar para descargar"
+                        onClick={() => setShowPaywall(true)}
+                      >
+                        <CreditCard size={13} />
+                        <span className="text-xs font-medium">Pagar</span>
                       </Button>
                     ) : (
                       <Button
