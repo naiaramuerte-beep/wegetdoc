@@ -553,3 +553,6 @@
 
 ## Consent Mode
 - [x] Cambiar analytics_storage a granted por defecto en Consent Mode v2
+
+## Bug: No such setupintent
+- [x] Corregir error 'No such setupintent' al pagar en modo test

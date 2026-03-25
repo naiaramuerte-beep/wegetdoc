@@ -352,8 +352,18 @@ export const appRouter = router({
       let customerId: string | undefined;
       const existingSub = await getActiveSubscription(user.id);
       if (existingSub?.stripeCustomerId) {
-        customerId = existingSub.stripeCustomerId;
-      } else {
+        // Verify the customer exists in the current Stripe mode (test/live)
+        try {
+          await stripe.customers.retrieve(existingSub.stripeCustomerId);
+          customerId = existingSub.stripeCustomerId;
+        } catch {
+          // Customer doesn't exist in current mode (e.g. live customer in test mode)
+          console.log(`[Stripe] Customer ${existingSub.stripeCustomerId} not found in ${testMode ? 'test' : 'live'} mode, creating new one`);
+          customerId = undefined;
+        }
+      }
+
+      if (!customerId) {
         const customer = await stripe.customers.create({
           email: user.email || undefined,
           name: user.name || undefined,
