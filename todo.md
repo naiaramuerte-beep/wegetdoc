@@ -569,3 +569,4 @@
 - [x] Cambiar pricing_trial_period de "prueba gratuita" a "prueba 7 días" en todos los idiomas
 - [x] Actualizar texto de verificación bancaria en PaywallModal
 - [x] Cambiar "100% Discount" a "99% Discount" en PaywallModal
+- [x] Fix: 3D Secure muestra 0€ en lugar de 0,50€ — cambiar de SetupIntent a cobro real de 0,50€

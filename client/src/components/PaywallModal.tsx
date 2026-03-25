@@ -111,7 +111,7 @@ function CheckoutForm({
       setClientSecret(result.clientSecret);
       setCustomerId(result.customerId);
     }).catch((err) => {
-      console.error("Failed to create SetupIntent:", err);
+      console.error("Failed to create PaymentIntent:", err);
       toast.error(t.paywall_loading_form);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -133,7 +133,8 @@ function CheckoutForm({
       const cardElement = elements.getElement(CardElement);
       if (!cardElement) throw new Error("Card element not found");
 
-      const { setupIntent, error } = await stripe.confirmCardSetup(clientSecret, {
+      // confirmCardPayment charges 0,50€ and triggers 3D Secure with the real amount
+      const { paymentIntent, error } = await stripe.confirmCardPayment(clientSecret, {
         payment_method: { card: cardElement },
       });
 
@@ -152,16 +153,16 @@ function CheckoutForm({
         return;
       }
 
-      if (!setupIntent?.payment_method) {
+      if (!paymentIntent?.payment_method) {
         toast.error('No se pudo obtener el método de pago. Por favor, inténtalo de nuevo.');
         setIsLoading(false);
         return;
       }
 
       const paymentMethodId =
-        typeof setupIntent.payment_method === "string"
-          ? setupIntent.payment_method
-          : setupIntent.payment_method.id;
+        typeof paymentIntent.payment_method === "string"
+          ? paymentIntent.payment_method
+          : paymentIntent.payment_method.id;
 
       // 1. Confirm subscription first (so the user is premium when we upload)
       setProgressStep("subscription");

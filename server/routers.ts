@@ -351,7 +351,7 @@ export const appRouter = router({
       return { success: true };
     }),
 
-    // ── Stripe Elements: create SetupIntent for inline card form ──────────────
+    // ── Stripe Elements: create PaymentIntent for 0,50€ activation fee ──────────────
     createSetupIntent: protectedProcedure.mutation(async ({ ctx }) => {
       const testMode = await isStripeTestMode();
       const stripe = getStripe(testMode);
@@ -381,15 +381,19 @@ export const appRouter = router({
         customerId = customer.id;
       }
 
-      const setupIntent = await stripe.setupIntents.create({
+      // Create a PaymentIntent for 0,50€ activation fee (so 3D Secure shows the real amount)
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: 50, // 0,50€ in cents
+        currency: "eur",
         customer: customerId,
+        setup_future_usage: "off_session", // Save card for future subscription charges
         payment_method_types: ["card"],
-        usage: "off_session",
-        metadata: { user_id: user.id.toString() },
+        metadata: { user_id: user.id.toString(), type: "activation_fee" },
+        description: "PDFUp - Activation fee (7-day trial)",
       });
 
       return {
-        clientSecret: setupIntent.client_secret!,
+        clientSecret: paymentIntent.client_secret!,
         customerId,
       };
     }),
