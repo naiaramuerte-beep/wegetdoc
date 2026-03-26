@@ -2,7 +2,7 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
-import Stripe from "stripe";
+import { Paddle, EventName } from "@paddle/paddle-node-sdk";
 import multer from "multer";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
@@ -10,10 +10,11 @@ import { registerGoogleOAuthRoutes } from "./googleOauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { getUserById, upsertSubscription, getBlogPosts, createDocument, userHasActiveSubscription } from "../db";
+import { getUserById, upsertSubscription, getBlogPosts, createDocument, userHasActiveSubscription, markDocumentsPaid } from "../db";
 import { storagePut, storageGet } from "../storage";
 import { sdk } from "./sdk";
 import { convertToPdf, isConvertibleType, ACCEPTED_EXTENSIONS } from "../convertToPdf";
+import { sendPaymentConfirmationEmail, sendCancellationEmail } from "../email";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -38,107 +39,152 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
-  // ── Stripe Webhook (MUST be before express.json) ───────────────────────────────────────────
-  // Prefer STRIPE_LIVE_SECRET_KEY (user-provided) over system default
-  const stripe = new Stripe(
-    process.env.STRIPE_LIVE_SECRET_KEY || process.env.STRIPE_SECRET_KEY || "",
-    { apiVersion: "2026-02-25.clover" }
-  );
+  // ── Paddle Webhook (MUST be before express.json) ───────────────────────────────────────────
+  const paddle = new Paddle(process.env.PADDLE_API_KEY || "");
 
-  app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
-    const sig = req.headers["stripe-signature"];
-    let event: Stripe.Event;
+  app.post("/api/paddle/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+    const signature = (req.headers["paddle-signature"] as string) || "";
+    const rawBody = req.body.toString();
+    const secretKey = process.env.PADDLE_WEBHOOK_NOTIFICATION_ID || "";
 
+    let eventData: any;
     try {
-      event = stripe.webhooks.constructEvent(
-        req.body,
-        sig as string,
-        process.env.STRIPE_WEBHOOK_SECRET || ""
-      );
+      if (signature && rawBody) {
+        eventData = paddle.webhooks.unmarshal(rawBody, secretKey, signature);
+      } else {
+        console.log("[Paddle Webhook] Missing signature or body");
+        res.status(400).json({ error: "Missing signature" });
+        return;
+      }
     } catch (err) {
-      console.error("[Webhook] Signature verification failed:", err);
-      res.status(400).send(`Webhook Error: ${(err as Error).message}`);
+      console.error("[Paddle Webhook] Signature verification failed:", err);
+      res.status(400).json({ error: "Signature verification failed" });
       return;
     }
 
-    // Handle test events
-    if (event.id.startsWith("evt_test_")) {
-      console.log("[Webhook] Test event detected, returning verification response");
-      res.json({ verified: true });
-      return;
-    }
-
-    console.log(`[Webhook] Event: ${event.type} | ID: ${event.id}`);
+    console.log(`[Paddle Webhook] Event: ${eventData.eventType} | ID: ${eventData.eventId}`);
 
     try {
-      if (event.type === "checkout.session.completed") {
-        const session = event.data.object as Stripe.Checkout.Session;
-        const userId = parseInt(session.metadata?.user_id || "0");
-        const plan = (session.metadata?.plan || "trial") as "trial" | "monthly";
+      const data = eventData.data;
+      // Extract userId from custom_data (set during checkout)
+      const customData = data.customData || data.custom_data || {};
+      const userId = parseInt(customData.userId || customData.user_id || "0");
 
+      if (eventData.eventType === EventName.SubscriptionCreated ||
+          eventData.eventType === EventName.SubscriptionActivated ||
+          eventData.eventType === EventName.SubscriptionTrialing) {
         if (userId) {
-          const user = await getUserById(userId);
-          if (user) {
-            const now = new Date();
-            const periodEnd =
-              plan === "trial"
-                ? new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
-                : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+          const billingPeriod = data.currentBillingPeriod || data.current_billing_period;
+          const periodStart = billingPeriod?.startsAt || billingPeriod?.starts_at;
+          const periodEnd = billingPeriod?.endsAt || billingPeriod?.ends_at;
+          const status = data.status === "trialing" ? "trialing" : "active";
 
-            await upsertSubscription({
-              userId,
-              stripeCustomerId: (session.customer as string) || undefined,
-              stripeSubscriptionId: (session.subscription as string) || undefined,
-              stripePriceId: undefined,
-              stripeSessionId: session.id,
-              plan,
-              status: "active",
-              currentPeriodStart: now,
-              currentPeriodEnd: periodEnd,
-              cancelAtPeriodEnd: false,
-            });
-            console.log(`[Webhook] Subscription activated for user ${userId}, plan: ${plan}`);
-          }
-        }
-      } else if (event.type === "customer.subscription.updated") {
-        const sub = event.data.object as Stripe.Subscription;
-        const userId = parseInt(sub.metadata?.user_id || "0");
-        if (userId) {
           await upsertSubscription({
             userId,
-            stripeCustomerId: sub.customer as string,
-            stripeSubscriptionId: sub.id,
-            stripePriceId: sub.items.data[0]?.price?.id || undefined,
-            stripeSessionId: undefined,
-            plan: "monthly",
-            status: sub.status as "active" | "canceled" | "past_due" | "trialing" | "incomplete",
-            currentPeriodStart: new Date((sub as any).current_period_start * 1000),
-            currentPeriodEnd: new Date((sub as any).current_period_end * 1000),
-            cancelAtPeriodEnd: sub.cancel_at_period_end,
+            paddleCustomerId: data.customerId || data.customer_id || undefined,
+            paddleSubscriptionId: data.id || undefined,
+            paddleTransactionId: data.transactionId || data.transaction_id || undefined,
+            plan: data.status === "trialing" ? "trial" : "monthly",
+            status,
+            currentPeriodStart: periodStart ? new Date(periodStart) : new Date(),
+            currentPeriodEnd: periodEnd ? new Date(periodEnd) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            cancelAtPeriodEnd: false,
           });
+
+          // Mark pending documents as paid
+          await markDocumentsPaid(userId);
+
+          // Send confirmation email (non-blocking)
+          const user = await getUserById(userId);
+          if (user?.email && periodEnd) {
+            sendPaymentConfirmationEmail({
+              to: user.email,
+              name: user.name || "Usuario",
+              trialEndDate: new Date(periodEnd),
+              cancelUrl: "https://pdfup.io/cancelar-suscripcion",
+            }).catch((err: unknown) => console.error("[Email] Confirmation email failed:", err));
+          }
+
+          // Notify owner
+          import("./notification").then(({ notifyOwner }) => {
+            const user2 = customData;
+            notifyOwner({
+              title: "\uD83D\uDCB3 Nuevo pago Paddle \u2014 PDFUp",
+              content: `Usuario ID: ${userId}\nPlan: ${status}\nPaddle Sub: ${data.id}`,
+            }).catch(() => {});
+          }).catch(() => {});
+
+          console.log(`[Paddle Webhook] Subscription ${status} for user ${userId}`);
         }
-      } else if (event.type === "customer.subscription.deleted") {
-        const sub = event.data.object as Stripe.Subscription;
-        const userId = parseInt(sub.metadata?.user_id || "0");
+      } else if (eventData.eventType === EventName.SubscriptionUpdated) {
+        if (userId) {
+          const billingPeriod = data.currentBillingPeriod || data.current_billing_period;
+          const periodStart = billingPeriod?.startsAt || billingPeriod?.starts_at;
+          const periodEnd = billingPeriod?.endsAt || billingPeriod?.ends_at;
+          const scheduledChange = data.scheduledChange || data.scheduled_change;
+          const cancelAtEnd = scheduledChange?.action === "cancel";
+
+          await upsertSubscription({
+            userId,
+            paddleCustomerId: data.customerId || data.customer_id || undefined,
+            paddleSubscriptionId: data.id || undefined,
+            plan: data.status === "trialing" ? "trial" : "monthly",
+            status: data.status as "active" | "canceled" | "past_due" | "trialing" | "incomplete",
+            currentPeriodStart: periodStart ? new Date(periodStart) : undefined,
+            currentPeriodEnd: periodEnd ? new Date(periodEnd) : undefined,
+            cancelAtPeriodEnd: cancelAtEnd,
+          });
+          console.log(`[Paddle Webhook] Subscription updated for user ${userId}, status: ${data.status}`);
+        }
+      } else if (eventData.eventType === EventName.SubscriptionCanceled) {
         if (userId) {
           await upsertSubscription({
             userId,
-            stripeCustomerId: sub.customer as string,
-            stripeSubscriptionId: sub.id,
-            stripePriceId: undefined,
-            stripeSessionId: undefined,
+            paddleCustomerId: data.customerId || data.customer_id || undefined,
+            paddleSubscriptionId: data.id || undefined,
             plan: "monthly",
             status: "canceled",
             currentPeriodStart: undefined,
             currentPeriodEnd: undefined,
             cancelAtPeriodEnd: false,
           });
+
+          // Send cancellation email (non-blocking)
+          const user = await getUserById(userId);
+          if (user?.email) {
+            sendCancellationEmail({
+              to: user.email,
+              name: user.name || "Usuario",
+              accessUntilDate: new Date(),
+              reactivateUrl: "https://pdfup.io/es/dashboard?tab=billing",
+            }).catch((err: unknown) => console.error("[Email] Cancellation email failed:", err));
+          }
+
+          console.log(`[Paddle Webhook] Subscription canceled for user ${userId}`);
+        }
+      } else if (eventData.eventType === EventName.SubscriptionPastDue) {
+        if (userId) {
+          await upsertSubscription({
+            userId,
+            paddleCustomerId: data.customerId || data.customer_id || undefined,
+            paddleSubscriptionId: data.id || undefined,
+            plan: "monthly",
+            status: "past_due",
+            cancelAtPeriodEnd: false,
+          });
+          console.log(`[Paddle Webhook] Subscription past_due for user ${userId}`);
         }
       }
     } catch (err) {
-      console.error("[Webhook] Error processing event:", err);
+      console.error("[Paddle Webhook] Error processing event:", err);
     }
 
+    res.json({ received: true });
+  });
+
+  // Legacy Stripe webhook — keep for backwards compatibility during migration
+  app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), (_req, res) => {
+    console.log("[Stripe Webhook] Legacy endpoint hit — Stripe is no longer active");
     res.json({ received: true });
   });
 

@@ -144,6 +144,9 @@ export async function upsertSubscription(data: {
   stripeSubscriptionId?: string;
   stripePriceId?: string;
   stripeSessionId?: string;
+  paddleCustomerId?: string;
+  paddleSubscriptionId?: string;
+  paddleTransactionId?: string;
   plan?: "trial" | "monthly" | "annual";
   status: "active" | "canceled" | "past_due" | "trialing" | "incomplete";
   currentPeriodStart?: Date;

@@ -9,4 +9,7 @@ export const ENV = {
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+  paddleApiKey: process.env.PADDLE_API_KEY ?? "",
+  paddleWebhookNotificationId: process.env.PADDLE_WEBHOOK_NOTIFICATION_ID ?? "",
+  paddlePriceId: process.env.VITE_PADDLE_PRICE_ID ?? "",
 };

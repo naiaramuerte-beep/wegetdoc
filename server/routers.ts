@@ -1,4 +1,4 @@
-import Stripe from "stripe";
+import { Paddle } from "@paddle/paddle-node-sdk";
 import { z } from "zod";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -58,19 +58,8 @@ import {
 import { storagePut } from "./storage";
 import { sendPaymentConfirmationEmail, sendCancellationEmail } from "./email";
 
-const getStripe = (testMode = false) =>
-  new Stripe(
-    testMode
-      ? (process.env.STRIPE_TEST_SECRET_KEY || process.env.STRIPE_SECRET_KEY || "")
-      // Prefer STRIPE_LIVE_SECRET_KEY (user-provided live key) over system default
-      : (process.env.STRIPE_LIVE_SECRET_KEY || process.env.STRIPE_SECRET_KEY || ""),
-    { apiVersion: "2026-02-25.clover" }
-  );
-
-async function isStripeTestMode(): Promise<boolean> {
-  const setting = await getSiteSetting("stripe_test_mode");
-  return setting === "true";
-}
+// Paddle SDK instance (server-side)
+const getPaddle = () => new Paddle(process.env.PADDLE_API_KEY || "");
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") {
@@ -221,15 +210,14 @@ export const appRouter = router({
     }),
   }),
 
-  // ─── Subscriptions ─────────────────────────────────────────────
+  // ─── Subscriptions (Paddle) ────────────────────────────────────
   subscription: router({
-    // Returns the correct Stripe publishable key based on test/live mode
-    stripeConfig: publicProcedure.query(async () => {
-      const testMode = await isStripeTestMode();
-      const publishableKey = testMode
-        ? (process.env.VITE_STRIPE_PUBLISHABLE_KEY || "")
-        : (process.env.VITE_STRIPE_LIVE_PUBLISHABLE_KEY || process.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
-      return { publishableKey, testMode };
+    // Returns Paddle config for the frontend
+    paddleConfig: publicProcedure.query(async () => {
+      return {
+        clientToken: process.env.VITE_PADDLE_CLIENT_TOKEN || "",
+        priceId: process.env.VITE_PADDLE_PRICE_ID || "",
+      };
     }),
 
     status: publicProcedure.query(async ({ ctx }) => {
@@ -253,85 +241,27 @@ export const appRouter = router({
       };
     }),
 
-    createCheckout: protectedProcedure
-      .input(
-        z.object({
-          plan: z.enum(["trial", "monthly"]),
-          origin: z.string().url(),
-        })
-      )
-      .mutation(async ({ ctx, input }) => {
-        const testMode = await isStripeTestMode();
-        const stripe = getStripe(testMode);
-        const { plan, origin } = input;
-        const user = ctx.user;
-
-        // Price IDs from Stripe Dashboard (live):
-        // Monthly 49,90€/mes: price_1TCdbn2WMuUgq7vD74v0mclA
-        const MONTHLY_PRICE_ID = "price_1TCdbn2WMuUgq7vD74v0mclA";
-
-        // Use real Price ID instead of price_data to avoid creating duplicate prices
-        const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
-          { price: MONTHLY_PRICE_ID, quantity: 1 },
-        ];
-
-        const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData =
-          plan === "trial"
-            ? {
-                trial_period_days: 7,
-                trial_settings: {
-                  end_behavior: { missing_payment_method: "cancel" },
-                },
-                metadata: {
-                  user_id: user.id.toString(),
-                  plan,
-                },
-              }
-            : {
-                metadata: {
-                  user_id: user.id.toString(),
-                  plan,
-                },
-              };
-
-        // Trial plan is FREE (0,50€) for 7 days, then 49,90€/month automatically
-        const session = await stripe.checkout.sessions.create({
-          mode: "subscription",
-          line_items: lineItems,
-          subscription_data: subscriptionData,
-          customer_email: user.email || undefined,
-          allow_promotion_codes: true,
-          client_reference_id: user.id.toString(),
-          metadata: {
-            user_id: user.id.toString(),
-            plan,
-            customer_email: user.email || "",
-            customer_name: user.name || "",
-          },
-          success_url: `${origin}/es/dashboard?tab=documents&payment=success`,
-          cancel_url: `${origin}/precios`,
-        });
-
-        return { url: session.url };
-      }),
-
+    // Cancel subscription via Paddle API
     cancel: protectedProcedure.mutation(async ({ ctx }) => {
-      const testMode = await isStripeTestMode();
-      const stripe = getStripe(testMode);
       const sub = await getActiveSubscription(ctx.user.id);
-      if (!sub?.stripeSubscriptionId) {
+      if (!sub?.paddleSubscriptionId) {
+        // No Paddle subscription — just cancel in DB
         await cancelSubscriptionDb(ctx.user.id);
         return { success: true };
       }
-      await stripe.subscriptions.update(sub.stripeSubscriptionId, {
-        cancel_at_period_end: true,
-      });
+      try {
+        const paddle = getPaddle();
+        await paddle.subscriptions.cancel(sub.paddleSubscriptionId, {
+          effectiveFrom: "next_billing_period",
+        });
+      } catch (err) {
+        console.error("[Paddle] Cancel subscription failed:", err);
+        // Still cancel in DB even if Paddle API fails
+      }
       await upsertSubscription({
         userId: ctx.user.id,
-        stripeCustomerId: sub.stripeCustomerId ?? undefined,
-        stripeSubscriptionId: sub.stripeSubscriptionId ?? undefined,
-        stripePriceId: sub.stripePriceId ?? undefined,
-        stripeSessionId: sub.stripeSessionId ?? undefined,
+        paddleCustomerId: sub.paddleCustomerId ?? undefined,
+        paddleSubscriptionId: sub.paddleSubscriptionId ?? undefined,
         plan: sub.plan ?? "monthly",
         status: sub.status,
         currentPeriodStart: sub.currentPeriodStart ?? undefined,
@@ -351,106 +281,33 @@ export const appRouter = router({
       return { success: true };
     }),
 
-    // ── Stripe Elements: create PaymentIntent for 0,50€ activation fee ──────────────
-    createSetupIntent: protectedProcedure.mutation(async ({ ctx }) => {
-      const testMode = await isStripeTestMode();
-      const stripe = getStripe(testMode);
-      const user = ctx.user;
-
-      // Find or create Stripe customer
-      let customerId: string | undefined;
-      const existingSub = await getActiveSubscription(user.id);
-      if (existingSub?.stripeCustomerId) {
-        // Verify the customer exists in the current Stripe mode (test/live)
-        try {
-          await stripe.customers.retrieve(existingSub.stripeCustomerId);
-          customerId = existingSub.stripeCustomerId;
-        } catch {
-          // Customer doesn't exist in current mode (e.g. live customer in test mode)
-          console.log(`[Stripe] Customer ${existingSub.stripeCustomerId} not found in ${testMode ? 'test' : 'live'} mode, creating new one`);
-          customerId = undefined;
-        }
-      }
-
-      if (!customerId) {
-        const customer = await stripe.customers.create({
-          email: user.email || undefined,
-          name: user.name || undefined,
-          metadata: { user_id: user.id.toString() },
-        });
-        customerId = customer.id;
-      }
-
-      // Create a PaymentIntent for 0,50€ activation fee (so 3D Secure shows the real amount)
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: 50, // 0,50€ in cents
-        currency: "eur",
-        customer: customerId,
-        setup_future_usage: "off_session", // Save card for future subscription charges
-        payment_method_types: ["card"],
-        metadata: { user_id: user.id.toString(), type: "activation_fee" },
-        description: "PDFUp - Activation fee (7-day trial)",
-      });
-
-      return {
-        clientSecret: paymentIntent.client_secret!,
-        customerId,
-      };
-    }),
-
-    // ── Stripe Elements: confirm subscription after card setup ──────────────
-    confirmSubscription: protectedProcedure
+    // Called from the frontend after Paddle Checkout overlay completes
+    // This creates the subscription record immediately (webhook will update it later)
+    confirmPaddleCheckout: protectedProcedure
       .input(z.object({
-        paymentMethodId: z.string(),
-        customerId: z.string(),
+        transactionId: z.string().optional(),
+        subscriptionId: z.string().optional(),
+        customerId: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const testMode = await isStripeTestMode();
-        const stripe = getStripe(testMode);
         const user = ctx.user;
-
-        // 1. Attach payment method to customer
-        await stripe.paymentMethods.attach(input.paymentMethodId, {
-          customer: input.customerId,
-        });
-
-        // 2. Set as default payment method
-        await stripe.customers.update(input.customerId, {
-          invoice_settings: { default_payment_method: input.paymentMethodId },
-        });
-
-        // 3. Create subscription with real Price ID (49,90€/month) and 7-day FREE trial (0,50€)
-        // Price IDs from Stripe Dashboard:
-        // Monthly 49,90€: price_1TCdbn2WMuUgq7vD74v0mclA
-        // One-time 0,50€: price_1TCdcV2WMuUgq7vD5X99lzED
-        const MONTHLY_PRICE_ID = "price_1TCdbn2WMuUgq7vD74v0mclA";
-
-        const trialEndTimestamp = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60;
-
-        const subscription = await stripe.subscriptions.create({
-          customer: input.customerId,
-          items: [{ price: MONTHLY_PRICE_ID }],
-          trial_end: trialEndTimestamp,
-          default_payment_method: input.paymentMethodId,
-          metadata: {
-            user_id: user.id.toString(),
-            plan: "trial",
-          },
-        });
-
         const now = new Date();
-        const trialEnd = new Date(trialEndTimestamp * 1000);
+        const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
         await upsertSubscription({
           userId: user.id,
-          stripeCustomerId: input.customerId,
-          stripeSubscriptionId: subscription.id,
+          paddleCustomerId: input.customerId ?? undefined,
+          paddleSubscriptionId: input.subscriptionId ?? undefined,
+          paddleTransactionId: input.transactionId ?? undefined,
           plan: "trial",
-          status: "trialing",
+          status: "active",
           currentPeriodStart: now,
           currentPeriodEnd: trialEnd,
           cancelAtPeriodEnd: false,
         });
+
+        // Mark all pending documents as paid
+        await markDocumentsPaid(user.id);
 
         // Send confirmation email (non-blocking)
         if (user.email) {
@@ -461,49 +318,16 @@ export const appRouter = router({
             cancelUrl: "https://pdfup.io/cancelar-suscripcion",
           }).catch((err) => console.error("[Email] Confirmation email failed:", err));
         }
-        // Notify owner of new subscription
+
+        // Notify owner
         import("./_core/notification").then(({ notifyOwner }) => {
           notifyOwner({
-            title: "\uD83D\uDCB3 Nuevo pago \u2014 PDFUp",
-            content: `Usuario: ${user.name || "An\u00F3nimo"} (${user.email || "sin email"})\nPlan: Trial 7 d\u00EDas GRATIS \u2192 49,90\u20AC/mes\nFin de prueba: ${trialEnd.toLocaleDateString("es-ES")}`,
+            title: "\uD83D\uDCB3 Nuevo pago Paddle \u2014 PDFUp",
+            content: `Usuario: ${user.name || "An\u00F3nimo"} (${user.email || "sin email"})\nPlan: Trial 7 d\u00EDas\nFin de prueba: ${trialEnd.toLocaleDateString("es-ES")}`,
           }).catch(() => {});
         }).catch(() => {});
-        // Mark all pending documents as paid now that user has active subscription
-        await markDocumentsPaid(user.id);
 
-        return { success: true, subscriptionId: subscription.id };
-      }),
-
-    verifySession: protectedProcedure
-      .input(z.object({ sessionId: z.string() }))
-      .mutation(async ({ ctx, input }) => {
-        const testMode = await isStripeTestMode();
-        const stripe = getStripe(testMode);
-        try {
-          const session = await stripe.checkout.sessions.retrieve(input.sessionId);
-          if (session.payment_status === "paid" || session.status === "complete") {
-            const plan = (session.metadata?.plan as "trial" | "monthly") ?? "trial";
-            const now = new Date();
-            const periodEnd = plan === "trial"
-              ? new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
-              : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-
-            await upsertSubscription({
-              userId: ctx.user.id,
-              stripeCustomerId: typeof session.customer === "string" ? session.customer : undefined,
-              stripeSessionId: session.id,
-              plan,
-              status: "active",
-              currentPeriodStart: now,
-              currentPeriodEnd: periodEnd,
-              cancelAtPeriodEnd: false,
-            });
-            return { success: true, plan };
-          }
-          return { success: false };
-        } catch {
-          return { success: false };
-        }
+        return { success: true, subscriptionId: input.subscriptionId || "" };
       }),
   }),
 
@@ -723,7 +547,7 @@ export const appRouter = router({
       return getCanceledSubscriptions();
     }),
 
-     promoteUser: adminProcedure
+    promoteUser: adminProcedure
       .input(z.object({ userId: z.number(), role: z.enum(["user", "admin"]) }))
       .mutation(async ({ input }) => {
         const db = await import("./db").then(m => m.getDb());
@@ -733,6 +557,7 @@ export const appRouter = router({
         await db.update(users).set({ role: input.role }).where(eq(users.id, input.userId));
         return { success: true };
       }),
+
     // ─── Blog Admin ───────────────────────────────────────────
     blogPosts: adminProcedure.query(async () => {
       return getBlogPosts(false); // all posts including drafts
@@ -793,19 +618,6 @@ export const appRouter = router({
         const key = `blog-images/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
         const { url } = await storagePut(key, buffer, contentType);
         return { url };
-      }),
-
-    // ─── Stripe Test Mode ─────────────────────────────────────
-    getStripeTestMode: adminProcedure.query(async () => {
-      const setting = await getSiteSetting("stripe_test_mode");
-      return { testMode: setting === "true" };
-    }),
-
-    setStripeTestMode: adminProcedure
-      .input(z.object({ testMode: z.boolean() }))
-      .mutation(async ({ input }) => {
-        await setSiteSetting("stripe_test_mode", input.testMode ? "true" : "false");
-        return { success: true, testMode: input.testMode };
       }),
   }),
 

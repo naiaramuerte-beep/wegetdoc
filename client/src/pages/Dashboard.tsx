@@ -670,12 +670,56 @@ function BillingTab() {
   const utils = trpc.useUtils();
   const [showCancelModal, setShowCancelModal] = useState(false);
 
-  const checkoutMutation = trpc.subscription.createCheckout.useMutation({
-    onSuccess: (data) => {
-      if (data.url) window.open(data.url, "_blank");
+  const paddleConfigQ = trpc.subscription.paddleConfig.useQuery();
+  const confirmPaddleCheckout = trpc.subscription.confirmPaddleCheckout.useMutation({
+    onSuccess: () => {
+      utils.subscription.status.invalidate();
+      toast.success("¡Suscripción activada correctamente!");
     },
-    onError: () => toast.error("Error al crear el pago"),
+    onError: () => toast.error("Error al confirmar el pago"),
   });
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  const openPaddleCheckout = () => {
+    const Paddle = (window as any).Paddle;
+    if (!Paddle || !paddleConfigQ.data?.priceId) {
+      toast.error("Sistema de pago cargando. Espera un momento.");
+      return;
+    }
+    setCheckoutLoading(true);
+    try {
+      Paddle.Checkout.open({
+        items: [{ priceId: paddleConfigQ.data.priceId, quantity: 1 }],
+        settings: {
+          displayMode: "overlay",
+          theme: "light",
+          locale: "es",
+          allowLogout: false,
+          showAddDiscounts: true,
+          successUrl: window.location.href,
+        },
+      });
+      Paddle.Update({
+        eventCallback: (event: any) => {
+          if (event.name === "checkout.completed") {
+            const data = event.data || {};
+            confirmPaddleCheckout.mutate({
+              transactionId: data.transaction_id || "",
+              subscriptionId: data.subscription_id || "",
+              customerId: data.customer_id || "",
+            });
+          }
+          if (event.name === "checkout.closed") {
+            setCheckoutLoading(false);
+          }
+        },
+      });
+    } catch (err) {
+      console.error("[Paddle] Checkout error:", err);
+      toast.error("Error al abrir el formulario de pago.");
+      setCheckoutLoading(false);
+    }
+  };
 
   const cancelMutation = trpc.subscription.cancel.useMutation({
     onSuccess: () => {
@@ -837,23 +881,23 @@ function BillingTab() {
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
             <div
               className="border-2 border-blue-200 rounded-xl p-4 hover:border-blue-400 transition-colors cursor-pointer"
-              onClick={() => checkoutMutation.mutate({ plan: "trial", origin: window.location.origin })}
+              onClick={openPaddleCheckout}
             >
               <p className="font-bold text-slate-800 text-lg">0,50€</p>
               <p className="text-blue-600 font-medium text-sm">Prueba 7 días</p>
               <p className="text-xs text-slate-500 mt-1">Acceso completo durante 7 días</p>
-              <Button size="sm" className="w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white" disabled={checkoutMutation.isPending}>
+              <Button size="sm" className="w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white" disabled={checkoutLoading || confirmPaddleCheckout.isPending}>
                 Empezar prueba
               </Button>
             </div>
             <div
               className="border-2 border-indigo-200 rounded-xl p-4 hover:border-indigo-400 transition-colors cursor-pointer bg-indigo-50"
-              onClick={() => checkoutMutation.mutate({ plan: "monthly", origin: window.location.origin })}
+              onClick={openPaddleCheckout}
             >
               <p className="font-bold text-slate-800 text-lg">49,90€<span className="text-sm font-normal text-slate-500">/mes</span></p>
               <p className="text-indigo-600 font-medium text-sm">Plan Mensual</p>
               <p className="text-xs text-slate-500 mt-1">Acceso ilimitado, cancela cuando quieras</p>
-              <Button size="sm" className="w-full mt-3 bg-indigo-600 hover:bg-indigo-700 text-white" disabled={checkoutMutation.isPending}>
+              <Button size="sm" className="w-full mt-3 bg-indigo-600 hover:bg-indigo-700 text-white" disabled={checkoutLoading || confirmPaddleCheckout.isPending}>
                 Suscribirse
               </Button>
             </div>

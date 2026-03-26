@@ -577,12 +577,26 @@
 - [x] Paywall guard en comprimir, proteger, convertir, fusionar, dividir, exportar, img2pdf — descarga solo si premium
 
 ## Integración Paddle (reemplazar Stripe)
-- [ ] Investigar API Paddle Billing v2 (checkout overlay, suscripciones, webhooks)
-- [ ] Solicitar y configurar claves Paddle (API key, client token, price IDs, webhook secret)
-- [ ] Backend: webhook endpoint /api/paddle/webhook con verificación de firma
-- [ ] Backend: procedimientos tRPC para crear checkout y verificar suscripción
-- [ ] Frontend: integrar Paddle.js overlay checkout en PaywallModal
-- [ ] Adaptar flujo trial 7 días + 0,50€ activación + 49,90€/mes
-- [ ] Limpiar código de Stripe
-- [ ] Tests y verificación
+- [x] Investigar API Paddle Billing v2 (checkout overlay, suscripciones, webhooks)
+- [x] Solicitar y configurar claves Paddle (API key, client token, price IDs, webhook secret)
+- [x] Backend: webhook endpoint /api/paddle/webhook con verificación de firma
+- [x] Backend: procedimientos tRPC para crear checkout y verificar suscripción (paddleConfig, confirmPaddleCheckout, cancel)
+- [x] Frontend: integrar Paddle.js overlay checkout en PaywallModal, Dashboard y Pricing
+- [x] Adaptar flujo trial 7 días + 0,50€ activación + 49,90€/mes
+- [x] Limpiar código de Stripe (StripeTestModeToggle eliminado, legacy webhook mantenido)
+- [x] Tests y verificación (79 tests pasando, 9 archivos)
 - [x] Actualizar política de reembolso para cumplir requisitos de Paddle (14 días, sin condiciones, página /refund creada en 10 idiomas)
+
+## Migración Paddle - Implementación (26/03/2026)
+- [x] Instalar dependencias @paddle/paddle-node-sdk y @paddle/paddle-js
+- [x] Configurar variables de entorno Paddle (API key, client token, price ID, webhook ID)
+- [x] Actualizar schema DB: añadir campos Paddle a tabla subscriptions (paddleCustomerId, paddleSubscriptionId, paddleTransactionId)
+- [x] Actualizar db.ts helpers para soportar campos Paddle
+- [x] Crear webhook handler /api/paddle/webhook con verificación de firma
+- [x] Reemplazar procedimientos tRPC de Stripe por Paddle (createCheckout → Paddle overlay, cancel → Paddle API)
+- [x] Migrar PaywallModal de Stripe Elements a Paddle.js Checkout overlay
+- [x] Actualizar Dashboard/Billing para mostrar info de suscripción Paddle
+- [x] Actualizar panel admin para mostrar Paddle IDs en lugar de Stripe
+- [x] Eliminar código Stripe innecesario (StripeTestModeToggle, legacy webhook mantenido)
+- [x] Escribir tests para integración Paddle (8 tests en paddle.subscription.test.ts)
+- [x] Verificar flujo completo de pago (79 tests pasando)

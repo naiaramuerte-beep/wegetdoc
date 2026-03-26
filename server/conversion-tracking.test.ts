@@ -67,7 +67,7 @@ describe("Google Ads Conversion Tracking", () => {
     expect(src).toContain("transaction_id: sessionId");
   });
 
-  it("PaywallModal.tsx fires conversion event with real subscriptionId", () => {
+  it("PaywallModal.tsx fires conversion event with Paddle transactionId or subscriptionId", () => {
     const src = readFileSync(
       join(__dirname, "../client/src/components/PaywallModal.tsx"),
       "utf-8"
@@ -76,7 +76,8 @@ describe("Google Ads Conversion Tracking", () => {
     expect(src).toContain(`send_to: "${CONVERSION_SEND_TO}"`);
     expect(src).toContain("value: 0.50");
     expect(src).toContain('currency: "EUR"');
-    expect(src).toContain("transaction_id: subscriptionId");
+    // Now uses Paddle's transactionId or subscriptionId
+    expect(src).toContain("transaction_id: transactionId || subscriptionId");
   });
 
   it("gtag type declaration exists for TypeScript", () => {

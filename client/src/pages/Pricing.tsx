@@ -19,7 +19,13 @@ export default function Pricing() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
   const { t } = useLanguage();
-  const createCheckout = trpc.subscription.createCheckout.useMutation();
+  const paddleConfigQ = trpc.subscription.paddleConfig.useQuery();
+  const confirmPaddleCheckout = trpc.subscription.confirmPaddleCheckout.useMutation({
+    onSuccess: () => {
+      toast.success("Subscription activated!");
+    },
+    onError: () => toast.error(t.pricing_error ?? "Error processing payment. Please try again."),
+  });
 
   const features = [
     { name: t.pricing_feature_convert ?? "Unlimited conversions", trial: false, monthly: true },
@@ -68,19 +74,41 @@ export default function Pricing() {
       window.location.href = getLoginUrl();
       return;
     }
+    const Paddle = (window as any).Paddle;
+    if (!Paddle || !paddleConfigQ.data?.priceId) {
+      toast.error("Payment system loading. Please wait.");
+      return;
+    }
     setLoadingPlan(plan);
     try {
-      const result = await createCheckout.mutateAsync({
-        plan,
-        origin: window.location.origin,
+      Paddle.Checkout.open({
+        items: [{ priceId: paddleConfigQ.data.priceId, quantity: 1 }],
+        settings: {
+          displayMode: "overlay",
+          theme: "light",
+          locale: "es",
+          allowLogout: false,
+          showAddDiscounts: true,
+          successUrl: window.location.href,
+        },
       });
-      if (result.url) {
-        toast.info(t.pricing_redirecting ?? "Redirecting to secure payment...");
-        window.open(result.url, "_blank");
-      }
+      Paddle.Update({
+        eventCallback: (event: any) => {
+          if (event.name === "checkout.completed") {
+            const data = event.data || {};
+            confirmPaddleCheckout.mutate({
+              transactionId: data.transaction_id || "",
+              subscriptionId: data.subscription_id || "",
+              customerId: data.customer_id || "",
+            });
+          }
+          if (event.name === "checkout.closed") {
+            setLoadingPlan(null);
+          }
+        },
+      });
     } catch {
       toast.error(t.pricing_error ?? "Error processing payment. Please try again.");
-    } finally {
       setLoadingPlan(null);
     }
   };
