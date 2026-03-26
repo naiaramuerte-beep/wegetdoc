@@ -612,3 +612,7 @@
 - [x] Actualizar Dashboard y Pricing a inline checkout
 - [x] Cambiar Pricing.tsx de Paddle overlay a inline checkout embebido
 - [x] Cambiar Dashboard.tsx BillingTab de Paddle overlay a inline checkout embebido
+
+## Bug: Paddle inline checkout no carga el formulario
+- [x] El iframe de Paddle se queda en "Cargando formulario de pago..." y da error — RESUELTO: faltaba environment: "production" en Paddle.Initialize()
+- [x] Corregido en PaywallModal, Pricing y Dashboard
