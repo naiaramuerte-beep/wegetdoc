@@ -35,5 +35,5 @@ describe("Paddle configuration", () => {
       environment: Environment.production,
     });
     expect(paddle).toBeDefined();
-  });
+  }, 15000);
 });

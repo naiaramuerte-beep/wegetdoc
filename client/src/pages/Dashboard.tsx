@@ -24,11 +24,13 @@ import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
 import { usePdfFile } from "@/contexts/PdfFileContext";
 import { fireConversionEvents } from "@/lib/conversionTracking";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type Tab = "account" | "documents" | "team" | "billing";
 
 export default function Dashboard() {
   const { user, isAuthenticated, loading, logout } = useAuth();
+  const { lang } = useLanguage();
   const [, navigate] = useLocation();
   // Read tab from URL query param (e.g. ?tab=documents after payment)
   const getInitialTab = (): Tab => {
@@ -663,10 +665,12 @@ function DashboardPaddleInline({
   paddleConfig,
   user,
   onComplete,
+  lang,
 }: {
   paddleConfig?: { clientToken: string; priceId: string } | null;
   user?: { id: number; email: string | null; name?: string | null } | null;
   onComplete: (data: any) => void;
+  lang?: string;
 }) {
   const [ready, setReady] = useState(false);
   const initialized = useRef(false);
@@ -715,7 +719,7 @@ function DashboardPaddleInline({
             user_email: user?.email || "",
             user_name: user?.name || "",
           },
-          settings: { locale: "es", allowLogout: false, showAddDiscounts: true },
+          settings: { locale: lang || "en", allowLogout: false, showAddDiscounts: true },
         });
         opened.current = true;
       }
@@ -751,6 +755,7 @@ function DashboardPaddleInline({
 // ─── Billing Tab ──────────────────────────────────────────────
 function BillingTab() {
   const { user } = useAuth();
+  const { lang } = useLanguage();
   const { data: subData, isLoading } = trpc.subscription.status.useQuery();
   const utils = trpc.useUtils();
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -956,6 +961,7 @@ function BillingTab() {
           <DashboardPaddleInline
             paddleConfig={paddleConfigQ.data}
             user={user}
+            lang={lang}
             onComplete={(data: any) => {
               const txnId = data.transaction_id || data.subscription_id || "";
               // Fire conversion tracking (Google Ads + GA4)

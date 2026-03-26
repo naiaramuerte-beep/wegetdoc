@@ -201,7 +201,7 @@ function PaddleCheckoutForm({
                 frameTarget: "paddle-checkout-container",
                 frameInitialHeight: "450",
                 frameStyle: "width: 100%; min-width: 312px; background-color: transparent; border: none;",
-                locale: lang,
+                locale: lang || "en",
               },
             },
             eventCallback: (event: any) => {
@@ -240,7 +240,7 @@ function PaddleCheckoutForm({
             user_name: user?.name || "",
           },
           settings: {
-            locale: "es",
+            locale: lang || "en",
             allowLogout: false,
             showAddDiscounts: true,
           },

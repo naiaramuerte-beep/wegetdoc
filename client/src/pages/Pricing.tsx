@@ -19,7 +19,7 @@ export default function Pricing() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [showCheckout, setShowCheckout] = useState(false);
   const { isAuthenticated, user } = useAuth();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const paddleConfigQ = trpc.subscription.paddleConfig.useQuery();
   const confirmPaddleCheckout = trpc.subscription.confirmPaddleCheckout.useMutation({
     onSuccess: () => {
@@ -299,6 +299,7 @@ export default function Pricing() {
               <PaddleInlineCheckout
                 paddleConfig={paddleConfigQ.data}
                 user={user}
+                lang={lang}
               onComplete={(data: any) => {
                    const txnId = data.transaction_id || data.subscription_id || "";
                     // Fire conversion tracking (Google Ads + GA4)
@@ -456,10 +457,12 @@ function PaddleInlineCheckout({
   paddleConfig,
   user,
   onComplete,
+  lang,
 }: {
   paddleConfig?: { clientToken: string; priceId: string } | null;
   user?: { id: number; email: string | null; name?: string | null } | null;
   onComplete: (data: any) => void;
+  lang?: string;
 }) {
   const [ready, setReady] = useState(false);
   const initialized = useRef(false);
@@ -520,7 +523,7 @@ function PaddleInlineCheckout({
             user_name: user?.name || "",
           },
           settings: {
-            locale: "es",
+            locale: lang || "en",
             allowLogout: false,
             showAddDiscounts: true,
           },
