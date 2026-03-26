@@ -649,3 +649,6 @@
 - [x] Añadir evento purchase de GA4 en PaywallModal (ahora via helper)
 - [x] Añadir evento begin_checkout al abrir PaywallModal
 - [x] Unificar PaywallModal, Dashboard, Pricing y PaymentSuccess para usar el helper
+
+## Actualizar etiqueta de conversión Google Ads
+- [x] Cambiar send_to de AW-18038723667/IUjxCNKbjI8cENLLwJLD a AW-18038723667/r5NBCLfb-Y8cENOoxJlD

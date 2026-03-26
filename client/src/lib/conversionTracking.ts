@@ -3,7 +3,7 @@
  * All payment-related events go through here to ensure consistency.
  */
 
-const GOOGLE_ADS_CONVERSION_ID = "AW-18038723667/IUjxCNKbjI8cENLLwJLD";
+const GOOGLE_ADS_CONVERSION_ID = "AW-18038723667/r5NBCLfb-Y8cENOoxJlD";
 const CONVERSION_VALUE = 0.50;
 const CONVERSION_CURRENCY = "EUR";
 
