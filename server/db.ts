@@ -104,8 +104,12 @@ export async function getAllUsers(search?: string) {
     subPlan: subscriptions.plan,
     stripeCustomerId: subscriptions.stripeCustomerId,
     stripeSubscriptionId: subscriptions.stripeSubscriptionId,
+    paddleCustomerId: subscriptions.paddleCustomerId,
+    paddleSubscriptionId: subscriptions.paddleSubscriptionId,
+    currentPeriodStart: subscriptions.currentPeriodStart,
     currentPeriodEnd: subscriptions.currentPeriodEnd,
     cancelAtPeriodEnd: subscriptions.cancelAtPeriodEnd,
+    subCreatedAt: subscriptions.createdAt,
   };
   if (search) {
     return db
@@ -184,7 +188,11 @@ export async function getAllSubscribedUsers() {
     lastSignedIn: users.lastSignedIn,
     subStatus: subscriptions.status,
     plan: subscriptions.plan,
+    currentPeriodStart: subscriptions.currentPeriodStart,
     currentPeriodEnd: subscriptions.currentPeriodEnd,
+    cancelAtPeriodEnd: subscriptions.cancelAtPeriodEnd,
+    paddleCustomerId: subscriptions.paddleCustomerId,
+    paddleSubscriptionId: subscriptions.paddleSubscriptionId,
     stripeCustomerId: subscriptions.stripeCustomerId,
   }).from(users)
     .innerJoin(subscriptions, eq(users.id, subscriptions.userId))
@@ -597,6 +605,9 @@ export async function getCanceledSubscriptions() {
     subStatus: subscriptions.status,
     plan: subscriptions.plan,
     canceledAt: subscriptions.updatedAt,
+    currentPeriodEnd: subscriptions.currentPeriodEnd,
+    paddleCustomerId: subscriptions.paddleCustomerId,
+    paddleSubscriptionId: subscriptions.paddleSubscriptionId,
     stripeCustomerId: subscriptions.stripeCustomerId,
   }).from(users)
     .innerJoin(subscriptions, eq(users.id, subscriptions.userId))

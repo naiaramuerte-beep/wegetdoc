@@ -656,3 +656,9 @@
 ## PaywallModal: traducir textos y locale de Paddle
 - [x] Conectar textos hardcodeados del panel izquierdo (GRATIS, 7 días prueba, etc.) al sistema i18n — 11 idiomas
 - [x] Pasar locale al checkout de Paddle según idioma del usuario
+
+## Cancelación de suscripción Paddle + Panel Admin
+- [x] Adaptar cancelación de suscripción en BillingTab para usar Paddle API (no Stripe)
+- [x] Mostrar estado correcto de suscripción en BillingTab (trial, activa, cancelada, expirada)
+- [x] Panel admin: mostrar por usuario si tiene sub activa, si está en trial, si ha pagado, fecha de cancelación
+- [x] Tests para cancelación y admin panel con Paddle (82/82 OK)
