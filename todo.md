@@ -652,3 +652,7 @@
 
 ## Actualizar etiqueta de conversión Google Ads
 - [x] Cambiar send_to de AW-18038723667/IUjxCNKbjI8cENLLwJLD a AW-18038723667/r5NBCLfb-Y8cENOoxJlD
+
+## PaywallModal: traducir textos y locale de Paddle
+- [x] Conectar textos hardcodeados del panel izquierdo (GRATIS, 7 días prueba, etc.) al sistema i18n — 11 idiomas
+- [x] Pasar locale al checkout de Paddle según idioma del usuario

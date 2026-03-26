@@ -44,7 +44,7 @@ function PaddleCheckoutForm({
   thumbnailUrl?: string;
   buildPdfForUpload?: () => Promise<{ base64: string; name: string; size: number } | null>;
 }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [progressStep, setProgressStep] = useState<"idle" | "checkout" | "saving" | "done">("idle");
@@ -201,6 +201,7 @@ function PaddleCheckoutForm({
                 frameTarget: "paddle-checkout-container",
                 frameInitialHeight: "450",
                 frameStyle: "width: 100%; min-width: 312px; background-color: transparent; border: none;",
+                locale: lang,
               },
             },
             eventCallback: (event: any) => {
@@ -294,7 +295,7 @@ function PaddleCheckoutForm({
               <p className="text-sm font-medium text-white truncate">
                 {pdfData?.name ?? "documento.pdf"}
               </p>
-              <p className="text-xs text-slate-400">PDF editado</p>
+              <p className="text-xs text-slate-400">{t.paywall_pdf_edited}</p>
             </div>
           </div>
 
@@ -305,14 +306,14 @@ function PaddleCheckoutForm({
           >
             <div className="flex items-center justify-center gap-2 mb-2">
               <Gift className="w-5 h-5 text-green-400" />
-              <span className="text-lg font-bold text-green-400">GRATIS</span>
+              <span className="text-lg font-bold text-green-400">{t.paywall_free_badge}</span>
             </div>
-            <p className="text-3xl font-extrabold text-white mb-2">0,00 &euro;</p>
+            <p className="text-3xl font-extrabold text-white mb-2">{t.paywall_free_price}</p>
             <p className="text-xs text-green-300/90 leading-relaxed font-medium">
-              7 d&iacute;as de prueba gratuita
+              {t.paywall_free_trial_days}
             </p>
             <p className="text-[10px] text-slate-500 mt-1.5">
-              Cancela cuando quieras
+              {t.paywall_free_cancel}
             </p>
           </div>
 
@@ -335,9 +336,9 @@ function PaddleCheckoutForm({
         {isLoading && (
           <div className="mt-6 rounded-xl p-3" style={{ backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
             {([
-              { key: "checkout", label: "Procesando pago..." },
-              { key: "saving", label: "Guardando documento..." },
-              { key: "done", label: "¡Todo listo!" },
+              { key: "checkout", label: t.paywall_progress_processing },
+              { key: "saving", label: t.paywall_progress_saving },
+              { key: "done", label: t.paywall_progress_done },
             ] as const).map((step) => {
               const stepOrder = ["checkout", "saving", "done"] as const;
               const currentIdx = stepOrder.indexOf(progressStep as typeof stepOrder[number]);
