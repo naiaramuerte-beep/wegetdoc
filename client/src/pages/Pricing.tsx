@@ -1,11 +1,11 @@
 /* =============================================================
    PDFUp Pricing Page — Deep Navy Pro design
    Two plans: Trial + Monthly, with feature comparison table
-   Fully i18n-ready using LanguageContext
+   Paddle inline checkout embebido (no overlay)
    ============================================================= */
 
-import { useState } from "react";
-import { Check, X, ChevronDown, ChevronUp, Zap, Crown, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Check, X, ChevronDown, ChevronUp, Zap, Crown, Loader2, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -16,13 +16,14 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Pricing() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
-  const { isAuthenticated } = useAuth();
+  const [showCheckout, setShowCheckout] = useState(false);
+  const { isAuthenticated, user } = useAuth();
   const { t } = useLanguage();
   const paddleConfigQ = trpc.subscription.paddleConfig.useQuery();
   const confirmPaddleCheckout = trpc.subscription.confirmPaddleCheckout.useMutation({
     onSuccess: () => {
       toast.success("Subscription activated!");
+      setShowCheckout(false);
     },
     onError: () => toast.error(t.pricing_error ?? "Error processing payment. Please try again."),
   });
@@ -69,48 +70,16 @@ export default function Pricing() {
     },
   ];
 
-  const handleSubscribe = async (plan: "trial" | "monthly") => {
+  const handleSubscribe = () => {
     if (!isAuthenticated) {
       window.location.href = getLoginUrl();
       return;
     }
-    const Paddle = (window as any).Paddle;
-    if (!Paddle || !paddleConfigQ.data?.priceId) {
-      toast.error("Payment system loading. Please wait.");
-      return;
-    }
-    setLoadingPlan(plan);
-    try {
-      Paddle.Checkout.open({
-        items: [{ priceId: paddleConfigQ.data.priceId, quantity: 1 }],
-        settings: {
-          displayMode: "overlay",
-          theme: "light",
-          locale: "es",
-          allowLogout: false,
-          showAddDiscounts: true,
-          successUrl: window.location.href,
-        },
-      });
-      Paddle.Update({
-        eventCallback: (event: any) => {
-          if (event.name === "checkout.completed") {
-            const data = event.data || {};
-            confirmPaddleCheckout.mutate({
-              transactionId: data.transaction_id || "",
-              subscriptionId: data.subscription_id || "",
-              customerId: data.customer_id || "",
-            });
-          }
-          if (event.name === "checkout.closed") {
-            setLoadingPlan(null);
-          }
-        },
-      });
-    } catch {
-      toast.error(t.pricing_error ?? "Error processing payment. Please try again.");
-      setLoadingPlan(null);
-    }
+    setShowCheckout(true);
+    // Scroll to checkout section
+    setTimeout(() => {
+      document.getElementById("pricing-checkout")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
   };
 
   return (
@@ -203,26 +172,18 @@ export default function Pricing() {
               <button
                 className="w-full py-3 rounded-xl font-semibold text-sm text-white transition-all duration-200"
                 style={{
-                  backgroundColor: "oklch(0.18 0.04 250)",
+                  backgroundColor: showCheckout ? "oklch(0.55 0.22 260)" : "oklch(0.18 0.04 250)",
                   fontFamily: "'DM Sans', sans-serif",
                 }}
                 onMouseEnter={(e) =>
                   (e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)")
                 }
                 onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = "oklch(0.18 0.04 250)")
+                  (e.currentTarget.style.backgroundColor = showCheckout ? "oklch(0.55 0.22 260)" : "oklch(0.18 0.04 250)")
                 }
-                onClick={() => handleSubscribe("trial")}
-                disabled={loadingPlan === "trial"}
+                onClick={handleSubscribe}
               >
-                {loadingPlan === "trial" ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    {t.paywall_processing}
-                  </span>
-                ) : (
-                  t.pricing_cta_trial
-                )}
+                {t.pricing_cta_trial}
               </button>
             </div>
 
@@ -294,22 +255,61 @@ export default function Pricing() {
                   e.currentTarget.style.backgroundColor = "transparent";
                   e.currentTarget.style.color = "oklch(0.18 0.04 250)";
                 }}
-                onClick={() => handleSubscribe("monthly")}
-                disabled={loadingPlan === "monthly"}
+                onClick={handleSubscribe}
               >
-                {loadingPlan === "monthly" ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    {t.paywall_processing}
-                  </span>
-                ) : (
-                  t.pricing_cta_monthly
-                )}
+                {t.pricing_cta_monthly}
               </button>
             </div>
           </div>
         </div>
       </section>
+
+      {/* ── INLINE CHECKOUT ──────────────────────────────── */}
+      {showCheckout && isAuthenticated && (
+        <section id="pricing-checkout" className="pb-16">
+          <div className="container max-w-2xl mx-auto">
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{
+                border: "2px solid oklch(0.55 0.22 260)",
+                backgroundColor: "oklch(1 0 0)",
+                boxShadow: "0 4px 24px oklch(0.18 0.04 250 / 0.1)",
+              }}
+            >
+              <div
+                className="px-6 py-4 border-b flex items-center gap-3"
+                style={{ borderColor: "oklch(0.88 0.01 250)", backgroundColor: "oklch(0.98 0.005 250)" }}
+              >
+                <CreditCard className="w-5 h-5" style={{ color: "oklch(0.55 0.22 260)" }} />
+                <h3
+                  className="text-lg font-bold"
+                  style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
+                >
+                  {t.paywall_secure ?? "Pago 100% seguro"}
+                </h3>
+                <button
+                  onClick={() => setShowCheckout(false)}
+                  className="ml-auto text-sm hover:underline"
+                  style={{ color: "oklch(0.50 0.02 250)" }}
+                >
+                  Cancelar
+                </button>
+              </div>
+              <PaddleInlineCheckout
+                paddleConfig={paddleConfigQ.data}
+                user={user}
+                onComplete={(data: any) => {
+                  confirmPaddleCheckout.mutate({
+                    transactionId: data.transaction_id || "",
+                    subscriptionId: data.subscription_id || "",
+                    customerId: data.customer_id || "",
+                  });
+                }}
+              />
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── COMPARISON TABLE ─────────────────────────────── */}
       <section
@@ -443,6 +443,118 @@ export default function Pricing() {
       </section>
 
       <Footer />
+    </div>
+  );
+}
+
+// ── Paddle Inline Checkout component (reusable) ─────────────────────────────
+function PaddleInlineCheckout({
+  paddleConfig,
+  user,
+  onComplete,
+}: {
+  paddleConfig?: { clientToken: string; priceId: string } | null;
+  user?: { id: number; email: string | null; name?: string | null } | null;
+  onComplete: (data: any) => void;
+}) {
+  const [ready, setReady] = useState(false);
+  const initialized = useRef(false);
+  const opened = useRef(false);
+
+  const handleComplete = useCallback((eventData: any) => {
+    onComplete(eventData);
+  }, [onComplete]);
+
+  useEffect(() => {
+    if (!paddleConfig?.clientToken || !paddleConfig?.priceId) return;
+
+    const P = (window as any).Paddle;
+    if (!P) return;
+
+    try {
+      if (!initialized.current) {
+        P.Initialize({
+          token: paddleConfig.clientToken,
+          checkout: {
+            settings: {
+              displayMode: "inline",
+              frameTarget: "pricing-paddle-checkout",
+              frameInitialHeight: "450",
+              frameStyle: "width: 100%; min-width: 312px; background-color: transparent; border: none;",
+            },
+          },
+          eventCallback: (event: any) => {
+            if (event.name === "checkout.loaded") setReady(true);
+            if (event.name === "checkout.completed") handleComplete(event.data);
+            if (event.name === "checkout.error") {
+              console.error("[Paddle] Checkout error:", event);
+              toast.error("Error en el proceso de pago.");
+            }
+          },
+        });
+        initialized.current = true;
+      } else {
+        P.Update({
+          eventCallback: (event: any) => {
+            if (event.name === "checkout.loaded") setReady(true);
+            if (event.name === "checkout.completed") handleComplete(event.data);
+            if (event.name === "checkout.error") {
+              console.error("[Paddle] Checkout error:", event);
+              toast.error("Error en el proceso de pago.");
+            }
+          },
+        });
+      }
+
+      if (!opened.current) {
+        P.Checkout.open({
+          items: [{ priceId: paddleConfig.priceId, quantity: 1 }],
+          customer: { email: user?.email || undefined },
+          customData: {
+            user_id: user?.id?.toString() || "",
+            user_email: user?.email || "",
+            user_name: user?.name || "",
+          },
+          settings: {
+            locale: "es",
+            allowLogout: false,
+            showAddDiscounts: true,
+          },
+        });
+        opened.current = true;
+      }
+    } catch (err) {
+      console.error("[Paddle] Init error:", err);
+      toast.error("Error loading payment form.");
+    }
+  }, [paddleConfig, user, handleComplete]);
+
+  useEffect(() => {
+    return () => {
+      if (opened.current && (window as any).Paddle) {
+        try { (window as any).Paddle.Checkout.close(); } catch {}
+      }
+    };
+  }, []);
+
+  return (
+    <div className="p-4">
+      {!ready && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: "oklch(0.55 0.22 260)" }} />
+          <span className="ml-3 text-sm" style={{ color: "oklch(0.50 0.02 250)" }}>
+            Cargando formulario de pago...
+          </span>
+        </div>
+      )}
+      <div
+        className="pricing-paddle-checkout"
+        style={{
+          minHeight: ready ? "auto" : 0,
+          opacity: ready ? 1 : 0,
+          transition: "opacity 0.3s ease",
+        }}
+      />
     </div>
   );
 }

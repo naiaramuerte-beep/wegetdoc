@@ -600,3 +600,15 @@
 - [x] Eliminar código Stripe innecesario (StripeTestModeToggle, legacy webhook mantenido)
 - [x] Escribir tests para integración Paddle (8 tests en paddle.subscription.test.ts)
 - [x] Verificar flujo completo de pago (79 tests pasando)
+
+## Bug: Paddle Checkout "Something went wrong" (26/03/2026)
+- [ ] Investigar por qué el overlay de Paddle da error al intentar pagar
+- [ ] Corregir la llamada a Paddle.Checkout.open() en PaywallModal
+- [ ] Verificar que el pago funciona correctamente
+
+## Paddle Inline Checkout (embebido en PaywallModal)
+- [x] Cambiar Paddle checkout de overlay a inline dentro del PaywallModal
+- [x] El formulario de pago (tarjeta, PayPal, Google Pay) debe renderizarse dentro del modal
+- [x] Actualizar Dashboard y Pricing a inline checkout
+- [x] Cambiar Pricing.tsx de Paddle overlay a inline checkout embebido
+- [x] Cambiar Dashboard.tsx BillingTab de Paddle overlay a inline checkout embebido
