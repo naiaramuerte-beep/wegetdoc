@@ -305,34 +305,17 @@ function PaddleCheckoutForm({
             className="rounded-xl p-4 mb-6 text-center"
             style={{ backgroundColor: "rgba(34, 197, 94, 0.12)", border: "1px solid rgba(34, 197, 94, 0.25)" }}
           >
-            <div className="flex items-center justify-center gap-2 mb-1.5">
+            <div className="flex items-center justify-center gap-2 mb-2">
               <Gift className="w-5 h-5 text-green-400" />
               <span className="text-lg font-bold text-green-400">GRATIS</span>
             </div>
-            <p className="text-2xl font-extrabold text-white mb-1">0,00 &euro;</p>
-            <p className="text-[11px] text-green-300/80 leading-relaxed">
+            <p className="text-3xl font-extrabold text-white mb-2">0,00 &euro;</p>
+            <p className="text-xs text-green-300/90 leading-relaxed font-medium">
               7 d&iacute;as de prueba gratuita
             </p>
-            <p className="text-[10px] text-slate-500 mt-1">
-              Luego 49,90 &euro;/mes &middot; Cancela cuando quieras
+            <p className="text-[10px] text-slate-500 mt-1.5">
+              Cancela cuando quieras
             </p>
-          </div>
-
-          {/* Price breakdown */}
-          <div className="space-y-2.5 mb-6">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400">{t.paywall_trial_plan}</span>
-              <span className="text-xs text-slate-500 line-through">49,90 &euro;/mes</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400">Descuento trial</span>
-              <span className="text-xs text-green-400 font-medium">-49,40 &euro;</span>
-            </div>
-            <div className="h-px bg-white/10" />
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-white">{t.paywall_amount_label}</span>
-              <span className="text-sm font-bold text-green-400">0,50 &euro;</span>
-            </div>
           </div>
 
           {/* Trust signals */}
