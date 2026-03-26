@@ -638,3 +638,8 @@
 - [x] Dejar más claro que son 0€ iniciales (trial gratuito de 7 días) — panel oscuro con desglose de precio
 - [x] Rediseño completo del panel izquierdo tipo Stripe (fondo oscuro, trust signals, price breakdown)
 - [x] El formulario interno de Paddle (iframe) no se puede modificar, solo el contexto que lo rodea
+
+## PaywallModal: precio 0€ y checkbox al final
+- [x] Cambiar precio mostrado a 0,00€ (GRATIS), quitar "99% Discount"
+- [x] Eliminar checkbox propio — Paddle ya gestiona los términos
+- [x] Quitar overlay que bloquea el checkout — Paddle visible y usable desde el inicio
