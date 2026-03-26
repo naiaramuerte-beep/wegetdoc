@@ -1,11 +1,10 @@
 /*
  * PaywallModal — Paddle Inline Checkout embebido
- * - Izquierda: preview del PDF + info del plan
- * - Derecha: formulario de Paddle renderizado inline dentro del modal
- * Checkbox obligatorio con borde rojo si no se acepta
+ * Diseño tipo Stripe: limpio, profesional, checkout visible inmediatamente
+ * Overlay elegante bloquea el pago hasta aceptar términos
  */
 import { useState, useEffect, useCallback, useRef } from "react";
-import { X, Check, Loader2, Mail, CreditCard, ArrowRight, AlertCircle, Eye, EyeOff, Lock } from "lucide-react";
+import { X, Check, Loader2, Mail, CreditCard, ArrowRight, AlertCircle, Eye, EyeOff, Lock, Shield, FileText, Sparkles } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
@@ -170,9 +169,9 @@ function PaddleCheckoutForm({
     }
   }, [pdfData, buildPdfForUpload, onSuccess, confirmPaddleCheckout, utils, t]);
 
-  // Initialize Paddle.js with INLINE mode and open checkout
+  // Initialize Paddle.js IMMEDIATELY (don't wait for checkbox)
   useEffect(() => {
-    if (!agreed || checkoutOpen || !paddleConfigQ.data?.clientToken || !paddleConfigQ.data?.priceId) return;
+    if (checkoutOpen || !paddleConfigQ.data?.clientToken || !paddleConfigQ.data?.priceId) return;
 
     const Paddle = (window as any).Paddle;
     if (!Paddle) {
@@ -273,7 +272,7 @@ function PaddleCheckoutForm({
         toast.error("Error opening payment form. Please try again.");
       }
     }
-  }, [agreed, checkoutOpen, paddleConfigQ.data, user, handleCheckoutComplete]);
+  }, [checkoutOpen, paddleConfigQ.data, user, handleCheckoutComplete]);
 
   // Close Paddle checkout when component unmounts
   useEffect(() => {
@@ -287,153 +286,162 @@ function PaddleCheckoutForm({
   }, []);
 
   return (
-    <div className="flex flex-col md:flex-row min-h-0">
-      {/* ── Left column: PDF Preview + Plan info ── */}
-      <div className="flex flex-col bg-slate-50 border-r border-slate-100 p-6" style={{ minWidth: 260, maxWidth: 300 }}>
-        {/* PDF thumbnail */}
-        <div className="flex flex-col items-center mb-4">
-          <div
-            className="w-full rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden flex items-center justify-center"
-            style={{ aspectRatio: "0.707", maxHeight: 180 }}
-          >
-            {thumbnailUrl ? (
-              <img
-                src={thumbnailUrl}
-                alt="Vista previa del documento"
-                className="w-full h-full object-contain"
-              />
-            ) : (
-              /* Skeleton PDF page */
-              <div className="w-full h-full p-3 flex flex-col gap-2">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-6 h-7 bg-red-100 rounded flex items-center justify-center flex-shrink-0">
-                    <span className="text-red-500 text-[8px] font-bold">PDF</span>
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <div className="h-1.5 bg-slate-200 rounded w-full" />
-                    <div className="h-1.5 bg-slate-200 rounded w-3/4" />
-                  </div>
-                </div>
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-1.5 bg-slate-100 rounded" style={{ width: `${70 + (i % 3) * 10}%` }} />
-                ))}
-              </div>
-            )}
-          </div>
-          <p className="text-xs text-slate-400 mt-2 text-center leading-tight">
-            {pdfData?.name ?? "documento.pdf"}
-          </p>
-        </div>
-
-        {/* Plan info */}
-        <div className="mb-4 pb-4 border-b border-slate-200">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0">
-              <span className="text-sm">🎁</span>
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <p className="text-sm font-semibold text-slate-800">99% Discount</p>
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">New User</span>
-              </div>
-              <p className="text-xs text-slate-400">{t.paywall_trial_plan}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Payment info */}
-        <div className="mb-4 p-3 rounded-lg bg-white border border-slate-100">
-          <div className="flex items-center gap-2 mb-1.5">
-            <CreditCard className="w-3.5 h-3.5 text-[#1a3c6e]" />
-            <p className="text-xs font-semibold text-slate-700">{t.paywall_secure}</p>
-          </div>
-          <p className="text-[11px] text-slate-500 leading-relaxed">
-            {t.paywall_instant} · {t.paywall_cancel}
-          </p>
-          <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-            Se cobrará 0,50€ como pago de activación del período de prueba de 7 días.
-          </p>
-        </div>
-
-        {/* Legal checkbox */}
-        <div
-          className="rounded-lg p-3 cursor-pointer transition-all"
-          style={{
-            border: showCheckboxError && !agreed ? "1.5px solid #ef4444" : "1.5px solid #e2e8f0",
-            backgroundColor: showCheckboxError && !agreed ? "#fff5f5" : "#f8faff",
-          }}
-          onClick={() => {
-            setAgreed(!agreed);
-            if (!agreed) setShowCheckboxError(false);
-          }}
-        >
-          <label className="flex items-start gap-2 cursor-pointer">
+    <div className="flex flex-col md:flex-row min-h-0" style={{ minHeight: 520 }}>
+      {/* ── Left column: Order summary (Stripe-style) ── */}
+      <div
+        className="flex flex-col justify-between p-6 md:p-8"
+        style={{
+          minWidth: 280,
+          maxWidth: 320,
+          background: "linear-gradient(180deg, #0f172a 0%, #1e293b 100%)",
+        }}
+      >
+        <div>
+          {/* Document preview */}
+          <div className="flex items-center gap-3 mb-6">
             <div
-              className="mt-0.5 w-4 h-4 rounded flex-shrink-0 flex items-center justify-center border-2 transition-all"
-              style={{
-                borderColor: agreed ? "#1a3c6e" : (showCheckboxError ? "#ef4444" : "#cbd5e1"),
-                backgroundColor: agreed ? "#1a3c6e" : "white",
-              }}
+              className="w-12 h-14 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}
             >
-              {agreed && <Check className="w-2.5 h-2.5 text-white" />}
+              {thumbnailUrl ? (
+                <img src={thumbnailUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <FileText className="w-5 h-5 text-slate-400" />
+              )}
             </div>
-            <span className="text-[10px] leading-relaxed text-slate-600">
-              {t.paywall_legal_text}{" "}
-              <a
-                href="mailto:support@pdfup.io"
-                className="underline text-slate-700 hover:text-slate-900"
-                onClick={(e) => e.stopPropagation()}
-              >
-                support@pdfup.io
-              </a>
-            </span>
-          </label>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-white truncate">
+                {pdfData?.name ?? "documento.pdf"}
+              </p>
+              <p className="text-xs text-slate-400">PDF editado</p>
+            </div>
+          </div>
+
+          {/* Price breakdown */}
+          <div className="space-y-3 mb-6">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-300">{t.paywall_trial_plan}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500 line-through">49,90 &euro;</span>
+                <span className="text-sm font-semibold text-white">0,50 &euro;</span>
+              </div>
+            </div>
+            <div className="h-px bg-white/10" />
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-white">{t.paywall_amount_label}</span>
+              <span className="text-lg font-bold text-white">0,50 &euro;</span>
+            </div>
+          </div>
+
+          {/* Trial badge */}
+          <div
+            className="rounded-xl p-3 mb-6"
+            style={{ backgroundColor: "rgba(34, 197, 94, 0.1)", border: "1px solid rgba(34, 197, 94, 0.2)" }}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="w-3.5 h-3.5 text-green-400" />
+              <span className="text-xs font-semibold text-green-400">99% Discount</span>
+            </div>
+            <p className="text-[11px] text-green-300/80 leading-relaxed">
+              7 d&iacute;as de prueba gratuita. Cancela cuando quieras.
+            </p>
+          </div>
+
+          {/* Trust signals */}
+          <div className="space-y-2.5">
+            {[
+              { icon: Shield, text: t.paywall_secure },
+              { icon: CreditCard, text: t.paywall_instant },
+              { icon: X, text: t.paywall_cancel },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-2.5">
+                <item.icon className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                <span className="text-xs text-slate-400">{item.text}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {showCheckboxError && !agreed && (
-          <div className="flex items-center gap-1.5 mt-2 text-red-500">
-            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-            <span className="text-xs font-medium">Campo obligatorio</span>
+        {/* Legal checkbox at bottom of left panel */}
+        <div className="mt-6">
+          <div
+            className="rounded-lg p-3 cursor-pointer transition-all"
+            style={{
+              border: showCheckboxError && !agreed
+                ? "1px solid rgba(239, 68, 68, 0.5)"
+                : agreed
+                  ? "1px solid rgba(34, 197, 94, 0.3)"
+                  : "1px solid rgba(255,255,255,0.1)",
+              backgroundColor: showCheckboxError && !agreed
+                ? "rgba(239, 68, 68, 0.08)"
+                : agreed
+                  ? "rgba(34, 197, 94, 0.06)"
+                  : "rgba(255,255,255,0.04)",
+            }}
+            onClick={() => {
+              setAgreed(!agreed);
+              if (!agreed) setShowCheckboxError(false);
+            }}
+          >
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <div
+                className="mt-0.5 w-4 h-4 rounded flex-shrink-0 flex items-center justify-center transition-all"
+                style={{
+                  border: `1.5px solid ${agreed ? "#22c55e" : (showCheckboxError ? "#ef4444" : "rgba(255,255,255,0.25)")}`,
+                  backgroundColor: agreed ? "#22c55e" : "transparent",
+                }}
+              >
+                {agreed && <Check className="w-2.5 h-2.5 text-white" />}
+              </div>
+              <span className="text-[10px] leading-relaxed text-slate-400">
+                {t.paywall_legal_text}{" "}
+                <a
+                  href="mailto:support@pdfup.io"
+                  className="underline text-slate-300 hover:text-white"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  support@pdfup.io
+                </a>
+              </span>
+            </label>
           </div>
-        )}
 
-        {/* If not agreed, show prompt to accept terms */}
-        {!agreed && !showCheckboxError && (
-          <p className="text-[11px] text-slate-400 mt-3 text-center">
-            Acepta los términos para ver el formulario de pago
-          </p>
-        )}
+          {showCheckboxError && !agreed && (
+            <div className="flex items-center gap-1.5 mt-2">
+              <AlertCircle className="w-3 h-3 text-red-400 flex-shrink-0" />
+              <span className="text-[11px] text-red-400 font-medium">Campo obligatorio</span>
+            </div>
+          )}
+        </div>
 
         {/* Progress steps — visible during payment processing */}
         {isLoading && (
-          <div className="mt-4 rounded-xl border border-slate-100 bg-white p-3">
+          <div className="mt-4 rounded-xl p-3" style={{ backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
             {([
-              { key: "checkout",     label: "Procesando pago...",           icon: "💳" },
-              { key: "saving",       label: "Guardando documento...",       icon: "📄" },
-              { key: "done",         label: "¡Todo listo!",                 icon: "🎉" },
-            ] as const).map((step, idx) => {
+              { key: "checkout", label: "Procesando pago..." },
+              { key: "saving", label: "Guardando documento..." },
+              { key: "done", label: "¡Todo listo!" },
+            ] as const).map((step) => {
               const stepOrder = ["checkout", "saving", "done"] as const;
               const currentIdx = stepOrder.indexOf(progressStep as typeof stepOrder[number]);
               const stepIdx = stepOrder.indexOf(step.key);
-              const isDone    = stepIdx < currentIdx;
-              const isActive  = stepIdx === currentIdx;
+              const isDone = stepIdx < currentIdx;
+              const isActive = stepIdx === currentIdx;
               return (
                 <div key={step.key} className="flex items-center gap-2 py-1">
-                  <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+                  <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
                     {isDone ? (
-                      <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
-                        <Check className="w-2.5 h-2.5 text-white" />
+                      <div className="w-3.5 h-3.5 rounded-full bg-green-500 flex items-center justify-center">
+                        <Check className="w-2 h-2 text-white" />
                       </div>
                     ) : isActive ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-[#1a3c6e]" />
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
                     ) : (
-                      <div className="w-4 h-4 rounded-full border-2 border-slate-200" />
+                      <div className="w-3.5 h-3.5 rounded-full" style={{ border: "1.5px solid rgba(255,255,255,0.15)" }} />
                     )}
                   </div>
-                  <span className={`text-xs font-medium transition-colors ${
-                    isDone    ? "text-green-600" :
-                    isActive  ? "text-[#1a3c6e]" :
-                    "text-slate-300"
+                  <span className={`text-xs font-medium ${
+                    isDone ? "text-green-400" : isActive ? "text-blue-400" : "text-slate-500"
                   }`}>
                     {step.label}
                   </span>
@@ -445,45 +453,51 @@ function PaddleCheckoutForm({
       </div>
 
       {/* ── Right column: Paddle Inline Checkout ── */}
-      <div className="flex-1 flex flex-col min-h-0">
-        {agreed ? (
-          <>
-            {/* Loading state while Paddle loads */}
-            {!paddleReady && (
-              <div className="flex items-center justify-center p-8">
-                <div className="flex flex-col items-center gap-3">
-                  <Loader2 className="w-8 h-8 animate-spin text-[#1a3c6e]" />
-                  <p className="text-sm text-slate-500">{t.paywall_loading_form}</p>
-                </div>
-              </div>
-            )}
-            {/* Paddle inline checkout renders here */}
-            <div
-              className="paddle-checkout-container flex-1"
-              style={{
-                minHeight: 450,
-                opacity: paddleReady ? 1 : 0,
-                transition: "opacity 0.3s ease",
-              }}
-            />
-          </>
-        ) : (
-          /* Placeholder when terms not accepted */
-          <div className="flex-1 flex items-center justify-center p-8">
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                <CreditCard className="w-8 h-8 text-slate-300" />
-              </div>
-              <p className="text-sm font-medium text-slate-500 mb-2">Formulario de pago</p>
-              <p className="text-xs text-slate-400 max-w-[200px] mx-auto">
-                Acepta los términos y condiciones en el panel izquierdo para continuar con el pago
-              </p>
-              <button
-                onClick={() => setShowCheckboxError(true)}
-                className="mt-4 px-6 py-3 rounded-xl bg-[#1a3c6e] text-white font-bold text-sm hover:bg-[#15305a] transition-colors"
+      <div className="flex-1 flex flex-col min-h-0 relative bg-white">
+        {/* Loading state while Paddle loads */}
+        {!paddleReady && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
+            <div className="flex flex-col items-center gap-3">
+              <Loader2 className="w-7 h-7 animate-spin text-slate-400" />
+              <p className="text-sm text-slate-400">{t.paywall_loading_form}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Paddle inline checkout renders here — always mounted */}
+        <div
+          className="paddle-checkout-container flex-1"
+          style={{
+            minHeight: 450,
+            opacity: paddleReady ? 1 : 0,
+            transition: "opacity 0.3s ease",
+            padding: "8px 16px",
+          }}
+        />
+
+        {/* Overlay when terms not accepted — blocks interaction but checkout is visible */}
+        {!agreed && paddleReady && (
+          <div
+            className="absolute inset-0 z-20 flex items-end justify-center cursor-pointer"
+            style={{
+              background: "linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.95) 70%)",
+              backdropFilter: "blur(1px)",
+            }}
+            onClick={() => setShowCheckboxError(true)}
+          >
+            <div className="text-center pb-12 px-6">
+              <div
+                className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4"
+                style={{ backgroundColor: "#f1f5f9" }}
               >
-                {t.paywall_pay_download}
-              </button>
+                <Lock className="w-6 h-6 text-slate-400" />
+              </div>
+              <p className="text-base font-semibold text-slate-700 mb-1.5">
+                Acepta los t&eacute;rminos para continuar
+              </p>
+              <p className="text-sm text-slate-400 max-w-[260px] mx-auto">
+                Marca la casilla en el panel izquierdo para desbloquear el formulario de pago
+              </p>
             </div>
           </div>
         )}
@@ -581,19 +595,20 @@ export default function PaywallModal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: "rgba(0,0,0,0.55)", backdropFilter: "blur(3px)" }}
+      style={{ backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
         className="relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden"
-        style={{ maxWidth: currentStep === "plans" ? 860 : 520, maxHeight: "92vh", overflowY: "auto" }}
+        style={{ maxWidth: currentStep === "plans" ? 880 : 520, maxHeight: "92vh", overflowY: "auto" }}
       >
         {/* Close */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 transition-colors"
+          className="absolute top-3 right-3 z-30 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+          style={{ backgroundColor: currentStep === "plans" ? "rgba(255,255,255,0.1)" : "#f1f5f9" }}
         >
-          <X className="w-4 h-4 text-gray-500" />
+          <X className={`w-4 h-4 ${currentStep === "plans" ? "text-slate-400" : "text-gray-500"}`} />
         </button>
 
         {/* ── Auth Choice ── */}
@@ -726,28 +741,12 @@ export default function PaywallModal({
 
         {/* ── Plans: payment step ── */}
         {currentStep === "plans" && (
-          <>
-            {/* Header */}
-            <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-slate-100">
-              <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                <Check className="w-3.5 h-3.5 text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-green-600">{t.paywall_doc_ready}</p>
-                <h2 className="text-lg font-bold text-slate-900 leading-tight">
-                  {t.paywall_one_step}
-                </h2>
-              </div>
-            </div>
-
-            {/* Paddle Inline Checkout form */}
-            <PaddleCheckoutForm
-              onSuccess={handlePaymentSuccess}
-              pdfData={effectivePdfData}
-              thumbnailUrl={thumbnailUrl}
-              buildPdfForUpload={buildPdfForUpload}
-            />
-          </>
+          <PaddleCheckoutForm
+            onSuccess={handlePaymentSuccess}
+            pdfData={effectivePdfData}
+            thumbnailUrl={thumbnailUrl}
+            buildPdfForUpload={buildPdfForUpload}
+          />
         )}
       </div>
     </div>

@@ -631,3 +631,10 @@
 
 ## Bug: Paddle SDK error 'Unknown option parameter environment'
 - [x] Eliminar parámetro 'environment' de Paddle.Initialize() en PaywallModal, Dashboard, Pricing (3 archivos corregidos)
+
+## Rediseño PaywallModal: checkout visible inmediatamente
+- [x] Mostrar checkout de Paddle inmediatamente al abrir el modal (sin esperar checkbox)
+- [x] Bloquear el pago (overlay sobre checkout) hasta que acepten el checkbox de términos
+- [x] Dejar más claro que son 0€ iniciales (trial gratuito de 7 días) — panel oscuro con desglose de precio
+- [x] Rediseño completo del panel izquierdo tipo Stripe (fondo oscuro, trust signals, price breakdown)
+- [x] El formulario interno de Paddle (iframe) no se puede modificar, solo el contexto que lo rodea
