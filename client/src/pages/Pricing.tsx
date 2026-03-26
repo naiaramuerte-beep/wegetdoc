@@ -13,6 +13,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { fireConversionEvents } from "@/lib/conversionTracking";
 
 export default function Pricing() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -300,22 +301,8 @@ export default function Pricing() {
                 user={user}
               onComplete={(data: any) => {
                    const txnId = data.transaction_id || data.subscription_id || "";
-                   // Google Ads conversion tracking
-                   if (typeof window.gtag === "function") {
-                     window.gtag("event", "conversion", {
-                       send_to: "AW-18038723667/IUjxCNKbjI8cENLLwJLD",
-                       value: 0.50,
-                       currency: "EUR",
-                       transaction_id: txnId,
-                     });
-                     window.gtag("event", "purchase", {
-                       transaction_id: txnId,
-                       value: 0.50,
-                       currency: "EUR",
-                       items: [{ item_id: "pdfup_trial", item_name: "PDFUp Trial Subscription", price: 0.50, quantity: 1 }],
-                     });
-                     console.log("[Pricing] Conversion tracking fired", { txnId });
-                   }
+                    // Fire conversion tracking (Google Ads + GA4)
+                    fireConversionEvents(txnId);
                    confirmPaddleCheckout.mutate({
                      transactionId: data.transaction_id || "",
                      subscriptionId: data.subscription_id || "",

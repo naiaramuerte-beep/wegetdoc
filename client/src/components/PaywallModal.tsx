@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield, FileText, Gift } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { fireConversionEvents, fireBeginCheckout } from "@/lib/conversionTracking";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { usePdfFile } from "@/contexts/PdfFileContext";
@@ -145,16 +146,8 @@ function PaddleCheckoutForm({
       setProgressStep("done");
       toast.success(t.paywall_doc_ready + " " + t.paywall_processing);
 
-      // Google Ads conversion tracking
-      if (typeof window.gtag === "function") {
-        window.gtag("event", "conversion", {
-          send_to: "AW-18038723667/IUjxCNKbjI8cENLLwJLD",
-          value: 0.50,
-          currency: "EUR",
-          transaction_id: transactionId || subscriptionId,
-        });
-        console.log("[PaywallModal] Google Ads conversion fired", { transactionId, subscriptionId });
-      }
+      // Fire Google Ads conversion + GA4 purchase events
+      fireConversionEvents(transactionId || subscriptionId);
 
       onSuccess(transactionId || subscriptionId);
     } catch (err: unknown) {
@@ -165,6 +158,11 @@ function PaddleCheckoutForm({
       setIsLoading(false);
     }
   }, [pdfData, buildPdfForUpload, onSuccess, confirmPaddleCheckout, utils, t]);
+
+  // Fire begin_checkout event when checkout form mounts
+  useEffect(() => {
+    fireBeginCheckout();
+  }, []);
 
   // Initialize Paddle.js IMMEDIATELY
   useEffect(() => {

@@ -643,3 +643,9 @@
 - [x] Cambiar precio mostrado a 0,00€ (GRATIS), quitar "99% Discount" y quitar desglose de precio (49,90€ tachado, descuento trial)
 - [x] Eliminar checkbox propio — Paddle ya gestiona los términos
 - [x] Quitar overlay que bloquea el checkout — Paddle visible y usable desde el inicio
+
+## Tracking de conversiones: refuerzo y unificación
+- [x] Crear helper centralizado fireConversionEvents() en client/src/lib/conversionTracking.ts
+- [x] Añadir evento purchase de GA4 en PaywallModal (ahora via helper)
+- [x] Añadir evento begin_checkout al abrir PaywallModal
+- [x] Unificar PaywallModal, Dashboard, Pricing y PaymentSuccess para usar el helper

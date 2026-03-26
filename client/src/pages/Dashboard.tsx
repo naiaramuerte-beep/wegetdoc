@@ -23,6 +23,7 @@ import PaywallModal from "@/components/PaywallModal";
 import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
 import { usePdfFile } from "@/contexts/PdfFileContext";
+import { fireConversionEvents } from "@/lib/conversionTracking";
 
 type Tab = "account" | "documents" | "team" | "billing";
 
@@ -46,16 +47,9 @@ export default function Dashboard() {
       utils.subscription.status.invalidate();
       toast.success("¡Pago completado! Tu suscripción está activa. Ya puedes descargar tus documentos.");
 
-      // Google Ads conversion tracking — use session_id from URL as transaction_id
-      const sessionId = params.get("session_id") || `pmt_${Date.now()}`;
-      if (typeof window.gtag === "function") {
-        window.gtag("event", "conversion", {
-          send_to: "AW-18038723667/IUjxCNKbjI8cENLLwJLD",
-          value: 0.50,
-          currency: "EUR",
-          transaction_id: sessionId,
-        });
-      }
+      // Fire conversion tracking (Google Ads + GA4)
+      const sessionId = params.get("txn") || params.get("session_id") || `pmt_${Date.now()}`;
+      fireConversionEvents(sessionId);
 
       // Clean URL without reload
       const cleanUrl = window.location.pathname + "?tab=documents";
@@ -964,22 +958,8 @@ function BillingTab() {
             user={user}
             onComplete={(data: any) => {
               const txnId = data.transaction_id || data.subscription_id || "";
-              // Google Ads conversion tracking
-              if (typeof window.gtag === "function") {
-                window.gtag("event", "conversion", {
-                  send_to: "AW-18038723667/IUjxCNKbjI8cENLLwJLD",
-                  value: 0.50,
-                  currency: "EUR",
-                  transaction_id: txnId,
-                });
-                window.gtag("event", "purchase", {
-                  transaction_id: txnId,
-                  value: 0.50,
-                  currency: "EUR",
-                  items: [{ item_id: "pdfup_trial", item_name: "PDFUp Trial Subscription", price: 0.50, quantity: 1 }],
-                });
-                console.log("[Dashboard] Conversion tracking fired", { txnId });
-              }
+              // Fire conversion tracking (Google Ads + GA4)
+              fireConversionEvents(txnId);
               confirmPaddleCheckout.mutate({
                 transactionId: data.transaction_id || "",
                 subscriptionId: data.subscription_id || "",
