@@ -76,6 +76,9 @@ function Router() {
       {LANGUAGES.map(({ code }) => (
         <Route key={`${code}-gdpr`} path={`/${code}/gdpr`} component={() => <LegalPage slug="gdpr" />} />
       ))}
+      {LANGUAGES.map(({ code }) => (
+        <Route key={`${code}-refund`} path={`/${code}/refund`} component={() => <LegalPage slug="refund" />} />
+      ))}
 
       {LANGUAGES.map(({ code }) => (
         <Route key={`${code}-cancel`} path={`/${code}/cancelar-suscripcion`} component={CancelSubscription} />
@@ -105,6 +108,7 @@ function Router() {
       <Route path="/cookies" component={() => <Redirect to="/es/cookies" />} />
       <Route path="/legal" component={() => <Redirect to="/es/legal" />} />
       <Route path="/gdpr" component={() => <Redirect to="/es/gdpr" />} />
+      <Route path="/refund" component={() => <Redirect to="/es/refund" />} />
       <Route path="/payment/success" component={() => <Redirect to="/es/payment/success" />} />
       <Route path="/cancelar-suscripcion" component={() => <Redirect to="/es/cancelar-suscripcion" />} />
       <Route path="/login" component={Login} />

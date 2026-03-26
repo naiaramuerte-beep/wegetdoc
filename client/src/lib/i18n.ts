@@ -206,6 +206,7 @@ export type TranslationKeys = {
   footer_privacy: string;
   footer_cookies: string;
   footer_gdpr: string;
+  footer_refund: string;
   footer_unsubscribe: string;
   footer_copyright: string;
   // Paywall
@@ -542,6 +543,7 @@ export const translations: Translations = {
     footer_privacy: "Política de privacidad",
     footer_cookies: "Política de cookies",
     footer_gdpr: "RGPD",
+    footer_refund: "Política de reembolso",
     footer_unsubscribe: "Cancelar suscripción",
     footer_copyright: "© 2026 PDFUp. Todos los derechos reservados.",
     paywall_title_auth: "Para descargar necesitas una cuenta",
@@ -935,6 +937,7 @@ export const translations: Translations = {
     footer_privacy: "Privacy policy",
     footer_cookies: "Cookie policy",
     footer_gdpr: "GDPR",
+    footer_refund: "Refund Policy",
     footer_unsubscribe: "Cancel subscription",
     footer_copyright: "© 2026 PDFUp. All rights reserved.",
     paywall_title_auth: "You need an account to download",
@@ -1328,6 +1331,7 @@ export const translations: Translations = {
     footer_privacy: "Politique de confidentialité",
     footer_cookies: "Politique des cookies",
     footer_gdpr: "RGPD",
+    footer_refund: "Politique de remboursement",
     footer_unsubscribe: "Annuler l'abonnement",
     footer_copyright: "© 2026 PDFUp. Tous droits réservés.",
     paywall_title_auth: "Vous avez besoin d'un compte pour télécharger",
@@ -1722,6 +1726,7 @@ export const translations: Translations = {
     footer_privacy: "Datenschutzrichtlinie",
     footer_cookies: "Cookie-Richtlinie",
     footer_gdpr: "DSGVO",
+    footer_refund: "Rückerstattungsrichtlinie",
     footer_unsubscribe: "Abonnement kündigen",
     footer_copyright: "© 2026 PDFUp. Alle Rechte vorbehalten.",
     paywall_title_auth: "Sie benötigen ein Konto zum Herunterladen",
@@ -2116,6 +2121,7 @@ export const translations: Translations = {
     footer_privacy: "Política de privacidade",
     footer_cookies: "Política de cookies",
     footer_gdpr: "RGPD",
+    footer_refund: "Política de reembolso",
     footer_unsubscribe: "Cancelar assinatura",
     footer_copyright: "© 2026 PDFUp. Todos os direitos reservados.",
     paywall_title_auth: "Você precisa de uma conta para baixar",
@@ -2510,6 +2516,7 @@ export const translations: Translations = {
     footer_privacy: "Informativa sulla privacy",
     footer_cookies: "Informativa sui cookie",
     footer_gdpr: "GDPR",
+    footer_refund: "Politica di rimborso",
     footer_unsubscribe: "Annulla abbonamento",
     footer_copyright: "© 2026 PDFUp. Tutti i diritti riservati.",
     paywall_title_auth: "Hai bisogno di un account per scaricare",
@@ -2904,6 +2911,7 @@ export const translations: Translations = {
     footer_privacy: "Privacybeleid",
     footer_cookies: "Cookiebeleid",
     footer_gdpr: "AVG",
+    footer_refund: "Terugbetalingsbeleid",
     footer_unsubscribe: "Abonnement opzeggen",
     footer_copyright: "© 2026 PDFUp. Alle rechten voorbehouden.",
     paywall_title_auth: "U heeft een account nodig om te downloaden",
@@ -3298,6 +3306,7 @@ export const translations: Translations = {
     footer_privacy: "Polityka prywatności",
     footer_cookies: "Polityka cookies",
     footer_gdpr: "RODO",
+    footer_refund: "Polityka zwrotów",
     footer_unsubscribe: "Anuluj subskrypcję",
     footer_copyright: "© 2026 PDFUp. Wszelkie prawa zastrzeżone.",
     paywall_title_auth: "Potrzebujesz konta, aby pobrać",
@@ -3692,6 +3701,7 @@ export const translations: Translations = {
     footer_privacy: "Политика конфиденциальности",
     footer_cookies: "Политика cookie",
     footer_gdpr: "GDPR",
+    footer_refund: "Политика возврата",
     footer_unsubscribe: "Отменить подписку",
     footer_copyright: "© 2026 PDFUp. Все права защищены.",
     paywall_title_auth: "Вам нужна учётная запись для загрузки",
@@ -4086,6 +4096,7 @@ export const translations: Translations = {
     footer_privacy: "隐私政策",
     footer_cookies: "Cookie政策",
     footer_gdpr: "GDPR",
+    footer_refund: "退款政策",
     footer_unsubscribe: "取消订阅",
     footer_copyright: "© 2026 PDFUp. 保留所有权利。",
     paywall_title_auth: "您需要一个账户才能下载",

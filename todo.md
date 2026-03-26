@@ -575,3 +575,14 @@
 - [x] Bug: Herramienta comprimir PDF permite descargar gratis sin paywall
 - [x] Bug: Error al proteger PDF con contraseña (cambiado de pikepdf server a pdf-encrypt-lite client-side)
 - [x] Paywall guard en comprimir, proteger, convertir, fusionar, dividir, exportar, img2pdf — descarga solo si premium
+
+## Integración Paddle (reemplazar Stripe)
+- [ ] Investigar API Paddle Billing v2 (checkout overlay, suscripciones, webhooks)
+- [ ] Solicitar y configurar claves Paddle (API key, client token, price IDs, webhook secret)
+- [ ] Backend: webhook endpoint /api/paddle/webhook con verificación de firma
+- [ ] Backend: procedimientos tRPC para crear checkout y verificar suscripción
+- [ ] Frontend: integrar Paddle.js overlay checkout en PaywallModal
+- [ ] Adaptar flujo trial 7 días + 0,50€ activación + 49,90€/mes
+- [ ] Limpiar código de Stripe
+- [ ] Tests y verificación
+- [x] Actualizar política de reembolso para cumplir requisitos de Paddle (14 días, sin condiciones, página /refund creada en 10 idiomas)

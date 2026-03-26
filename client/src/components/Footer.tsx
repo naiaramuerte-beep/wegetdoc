@@ -27,6 +27,7 @@ export default function Footer() {
     { href: `/${lang}/privacy`, label: t.footer_privacy },
     { href: `/${lang}/cookies`, label: t.footer_cookies },
     { href: `/${lang}/gdpr`, label: t.footer_gdpr },
+    { href: `/${lang}/refund`, label: t.footer_refund },
     { href: `/${lang}/cancelar-suscripcion`, label: t.footer_unsubscribe },
   ];
 
