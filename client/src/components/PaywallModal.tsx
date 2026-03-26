@@ -23,7 +23,7 @@ interface PaywallModalProps {
   onClose: () => void;
   action?: string;
   pdfData?: { base64: string; name: string; size: number };
-  onPaymentSuccess?: () => void;
+  onPaymentSuccess?: (transactionId?: string) => void;
   thumbnailUrl?: string;
   /** Called when pdfData is missing — builds the annotated PDF on demand */
   buildPdfForUpload?: () => Promise<{ base64: string; name: string; size: number } | null>;
@@ -38,7 +38,7 @@ function PaddleCheckoutForm({
   thumbnailUrl,
   buildPdfForUpload,
 }: {
-  onSuccess: () => void;
+  onSuccess: (transactionId?: string) => void;
   pdfData?: PdfPayload;
   thumbnailUrl?: string;
   buildPdfForUpload?: () => Promise<{ base64: string; name: string; size: number } | null>;
@@ -149,7 +149,7 @@ function PaddleCheckoutForm({
       setProgressStep("done");
       toast.success(t.paywall_doc_ready + " " + t.paywall_processing);
 
-      // Google Ads conversion tracking
+      // Google Ads conversion tracking (fires here AND on PaymentSuccess page for redundancy)
       if (typeof window.gtag === "function") {
         window.gtag("event", "conversion", {
           send_to: "AW-18038723667/IUjxCNKbjI8cENLLwJLD",
@@ -157,9 +157,10 @@ function PaddleCheckoutForm({
           currency: "EUR",
           transaction_id: transactionId || subscriptionId,
         });
+        console.log("[PaywallModal] Google Ads conversion fired", { transactionId, subscriptionId });
       }
 
-      onSuccess();
+      onSuccess(transactionId || subscriptionId);
     } catch (err: unknown) {
       setProgressStep("idle");
       const message = err instanceof Error ? err.message : "Error al procesar el pago";
@@ -572,10 +573,10 @@ export default function PaywallModal({
     }
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = (transactionId?: string) => {
     clearPendingEditedPdf();
     onClose();
-    if (onPaymentSuccess) onPaymentSuccess();
+    if (onPaymentSuccess) onPaymentSuccess(transactionId);
   };
 
   return (

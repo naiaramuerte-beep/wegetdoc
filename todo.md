@@ -616,3 +616,15 @@
 ## Bug: Paddle inline checkout no carga el formulario
 - [x] El iframe de Paddle se queda en "Cargando formulario de pago..." y da error — RESUELTO: faltaba environment: "production" en Paddle.Initialize()
 - [x] Corregido en PaywallModal, Pricing y Dashboard
+
+## Bug: No hay confirmación/redirección después de pago exitoso
+- [ ] Después de checkout.completed de Paddle, no se muestra confirmación ni se redirige
+- [ ] Implementar flujo post-pago: confirmación visual + descarga automática del PDF
+
+## Tracking de conversión post-pago
+- [x] Después del pago exitoso, navegar a URL con ?txn=transactionId para que Google Ads detecte conversión
+- [x] Asegurar que gtag conversion event se dispara correctamente (en PaywallModal, Dashboard, Pricing y PaymentSuccess)
+- [x] Crear página/ruta de success que dispare el tracking (PaymentSuccess con GA4 purchase + Google Ads conversion)
+
+## UX mejora: mensaje claro al subir imagen
+- [x] Cuando un usuario sube una imagen (JPG, PNG, etc.) en vez de un PDF, mostrar banner verde claro que dice "Tu imagen ya es un PDF" con descripción, traducido a 11 idiomas, auto-cierre en 12s

@@ -51,20 +51,58 @@ describe("Google Ads Conversion Tracking", () => {
     expect(src).toContain(`send_to: "${CONVERSION_SEND_TO}"`);
     expect(src).toContain("value: 0.50");
     expect(src).toContain('currency: "EUR"');
-    expect(src).toContain("transaction_id: sessionId");
+    // Uses Paddle transaction ID from URL param "txn"
+    expect(src).toContain("transaction_id: transactionId");
   });
 
-  it("Dashboard.tsx fires conversion event when payment=success with transaction_id", () => {
+  it("PaymentSuccess.tsx fires GA4 purchase event", () => {
+    const src = readFileSync(
+      join(__dirname, "../client/src/pages/PaymentSuccess.tsx"),
+      "utf-8"
+    );
+    expect(src).toContain('window.gtag("event", "purchase"');
+    expect(src).toContain("transaction_id: transactionId");
+    expect(src).toContain("item_id: \"pdfup_trial\"");
+  });
+
+  it("PaymentSuccess.tsx reads txn param from URL for Paddle transaction ID", () => {
+    const src = readFileSync(
+      join(__dirname, "../client/src/pages/PaymentSuccess.tsx"),
+      "utf-8"
+    );
+    expect(src).toContain('params.get("txn")');
+    expect(src).toContain('params.get("transaction_id")');
+  });
+
+  it("Dashboard.tsx fires conversion event on Paddle checkout complete", () => {
     const src = readFileSync(
       join(__dirname, "../client/src/pages/Dashboard.tsx"),
       "utf-8"
     );
-    expect(src).toContain('params.get("payment") === "success"');
     expect(src).toContain('window.gtag("event", "conversion"');
     expect(src).toContain(`send_to: "${CONVERSION_SEND_TO}"`);
     expect(src).toContain("value: 0.50");
     expect(src).toContain('currency: "EUR"');
-    expect(src).toContain("transaction_id: sessionId");
+    expect(src).toContain("transaction_id: txnId");
+  });
+
+  it("Dashboard.tsx fires GA4 purchase event on Paddle checkout complete", () => {
+    const src = readFileSync(
+      join(__dirname, "../client/src/pages/Dashboard.tsx"),
+      "utf-8"
+    );
+    expect(src).toContain('window.gtag("event", "purchase"');
+    expect(src).toContain("item_id: \"pdfup_trial\"");
+  });
+
+  it("Pricing.tsx fires conversion event on Paddle checkout complete", () => {
+    const src = readFileSync(
+      join(__dirname, "../client/src/pages/Pricing.tsx"),
+      "utf-8"
+    );
+    expect(src).toContain('window.gtag("event", "conversion"');
+    expect(src).toContain(`send_to: "${CONVERSION_SEND_TO}"`);
+    expect(src).toContain("transaction_id: txnId");
   });
 
   it("PaywallModal.tsx fires conversion event with Paddle transactionId or subscriptionId", () => {

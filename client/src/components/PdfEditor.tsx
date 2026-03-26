@@ -14,7 +14,7 @@ import {
   Minimize2, Move, StickyNote, FileText, Trash2, RotateCw,
   Plus, Scissors, Layers, X, Upload, Check, Eye, EyeOff,
   AlignLeft, Bold, Italic, Underline, ChevronDown, Lock, Unlock,
-  Save,
+  Save, CheckCircle, Info,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -239,6 +239,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // File conversion loading state
   const [isConvertingFile, setIsConvertingFile] = useState(false);
   const [convertFileProgress, setConvertFileProgress] = useState(0);
+  const [convertedFromFile, setConvertedFromFile] = useState<{ name: string; type: string } | null>(null);
+  const [showConvertedBanner, setShowConvertedBanner] = useState(false);
 
   // Find state
   const [searchQuery, setSearchQuery] = useState("");
@@ -516,8 +518,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         setFile(pdfFile);
         await loadPdf(pdfFile);
         setConvertFileProgress(100);
-        // Brief delay to show 100% before hiding
-        setTimeout(() => setIsConvertingFile(false), 500);
+        // Save original file info for the "converted" banner
+        setConvertedFromFile({ name: initialFile.name, type: initialFile.type });
+        setTimeout(() => {
+          setIsConvertingFile(false);
+          setShowConvertedBanner(true);
+          setTimeout(() => setShowConvertedBanner(false), 12000);
+        }, 500);
       } catch (err: any) {
         clearInterval(progressInterval);
         setIsConvertingFile(false);
@@ -782,7 +789,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       setFile(pdfFile);
       await loadPdf(pdfFile);
       setConvertFileProgress(100);
-      setTimeout(() => setIsConvertingFile(false), 500);
+      // Save original file info for the "converted" banner
+      setConvertedFromFile({ name: f.name, type: f.type });
+      setTimeout(() => {
+        setIsConvertingFile(false);
+        setShowConvertedBanner(true);
+        // Auto-hide banner after 12 seconds
+        setTimeout(() => setShowConvertedBanner(false), 12000);
+      }, 500);
     } catch (err: any) {
       clearInterval(progressInterval);
       setIsConvertingFile(false);
@@ -2878,6 +2892,40 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         : { height: "85vh", borderColor: "oklch(0.88 0.02 250)", backgroundColor: "oklch(0.97 0.005 250)" }
       }
     >
+      {/* ── Banner: archivo convertido a PDF automáticamente ── */}
+      {showConvertedBanner && convertedFromFile && (
+        <div
+          className="flex items-center gap-3 px-4 py-2.5 border-b"
+          style={{
+            backgroundColor: "oklch(0.95 0.08 145 / 0.35)",
+            borderColor: "oklch(0.75 0.12 145 / 0.4)",
+          }}
+        >
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <CheckCircle className="w-5 h-5 flex-shrink-0" style={{ color: "oklch(0.45 0.18 145)" }} />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold truncate" style={{ color: "oklch(0.25 0.05 145)" }}>
+                {convertedFromFile.type.startsWith("image/")
+                  ? (t.editor_image_converted_title ?? "Tu imagen ya es un PDF")
+                  : (t.editor_file_converted_title ?? "Tu archivo ya es un PDF")}
+              </p>
+              <p className="text-xs truncate" style={{ color: "oklch(0.40 0.04 145)" }}>
+                {convertedFromFile.type.startsWith("image/")
+                  ? (t.editor_image_converted_desc ?? `"${convertedFromFile.name}" se ha convertido a PDF automáticamente. Ya puedes editarlo y descargarlo directamente.`)
+                  : (t.editor_file_converted_desc ?? `"${convertedFromFile.name}" se ha convertido a PDF automáticamente. Ya puedes editarlo y descargarlo.`)}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowConvertedBanner(false)}
+            className="p-1 rounded-full hover:bg-white/50 transition-colors flex-shrink-0"
+            title="Cerrar"
+          >
+            <X className="w-4 h-4" style={{ color: "oklch(0.40 0.04 145)" }} />
+          </button>
+        </div>
+      )}
+
       {/* ── TOP TOOLBAR — desktop only ── */}
       <div className="hidden md:flex items-center gap-1 px-3 py-1.5 border-b min-w-0" style={{ backgroundColor: "oklch(1 0 0)", borderColor: "oklch(0.90 0.01 250)" }}>
         {/* Undo / Redo */}
@@ -3564,10 +3612,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             return null;
           }
         }}
-        onPaymentSuccess={async () => {
-          // After successful payment: auto-download the PDF immediately
+        onPaymentSuccess={async (transactionId?: string) => {
+          // After successful payment: auto-download the PDF, then navigate to success page
           setShowPaywall(false);
           toast.loading("Preparando descarga...", { id: "post-pay-dl" });
+          const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
+          const lang = langMatch ? langMatch[1] : "es";
+          const txnParam = transactionId ? `?txn=${encodeURIComponent(transactionId)}` : "";
           try {
             // Check if there's a pending tool download (compress, protect, convert, etc.)
             if (pendingToolDownloadRef.current) {
@@ -3575,6 +3626,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               triggerBlobDownload(blob, name);
               pendingToolDownloadRef.current = null;
               toast.success("¡Pago completado! Archivo descargado correctamente.", { id: "post-pay-dl" });
+              // Navigate to success page for conversion tracking
+              navigate(`/${lang}/payment/success${txnParam}`);
               return;
             }
             // Otherwise, download the annotated PDF
@@ -3584,16 +3637,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               toast.success("¡Pago completado! PDF descargado correctamente.", { id: "post-pay-dl" });
             } else {
               toast.success("¡Pago completado! Tu documento está en tu panel.", { id: "post-pay-dl" });
-              const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
-              const lang = langMatch ? langMatch[1] : "es";
-              navigate(`/${lang}/dashboard?tab=documents`);
             }
           } catch {
             toast.success("¡Pago completado! Tu documento está en tu panel.", { id: "post-pay-dl" });
-            const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
-            const lang = langMatch ? langMatch[1] : "es";
-            navigate(`/${lang}/dashboard?tab=documents`);
           }
+          // Always navigate to success page for Google Ads / Analytics conversion tracking
+          navigate(`/${lang}/payment/success${txnParam}`);
         }}
       />
     </div>

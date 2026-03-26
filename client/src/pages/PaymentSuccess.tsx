@@ -1,27 +1,54 @@
-import { useEffect, useState } from "react";
-import { CheckCircle, ArrowRight, FileText, FolderOpen, Loader2 } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { CheckCircle, ArrowRight, FolderOpen, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 
 export default function PaymentSuccess() {
   const utils = trpc.useUtils();
   const [, navigate] = useLocation();
-  const [countdown, setCountdown] = useState(4);
+  const [countdown, setCountdown] = useState(5);
+  const trackedRef = useRef(false);
 
   useEffect(() => {
     // Invalidate subscription status so it refreshes
     utils.subscription.status.invalidate();
 
-    // Google Ads conversion tracking — use session_id from URL as transaction_id
-    const params = new URLSearchParams(window.location.search);
-    const sessionId = params.get("session_id") || `pmt_${Date.now()}`;
-    if (typeof window.gtag === "function") {
-      window.gtag("event", "conversion", {
-        send_to: "AW-18038723667/IUjxCNKbjI8cENLLwJLD",
-        value: 0.50,
-        currency: "EUR",
-        transaction_id: sessionId,
-      });
+    // Fire conversion tracking only once
+    if (!trackedRef.current) {
+      trackedRef.current = true;
+
+      // Get transaction_id from URL params (Paddle transaction ID or fallback)
+      const params = new URLSearchParams(window.location.search);
+      const transactionId = params.get("txn") || params.get("transaction_id") || params.get("session_id") || `pmt_${Date.now()}`;
+
+      // Google Ads conversion tracking
+      if (typeof window.gtag === "function") {
+        window.gtag("event", "conversion", {
+          send_to: "AW-18038723667/IUjxCNKbjI8cENLLwJLD",
+          value: 0.50,
+          currency: "EUR",
+          transaction_id: transactionId,
+        });
+        console.log("[PaymentSuccess] Google Ads conversion fired", { transactionId });
+      }
+
+      // Google Analytics 4 purchase event
+      if (typeof window.gtag === "function") {
+        window.gtag("event", "purchase", {
+          transaction_id: transactionId,
+          value: 0.50,
+          currency: "EUR",
+          items: [
+            {
+              item_id: "pdfup_trial",
+              item_name: "PDFUp Trial Subscription",
+              price: 0.50,
+              quantity: 1,
+            },
+          ],
+        });
+        console.log("[PaymentSuccess] GA4 purchase event fired", { transactionId });
+      }
     }
 
     // Detect lang from URL
