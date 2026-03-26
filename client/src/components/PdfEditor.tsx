@@ -2269,13 +2269,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             {ActionBar}
             <div className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>
-              {isEditingExisting ? "Editar texto" : "Añadir texto"}
+              {isEditingExisting ? t.editor_text_panel_edit : t.editor_text_panel_add}
             </h3>
 
             {/* Instruction when no text is selected */}
             {!isEditingExisting && (
               <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.06)", color: "oklch(0.35 0.02 250)" }}>
-                <strong>Cómo usar:</strong> Haz clic en cualquier parte del PDF para colocar un nuevo texto. Puedes configurar el formato antes o después.
+                <strong>{t.editor_how_to_use}</strong> {t.editor_text_panel_hint_new}
               </div>
             )}
 
@@ -2383,7 +2383,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               ))}
             </div>
             <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: highlightColor + "33", color: "oklch(0.30 0.02 250)" }}>
-              <strong>Cómo usar:</strong> Haz clic y arrastra sobre el PDF para crear un resaltado del tamaño que quieras.
+              <strong>{t.editor_how_to_use}</strong> {t.editor_highlight_panel_hint}
             </div>
             </div>
           </div>
@@ -2651,7 +2651,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               <span className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>{eraserSize}px</span>
             </div>
             <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.95 0.01 250)", color: "oklch(0.30 0.02 250)" }}>
-              <strong>Cómo usar:</strong> Haz clic y arrastra sobre el área que quieres borrar. Se creará un rectángulo blanco sobre ese contenido.
+              <strong>{t.editor_how_to_use}</strong> {t.editor_erase_panel_hint}
             </div>
             </div>
           </div>
@@ -2675,7 +2675,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               <div style={{ width: 40, height: brushSize, backgroundColor: brushColor, borderRadius: brushSize / 2 }} />
             </div>
             <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.95 0.01 250)", color: "oklch(0.30 0.02 250)" }}>
-              <strong>Cómo usar:</strong> Haz clic y arrastra sobre el PDF para dibujar a mano alzada.
+              <strong>{t.editor_how_to_use}</strong> {t.editor_brush_panel_hint}
             </div>
             </div>
           </div>
@@ -2684,13 +2684,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         return (
           <div className="flex flex-col">
             <div className="p-4 flex flex-col gap-3">
-            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Editar texto nativo</h3>
+            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>{t.editor_edittext_title}</h3>
             <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.08)", color: "oklch(0.30 0.02 250)" }}>
               {t.editor_edittext_hint}
             </div>
             {/* Color picker for replacement text */}
             <div className="flex gap-2 items-center">
-              <label className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Color texto</label>
+              <label className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>{t.editor_text_color_label}</label>
               <input type="color" value={editTextColor} onChange={e => setEditTextColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0" />
             </div>
             {/* Block count */}
@@ -2699,7 +2699,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 {nativeTextBlocks.length} {t.editor_text_blocks_detected}
                 {nativeTextBlocks.filter(b => b.editedStr !== undefined).length > 0 && (
                   <span className="ml-1 font-semibold" style={{ color: "oklch(0.45 0.20 150)" }}>
-                    ({nativeTextBlocks.filter(b => b.editedStr !== undefined).length} editados)
+                    ({nativeTextBlocks.filter(b => b.editedStr !== undefined).length} {t.editor_edittext_edited_count})
                   </span>
                 )}
               </div>
@@ -2711,7 +2711,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             {/* Instruction when a block is selected */}
             {editingBlockId && (
               <div className="p-2 rounded text-xs" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.1)", color: "oklch(0.30 0.02 250)" }}>
-                Edita el texto directamente sobre el PDF. Pulsa Enter o el botón Guardar para confirmar.
+                {t.editor_edittext_instruction}
               </div>
             )}
             </div>
@@ -2722,9 +2722,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           <div className="flex flex-col gap-0">
             {ActionBar}
             <div className="p-4 flex flex-col gap-3">
-              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "oklch(0.45 0.02 250)" }}>Mover elementos</p>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "oklch(0.45 0.02 250)" }}>{t.editor_move_panel_title}</p>
               <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.06)", color: "oklch(0.35 0.02 250)" }}>
-                <p className="font-medium mb-1" style={{ color: "oklch(0.25 0.03 250)" }}>Cómo usar:</p>
+                <p className="font-medium mb-1" style={{ color: "oklch(0.25 0.03 250)" }}>{t.editor_how_to_use}</p>
                 <p>{t.editor_move_hint}</p>
               </div>
               <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "oklch(0.96 0.005 250)", color: "oklch(0.45 0.02 250)" }}>

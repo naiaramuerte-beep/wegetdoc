@@ -317,9 +317,6 @@ function PaddleCheckoutForm({
               <span className="text-lg font-bold text-blue-400">{t.paywall_free_badge}</span>
             </div>
             <p className="text-3xl font-extrabold text-white mb-2">{t.paywall_free_price}</p>
-            <p className="text-xs text-blue-300/90 leading-relaxed font-medium">
-              {t.paywall_free_trial_days}
-            </p>
             <p className="text-[10px] text-slate-500 mt-1.5">
               {t.paywall_free_cancel}
             </p>

@@ -676,3 +676,7 @@
 - [x] Mover botón "Eliminar página" a la toolbar principal (desktop con etiqueta + móvil)
 - [x] Añadir botones Deshacer/Rehacer (Undo/Redo) con etiquetas en desktop + móvil
 - [x] Reorganizar iconos: Rotar/Eliminar con etiquetas claras, separados de navegación
+
+## Traducción panel "Editar texto nativo"
+- [x] Traducir textos hardcodeados del panel edit-text del editor PDF a todos los idiomas (10 idiomas)
+- [x] Quitar texto "Luego 49,90€/mes" / "Then $49.90/mo" del PaywallModal
