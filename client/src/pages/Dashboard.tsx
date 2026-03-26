@@ -690,7 +690,6 @@ function DashboardPaddleInline({
       if (!initialized.current) {
         P.Initialize({
           token: paddleConfig.clientToken,
-          environment: "production",
           checkout: {
             settings: {
               displayMode: "inline",

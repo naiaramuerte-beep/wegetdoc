@@ -628,3 +628,6 @@
 
 ## UX mejora: mensaje claro al subir imagen
 - [x] Cuando un usuario sube una imagen (JPG, PNG, etc.) en vez de un PDF, mostrar banner verde claro que dice "Tu imagen ya es un PDF" con descripción, traducido a 11 idiomas, auto-cierre en 12s
+
+## Bug: Paddle SDK error 'Unknown option parameter environment'
+- [x] Eliminar parámetro 'environment' de Paddle.Initialize() en PaywallModal, Dashboard, Pricing (3 archivos corregidos)

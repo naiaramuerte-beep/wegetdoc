@@ -202,7 +202,6 @@ function PaddleCheckoutForm({
         if (!paddleInitialized.current) {
           P.Initialize({
             token: clientToken,
-            environment: "production",
             checkout: {
               settings: {
                 displayMode: "inline",
