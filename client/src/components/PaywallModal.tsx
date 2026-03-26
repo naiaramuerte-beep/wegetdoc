@@ -190,6 +190,7 @@ function PaddleCheckoutForm({
 
       const clientToken = paddleConfigQ.data!.clientToken;
       const priceId = paddleConfigQ.data!.priceId;
+      const trialPriceId = paddleConfigQ.data!.trialPriceId;
 
       try {
         if (!paddleInitialized.current) {
@@ -229,8 +230,15 @@ function PaddleCheckoutForm({
           });
         }
 
+        // Pass both prices: one-time trial fee (0.99€) + recurring subscription (49.90€/month with 7-day trial)
+        const items: Array<{ priceId: string; quantity: number }> = [];
+        if (trialPriceId) {
+          items.push({ priceId: trialPriceId, quantity: 1 });
+        }
+        items.push({ priceId, quantity: 1 });
+
         P.Checkout.open({
-          items: [{ priceId, quantity: 1 }],
+          items,
           customer: {
             email: user?.email || undefined,
           },
@@ -299,17 +307,17 @@ function PaddleCheckoutForm({
             </div>
           </div>
 
-          {/* FREE badge — prominent */}
+          {/* Trial badge — prominent */}
           <div
             className="rounded-xl p-4 mb-6 text-center"
-            style={{ backgroundColor: "rgba(34, 197, 94, 0.12)", border: "1px solid rgba(34, 197, 94, 0.25)" }}
+            style={{ backgroundColor: "rgba(59, 130, 246, 0.12)", border: "1px solid rgba(59, 130, 246, 0.25)" }}
           >
             <div className="flex items-center justify-center gap-2 mb-2">
-              <Gift className="w-5 h-5 text-green-400" />
-              <span className="text-lg font-bold text-green-400">{t.paywall_free_badge}</span>
+              <Gift className="w-5 h-5 text-blue-400" />
+              <span className="text-lg font-bold text-blue-400">{t.paywall_free_badge}</span>
             </div>
             <p className="text-3xl font-extrabold text-white mb-2">{t.paywall_free_price}</p>
-            <p className="text-xs text-green-300/90 leading-relaxed font-medium">
+            <p className="text-xs text-blue-300/90 leading-relaxed font-medium">
               {t.paywall_free_trial_days}
             </p>
             <p className="text-[10px] text-slate-500 mt-1.5">

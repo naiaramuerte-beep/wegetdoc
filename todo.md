@@ -662,3 +662,17 @@
 - [x] Mostrar estado correcto de suscripción en BillingTab (trial, activa, cancelada, expirada)
 - [x] Panel admin: mostrar por usuario si tiene sub activa, si está en trial, si ha pagado, fecha de cancelación
 - [x] Tests para cancelación y admin panel con Paddle (82/82 OK)
+
+## Trial 0,99€ con Paddle
+- [x] Añadir Price ID del one-time 0,99€ (pri_01kmnangj1rn4yvkytdskmnwf9) a la config
+- [x] Pasar ambos precios (one-time + recurring) al checkout de Paddle
+- [x] Actualizar textos del PaywallModal: ya no es "GRATIS", mostrar 0,99€ / $0.99 según país
+- [x] Actualizar textos de Pricing page con el nuevo modelo de trial
+- [x] Actualizar textos de Dashboard BillingTab si aplica
+- [x] Tests y verificación (83/83 OK)
+
+## UX Editor - Reorganizar barra de herramientas
+- [x] Mover botón "Rotar página" a la toolbar principal (desktop con etiqueta + móvil)
+- [x] Mover botón "Eliminar página" a la toolbar principal (desktop con etiqueta + móvil)
+- [x] Añadir botones Deshacer/Rehacer (Undo/Redo) con etiquetas en desktop + móvil
+- [x] Reorganizar iconos: Rotar/Eliminar con etiquetas claras, separados de navegación

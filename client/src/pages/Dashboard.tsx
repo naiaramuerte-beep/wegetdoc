@@ -667,7 +667,7 @@ function DashboardPaddleInline({
   onComplete,
   lang,
 }: {
-  paddleConfig?: { clientToken: string; priceId: string } | null;
+  paddleConfig?: { clientToken: string; priceId: string; trialPriceId?: string } | null;
   user?: { id: number; email: string | null; name?: string | null } | null;
   onComplete: (data: any) => void;
   lang?: string;
@@ -711,8 +711,15 @@ function DashboardPaddleInline({
         });
       }
       if (!opened.current) {
+        // Pass both prices: one-time trial fee + recurring subscription
+        const checkoutItems: Array<{ priceId: string; quantity: number }> = [];
+        if (paddleConfig.trialPriceId) {
+          checkoutItems.push({ priceId: paddleConfig.trialPriceId, quantity: 1 });
+        }
+        checkoutItems.push({ priceId: paddleConfig.priceId, quantity: 1 });
+
         P.Checkout.open({
-          items: [{ priceId: paddleConfig.priceId, quantity: 1 }],
+          items: checkoutItems,
           customer: { email: user?.email || undefined },
           customData: {
             user_id: user?.id?.toString() || "",
