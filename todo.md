@@ -680,3 +680,7 @@
 ## Traducción panel "Editar texto nativo"
 - [x] Traducir textos hardcodeados del panel edit-text del editor PDF a todos los idiomas (10 idiomas)
 - [x] Quitar texto "Luego 49,90€/mes" / "Then $49.90/mo" del PaywallModal
+
+## PaywallModal - Mejorar copy de venta
+- [x] Quitar "7-DAY TRIAL" y "Cancel anytime within 7 days" del badge
+- [x] Poner textos que inciten más a pagar (valor, urgencia, oferta especial)

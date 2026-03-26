@@ -5,7 +5,7 @@
  * Checkout visible y usable inmediatamente
  */
 import { useState, useEffect, useCallback, useRef } from "react";
-import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield, FileText, Gift } from "lucide-react";
+import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield, FileText, Zap, Sparkles } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { fireConversionEvents, fireBeginCheckout } from "@/lib/conversionTracking";
@@ -310,14 +310,14 @@ function PaddleCheckoutForm({
           {/* Trial badge — prominent */}
           <div
             className="rounded-xl p-4 mb-6 text-center"
-            style={{ backgroundColor: "rgba(59, 130, 246, 0.12)", border: "1px solid rgba(59, 130, 246, 0.25)" }}
+            style={{ backgroundColor: "rgba(245, 158, 11, 0.12)", border: "1px solid rgba(245, 158, 11, 0.3)" }}
           >
             <div className="flex items-center justify-center gap-2 mb-2">
-              <Gift className="w-5 h-5 text-blue-400" />
-              <span className="text-lg font-bold text-blue-400">{t.paywall_free_badge}</span>
+              <Zap className="w-5 h-5 text-amber-400" />
+              <span className="text-lg font-bold text-amber-400">{t.paywall_free_badge}</span>
             </div>
             <p className="text-3xl font-extrabold text-white mb-2">{t.paywall_free_price}</p>
-            <p className="text-[10px] text-slate-500 mt-1.5">
+            <p className="text-xs text-amber-300/70 mt-1.5">
               {t.paywall_free_cancel}
             </p>
           </div>
@@ -327,7 +327,7 @@ function PaddleCheckoutForm({
             {[
               { icon: Shield, text: t.paywall_secure },
               { icon: CreditCard, text: t.paywall_instant },
-              { icon: X, text: t.paywall_cancel },
+              { icon: Sparkles, text: t.paywall_cancel },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-2.5">
                 <item.icon className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
