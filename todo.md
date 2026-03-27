@@ -712,3 +712,8 @@
 - [x] Añadir successUrl a Paddle.Checkout.open() en Pricing para 3DS redirect
 - [x] Añadir successUrl a Paddle.Checkout.open() en Dashboard para 3DS redirect
 - [x] Actualizar PaymentSuccess para confirmar checkout via _ptxn parameter de Paddle
+
+## Bug - successUrl abre checkout hosted en vez de inline
+- [x] Investigar cómo manejar successUrl en checkout inline de Paddle sin que abra hosted
+- [x] Mover successUrl a P.Initialize() settings o eliminarlo del Checkout.open()
+- [x] Verificar que el checkout sigue siendo inline después del fix

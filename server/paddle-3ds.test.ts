@@ -46,26 +46,40 @@ describe("Paddle 3DS / Production Environment Configuration", () => {
     });
   });
 
-  describe("Frontend: successUrl in Checkout.open()", () => {
-    it("PaywallModal.tsx should have successUrl in settings", () => {
+  describe("Frontend: NO successUrl in inline Checkout.open() (breaks inline mode)", () => {
+    it("PaywallModal.tsx should NOT have successUrl in Checkout.open settings", () => {
       const content = readProjectFile("client/src/components/PaywallModal.tsx");
-      expect(content).toContain("successUrl:");
-      expect(content).toContain("pdfup.io");
-      expect(content).toContain("payment/success");
+      expect(content).not.toContain("successUrl");
     });
 
-    it("Pricing.tsx should have successUrl in settings", () => {
+    it("Pricing.tsx should NOT have successUrl in Checkout.open settings", () => {
       const content = readProjectFile("client/src/pages/Pricing.tsx");
-      expect(content).toContain("successUrl:");
-      expect(content).toContain("pdfup.io");
-      expect(content).toContain("payment/success");
+      expect(content).not.toContain("successUrl");
     });
 
-    it("Dashboard.tsx should have successUrl in settings", () => {
+    it("Dashboard.tsx should NOT have successUrl in Checkout.open settings", () => {
       const content = readProjectFile("client/src/pages/Dashboard.tsx");
-      expect(content).toContain("successUrl:");
-      expect(content).toContain("pdfup.io");
-      expect(content).toContain("payment/success");
+      expect(content).not.toContain("successUrl");
+    });
+  });
+
+  describe("Frontend: eventCallback handles checkout.completed for inline mode", () => {
+    it("PaywallModal.tsx should use eventCallback with checkout.completed", () => {
+      const content = readProjectFile("client/src/components/PaywallModal.tsx");
+      expect(content).toContain("checkout.completed");
+      expect(content).toContain("eventCallback");
+    });
+
+    it("Pricing.tsx should use eventCallback with checkout.completed", () => {
+      const content = readProjectFile("client/src/pages/Pricing.tsx");
+      expect(content).toContain("checkout.completed");
+      expect(content).toContain("eventCallback");
+    });
+
+    it("Dashboard.tsx should use eventCallback with checkout.completed", () => {
+      const content = readProjectFile("client/src/pages/Dashboard.tsx");
+      expect(content).toContain("checkout.completed");
+      expect(content).toContain("eventCallback");
     });
   });
 

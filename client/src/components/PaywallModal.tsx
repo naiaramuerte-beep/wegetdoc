@@ -278,7 +278,6 @@ function PaddleCheckoutForm({
               locale: lang || "en",
               allowLogout: false,
               showAddDiscounts: true,
-              successUrl: `https://pdfup.io/${lang || "es"}/payment/success`,
             },
           });
 

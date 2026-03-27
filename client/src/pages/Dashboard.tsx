@@ -727,7 +727,7 @@ function DashboardPaddleInline({
             user_email: user?.email || "",
             user_name: user?.name || "",
           },
-          settings: { variant: "one-page", locale: lang || "en", allowLogout: false, showAddDiscounts: true, successUrl: `https://pdfup.io/${lang || "es"}/payment/success` },
+          settings: { variant: "one-page", locale: lang || "en", allowLogout: false, showAddDiscounts: true },
         });
         opened.current = true;
       }

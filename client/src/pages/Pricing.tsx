@@ -533,9 +533,8 @@ function PaddleInlineCheckout({
           settings: {
             variant: "one-page",
             locale: lang || "en",
-            allowLogout: false,
-            showAddDiscounts: true,
-            successUrl: `https://pdfup.io/${lang || "es"}/payment/success`,
+             allowLogout: false,
+             showAddDiscounts: true,
           },
         });
         opened.current = true;
