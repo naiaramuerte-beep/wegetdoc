@@ -631,3 +631,13 @@
 
 ## Bug: Paddle SDK error 'Unknown option parameter environment'
 - [x] Eliminar parámetro 'environment' de Paddle.Initialize() en PaywallModal, Dashboard, Pricing (3 archivos corregidos)
+
+## Simplificar PaywallModal
+- [x] Cambiar locale de Paddle a "en" (inglés)
+- [x] Eliminar checkbox legal y toda su lógica (agreed, showCheckboxError)
+- [x] Eliminar sección "Plan info" (99% Discount, New User)
+- [x] Eliminar sección "Payment info" (100% secure payment, textos)
+- [x] Eliminar placeholder "Acepta los términos" del lado derecho
+- [x] Eliminar header "Documento listo / Un paso más"
+- [x] Abrir Paddle checkout directamente sin esperar checkbox
+- [x] Mantener solo: preview del PDF + Paddle inline checkout
