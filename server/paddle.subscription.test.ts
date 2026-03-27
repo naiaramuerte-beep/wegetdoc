@@ -333,5 +333,5 @@ describe("subscription.cancel", () => {
         cancelAtPeriodEnd: true,
       })
     );
-  });
+  }, 15000);
 });

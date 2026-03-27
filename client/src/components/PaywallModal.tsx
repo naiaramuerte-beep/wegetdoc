@@ -229,6 +229,7 @@ function PaddleCheckoutForm({
         if (!paddleGloballyInitialized.current && !(window as any).__paddleInitialized) {
           P.Initialize({
             token: clientToken,
+            environment: "production",
             checkout: {
               settings: {
                 displayMode: "inline",
@@ -264,6 +265,11 @@ function PaddleCheckoutForm({
           }
           items.push({ priceId, quantity: 1 });
 
+          // Build successUrl for 3DS redirect handling
+          const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
+          const currentLang = langMatch ? langMatch[1] : "es";
+          const successUrl = `${window.location.origin}/${currentLang}/payment/success`;
+
           P.Checkout.open({
             items,
             customer: {
@@ -278,6 +284,7 @@ function PaddleCheckoutForm({
               locale: lang || "en",
               allowLogout: false,
               showAddDiscounts: true,
+              successUrl,
             },
           });
 

@@ -688,6 +688,7 @@ function DashboardPaddleInline({
       if (!initialized.current) {
         P.Initialize({
           token: paddleConfig.clientToken,
+          environment: "production",
           checkout: {
             settings: {
               displayMode: "inline",
@@ -718,6 +719,11 @@ function DashboardPaddleInline({
         }
         checkoutItems.push({ priceId: paddleConfig.priceId, quantity: 1 });
 
+        // Detect current language for successUrl
+        const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
+        const currentLang = langMatch ? langMatch[1] : "es";
+        const successUrl = `${window.location.origin}/${currentLang}/payment/success`;
+
         P.Checkout.open({
           items: checkoutItems,
           customer: { email: user?.email || undefined },
@@ -726,7 +732,12 @@ function DashboardPaddleInline({
             user_email: user?.email || "",
             user_name: user?.name || "",
           },
-          settings: { locale: lang || "en", allowLogout: false, showAddDiscounts: true },
+          settings: {
+            locale: lang || "en",
+            allowLogout: false,
+            showAddDiscounts: true,
+            successUrl,
+          },
         });
         opened.current = true;
       }

@@ -712,3 +712,24 @@
 ## Bug - PaywallModal no resetea estado al cerrar
 - [x] Bug: Al cerrar el PaywallModal desde la vista de "Sign in" y volver a abrirlo, muestra "Sign in" en vez de la pantalla inicial "Create an account to download"
 - [x] Fix: Resetear el estado del modal (authStep) a "initial" cuando se cierra — useEffect resetea step, emailInput, passwordInput, etc. cuando isOpen cambia
+
+## Investigación - No hay pagos con Paddle (había pagos con Stripe)
+- [ ] Investigar por qué no hay pagos desde que se cambió a Paddle
+- [ ] Verificar que el checkout de Paddle se abre correctamente
+- [ ] Verificar que el webhook de Paddle está configurado y recibiendo eventos
+- [ ] Comprobar si hay errores en el flujo de checkout
+- [ ] Revisar si el dominio de producción tiene Paddle correctamente configurado
+
+## Bug CRÍTICO - Paddle.js inicializado en sandbox en vez de production
+- [x] Bug: Paddle.js se inicializa sin environment: "production", por defecto usa sandbox, bloqueando todos los pagos
+- [x] Fix: Añadir environment: "production" en PaywallModal.tsx P.Initialize()
+- [x] Fix: Añadir environment: "production" en Pricing.tsx P.Initialize()
+- [x] Fix: Añadir environment: "production" en Dashboard.tsx P.Initialize()
+- [x] Fix: Añadir environment: Environment.production en server/routers.ts getPaddle()
+
+## Bug CRÍTICO - 3D Secure devuelve al inicio del modal
+- [x] Bug: Después de completar 3D Secure y aprobación del banco, el PaywallModal se resetea al inicio en vez de confirmar el pago
+- [x] Fix: Manejar el retorno de 3DS correctamente para que el pago se confirme
+- [x] Fix: Añadir successUrl a Paddle.Checkout.open() en PaywallModal, Pricing y Dashboard
+- [x] Fix: PaymentSuccess page ahora detecta _ptxn de Paddle y confirma el checkout automáticamente
+- [x] Fix: Environment.production añadido al Paddle SDK del servidor (index.ts webhook + routers.ts getPaddle)
