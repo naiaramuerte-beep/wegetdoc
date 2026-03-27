@@ -687,3 +687,6 @@
 
 ## Bug - Paddle checkout no recarga al reabrir PaywallModal
 - [x] Bug: Paddle checkout se queda en "Cargando formulario de pago..." cuando el usuario cierra el modal y vuelve a abrirlo
+
+## Bug - Imagen desplazada en PDF exportado
+- [x] Bug: Las imágenes añadidas al PDF se muestran en posición correcta en el editor pero aparecen desplazadas en el PDF descargado

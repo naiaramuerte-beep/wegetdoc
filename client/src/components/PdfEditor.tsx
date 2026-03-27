@@ -1707,41 +1707,50 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
     const doc = await PDFDocument.load(safeBytes, { ignoreEncryption: true });
     const font = await doc.embedFont(StandardFonts.Helvetica);
+    // Annotation coordinates are stored in canvas/CSS pixels (= PDF points * scale).
+    // We must divide by `scale` to convert back to PDF points for pdf-lib.
+    const s = scale;
     for (const ann of annotations) {
       const page = doc.getPage(ann.page - 1);
       const { height } = page.getSize();
-      const pdfY = height - ann.y - ann.height;
+      // Convert annotation coords from canvas pixels to PDF points
+      const ax = ann.x / s;
+      const ay = ann.y / s;
+      const aw = ann.width / s;
+      const ah = ann.height / s;
+      const pdfY = height - ay - ah;
       if (ann.type === "text" && ann.text) {
-        page.drawText(ann.text, { x: ann.x, y: pdfY + ann.height / 2, size: ann.fontSize ?? 14, font, color: rgb(0, 0, 0) });
+        const fs = (ann.fontSize ?? 14) / s;
+        page.drawText(ann.text, { x: ax, y: pdfY + ah / 2, size: fs, font, color: rgb(0, 0, 0) });
       } else if (ann.type === "signature" && ann.dataUrl) {
         const imgBytes = await fetch(ann.dataUrl).then(r => r.arrayBuffer());
         const img = await doc.embedPng(new Uint8Array(imgBytes));
-        page.drawImage(img, { x: ann.x, y: pdfY, width: ann.width, height: ann.height });
+        page.drawImage(img, { x: ax, y: pdfY, width: aw, height: ah });
       } else if (ann.type === "image" && ann.dataUrl) {
         const imgBytes = await fetch(ann.dataUrl).then(r => r.arrayBuffer());
         let img;
         try { img = await doc.embedPng(new Uint8Array(imgBytes)); }
         catch { img = await doc.embedJpg(new Uint8Array(imgBytes)); }
-        page.drawImage(img, { x: ann.x, y: pdfY, width: ann.width, height: ann.height });
+        page.drawImage(img, { x: ax, y: pdfY, width: aw, height: ah });
       } else if (ann.type === "highlight") {
-        page.drawRectangle({ x: ann.x, y: pdfY, width: ann.width, height: ann.height, color: rgb(1, 1, 0), opacity: 0.4 });
+        page.drawRectangle({ x: ax, y: pdfY, width: aw, height: ah, color: rgb(1, 1, 0), opacity: 0.4 });
       } else if (ann.type === "note" && ann.text) {
-        page.drawRectangle({ x: ann.x, y: pdfY, width: ann.width, height: ann.height, color: rgb(1, 1, 0.6), opacity: 0.8 });
-        page.drawText(ann.text, { x: ann.x + 6, y: pdfY + ann.height - 16, size: 10, font, color: rgb(0, 0, 0), maxWidth: ann.width - 12 });
+        page.drawRectangle({ x: ax, y: pdfY, width: aw, height: ah, color: rgb(1, 1, 0.6), opacity: 0.8 });
+        page.drawText(ann.text, { x: ax + 6 / s, y: pdfY + ah - 16 / s, size: 10 / s, font, color: rgb(0, 0, 0), maxWidth: aw - 12 / s });
       } else if (ann.type === "shape") {
         const c = ann.color ?? "#2563EB";
         const r2 = parseInt(c.slice(1, 3), 16) / 255;
         const g2 = parseInt(c.slice(3, 5), 16) / 255;
         const b2 = parseInt(c.slice(5, 7), 16) / 255;
-        if (ann.text === "rect") {
-          page.drawRectangle({ x: ann.x, y: pdfY, width: ann.width, height: ann.height, borderColor: rgb(r2, g2, b2), borderWidth: 2, color: rgb(r2, g2, b2), opacity: 0.15 });
-        } else if (ann.text === "circle") {
-          page.drawEllipse({ x: ann.x + ann.width / 2, y: pdfY + ann.height / 2, xScale: ann.width / 2, yScale: ann.height / 2, borderColor: rgb(r2, g2, b2), borderWidth: 2, color: rgb(r2, g2, b2), opacity: 0.15 });
+        if (ann.text === "rect" || ann.text === "rect-filled") {
+          page.drawRectangle({ x: ax, y: pdfY, width: aw, height: ah, borderColor: rgb(r2, g2, b2), borderWidth: 2, color: rgb(r2, g2, b2), opacity: 0.15 });
+        } else if (ann.text === "circle" || ann.text === "circle-filled") {
+          page.drawEllipse({ x: ax + aw / 2, y: pdfY + ah / 2, xScale: aw / 2, yScale: ah / 2, borderColor: rgb(r2, g2, b2), borderWidth: 2, color: rgb(r2, g2, b2), opacity: 0.15 });
         } else {
-          page.drawLine({ start: { x: ann.x, y: pdfY }, end: { x: ann.x + ann.width, y: pdfY + ann.height }, thickness: 2, color: rgb(r2, g2, b2) });
+          page.drawLine({ start: { x: ax, y: pdfY }, end: { x: ax + aw, y: pdfY + ah }, thickness: 2, color: rgb(r2, g2, b2) });
         }
       } else if (ann.type === "eraser") {
-        page.drawRectangle({ x: ann.x, y: pdfY, width: ann.width, height: ann.height, color: rgb(1, 1, 1), opacity: 1 });
+        page.drawRectangle({ x: ax, y: pdfY, width: aw, height: ah, color: rgb(1, 1, 1), opacity: 1 });
       } else if (ann.type === "drawing" && ann.points && ann.points.length > 1) {
         const c = ann.color ?? "#FF0000";
         const r2 = parseInt(c.slice(1, 3), 16) / 255;
@@ -1751,7 +1760,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         for (let i = 1; i < ann.points.length; i++) {
           const p1 = ann.points[i - 1];
           const p2 = ann.points[i];
-          page.drawLine({ start: { x: p1.x, y: ph - p1.y }, end: { x: p2.x, y: ph - p2.y }, thickness: ann.strokeWidth ?? 3, color: rgb(r2, g2, b2) });
+          page.drawLine({ start: { x: p1.x / s, y: ph - p1.y / s }, end: { x: p2.x / s, y: ph - p2.y / s }, thickness: (ann.strokeWidth ?? 3) / s, color: rgb(r2, g2, b2) });
         }
       }
     }
