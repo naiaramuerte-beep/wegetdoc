@@ -530,6 +530,7 @@ function PaddleInlineCheckout({
             user_name: user?.name || "",
           },
           settings: {
+            variant: "one-page",
             locale: lang || "en",
             allowLogout: false,
             showAddDiscounts: true,

@@ -726,7 +726,7 @@ function DashboardPaddleInline({
             user_email: user?.email || "",
             user_name: user?.name || "",
           },
-          settings: { locale: lang || "en", allowLogout: false, showAddDiscounts: true },
+          settings: { variant: "one-page", locale: lang || "en", allowLogout: false, showAddDiscounts: true },
         });
         opened.current = true;
       }

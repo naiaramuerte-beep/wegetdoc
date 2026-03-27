@@ -687,3 +687,13 @@
 
 ## Bug - Paddle checkout no recarga al reabrir PaywallModal
 - [x] Bug: Paddle checkout se queda en "Cargando formulario de pago..." cuando el usuario cierra el modal y vuelve a abrirlo
+
+## Prefill email en Paddle checkout para saltar pantalla de info
+- [ ] Pasar customer.email del usuario logueado a Paddle.Checkout.open() en PaywallModal
+- [ ] Pasar customer.email del usuario logueado a Paddle.Checkout.open() en Pricing
+- [ ] Pasar customer.email del usuario logueado a Paddle.Checkout.open() en Dashboard
+
+## Paddle checkout one-page variant
+- [x] Añadir variant: "one-page" a Paddle.Checkout.open() en PaywallModal
+- [x] Añadir variant: "one-page" a Paddle.Checkout.open() en Pricing
+- [x] Añadir variant: "one-page" a Paddle.Checkout.open() en Dashboard
