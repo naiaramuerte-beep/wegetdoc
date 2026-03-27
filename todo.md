@@ -654,3 +654,12 @@
 - [x] Fix: al hacer clic en panel/cuenta de usuario redirige a Manus en vez de quedarse en pdfup.io
 - [x] Cambiar redirect de getLoginUrl() (Manus OAuth) a /{lang}?login=true en Dashboard, main.tsx, Pricing, DashboardLayout
 - [x] Auto-abrir AuthModal en Navbar cuando URL tiene ?login=true
+
+## Bug - Imagen convertida a PDF se pierde tras OAuth redirect
+- [x] Fix: al subir imagen → convertir a PDF → descargar → login Google OAuth → el archivo se pierde y muestra "not a valid PDF"
+- [x] Investigar persistencia del archivo en PdfFileContext/sessionStorage durante redirect OAuth
+- [x] Solución: setPendingFile(pdfFile) después de conversión imagen→PDF en PdfEditor.tsx
+
+## Mejoras toolbar editor (estilo pdfE)
+- [ ] Centrar herramientas en la barra superior del editor
+- [ ] Añadir título del PDF editable encima de las herramientas (con icono lápiz)

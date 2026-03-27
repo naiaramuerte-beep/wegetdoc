@@ -335,7 +335,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const isPremium = subData?.isPremium ?? false;
   const { t } = useLanguage();
   const { isAuthenticated } = useAuth();
-  const { saveEditedPdfToSession, savePdfToSession, setPendingPaywall, pendingFile, pendingEditedPdf, clearPendingEditedPdf, pendingPaywall: ctxPendingPaywall } = usePdfFile();
+  const { saveEditedPdfToSession, savePdfToSession, setPendingPaywall, setPendingFile, pendingFile, pendingEditedPdf, clearPendingEditedPdf, pendingPaywall: ctxPendingPaywall } = usePdfFile();
   // Track the saved document ID so we don't re-save on every download click
   const [savedDocId, setSavedDocId] = useState<number | null>(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
@@ -516,6 +516,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         const pdfFile = new File([pdfBlob], name, { type: "application/pdf" });
         setConvertFileProgress(95);
         setFile(pdfFile);
+        // CRITICAL: Update the context pendingFile with the converted PDF
+        // so that savePdfToSession() saves the real PDF bytes (not the original image)
+        // This prevents "not a valid PDF" error after OAuth redirect
+        setPendingFile(pdfFile);
         await loadPdf(pdfFile);
         setConvertFileProgress(100);
         // Save original file info for the "converted" banner
