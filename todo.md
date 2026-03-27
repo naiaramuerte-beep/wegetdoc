@@ -684,3 +684,6 @@
 ## PaywallModal - Mejorar copy de venta
 - [x] Quitar "7-DAY TRIAL" y "Cancel anytime within 7 days" del badge
 - [x] Poner textos que inciten más a pagar (valor, urgencia, oferta especial)
+
+## Bug - Paddle checkout no recarga al reabrir PaywallModal
+- [x] Bug: Paddle checkout se queda en "Cargando formulario de pago..." cuando el usuario cierra el modal y vuelve a abrirlo
