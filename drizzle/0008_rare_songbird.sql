@@ -1,1 +1,0 @@
-ALTER TABLE `documents` ADD `paymentStatus` enum('pending','paid') DEFAULT 'pending' NOT NULL;

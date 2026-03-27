@@ -1,11 +1,9 @@
 /* =============================================================
-   PDFUp Home Page — Conversion-Optimised Design
-   Dark hero + social proof + urgency + benefits
+   PDFPro Home Page — Deep Navy Pro design
+   Hero integrates the real PdfEditor component
    ============================================================= */
 
-import { useState, useRef, useCallback } from "react";
-import { useLocation } from "wouter";
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useState } from "react";
 import {
   FileText,
   PenTool,
@@ -20,413 +18,168 @@ import {
   Upload,
   Download,
   Edit3,
+  Scissors,
   Layers,
-  Shield,
-  Zap,
-  Monitor,
-  CheckCircle2,
-  RefreshCw,
+  Minimize2,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { usePdfFile } from "@/contexts/PdfFileContext";
-import { useLanguage } from "@/contexts/LanguageContext";
+import PdfEditor from "@/components/PdfEditor";
 
-// Feature images (CDN)
-const FEATURE_IMAGES = [
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/feature-convert-Y6dwg9Ks6AU4LrQ4QETGwk.webp",
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/feature-edit-XgUdhi72HBbaZEcMtbCduV.webp",
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/feature-sign-mNewCdtWeXAwH4MKY3HS7g.webp",
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/feature-collaborate-Xc5uwDNsachsgLjEBvw7Qp.webp",
+// ─── Tool definitions ─────────────────────────────────────────
+const editAndSignTools = [
+  { icon: Type, label: "Editar texto" },
+  { icon: PenTool, label: "Añadir firma" },
+  { icon: MessageSquare, label: "Anotar y comentar" },
+  { icon: Image, label: "Modificar imágenes" },
+  { icon: Lock, label: "Proteger con contraseña" },
+  { icon: Share2, label: "Compartir documentos" },
 ];
 
-// ─── Accepted file types (module-level constants to avoid recreation on each render) ──
-const ACCEPTED_MIME_TYPES = new Set([
-  'application/pdf',
-  'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/tiff',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-powerpoint',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'text/html', 'text/plain',
-  'application/octet-stream', // generic binary — extension check handles actual validation
-]);
+const convertFromPdfTools = [
+  { icon: FileText, label: "PDF a Word" },
+  { icon: FileText, label: "PDF a Excel" },
+  { icon: FileText, label: "PDF a PowerPoint" },
+  { icon: Image, label: "PDF a JPG" },
+  { icon: Image, label: "PDF a PNG" },
+  { icon: FileText, label: "PDF a HTML" },
+];
 
-const ACCEPTED_EXTENSIONS = new Set([
-  '.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff',
-  '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.html', '.txt',
-]);
+const convertToPdfTools = [
+  { icon: FileText, label: "Word a PDF" },
+  { icon: FileText, label: "Excel a PDF" },
+  { icon: FileText, label: "PowerPoint a PDF" },
+  { icon: Image, label: "JPG a PDF" },
+  { icon: Image, label: "PNG a PDF" },
+  { icon: Layers, label: "Fusionar PDFs" },
+];
+
+const allToolsCategories = [
+  { id: "editAndSign", label: "Editar y firmar", tools: editAndSignTools },
+  { id: "convertFromPdf", label: "Convertir desde PDF", tools: convertFromPdfTools },
+  { id: "convertToPdf", label: "Convertir a PDF", tools: convertToPdfTools },
+];
+
+// ─── FAQ data ─────────────────────────────────────────────────
+const faqs = [
+  {
+    question: "¿Qué herramientas puedo usar para editar un PDF online gratis?",
+    answer:
+      "Con PDFPro puedes editar texto, añadir imágenes, insertar firmas digitales, anotar documentos, reorganizar páginas, proteger con contraseña y mucho más. Todo desde tu navegador, sin instalar ningún software.",
+  },
+  {
+    question: "¿Cómo puedo compartir un PDF una vez editado?",
+    answer:
+      "Después de editar tu PDF, puedes descargarlo directamente o compartirlo mediante un enlace o por correo electrónico. También puedes invitar a colaboradores para que revisen y editen el documento.",
+  },
+  {
+    question: "¿Cómo editar un PDF online sin instalar ningún software?",
+    answer:
+      "Simplemente sube tu archivo PDF a PDFPro desde tu navegador. No necesitas instalar ninguna aplicación. Nuestro editor funciona directamente en Chrome, Firefox, Safari y Edge.",
+  },
+  {
+    question: "¿Puedo editar un PDF usando Google Chrome?",
+    answer:
+      "Sí, PDFPro funciona perfectamente en Google Chrome y en cualquier navegador moderno. Solo tienes que acceder a nuestra web, subir tu PDF y empezar a editarlo.",
+  },
+  {
+    question: "¿Cómo hacer que un archivo PDF sea editable?",
+    answer:
+      "Sube tu PDF a PDFPro y utiliza nuestras herramientas de edición de texto para modificar el contenido directamente. Puedes reemplazar, añadir o eliminar texto con total libertad.",
+  },
+  {
+    question: "¿Cómo editar un PDF gratis online?",
+    answer:
+      "Accede a PDFPro, arrastra tu archivo PDF al área de carga o haz clic en 'Subir PDF'. Luego usa las herramientas disponibles para editar tu documento y descárgalo cuando termines.",
+  },
+];
+
+// ─── Features data ─────────────────────────────────────────────
+const features = [
+  {
+    title: "Convierte archivos sin complicaciones",
+    subtitle: "Cambia entre Word, Excel, PowerPoint, imágenes y PDF fácilmente.",
+    description:
+      "Mantén el formato y la calidad en cada conversión, asegurando que tus archivos se vean exactamente como necesitas. Convierte PDF a Word, transforma presentaciones de PowerPoint a PDF o exporta hojas de cálculo de Excel sin perder el diseño original. También puedes convertir imágenes JPG a PDF y consolidar todo en un único archivo profesional.",
+    image: "https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/feature-convert-Y6dwg9Ks6AU4LrQ4QETGwk.webp",
+  },
+  {
+    title: "Edita texto con facilidad",
+    subtitle: "Reemplaza o añade texto con fuentes y estilos totalmente personalizables.",
+    description:
+      "Ajusta la alineación, el tamaño y el color para que coincida perfectamente con el diseño de tu documento. Edita texto en archivos PDF directamente desde tu navegador, sin necesidad de descargar ningún software. Nuestro editor de PDF online te permite personalizar contenido, corregir errores o actualizar datos en segundos.",
+    image: "https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/feature-edit-XgUdhi72HBbaZEcMtbCduV.webp",
+  },
+  {
+    title: "Firma documentos de forma segura",
+    subtitle: "Firma un PDF online con tu cursor, escribiendo tu nombre o subiendo una imagen.",
+    description:
+      "Añadir una firma electrónica a un archivo PDF sin imprimir ni escanear nunca ha sido tan fácil. Con nuestro editor, puedes firmar y compartir documentos digitalmente desde cualquier dispositivo. Ya sean contratos, acuerdos, formularios o cualquier otro archivo PDF, puedes firmarlos online en segundos.",
+    image: "https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/feature-sign-mNewCdtWeXAwH4MKY3HS7g.webp",
+  },
+  {
+    title: "Colabora en documentos",
+    subtitle: "Permite que otros usuarios revisen y editen PDFs compartidos sin instalar software.",
+    description:
+      "Puedes compartir un PDF online por correo electrónico o enlace, añadir comentarios y notas a tus PDFs, y permitir que otros editen el archivo cuando lo necesiten. Colabora en PDFs desde cualquier dispositivo, accede al contenido actualizado y edita documentos online sin perder el formato original.",
+    image: "https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/feature-collaborate-Xc5uwDNsachsgLjEBvw7Qp.webp",
+  },
+];
 
 // ─── Component ─────────────────────────────────────────────────
 export default function Home() {
-  let { user, loading, error, isAuthenticated, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("editAndSign");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [isDraggingOver, setIsDraggingOver] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-
-  const { setPendingFile, setPendingTool } = usePdfFile();
-  const { lang, t } = useLanguage();
-  const [, navigate] = useLocation();
-
-  // ─── Tool definitions ─────────────────────────────────────
-  const editAndSignTools = [
-    { icon: Type, label: t.tool_edit_text, tool: "text" },
-    { icon: PenTool, label: t.tool_add_sign, tool: "sign" },
-    { icon: MessageSquare, label: t.tool_annotate, tool: "notes" },
-    { icon: Image, label: t.tool_images, tool: "image" },
-    { icon: Lock, label: t.tool_protect, tool: "protect" },
-    { icon: Share2, label: t.tool_share, tool: "share" },
-  ];
-
-  const convertFromPdfTools = [
-    { icon: FileText, label: t.tool_pdf_word, tool: "convert-word" },
-    { icon: FileText, label: t.tool_pdf_excel, tool: "convert-excel" },
-    { icon: FileText, label: t.tool_pdf_ppt, tool: "convert-ppt" },
-    { icon: Image, label: t.tool_pdf_jpg, tool: "convert-jpg" },
-    { icon: Image, label: t.tool_pdf_png, tool: "convert-png" },
-    { icon: FileText, label: t.tool_pdf_html, tool: "convert-html" },
-  ];
-
-  const convertToPdfTools = [
-    { icon: FileText, label: t.tool_word_pdf, tool: "word-to-pdf" },
-    { icon: FileText, label: t.tool_excel_pdf, tool: "excel-to-pdf" },
-    { icon: FileText, label: t.tool_ppt_pdf, tool: "ppt-to-pdf" },
-    { icon: Image, label: t.tool_jpg_pdf, tool: "jpg-to-pdf" },
-    { icon: Image, label: t.tool_png_pdf, tool: "png-to-pdf" },
-    { icon: Layers, label: t.tool_merge, tool: "merge" },
-  ];
-
-  const allToolsCategories = [
-    { id: "editAndSign", label: t.tools_tab_edit, tools: editAndSignTools },
-    { id: "convertFromPdf", label: t.tools_tab_from_pdf, tools: convertFromPdfTools },
-    { id: "convertToPdf", label: t.tools_tab_to_pdf, tools: convertToPdfTools },
-  ];
-
-  // ─── FAQ data ─────────────────────────────────────────────
-  const faqs = [
-    { question: t.faq_q1, answer: t.faq_a1 },
-    { question: t.faq_q2, answer: t.faq_a2 },
-    { question: t.faq_q3, answer: t.faq_a3 },
-    { question: t.faq_q4, answer: t.faq_a4 },
-    { question: t.faq_q5, answer: t.faq_a5 },
-    { question: t.faq_q6, answer: t.faq_a6 },
-    { question: t.faq_q7, answer: t.faq_a7 },
-  ];
-
-  // ─── Benefits data ────────────────────────────────────────
-  const benefits = [
-    { icon: Zap, title: t.benefit1_title, desc: t.benefit1_desc },
-    { icon: Shield, title: t.benefit2_title, desc: t.benefit2_desc },
-    { icon: Edit3, title: t.benefit3_title, desc: t.benefit3_desc },
-    { icon: Monitor, title: t.benefit4_title, desc: t.benefit4_desc },
-  ];
-
-  // ─── Features data ────────────────────────────────────────
-  const features = [
-    { title: t.feature1_title, subtitle: t.feature1_subtitle, description: t.feature1_desc, image: FEATURE_IMAGES[0] },
-    { title: t.feature2_title, subtitle: t.feature2_subtitle, description: t.feature2_desc, image: FEATURE_IMAGES[1] },
-    { title: t.feature3_title, subtitle: t.feature3_subtitle, description: t.feature3_desc, image: FEATURE_IMAGES[2] },
-    { title: t.feature4_title, subtitle: t.feature4_subtitle, description: t.feature4_desc, image: FEATURE_IMAGES[3] },
-  ];
 
   const activeCategory = allToolsCategories.find((c) => c.id === activeTab)!;
 
-  const openEditor = useCallback((file: File, tool?: string) => {
-    const ext = '.' + file.name.split('.').pop()?.toLowerCase();
-    const isSupported = ACCEPTED_MIME_TYPES.has(file.type) || ACCEPTED_EXTENSIONS.has(ext);
-    if (!isSupported) {
-      import('sonner').then(({ toast }) => {
-        toast.error('Formato no soportado. Sube un PDF, Word, Excel, PowerPoint, JPG o PNG.');
-      });
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
-    }
-    setPendingFile(file);
-    if (tool) setPendingTool(tool);
-    navigate(`/${lang}/editor`);
-  }, [setPendingFile, setPendingTool, navigate, lang, fileInputRef]);
-
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) openEditor(f);
+  const scrollToEditor = () => {
+    document.getElementById("editor-section")?.scrollIntoView({ behavior: "smooth" });
   };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDraggingOver(false);
-    const f = e.dataTransfer.files[0];
-    if (f) openEditor(f);
-  };
-
-  const FILE_FREE_TOOLS = ["jpg-to-pdf", "png-to-pdf", "word-to-pdf", "excel-to-pdf", "ppt-to-pdf"];
-
-  const scrollToEditor = (tool?: string) => {
-    if (tool) {
-      setPendingTool(tool);
-      if (FILE_FREE_TOOLS.includes(tool)) {
-        navigate(`/${lang}/editor`);
-      } else {
-        fileInputRef.current?.click();
-      }
-    } else {
-      fileInputRef.current?.click();
-    }
-  };
-
-  // Navy brand colors
-  const navy = "oklch(0.18 0.04 250)";
-  const navyMid = "oklch(0.22 0.05 250)";
-  const navyLight = "oklch(0.28 0.05 250)";
-  const blue = "oklch(0.55 0.22 260)";
-  const blueLight = "oklch(0.62 0.18 280)";
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "oklch(0.98 0.005 250)" }}>
       <Navbar />
 
-      {/* ── HERO — dark background, conversion-focused ─────── */}
-      <section
-        className="relative overflow-hidden"
-        style={{ backgroundColor: navy }}
-      >
-        {/* Background texture */}
+      {/* ── HERO ───────────────────────────────────────────── */}
+      <section className="relative py-12 md:py-20 overflow-hidden">
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            backgroundImage: `radial-gradient(circle at 20% 50%, oklch(0.55 0.22 260 / 0.12) 0%, transparent 50%),
-              radial-gradient(circle at 80% 20%, oklch(0.55 0.22 260 / 0.08) 0%, transparent 40%),
-              radial-gradient(circle at 60% 80%, oklch(0.35 0.10 260 / 0.10) 0%, transparent 40%)`,
-          }}
-        />
-        {/* Subtle grid pattern */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-5"
-          style={{
-            backgroundImage: `linear-gradient(oklch(0.8 0.05 260) 1px, transparent 1px),
-              linear-gradient(90deg, oklch(0.8 0.05 260) 1px, transparent 1px)`,
-            backgroundSize: "60px 60px",
+            background:
+              "radial-gradient(ellipse at 50% 100%, oklch(0.55 0.22 260 / 0.10) 0%, transparent 65%)",
           }}
         />
 
-        <div className="container relative z-10 py-6 md:py-20">
-          {/* Cloud SaaS badge — prominent — hidden on mobile to save space */}
-          <div className="hidden md:flex justify-center mb-4">
-            <div
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold"
-              style={{
-                backgroundColor: "oklch(0.75 0.15 145 / 0.15)",
-                border: "1px solid oklch(0.75 0.15 145 / 0.35)",
-                color: "oklch(0.80 0.15 145)",
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-            >
-              <Monitor className="w-4 h-4" />
-              {t.hero_cloud_badge}
-            </div>
-          </div>
-
-          {/* Trust badges row — hidden on mobile to save space */}
-          <div className="hidden md:flex flex-wrap justify-center gap-3 mb-8">
-            {[
-              { icon: Shield, text: (t as any).hero_trust_secure ?? "Secure & encrypted", iconColor: "#00B67A", textColor: "#00B67A" },
-              { icon: Monitor, text: (t as any).hero_trust_browser ?? "Works in any browser", iconColor: "oklch(0.75 0.10 260)", textColor: "oklch(0.85 0.01 250)" },
-              { icon: CheckCircle2, text: t.hero_badge_instant, iconColor: "oklch(0.75 0.15 145)", textColor: "oklch(0.85 0.01 250)" },
-            ].map((badge, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium"
-                style={{
-                  backgroundColor: "oklch(1 0 0 / 0.07)",
-                  border: "1px solid oklch(1 0 0 / 0.12)",
-                  color: badge.textColor,
-                  fontFamily: "'DM Sans', sans-serif",
-                }}
-              >
-                {badge.icon && <badge.icon className="w-4 h-4" style={{ color: badge.iconColor }} />}
-                {badge.text}
-              </div>
-            ))}
-          </div>
-
-          {/* Main headline */}
-          <div className="text-center max-w-4xl mx-auto mb-6 md:mb-10">
+        <div className="container relative z-10">
+          <div className="text-center max-w-3xl mx-auto mb-8">
             <h1
-              className="text-3xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-3 md:mb-5"
-              style={{ fontFamily: "'Sora', sans-serif", color: "white" }}
+              className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-4"
+              style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
             >
-              {t.hero_title_1}{" "}
+              Editor de PDF Online{" "}
               <span
                 style={{
-                  background: `linear-gradient(135deg, ${blue}, ${blueLight})`,
+                  background: "linear-gradient(135deg, oklch(0.55 0.22 260), oklch(0.62 0.18 280))",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
                 }}
               >
-                {t.hero_title_2}
+                Gratuito
               </span>
             </h1>
             <p
-              className="text-sm md:text-xl max-w-2xl mx-auto"
-              style={{ color: "oklch(0.80 0.03 250)", fontFamily: "'DM Sans', sans-serif" }}
+              className="text-lg md:text-xl"
+              style={{ color: "oklch(0.45 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
             >
-              {t.hero_subtitle}
+              Sube tu PDF y edítalo ahora mismo — sin instalar nada
             </p>
           </div>
 
-          {/* ── DROP ZONE ── */}
-          <div id="editor-section" className="max-w-xl mx-auto">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.html,.txt"
-              className="hidden"
-              onChange={handleFileInput}
-            />
-
-            <div
-              onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
-              onDragLeave={() => setIsDraggingOver(false)}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className="cursor-pointer rounded-2xl flex flex-col items-center justify-center gap-3 md:gap-5 py-6 md:py-10 px-6 md:px-8 transition-all duration-300"
-              style={{
-                border: `2px dashed ${isDraggingOver ? blue : "oklch(0.55 0.22 260 / 0.50)"}`,
-                backgroundColor: isDraggingOver
-                  ? "oklch(0.55 0.22 260 / 0.12)"
-                  : "oklch(1 0 0 / 0.05)",
-                boxShadow: isDraggingOver
-                  ? `0 0 40px oklch(0.55 0.22 260 / 0.30)`
-                  : `0 0 0px transparent`,
-              }}
-            >
-              {/* Animated icon */}
-              <div
-                className="w-14 h-14 md:w-20 md:h-20 rounded-2xl flex items-center justify-center"
-                style={{
-                  backgroundColor: "oklch(0.55 0.22 260 / 0.15)",
-                  border: "1px solid oklch(0.55 0.22 260 / 0.30)",
-                  animation: "pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-                }}
-              >
-                <FileText className="w-7 h-7 md:w-10 md:h-10" style={{ color: blue }} />
-              </div>
-
-              <div className="text-center">
-                <p className="font-bold text-base md:text-xl mb-1" style={{ color: "white", fontFamily: "'Sora', sans-serif" }}>
-                  {t.hero_drag_here}
-                </p>
-                <p className="text-sm" style={{ color: "oklch(0.65 0.03 250)" }}>{t.hero_or}</p>
-              </div>
-
-              {/* Main CTA button */}
-              <button
-                className="flex items-center gap-2 px-6 py-3 md:px-8 md:py-4 rounded-xl font-bold text-white text-sm md:text-base transition-all duration-200 shadow-lg"
-                style={{
-                  background: `linear-gradient(135deg, ${blue}, ${blueLight})`,
-                  boxShadow: `0 8px 24px oklch(0.55 0.22 260 / 0.40)`,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = `0 12px 32px oklch(0.55 0.22 260 / 0.55)`;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = `0 8px 24px oklch(0.55 0.22 260 / 0.40)`;
-                }}
-              >
-                <Upload className="w-5 h-5" />
-                {t.hero_upload_btn}
-                <ArrowRight className="w-5 h-5" />
-              </button>
-
-              {/* Auto-conversion info — directly under CTA */}
-              <p className="flex items-center justify-center gap-1.5 text-xs" style={{ color: "oklch(0.65 0.03 250)" }}>
-                <RefreshCw className="w-3 h-3 shrink-0" style={{ color: "oklch(0.70 0.15 260)" }} />
-                {t.hero_auto_convert}
-              </p>
-
-              {/* Feature badges */}
-              <div className="flex flex-wrap justify-center gap-2">
-                {[t.hero_badge_free, t.hero_badge_no_card].map((badge, i) => (
-                  <span
-                    key={i}
-                    className="flex items-center gap-1 text-xs px-3 py-1 rounded-full font-medium"
-                    style={{
-                      backgroundColor: "oklch(1 0 0 / 0.08)",
-                      color: "oklch(0.75 0.08 260)",
-                      border: "1px solid oklch(1 0 0 / 0.10)",
-                    }}
-                  >
-                    <CheckCircle2 className="w-3 h-3" style={{ color: "oklch(0.75 0.15 145)" }} />
-                    {badge}
-                  </span>
-                ))}
-
-              </div>
-
-              <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>{t.hero_max_size_detail}</p>
-            </div>
-
-
-          </div>
-        </div>
-
-        {/* Wave divider */}
-        <div className="relative h-12 overflow-hidden" style={{ marginBottom: "-1px" }}>
-          <svg
-            viewBox="0 0 1440 48"
-            xmlns="http://www.w3.org/2000/svg"
-            className="absolute bottom-0 w-full"
-            preserveAspectRatio="none"
-          >
-            <path
-              d="M0,48 C360,0 1080,0 1440,48 L1440,48 L0,48 Z"
-              fill="oklch(0.98 0.005 250)"
-            />
-          </svg>
-        </div>
-      </section>
-
-      {/* ── SOCIAL PROOF BAR ───────────────────────────────── */}
-      <section
-        className="py-6 border-b"
-        style={{ backgroundColor: "oklch(0.98 0.005 250)", borderColor: "oklch(0.90 0.01 250)" }}
-      >
-        <div className="container">
-          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16">
-            {[
-              { value: "15+", label: (t as any).hero_social_tools ?? "PDF tools available", icon: FileText },
-              { value: "100%", label: (t as any).hero_social_browser ?? "Browser-based", icon: Shield },
-              { value: "0", label: (t as any).hero_social_install ?? "Installation required", icon: CheckCircle2 },
-            ].map((stat, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center"
-                  style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.10)" }}
-                >
-                  <stat.icon className="w-5 h-5" style={{ color: blue }} />
-                </div>
-                <div>
-                  <div
-                    className="font-extrabold text-xl leading-none"
-                    style={{ color: navy, fontFamily: "'Sora', sans-serif" }}
-                  >
-                    {stat.value}
-                  </div>
-                  <div
-                    className="text-xs mt-0.5"
-                    style={{ color: "oklch(0.55 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
-                  >
-                    {stat.label}
-                  </div>
-                </div>
-              </div>
-            ))}
+          {/* ── REAL PDF EDITOR ── */}
+          <div id="editor-section" className="max-w-4xl mx-auto">
+            <PdfEditor />
           </div>
         </div>
       </section>
@@ -437,15 +190,15 @@ export default function Home() {
           <div className="text-center mb-10">
             <h2
               className="text-3xl md:text-4xl font-bold mb-3"
-              style={{ fontFamily: "'Sora', sans-serif", color: navy }}
+              style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
             >
-              {t.tools_title}
+              Todas las herramientas que necesitas para editar PDFs
             </h2>
             <p
               className="text-base"
               style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
             >
-              {t.tools_subtitle}
+              Desde convertir archivos hasta firmar y proteger tus PDFs, todo está aquí:
             </p>
           </div>
 
@@ -462,9 +215,16 @@ export default function Home() {
                   className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
                   style={{
                     fontFamily: "'DM Sans', sans-serif",
-                    backgroundColor: activeTab === cat.id ? navy : "transparent",
-                    color: activeTab === cat.id ? "white" : "oklch(0.45 0.02 250)",
-                    boxShadow: activeTab === cat.id ? `0 2px 8px oklch(0.18 0.04 250 / 0.3)` : "none",
+                    backgroundColor:
+                      activeTab === cat.id ? "oklch(0.18 0.04 250)" : "transparent",
+                    color:
+                      activeTab === cat.id
+                        ? "white"
+                        : "oklch(0.45 0.02 250)",
+                    boxShadow:
+                      activeTab === cat.id
+                        ? "0 2px 8px oklch(0.18 0.04 250 / 0.3)"
+                        : "none",
                   }}
                 >
                   {cat.label}
@@ -494,15 +254,21 @@ export default function Home() {
                   e.currentTarget.style.boxShadow = "none";
                   e.currentTarget.style.transform = "translateY(0)";
                 }}
-                onClick={() => scrollToEditor((tool as { tool: string }).tool)}
+                onClick={scrollToEditor}
               >
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center"
                   style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.08)" }}
                 >
-                  <tool.icon className="w-5 h-5" style={{ color: blue }} />
+                  <tool.icon
+                    className="w-5 h-5"
+                    style={{ color: "oklch(0.55 0.22 260)" }}
+                  />
                 </div>
-                <span className="text-xs font-medium leading-tight" style={{ color: "oklch(0.25 0.03 250)" }}>
+                <span
+                  className="text-xs font-medium leading-tight"
+                  style={{ color: "oklch(0.25 0.03 250)" }}
+                >
                   {tool.label}
                 </span>
               </button>
@@ -512,96 +278,63 @@ export default function Home() {
           <div className="text-center">
             <button
               className="inline-flex items-center gap-2 px-8 py-3 rounded-lg text-white font-semibold text-sm transition-all duration-200"
-              style={{ backgroundColor: navy, fontFamily: "'DM Sans', sans-serif" }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = blue)}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = navy)}
-              onClick={() => scrollToEditor()}
+              style={{
+                backgroundColor: "oklch(0.18 0.04 250)",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "oklch(0.18 0.04 250)")
+              }
+              onClick={scrollToEditor}
             >
               <Upload className="w-4 h-4" />
-              {t.tools_cta}
+              Subir PDF para editar
             </button>
           </div>
         </div>
       </section>
 
-      {/* ── BENEFITS — why choose us ───────────────────────── */}
-      <section className="py-16 md:py-20" style={{ backgroundColor: "oklch(1 0 0)" }}>
-        <div className="container">
-          <div className="text-center mb-12">
-            <h2
-              className="text-3xl md:text-4xl font-bold mb-3"
-              style={{ fontFamily: "'Sora', sans-serif", color: navy }}
-            >
-              {t.benefits_title}
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {benefits.map((b, i) => (
-              <div
-                key={i}
-                className="flex flex-col gap-4 p-6 rounded-2xl transition-all duration-200"
-                style={{
-                  backgroundColor: "oklch(0.98 0.005 250)",
-                  border: "1px solid oklch(0.91 0.01 250)",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLDivElement).style.borderColor = "oklch(0.55 0.22 260 / 0.35)";
-                  (e.currentTarget as HTMLDivElement).style.boxShadow = "0 8px 32px oklch(0.55 0.22 260 / 0.08)";
-                  (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLDivElement).style.borderColor = "oklch(0.91 0.01 250)";
-                  (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
-                  (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
-                }}
-              >
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center"
-                  style={{ background: `linear-gradient(135deg, ${blue}, ${blueLight})` }}
-                >
-                  <b.icon className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3
-                    className="font-bold text-base mb-2"
-                    style={{ fontFamily: "'Sora', sans-serif", color: navy }}
-                  >
-                    {b.title}
-                  </h3>
-                  <p
-                    className="text-sm leading-relaxed"
-                    style={{ color: "oklch(0.48 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
-                  >
-                    {b.desc}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ── HOW IT WORKS ───────────────────────────────────── */}
-      <section id="how-it-works" className="py-16 md:py-20" style={{ backgroundColor: "oklch(0.97 0.006 250)" }}>
+      <section id="how-it-works" className="py-16 md:py-24">
         <div className="container">
           <div className="mb-12">
             <h2
               className="text-3xl md:text-4xl font-bold mb-3"
-              style={{ fontFamily: "'Sora', sans-serif", color: navy }}
+              style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
             >
-              {t.how_title}
+              Cómo editar PDFs online en 3 sencillos pasos
             </h2>
-            <p className="text-base" style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}>
-              {t.how_subtitle}
+            <p
+              className="text-base"
+              style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+            >
+              Sigue estos pasos rápidos para editar tus archivos PDF:
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
             {[
-              { step: "1", icon: Upload, title: t.how_step1_title, desc: t.how_step1_desc },
-              { step: "2", icon: Edit3, title: t.how_step2_title, desc: t.how_step2_desc },
-              { step: "3", icon: Download, title: t.how_step3_title, desc: t.how_step3_desc },
+              {
+                step: "1",
+                icon: Upload,
+                title: "Sube tu archivo",
+                desc: "Arrastra y suelta tu PDF o selecciónalo desde tu dispositivo.",
+              },
+              {
+                step: "2",
+                icon: Edit3,
+                title: "Realiza ediciones",
+                desc: "Edita el texto, añade tu firma o convierte tu PDF a un formato diferente.",
+              },
+              {
+                step: "3",
+                icon: Download,
+                title: "Descarga tu PDF",
+                desc: "Obtén tu archivo actualizado al instante, listo para imprimir o compartir.",
+              },
             ].map((item, i) => (
               <div
                 key={i}
@@ -615,7 +348,10 @@ export default function Home() {
                 <div className="flex items-center gap-3">
                   <div
                     className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-                    style={{ background: `linear-gradient(135deg, ${blue}, ${blueLight})`, fontFamily: "'Sora', sans-serif" }}
+                    style={{
+                      backgroundColor: "oklch(0.18 0.04 250)",
+                      fontFamily: "'Sora', sans-serif",
+                    }}
                   >
                     {item.step}
                   </div>
@@ -623,14 +359,29 @@ export default function Home() {
                     className="w-10 h-10 rounded-xl flex items-center justify-center"
                     style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.08)" }}
                   >
-                    <item.icon className="w-5 h-5" style={{ color: blue }} />
+                    <item.icon
+                      className="w-5 h-5"
+                      style={{ color: "oklch(0.55 0.22 260)" }}
+                    />
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg mb-2" style={{ fontFamily: "'Sora', sans-serif", color: navy }}>
+                  <h3
+                    className="font-bold text-lg mb-2"
+                    style={{
+                      fontFamily: "'Sora', sans-serif",
+                      color: "oklch(0.15 0.03 250)",
+                    }}
+                  >
                     {item.title}
                   </h3>
-                  <p className="text-sm leading-relaxed" style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}>
+                  <p
+                    className="text-sm leading-relaxed"
+                    style={{
+                      color: "oklch(0.50 0.02 250)",
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                  >
                     {item.desc}
                   </p>
                 </div>
@@ -641,44 +392,43 @@ export default function Home() {
           <div className="text-center">
             <button
               className="inline-flex items-center gap-2 px-8 py-3 rounded-lg text-white font-semibold text-sm transition-all duration-200"
-              style={{ backgroundColor: navy, fontFamily: "'DM Sans', sans-serif" }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = blue)}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = navy)}
-              onClick={() => scrollToEditor()}
+              style={{
+                backgroundColor: "oklch(0.18 0.04 250)",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "oklch(0.18 0.04 250)")
+              }
+              onClick={scrollToEditor}
             >
               <Upload className="w-4 h-4" />
-              {t.how_cta}
+              Subir PDF para editar
             </button>
-          </div>
-
-          {/* Cloud SaaS notice */}
-          <div
-            className="mt-10 flex items-center justify-center gap-3 px-6 py-4 rounded-xl mx-auto max-w-2xl"
-            style={{
-              backgroundColor: "oklch(0.55 0.22 260 / 0.06)",
-              border: "1px solid oklch(0.55 0.22 260 / 0.15)",
-            }}
-          >
-            <Monitor className="w-5 h-5 flex-shrink-0" style={{ color: blue }} />
-            <p className="text-sm" style={{ color: "oklch(0.40 0.03 250)", fontFamily: "'DM Sans', sans-serif" }}>
-              {t.cloud_notice}
-            </p>
           </div>
         </div>
       </section>
 
-      {/* ── WHY CHOOSE US — feature showcase ──────────────── */}
-      <section className="py-16 md:py-24" style={{ backgroundColor: "oklch(1 0 0)" }}>
+      {/* ── WHY CHOOSE US ──────────────────────────────────── */}
+      <section
+        className="py-16 md:py-24"
+        style={{ backgroundColor: "oklch(0.97 0.006 250)" }}
+      >
         <div className="container">
           <div className="mb-12">
             <h2
               className="text-3xl md:text-4xl font-bold mb-3"
-              style={{ fontFamily: "'Sora', sans-serif", color: navy }}
+              style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
             >
-              {t.features_why_title}
+              ¿Por qué elegir nuestro Editor de PDF?
             </h2>
-            <p className="text-base" style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}>
-              {t.features_why_subtitle}
+            <p
+              className="text-base"
+              style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+            >
+              Descubre por qué somos la mejor opción para editar PDFs:
             </p>
           </div>
 
@@ -686,25 +436,53 @@ export default function Home() {
             {features.map((feature, i) => (
               <div
                 key={i}
-                className={`flex flex-col ${i % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"} gap-8 items-center py-10 border-b`}
+                className={`flex flex-col ${
+                  i % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
+                } gap-8 items-center py-10 border-b`}
                 style={{ borderColor: "oklch(0.88 0.01 250)" }}
               >
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold mb-2" style={{ color: blue, fontFamily: "'Sora', sans-serif" }}>
+                  <h3
+                    className="text-xl font-bold mb-2"
+                    style={{
+                      color: "oklch(0.55 0.22 260)",
+                      fontFamily: "'Sora', sans-serif",
+                    }}
+                  >
                     {feature.title}
                   </h3>
-                  <p className="font-semibold text-lg mb-3" style={{ color: navy, fontFamily: "'Sora', sans-serif" }}>
+                  <p
+                    className="font-semibold text-lg mb-3"
+                    style={{
+                      color: "oklch(0.15 0.03 250)",
+                      fontFamily: "'Sora', sans-serif",
+                    }}
+                  >
                     {feature.subtitle}
                   </p>
-                  <p className="text-sm leading-relaxed" style={{ color: "oklch(0.45 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}>
+                  <p
+                    className="text-sm leading-relaxed"
+                    style={{
+                      color: "oklch(0.45 0.02 250)",
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                  >
                     {feature.description}
                   </p>
                 </div>
+
                 <div
                   className="flex-shrink-0 w-full md:w-64 h-48 rounded-2xl overflow-hidden"
-                  style={{ backgroundColor: "oklch(0.22 0.04 250)", boxShadow: "0 8px 32px oklch(0.18 0.04 250 / 0.12)" }}
+                  style={{
+                    backgroundColor: "oklch(0.22 0.04 250)",
+                    boxShadow: "0 8px 32px oklch(0.18 0.04 250 / 0.12)",
+                  }}
                 >
-                  <img src={feature.image} alt={feature.title} className="w-full h-full object-cover" />
+                  <img
+                    src={feature.image}
+                    alt={feature.title}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
             ))}
@@ -713,15 +491,31 @@ export default function Home() {
       </section>
 
       {/* ── FAQ ────────────────────────────────────────────── */}
-      <section id="faq" className="py-16 md:py-24" style={{ backgroundColor: "oklch(0.97 0.006 250)" }}>
+      <section id="faq" className="py-16 md:py-24">
         <div className="container max-w-3xl mx-auto">
           <div className="text-center mb-12">
             <h2
               className="text-3xl md:text-4xl font-bold mb-3"
-              style={{ fontFamily: "'Sora', sans-serif", color: navy }}
+              style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
             >
-              {t.faq_title}
+              ¿Tienes preguntas?{" "}
+              <span
+                style={{
+                  background: "linear-gradient(135deg, oklch(0.55 0.22 260), oklch(0.62 0.18 280))",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                Tenemos respuestas
+              </span>
             </h2>
+            <p
+              className="text-base"
+              style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+            >
+              Aprende más sobre cómo editar PDFs y usar nuestras funciones de forma efectiva
+            </p>
           </div>
 
           <div className="space-y-3">
@@ -738,19 +532,36 @@ export default function Home() {
                   className="w-full flex items-center justify-between px-6 py-4 text-left"
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
                 >
-                  <span className="font-semibold text-sm pr-4" style={{ color: navy, fontFamily: "'Sora', sans-serif" }}>
+                  <span
+                    className="font-semibold text-sm pr-4"
+                    style={{
+                      color: "oklch(0.15 0.03 250)",
+                      fontFamily: "'Sora', sans-serif",
+                    }}
+                  >
                     {faq.question}
                   </span>
                   {openFaq === i ? (
-                    <ChevronUp className="w-4 h-4 flex-shrink-0" style={{ color: blue }} />
+                    <ChevronUp
+                      className="w-4 h-4 flex-shrink-0"
+                      style={{ color: "oklch(0.55 0.22 260)" }}
+                    />
                   ) : (
-                    <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: "oklch(0.50 0.02 250)" }} />
+                    <ChevronDown
+                      className="w-4 h-4 flex-shrink-0"
+                      style={{ color: "oklch(0.50 0.02 250)" }}
+                    />
                   )}
                 </button>
                 {openFaq === i && (
                   <div
                     className="px-6 pb-4"
-                    style={{ color: "oklch(0.45 0.02 250)", fontFamily: "'DM Sans', sans-serif", fontSize: "0.875rem", lineHeight: "1.6" }}
+                    style={{
+                      color: "oklch(0.45 0.02 250)",
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontSize: "0.875rem",
+                      lineHeight: "1.6",
+                    }}
                   >
                     {faq.answer}
                   </div>
@@ -761,53 +572,43 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── FINAL CTA — dark, conversion-focused ───────────── */}
-      <section className="relative py-16 md:py-20 overflow-hidden" style={{ backgroundColor: navy }}>
-        {/* Background glow */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: `radial-gradient(ellipse at 50% 100%, oklch(0.55 0.22 260 / 0.20) 0%, transparent 60%)`,
-          }}
-        />
-        <div className="container relative z-10 text-center">
+      {/* ── FINAL CTA ──────────────────────────────────────── */}
+      <section
+        className="py-16 md:py-20"
+        style={{ backgroundColor: "oklch(0.18 0.04 250)" }}
+      >
+        <div className="container text-center">
           <h2
             className="text-3xl md:text-4xl font-bold text-white mb-4"
             style={{ fontFamily: "'Sora', sans-serif" }}
           >
-            {t.cta_title}
+            Empieza a editar tus PDFs ahora
           </h2>
           <p
-            className="text-base mb-3 max-w-xl mx-auto"
+            className="text-base mb-8 max-w-xl mx-auto"
             style={{ color: "oklch(0.70 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
           >
-            {t.cta_subtitle}
+            Únete a millones de usuarios que confían en PDFPro para gestionar sus documentos.
           </p>
-
           <button
-            className="inline-flex items-center gap-2 px-10 py-4 rounded-xl font-bold text-white text-base transition-all duration-200 shadow-lg"
+            className="inline-flex items-center gap-2 px-8 py-3 rounded-lg font-semibold text-sm transition-all duration-200"
             style={{
-              background: `linear-gradient(135deg, ${blue}, ${blueLight})`,
-              boxShadow: `0 8px 32px oklch(0.55 0.22 260 / 0.45)`,
+              backgroundColor: "oklch(0.55 0.22 260)",
+              color: "white",
               fontFamily: "'DM Sans', sans-serif",
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = `0 14px 40px oklch(0.55 0.22 260 / 0.60)`;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = `0 8px 32px oklch(0.55 0.22 260 / 0.45)`;
-            }}
-            onClick={() => scrollToEditor()}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "oklch(0.48 0.22 260)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)")
+            }
+            onClick={scrollToEditor}
           >
-            <Upload className="w-5 h-5" />
-            {t.cta_btn}
-            <ArrowRight className="w-5 h-5" />
+            <Upload className="w-4 h-4" />
+            Subir PDF para editar
+            <ArrowRight className="w-4 h-4" />
           </button>
-          <p className="text-xs mt-4" style={{ color: "oklch(0.50 0.02 250)" }}>
-            {t.hero_max_size_detail}
-          </p>
         </div>
       </section>
 
