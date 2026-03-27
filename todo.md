@@ -663,7 +663,27 @@
 - [x] Panel admin: mostrar por usuario si tiene sub activa, si está en trial, si ha pagado, fecha de cancelación
 - [x] Tests para cancelación y admin panel con Paddle (82/82 OK)
 
-## Fix Paddle 401 — environment: production
-- [x] Añadido environment: "production" a P.Initialize() en PaywallModal, Pricing y Dashboard (token live requiere environment production)
-- [x] Añadido Environment.production al Paddle SDK del servidor (routers.ts getPaddle + index.ts webhook)
-- [x] 82/82 tests OK
+## Trial 0,99€ con Paddle
+- [x] Añadir Price ID del one-time 0,99€ (pri_01kmnangj1rn4yvkytdskmnwf9) a la config
+- [x] Pasar ambos precios (one-time + recurring) al checkout de Paddle
+- [x] Actualizar textos del PaywallModal: ya no es "GRATIS", mostrar 0,99€ / $0.99 según país
+- [x] Actualizar textos de Pricing page con el nuevo modelo de trial
+- [x] Actualizar textos de Dashboard BillingTab si aplica
+- [x] Tests y verificación (83/83 OK)
+
+## UX Editor - Reorganizar barra de herramientas
+- [x] Mover botón "Rotar página" a la toolbar principal (desktop con etiqueta + móvil)
+- [x] Mover botón "Eliminar página" a la toolbar principal (desktop con etiqueta + móvil)
+- [x] Añadir botones Deshacer/Rehacer (Undo/Redo) con etiquetas en desktop + móvil
+- [x] Reorganizar iconos: Rotar/Eliminar con etiquetas claras, separados de navegación
+
+## Traducción panel "Editar texto nativo"
+- [x] Traducir textos hardcodeados del panel edit-text del editor PDF a todos los idiomas (10 idiomas)
+- [x] Quitar texto "Luego 49,90€/mes" / "Then $49.90/mo" del PaywallModal
+
+## PaywallModal - Mejorar copy de venta
+- [x] Quitar "7-DAY TRIAL" y "Cancel anytime within 7 days" del badge
+- [x] Poner textos que inciten más a pagar (valor, urgencia, oferta especial)
+
+## Bug - Paddle checkout no recarga al reabrir PaywallModal
+- [x] Bug: Paddle checkout se queda en "Cargando formulario de pago..." cuando el usuario cierra el modal y vuelve a abrirlo

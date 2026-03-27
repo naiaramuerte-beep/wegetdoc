@@ -22,6 +22,13 @@ describe("Paddle configuration", () => {
     expect(priceId).toMatch(/^pri_/);
   });
 
+  it("should have PADDLE_TRIAL_PRICE_ID configured", () => {
+    const trialPriceId = process.env.PADDLE_TRIAL_PRICE_ID;
+    expect(trialPriceId).toBeDefined();
+    expect(trialPriceId).not.toBe("");
+    expect(trialPriceId).toMatch(/^pri_/);
+  });
+
   it("should have PADDLE_WEBHOOK_NOTIFICATION_ID configured", () => {
     const notifId = process.env.PADDLE_WEBHOOK_NOTIFICATION_ID;
     expect(notifId).toBeDefined();
