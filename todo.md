@@ -686,7 +686,7 @@
 - [x] Poner textos que inciten más a pagar (valor, urgencia, oferta especial)
 
 ## Bug - Paddle checkout no recarga al reabrir PaywallModal
-- [x] Bug: Paddle checkout se queda en "Cargando formulario de pago..." cuando el usuario cierra el modal y vuelve a abrirlo
+- [x] Bug: Paddle checkout se queda en "Cargando formulario de pago..." cuando el usuario cierra el modal y vuelve a abrirlo (REVERTIDO a versión original por posible conflicto con pagos)
 
 ## Bug - Imagen desplazada en PDF exportado
 - [ ] Bug: Las imágenes añadidas al PDF se muestran en posición correcta en el editor pero aparecen desplazadas en el PDF descargado (pendiente - necesita enfoque diferente)

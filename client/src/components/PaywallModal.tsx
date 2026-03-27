@@ -49,8 +49,9 @@ function PaddleCheckoutForm({
   const [isLoading, setIsLoading] = useState(false);
   const [progressStep, setProgressStep] = useState<"idle" | "checkout" | "saving" | "done">("idle");
   const [paddleReady, setPaddleReady] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const paddleInitialized = useRef(false);
   const checkoutOpened = useRef(false);
-  const mountedRef = useRef(true);
 
   const confirmPaddleCheckout = trpc.subscription.confirmPaddleCheckout.useMutation();
   const paddleConfigQ = trpc.subscription.paddleConfig.useQuery();
@@ -163,48 +164,27 @@ function PaddleCheckoutForm({
     fireBeginCheckout();
   }, []);
 
-  // Track whether Paddle has been globally initialized (persists across mounts)
-  const paddleGloballyInitialized = useRef(!!(window as any).__paddleInitialized);
-
-  // Initialize Paddle.js and open checkout
+  // Initialize Paddle.js IMMEDIATELY
   useEffect(() => {
-    if (!paddleConfigQ.data?.clientToken || !paddleConfigQ.data?.priceId) return;
-
-    mountedRef.current = true;
-    let cancelled = false;
+    if (checkoutOpen || !paddleConfigQ.data?.clientToken || !paddleConfigQ.data?.priceId) return;
 
     const Paddle = (window as any).Paddle;
     if (!Paddle) {
-      // Load Paddle.js script if not yet loaded
-      const existingScript = document.querySelector('script[src*="paddle.com/paddle/v2/paddle.js"]');
-      if (!existingScript) {
-        const script = document.createElement("script");
-        script.src = "https://cdn.paddle.com/paddle/v2/paddle.js";
-        script.async = true;
-        script.onload = () => { if (!cancelled) initAndOpen(); };
-        script.onerror = () => {
-          console.error("[Paddle] Failed to load Paddle.js");
-          toast.error("Error loading payment system. Please refresh.");
-        };
-        document.head.appendChild(script);
-      } else {
-        // Script exists but Paddle not yet on window — wait for it
-        const waitForPaddle = setInterval(() => {
-          if ((window as any).Paddle && !cancelled) {
-            clearInterval(waitForPaddle);
-            initAndOpen();
-          }
-        }, 100);
-        // Cleanup interval if unmounted
-        setTimeout(() => clearInterval(waitForPaddle), 10000);
-      }
-      return () => { cancelled = true; };
+      const script = document.createElement("script");
+      script.src = "https://cdn.paddle.com/paddle/v2/paddle.js";
+      script.async = true;
+      script.onload = () => initAndOpen();
+      script.onerror = () => {
+        console.error("[Paddle] Failed to load Paddle.js");
+        toast.error("Error loading payment system. Please refresh.");
+      };
+      document.head.appendChild(script);
+      return;
     }
 
     initAndOpen();
 
     function initAndOpen() {
-      if (cancelled) return;
       const P = (window as any).Paddle;
       if (!P) return;
 
@@ -213,18 +193,7 @@ function PaddleCheckoutForm({
       const trialPriceId = paddleConfigQ.data!.trialPriceId;
 
       try {
-        const eventHandler = (event: any) => {
-          if (cancelled) return;
-          console.log("[Paddle] Event:", event.name, event);
-          if (event.name === "checkout.loaded") setPaddleReady(true);
-          if (event.name === "checkout.completed") handleCheckoutComplete(event.data);
-          if (event.name === "checkout.error") {
-            console.error("[Paddle] Checkout error:", event);
-            toast.error("Error en el proceso de pago. Inténtalo de nuevo.");
-          }
-        };
-
-        if (!paddleGloballyInitialized.current && !(window as any).__paddleInitialized) {
+        if (!paddleInitialized.current) {
           P.Initialize({
             token: clientToken,
             checkout: {
@@ -236,73 +205,72 @@ function PaddleCheckoutForm({
                 locale: lang || "en",
               },
             },
-            eventCallback: eventHandler,
+            eventCallback: (event: any) => {
+              console.log("[Paddle] Event:", event.name, event);
+              if (event.name === "checkout.loaded") setPaddleReady(true);
+              if (event.name === "checkout.completed") handleCheckoutComplete(event.data);
+              if (event.name === "checkout.error") {
+                console.error("[Paddle] Checkout error:", event);
+                toast.error("Error en el proceso de pago. Inténtalo de nuevo.");
+              }
+            },
           });
-          paddleGloballyInitialized.current = true;
-          (window as any).__paddleInitialized = true;
+          paddleInitialized.current = true;
         } else {
-          // Paddle already initialized — just update the event callback
-          try {
-            P.Update({
-              eventCallback: eventHandler,
-            });
-          } catch (updateErr) {
-            console.warn("[Paddle] Update failed, continuing:", updateErr);
-          }
+          P.Update({
+            eventCallback: (event: any) => {
+              console.log("[Paddle] Event:", event.name, event);
+              if (event.name === "checkout.loaded") setPaddleReady(true);
+              if (event.name === "checkout.completed") handleCheckoutComplete(event.data);
+              if (event.name === "checkout.error") {
+                console.error("[Paddle] Checkout error:", event);
+                toast.error("Error en el proceso de pago. Inténtalo de nuevo.");
+              }
+            },
+          });
         }
 
-        // Small delay to ensure the DOM container is rendered before opening checkout
-        setTimeout(() => {
-          if (cancelled) return;
+        // Pass both prices: one-time trial fee (0.99€) + recurring subscription (49.90€/month with 7-day trial)
+        const items: Array<{ priceId: string; quantity: number }> = [];
+        if (trialPriceId) {
+          items.push({ priceId: trialPriceId, quantity: 1 });
+        }
+        items.push({ priceId, quantity: 1 });
 
-          // Pass both prices: one-time trial fee (0.99€) + recurring subscription (49.90€/month with 7-day trial)
-          const items: Array<{ priceId: string; quantity: number }> = [];
-          if (trialPriceId) {
-            items.push({ priceId: trialPriceId, quantity: 1 });
-          }
-          items.push({ priceId, quantity: 1 });
+        P.Checkout.open({
+          items,
+          customer: {
+            email: user?.email || undefined,
+          },
+          customData: {
+            user_id: user?.id?.toString() || "",
+            user_email: user?.email || "",
+            user_name: user?.name || "",
+          },
+          settings: {
+            locale: lang || "en",
+            allowLogout: false,
+            showAddDiscounts: true,
+          },
+        });
 
-          P.Checkout.open({
-            items,
-            customer: {
-              email: user?.email || undefined,
-            },
-            customData: {
-              user_id: user?.id?.toString() || "",
-              user_email: user?.email || "",
-              user_name: user?.name || "",
-            },
-            settings: {
-              locale: lang || "en",
-              allowLogout: false,
-              showAddDiscounts: true,
-            },
-          });
-
-          checkoutOpened.current = true;
-          console.log("[Paddle] Inline checkout opened");
-        }, 150);
+        setCheckoutOpen(true);
+        checkoutOpened.current = true;
+        console.log("[Paddle] Inline checkout opened");
       } catch (err) {
         console.error("[Paddle] Init/open error:", err);
         toast.error("Error opening payment form. Please try again.");
       }
     }
-
-    return () => { cancelled = true; };
-  }, [paddleConfigQ.data, user, handleCheckoutComplete, lang]);
+  }, [checkoutOpen, paddleConfigQ.data, user, handleCheckoutComplete]);
 
   // Close Paddle checkout when component unmounts
   useEffect(() => {
     return () => {
-      mountedRef.current = false;
       if (checkoutOpened.current && (window as any).Paddle) {
         try {
           (window as any).Paddle.Checkout.close();
-          console.log("[Paddle] Checkout closed on unmount");
-        } catch (e) {
-          console.warn("[Paddle] Error closing checkout:", e);
-        }
-        checkoutOpened.current = false;
+        } catch {}
       }
     };
   }, []);
