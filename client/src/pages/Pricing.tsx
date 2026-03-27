@@ -301,13 +301,13 @@ export default function Pricing() {
                 user={user}
                 lang={lang}
               onComplete={(data: any) => {
-                   const txnId = data.transaction_id || "";
+                   const txnId = data.transaction_id || data.subscription_id || "";
                     // Fire conversion tracking (Google Ads + GA4)
                     fireConversionEvents(txnId);
                    confirmPaddleCheckout.mutate({
                      transactionId: data.transaction_id || "",
                      subscriptionId: data.subscription_id || "",
-                     customerId: data.customer?.id || data.customer_id || "",
+                     customerId: data.customer_id || "",
                    });
                  }}
               />
@@ -459,7 +459,7 @@ function PaddleInlineCheckout({
   onComplete,
   lang,
 }: {
-  paddleConfig?: { clientToken: string; priceId: string; trialPriceId?: string } | null;
+  paddleConfig?: { clientToken: string; priceId: string } | null;
   user?: { id: number; email: string | null; name?: string | null } | null;
   onComplete: (data: any) => void;
   lang?: string;
@@ -482,7 +482,6 @@ function PaddleInlineCheckout({
       if (!initialized.current) {
         P.Initialize({
           token: paddleConfig.clientToken,
-          environment: "production",
           checkout: {
             settings: {
               displayMode: "inline",
@@ -515,20 +514,8 @@ function PaddleInlineCheckout({
       }
 
       if (!opened.current) {
-        // Pass both prices: one-time trial fee + recurring subscription
-        const checkoutItems: Array<{ priceId: string; quantity: number }> = [];
-        if (paddleConfig.trialPriceId) {
-          checkoutItems.push({ priceId: paddleConfig.trialPriceId, quantity: 1 });
-        }
-        checkoutItems.push({ priceId: paddleConfig.priceId, quantity: 1 });
-
-        // Detect current language for successUrl
-        const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
-        const currentLang = langMatch ? langMatch[1] : "es";
-        const successUrl = `https://pdfup.io/${currentLang}/payment/success`;
-
         P.Checkout.open({
-          items: checkoutItems,
+          items: [{ priceId: paddleConfig.priceId, quantity: 1 }],
           customer: { email: user?.email || undefined },
           customData: {
             user_id: user?.id?.toString() || "",
@@ -539,7 +526,6 @@ function PaddleInlineCheckout({
             locale: lang || "en",
             allowLogout: false,
             showAddDiscounts: true,
-            successUrl,
           },
         });
         opened.current = true;

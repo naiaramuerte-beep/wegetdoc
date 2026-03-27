@@ -667,7 +667,7 @@ function DashboardPaddleInline({
   onComplete,
   lang,
 }: {
-  paddleConfig?: { clientToken: string; priceId: string; trialPriceId?: string } | null;
+  paddleConfig?: { clientToken: string; priceId: string } | null;
   user?: { id: number; email: string | null; name?: string | null } | null;
   onComplete: (data: any) => void;
   lang?: string;
@@ -688,7 +688,6 @@ function DashboardPaddleInline({
       if (!initialized.current) {
         P.Initialize({
           token: paddleConfig.clientToken,
-          environment: "production",
           checkout: {
             settings: {
               displayMode: "inline",
@@ -712,32 +711,15 @@ function DashboardPaddleInline({
         });
       }
       if (!opened.current) {
-        // Pass both prices: one-time trial fee + recurring subscription
-        const checkoutItems: Array<{ priceId: string; quantity: number }> = [];
-        if (paddleConfig.trialPriceId) {
-          checkoutItems.push({ priceId: paddleConfig.trialPriceId, quantity: 1 });
-        }
-        checkoutItems.push({ priceId: paddleConfig.priceId, quantity: 1 });
-
-        // Detect current language for successUrl
-        const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
-        const currentLang = langMatch ? langMatch[1] : "es";
-        const successUrl = `https://pdfup.io/${currentLang}/payment/success`;
-
         P.Checkout.open({
-          items: checkoutItems,
+          items: [{ priceId: paddleConfig.priceId, quantity: 1 }],
           customer: { email: user?.email || undefined },
           customData: {
             user_id: user?.id?.toString() || "",
             user_email: user?.email || "",
             user_name: user?.name || "",
           },
-          settings: {
-            locale: lang || "en",
-            allowLogout: false,
-            showAddDiscounts: true,
-            successUrl,
-          },
+          settings: { locale: lang || "en", allowLogout: false, showAddDiscounts: true },
         });
         opened.current = true;
       }
@@ -797,22 +779,13 @@ function BillingTab() {
   };
 
   const cancelMutation = trpc.subscription.cancel.useMutation({
-    onSuccess: (data) => {
+    onSuccess: () => {
       utils.subscription.status.invalidate();
       setShowCancelModal(false);
-      if (data.paddleCanceled) {
-        toast.success("Suscripción cancelada correctamente. Seguirás teniendo acceso hasta el final del período.");
-      } else {
-        toast.success("Suscripción marcada como cancelada. Si sigues viendo cargos, contacta soporte.");
-      }
+      toast.success("Suscripción cancelada. Seguirás teniendo acceso hasta el final del período.");
     },
-    onError: (err) => {
-      console.error("[Cancel] Error:", err);
-      if (err.message?.includes("No active subscription")) {
-        toast.error("No se encontró una suscripción activa.");
-      } else {
-        toast.error("Error al cancelar la suscripción. Inténtalo de nuevo.");
-      }
+    onError: () => {
+      toast.error("Error al cancelar la suscripción. Inténtalo de nuevo.");
     },
   });
 
@@ -990,13 +963,13 @@ function BillingTab() {
             user={user}
             lang={lang}
             onComplete={(data: any) => {
-              const txnId = data.transaction_id || "";
+              const txnId = data.transaction_id || data.subscription_id || "";
               // Fire conversion tracking (Google Ads + GA4)
               fireConversionEvents(txnId);
               confirmPaddleCheckout.mutate({
                 transactionId: data.transaction_id || "",
                 subscriptionId: data.subscription_id || "",
-                customerId: data.customer?.id || data.customer_id || "",
+                customerId: data.customer_id || "",
               });
             }}
           />

@@ -1,4 +1,4 @@
-import { Paddle, Environment } from "@paddle/paddle-node-sdk";
+import { Paddle } from "@paddle/paddle-node-sdk";
 import { z } from "zod";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -59,7 +59,7 @@ import { storagePut } from "./storage";
 import { sendPaymentConfirmationEmail, sendCancellationEmail } from "./email";
 
 // Paddle SDK instance (server-side)
-const getPaddle = () => new Paddle(process.env.PADDLE_API_KEY || "", { environment: Environment.production });
+const getPaddle = () => new Paddle(process.env.PADDLE_API_KEY || "");
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") {
@@ -217,7 +217,6 @@ export const appRouter = router({
       return {
         clientToken: process.env.VITE_PADDLE_CLIENT_TOKEN || "",
         priceId: process.env.VITE_PADDLE_PRICE_ID || "",
-        trialPriceId: process.env.PADDLE_TRIAL_PRICE_ID || "",
       };
     }),
 
@@ -245,87 +244,30 @@ export const appRouter = router({
     // Cancel subscription via Paddle API
     cancel: protectedProcedure.mutation(async ({ ctx }) => {
       const sub = await getActiveSubscription(ctx.user.id);
-      if (!sub) {
-        // No active subscription at all
-        throw new TRPCError({ code: "NOT_FOUND", message: "No active subscription found" });
+      if (!sub?.paddleSubscriptionId) {
+        // No Paddle subscription — just cancel in DB
+        await cancelSubscriptionDb(ctx.user.id);
+        return { success: true };
       }
-
-      const paddle = getPaddle();
-      let paddleSubId = sub.paddleSubscriptionId || "";
-
-      // If we don't have the Paddle subscription ID, try to look it up
-      if (!paddleSubId && sub.paddleTransactionId) {
-        try {
-          console.log(`[Paddle] Looking up subscription from transaction: ${sub.paddleTransactionId}`);
-          const txn = await paddle.transactions.get(sub.paddleTransactionId);
-          if (txn.subscriptionId) {
-            paddleSubId = txn.subscriptionId;
-            console.log(`[Paddle] Found subscription ID from transaction: ${paddleSubId}`);
-            // Save it to DB for future use
-            await upsertSubscription({
-              userId: ctx.user.id,
-              paddleCustomerId: txn.customerId || sub.paddleCustomerId || undefined,
-              paddleSubscriptionId: paddleSubId,
-              paddleTransactionId: sub.paddleTransactionId || undefined,
-              plan: sub.plan ?? "monthly",
-              status: sub.status,
-              currentPeriodStart: sub.currentPeriodStart ?? undefined,
-              currentPeriodEnd: sub.currentPeriodEnd ?? undefined,
-              cancelAtPeriodEnd: false,
-            });
-          }
-        } catch (lookupErr) {
-          console.error("[Paddle] Transaction lookup failed:", lookupErr);
-        }
+      try {
+        const paddle = getPaddle();
+        await paddle.subscriptions.cancel(sub.paddleSubscriptionId, {
+          effectiveFrom: "next_billing_period",
+        });
+      } catch (err) {
+        console.error("[Paddle] Cancel subscription failed:", err);
+        // Still cancel in DB even if Paddle API fails
       }
-
-      // If we still don't have a subscription ID, try listing by customer ID
-      if (!paddleSubId && sub.paddleCustomerId) {
-        try {
-          console.log(`[Paddle] Looking up subscriptions for customer: ${sub.paddleCustomerId}`);
-          const subCollection = paddle.subscriptions.list({ customerId: [sub.paddleCustomerId], status: ["active", "trialing"] });
-          for await (const paddleSub of subCollection) {
-            paddleSubId = paddleSub.id;
-            console.log(`[Paddle] Found subscription from customer list: ${paddleSubId}`);
-            break;
-          }
-        } catch (listErr) {
-          console.error("[Paddle] Customer subscription list failed:", listErr);
-        }
-      }
-
-      // Now try to cancel in Paddle
-      let paddleCancelSuccess = false;
-      if (paddleSubId) {
-        try {
-          await paddle.subscriptions.cancel(paddleSubId, {
-            effectiveFrom: "next_billing_period",
-          });
-          paddleCancelSuccess = true;
-          console.log(`[Paddle] Subscription ${paddleSubId} scheduled for cancellation`);
-        } catch (err: any) {
-          console.error("[Paddle] Cancel subscription failed:", err?.message || err);
-          // If the subscription is already canceled, treat as success
-          if (err?.code === "subscription_not_active" || err?.message?.includes("not active") || err?.message?.includes("canceled")) {
-            paddleCancelSuccess = true;
-          }
-        }
-      } else {
-        console.warn(`[Paddle] No Paddle subscription ID found for user ${ctx.user.id}, canceling in DB only`);
-      }
-
-      // Update DB
       await upsertSubscription({
         userId: ctx.user.id,
         paddleCustomerId: sub.paddleCustomerId ?? undefined,
-        paddleSubscriptionId: paddleSubId || sub.paddleSubscriptionId || undefined,
+        paddleSubscriptionId: sub.paddleSubscriptionId ?? undefined,
         plan: sub.plan ?? "monthly",
         status: sub.status,
         currentPeriodStart: sub.currentPeriodStart ?? undefined,
         currentPeriodEnd: sub.currentPeriodEnd ?? undefined,
         cancelAtPeriodEnd: true,
       });
-
       // Send cancellation confirmation email (non-blocking)
       const user = ctx.user;
       if (user.email && sub.currentPeriodEnd) {
@@ -336,12 +278,11 @@ export const appRouter = router({
           reactivateUrl: "https://pdfup.io/es/dashboard?tab=billing",
         }).catch((err: unknown) => console.error("[Email] Cancellation email failed:", err));
       }
-
-      return { success: true, paddleCanceled: paddleCancelSuccess };
+      return { success: true };
     }),
 
     // Called from the frontend after Paddle Checkout overlay completes
-    // This creates the subscription record immediately, then asynchronously resolves the subscription ID
+    // This creates the subscription record immediately (webhook will update it later)
     confirmPaddleCheckout: protectedProcedure
       .input(z.object({
         transactionId: z.string().optional(),
@@ -353,34 +294,10 @@ export const appRouter = router({
         const now = new Date();
         const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-        let resolvedSubId = input.subscriptionId || "";
-        let resolvedCustomerId = input.customerId || "";
-
-        // Try to look up the subscription ID from the transaction
-        // The checkout.completed event doesn't include subscription_id,
-        // but the transaction object in Paddle API does
-        if (!resolvedSubId && input.transactionId) {
-          try {
-            const paddle = getPaddle();
-            console.log(`[Paddle] Looking up subscription from transaction: ${input.transactionId}`);
-            const txn = await paddle.transactions.get(input.transactionId);
-            if (txn.subscriptionId) {
-              resolvedSubId = txn.subscriptionId;
-              console.log(`[Paddle] Resolved subscription ID: ${resolvedSubId}`);
-            }
-            if (txn.customerId) {
-              resolvedCustomerId = txn.customerId;
-              console.log(`[Paddle] Resolved customer ID: ${resolvedCustomerId}`);
-            }
-          } catch (lookupErr) {
-            console.error("[Paddle] Transaction lookup failed (will be resolved by webhook):", lookupErr);
-          }
-        }
-
         await upsertSubscription({
           userId: user.id,
-          paddleCustomerId: resolvedCustomerId || undefined,
-          paddleSubscriptionId: resolvedSubId || undefined,
+          paddleCustomerId: input.customerId ?? undefined,
+          paddleSubscriptionId: input.subscriptionId ?? undefined,
           paddleTransactionId: input.transactionId ?? undefined,
           plan: "trial",
           status: "active",
@@ -406,11 +323,11 @@ export const appRouter = router({
         import("./_core/notification").then(({ notifyOwner }) => {
           notifyOwner({
             title: "\uD83D\uDCB3 Nuevo pago Paddle \u2014 PDFUp",
-            content: `Usuario: ${user.name || "An\u00F3nimo"} (${user.email || "sin email"})\nPlan: Trial 7 d\u00EDas\nSub: ${resolvedSubId || "pending"}\nFin de prueba: ${trialEnd.toLocaleDateString("es-ES")}`,
+            content: `Usuario: ${user.name || "An\u00F3nimo"} (${user.email || "sin email"})\nPlan: Trial 7 d\u00EDas\nFin de prueba: ${trialEnd.toLocaleDateString("es-ES")}`,
           }).catch(() => {});
         }).catch(() => {});
 
-        return { success: true, subscriptionId: resolvedSubId };
+        return { success: true, subscriptionId: input.subscriptionId || "" };
       }),
   }),
 

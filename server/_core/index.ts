@@ -2,7 +2,7 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
-import { Paddle, EventName, Environment } from "@paddle/paddle-node-sdk";
+import { Paddle, EventName } from "@paddle/paddle-node-sdk";
 import multer from "multer";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
@@ -40,7 +40,7 @@ async function startServer() {
   const server = createServer(app);
 
   // ── Paddle Webhook (MUST be before express.json) ───────────────────────────────────────────
-  const paddle = new Paddle(process.env.PADDLE_API_KEY || "", { environment: Environment.production });
+  const paddle = new Paddle(process.env.PADDLE_API_KEY || "");
 
   app.post("/api/paddle/webhook", express.raw({ type: "application/json" }), async (req, res) => {
     const signature = (req.headers["paddle-signature"] as string) || "";
@@ -68,37 +68,7 @@ async function startServer() {
       const data = eventData.data;
       // Extract userId from custom_data (set during checkout)
       const customData = data.customData || data.custom_data || {};
-      let userId = parseInt(customData.userId || customData.user_id || "0");
-
-      // Fallback: if userId is 0, try to find the user by looking up the subscription's
-      // transaction in our DB (the frontend saves the transactionId during confirmPaddleCheckout)
-      if (!userId) {
-        try {
-          const paddleSubId = data.id; // subscription ID from the webhook
-          const paddleCustomerId = data.customerId || data.customer_id;
-          // Look up existing subscription in our DB by paddleSubscriptionId or paddleCustomerId
-          const dbModule = await import("../db");
-          const db = await (dbModule as any).getDb();
-          if (db) {
-            const { subscriptions } = await import("../../drizzle/schema");
-            const { eq, or } = await import("drizzle-orm");
-            const conditions = [];
-            if (paddleSubId) conditions.push(eq(subscriptions.paddleSubscriptionId, paddleSubId));
-            if (paddleCustomerId) conditions.push(eq(subscriptions.paddleCustomerId, paddleCustomerId));
-            if (conditions.length > 0) {
-              const existing = await db.select().from(subscriptions).where(or(...conditions)).limit(1);
-              if (existing[0]?.userId) {
-                userId = existing[0].userId;
-                console.log(`[Paddle Webhook] Resolved userId ${userId} from DB lookup`);
-              }
-            }
-          }
-        } catch (lookupErr) {
-          console.error("[Paddle Webhook] DB user lookup failed:", lookupErr);
-        }
-      }
-
-      console.log(`[Paddle Webhook] Processing ${eventData.eventType} for userId: ${userId}, subId: ${data.id}`);
+      const userId = parseInt(customData.userId || customData.user_id || "0");
 
       if (eventData.eventType === EventName.SubscriptionCreated ||
           eventData.eventType === EventName.SubscriptionActivated ||

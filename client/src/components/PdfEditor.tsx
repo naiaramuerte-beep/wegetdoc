@@ -1707,54 +1707,41 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
     const doc = await PDFDocument.load(safeBytes, { ignoreEncryption: true });
     const font = await doc.embedFont(StandardFonts.Helvetica);
-
-    // Annotation coordinates are stored in canvas pixels (= PDF points * scale).
-    // We must convert back to PDF points by dividing by the current scale factor.
-    const s = scale;
-
     for (const ann of annotations) {
       const page = doc.getPage(ann.page - 1);
       const { height } = page.getSize();
-
-      // Convert canvas coords → PDF points
-      const ax = ann.x / s;
-      const ay = ann.y / s;
-      const aw = ann.width / s;
-      const ah = ann.height / s;
-      const pdfY = height - ay - ah;
-
+      const pdfY = height - ann.y - ann.height;
       if (ann.type === "text" && ann.text) {
-        const fs = (ann.fontSize ?? 14) / s;
-        page.drawText(ann.text, { x: ax, y: pdfY + ah / 2, size: fs, font, color: rgb(0, 0, 0) });
+        page.drawText(ann.text, { x: ann.x, y: pdfY + ann.height / 2, size: ann.fontSize ?? 14, font, color: rgb(0, 0, 0) });
       } else if (ann.type === "signature" && ann.dataUrl) {
         const imgBytes = await fetch(ann.dataUrl).then(r => r.arrayBuffer());
         const img = await doc.embedPng(new Uint8Array(imgBytes));
-        page.drawImage(img, { x: ax, y: pdfY, width: aw, height: ah });
+        page.drawImage(img, { x: ann.x, y: pdfY, width: ann.width, height: ann.height });
       } else if (ann.type === "image" && ann.dataUrl) {
         const imgBytes = await fetch(ann.dataUrl).then(r => r.arrayBuffer());
         let img;
         try { img = await doc.embedPng(new Uint8Array(imgBytes)); }
         catch { img = await doc.embedJpg(new Uint8Array(imgBytes)); }
-        page.drawImage(img, { x: ax, y: pdfY, width: aw, height: ah });
+        page.drawImage(img, { x: ann.x, y: pdfY, width: ann.width, height: ann.height });
       } else if (ann.type === "highlight") {
-        page.drawRectangle({ x: ax, y: pdfY, width: aw, height: ah, color: rgb(1, 1, 0), opacity: 0.4 });
+        page.drawRectangle({ x: ann.x, y: pdfY, width: ann.width, height: ann.height, color: rgb(1, 1, 0), opacity: 0.4 });
       } else if (ann.type === "note" && ann.text) {
-        page.drawRectangle({ x: ax, y: pdfY, width: aw, height: ah, color: rgb(1, 1, 0.6), opacity: 0.8 });
-        page.drawText(ann.text, { x: ax + 6, y: pdfY + ah - 16, size: 10, font, color: rgb(0, 0, 0), maxWidth: aw - 12 });
+        page.drawRectangle({ x: ann.x, y: pdfY, width: ann.width, height: ann.height, color: rgb(1, 1, 0.6), opacity: 0.8 });
+        page.drawText(ann.text, { x: ann.x + 6, y: pdfY + ann.height - 16, size: 10, font, color: rgb(0, 0, 0), maxWidth: ann.width - 12 });
       } else if (ann.type === "shape") {
         const c = ann.color ?? "#2563EB";
         const r2 = parseInt(c.slice(1, 3), 16) / 255;
         const g2 = parseInt(c.slice(3, 5), 16) / 255;
         const b2 = parseInt(c.slice(5, 7), 16) / 255;
-        if (ann.text === "rect" || ann.text === "rect-filled") {
-          page.drawRectangle({ x: ax, y: pdfY, width: aw, height: ah, borderColor: rgb(r2, g2, b2), borderWidth: 2, color: rgb(r2, g2, b2), opacity: 0.15 });
-        } else if (ann.text === "circle" || ann.text === "circle-filled") {
-          page.drawEllipse({ x: ax + aw / 2, y: pdfY + ah / 2, xScale: aw / 2, yScale: ah / 2, borderColor: rgb(r2, g2, b2), borderWidth: 2, color: rgb(r2, g2, b2), opacity: 0.15 });
+        if (ann.text === "rect") {
+          page.drawRectangle({ x: ann.x, y: pdfY, width: ann.width, height: ann.height, borderColor: rgb(r2, g2, b2), borderWidth: 2, color: rgb(r2, g2, b2), opacity: 0.15 });
+        } else if (ann.text === "circle") {
+          page.drawEllipse({ x: ann.x + ann.width / 2, y: pdfY + ann.height / 2, xScale: ann.width / 2, yScale: ann.height / 2, borderColor: rgb(r2, g2, b2), borderWidth: 2, color: rgb(r2, g2, b2), opacity: 0.15 });
         } else {
-          page.drawLine({ start: { x: ax, y: pdfY }, end: { x: ax + aw, y: pdfY + ah }, thickness: 2, color: rgb(r2, g2, b2) });
+          page.drawLine({ start: { x: ann.x, y: pdfY }, end: { x: ann.x + ann.width, y: pdfY + ann.height }, thickness: 2, color: rgb(r2, g2, b2) });
         }
       } else if (ann.type === "eraser") {
-        page.drawRectangle({ x: ax, y: pdfY, width: aw, height: ah, color: rgb(1, 1, 1), opacity: 1 });
+        page.drawRectangle({ x: ann.x, y: pdfY, width: ann.width, height: ann.height, color: rgb(1, 1, 1), opacity: 1 });
       } else if (ann.type === "drawing" && ann.points && ann.points.length > 1) {
         const c = ann.color ?? "#FF0000";
         const r2 = parseInt(c.slice(1, 3), 16) / 255;
@@ -1764,8 +1751,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         for (let i = 1; i < ann.points.length; i++) {
           const p1 = ann.points[i - 1];
           const p2 = ann.points[i];
-          // Drawing points are also in canvas coordinates
-          page.drawLine({ start: { x: p1.x / s, y: ph - p1.y / s }, end: { x: p2.x / s, y: ph - p2.y / s }, thickness: (ann.strokeWidth ?? 3) / s, color: rgb(r2, g2, b2) });
+          page.drawLine({ start: { x: p1.x, y: ph - p1.y }, end: { x: p2.x, y: ph - p2.y }, thickness: ann.strokeWidth ?? 3, color: rgb(r2, g2, b2) });
         }
       }
     }
@@ -2283,13 +2269,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             {ActionBar}
             <div className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>
-              {isEditingExisting ? t.editor_text_panel_edit : t.editor_text_panel_add}
+              {isEditingExisting ? "Editar texto" : "Añadir texto"}
             </h3>
 
             {/* Instruction when no text is selected */}
             {!isEditingExisting && (
               <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.06)", color: "oklch(0.35 0.02 250)" }}>
-                <strong>{t.editor_how_to_use}</strong> {t.editor_text_panel_hint_new}
+                <strong>Cómo usar:</strong> Haz clic en cualquier parte del PDF para colocar un nuevo texto. Puedes configurar el formato antes o después.
               </div>
             )}
 
@@ -2397,7 +2383,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               ))}
             </div>
             <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: highlightColor + "33", color: "oklch(0.30 0.02 250)" }}>
-              <strong>{t.editor_how_to_use}</strong> {t.editor_highlight_panel_hint}
+              <strong>Cómo usar:</strong> Haz clic y arrastra sobre el PDF para crear un resaltado del tamaño que quieras.
             </div>
             </div>
           </div>
@@ -2665,7 +2651,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               <span className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>{eraserSize}px</span>
             </div>
             <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.95 0.01 250)", color: "oklch(0.30 0.02 250)" }}>
-              <strong>{t.editor_how_to_use}</strong> {t.editor_erase_panel_hint}
+              <strong>Cómo usar:</strong> Haz clic y arrastra sobre el área que quieres borrar. Se creará un rectángulo blanco sobre ese contenido.
             </div>
             </div>
           </div>
@@ -2689,7 +2675,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               <div style={{ width: 40, height: brushSize, backgroundColor: brushColor, borderRadius: brushSize / 2 }} />
             </div>
             <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.95 0.01 250)", color: "oklch(0.30 0.02 250)" }}>
-              <strong>{t.editor_how_to_use}</strong> {t.editor_brush_panel_hint}
+              <strong>Cómo usar:</strong> Haz clic y arrastra sobre el PDF para dibujar a mano alzada.
             </div>
             </div>
           </div>
@@ -2698,13 +2684,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         return (
           <div className="flex flex-col">
             <div className="p-4 flex flex-col gap-3">
-            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>{t.editor_edittext_title}</h3>
+            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Editar texto nativo</h3>
             <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.08)", color: "oklch(0.30 0.02 250)" }}>
               {t.editor_edittext_hint}
             </div>
             {/* Color picker for replacement text */}
             <div className="flex gap-2 items-center">
-              <label className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>{t.editor_text_color_label}</label>
+              <label className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Color texto</label>
               <input type="color" value={editTextColor} onChange={e => setEditTextColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0" />
             </div>
             {/* Block count */}
@@ -2713,7 +2699,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 {nativeTextBlocks.length} {t.editor_text_blocks_detected}
                 {nativeTextBlocks.filter(b => b.editedStr !== undefined).length > 0 && (
                   <span className="ml-1 font-semibold" style={{ color: "oklch(0.45 0.20 150)" }}>
-                    ({nativeTextBlocks.filter(b => b.editedStr !== undefined).length} {t.editor_edittext_edited_count})
+                    ({nativeTextBlocks.filter(b => b.editedStr !== undefined).length} editados)
                   </span>
                 )}
               </div>
@@ -2725,7 +2711,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             {/* Instruction when a block is selected */}
             {editingBlockId && (
               <div className="p-2 rounded text-xs" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.1)", color: "oklch(0.30 0.02 250)" }}>
-                {t.editor_edittext_instruction}
+                Edita el texto directamente sobre el PDF. Pulsa Enter o el botón Guardar para confirmar.
               </div>
             )}
             </div>
@@ -2736,9 +2722,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           <div className="flex flex-col gap-0">
             {ActionBar}
             <div className="p-4 flex flex-col gap-3">
-              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "oklch(0.45 0.02 250)" }}>{t.editor_move_panel_title}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "oklch(0.45 0.02 250)" }}>Mover elementos</p>
               <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.06)", color: "oklch(0.35 0.02 250)" }}>
-                <p className="font-medium mb-1" style={{ color: "oklch(0.25 0.03 250)" }}>{t.editor_how_to_use}</p>
+                <p className="font-medium mb-1" style={{ color: "oklch(0.25 0.03 250)" }}>Cómo usar:</p>
                 <p>{t.editor_move_hint}</p>
               </div>
               <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "oklch(0.96 0.005 250)", color: "oklch(0.45 0.02 250)" }}>
@@ -2942,14 +2928,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
       {/* ── TOP TOOLBAR — desktop only ── */}
       <div className="hidden md:flex items-center gap-1 px-3 py-1.5 border-b min-w-0" style={{ backgroundColor: "oklch(1 0 0)", borderColor: "oklch(0.90 0.01 250)" }}>
-        {/* Undo / Redo — with labels */}
-        <button title={t.editor_undo + " (Ctrl+Z)"} onClick={undo} disabled={historyIndex <= 0} className="flex items-center gap-1 px-2 py-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
+        {/* Undo / Redo */}
+        <button title={t.editor_undo + " (Ctrl+Z)"} onClick={undo} disabled={historyIndex <= 0} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
           <Undo2 className="w-4 h-4" style={{ color: "oklch(0.35 0.02 250)" }} />
-          <span className="text-xs font-medium" style={{ color: "oklch(0.35 0.02 250)" }}>{t.editor_undo}</span>
         </button>
-        <button title={t.editor_redo + " (Ctrl+Y)"} onClick={redo} disabled={historyIndex >= history.length - 1} className="flex items-center gap-1 px-2 py-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
+        <button title={t.editor_redo + " (Ctrl+Y)"} onClick={redo} disabled={historyIndex >= history.length - 1} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
           <Redo2 className="w-4 h-4" style={{ color: "oklch(0.35 0.02 250)" }} />
-          <span className="text-xs font-medium" style={{ color: "oklch(0.35 0.02 250)" }}>{t.editor_redo}</span>
         </button>
         <div className="w-px h-5 mx-1 shrink-0" style={{ backgroundColor: "oklch(0.88 0.02 250)" }} />
         {/* Tool buttons — scrollable */}
@@ -2973,15 +2957,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             <ToolBtn key={id} icon={icon} label={label} active={activeTool === id} onClick={() => { setActiveTool(id); setSelectedId(null); setShowMobilePanel(true); }} />
           ))}
         </div>
-        <div className="w-px h-5 mx-1 shrink-0" style={{ backgroundColor: "oklch(0.88 0.02 250)" }} />
-        {/* Page actions — with labels */}
-        <button title={t.editor_rotate} onClick={rotatePage} className="flex items-center gap-1 px-2 py-1.5 rounded hover:bg-gray-100 transition-colors shrink-0">
+        {/* Page actions */}
+        <button title={t.editor_rotate} onClick={rotatePage} className="p-1.5 rounded hover:bg-gray-100 transition-colors shrink-0">
           <RotateCw className="w-4 h-4" style={{ color: "oklch(0.45 0.02 250)" }} />
-          <span className="text-xs font-medium" style={{ color: "oklch(0.45 0.02 250)" }}>{t.editor_rotate}</span>
         </button>
-        <button title={t.editor_delete_page} onClick={deletePage} className="flex items-center gap-1 px-2 py-1.5 rounded hover:bg-gray-100 transition-colors shrink-0">
+        <button title={t.editor_delete_page} onClick={deletePage} className="p-1.5 rounded hover:bg-gray-100 transition-colors shrink-0">
           <Trash2 className="w-4 h-4" style={{ color: "oklch(0.55 0.15 15)" }} />
-          <span className="text-xs font-medium" style={{ color: "oklch(0.55 0.15 15)" }}>{t.editor_delete_page}</span>
         </button>
         {selectedId && (
           <button title="Delete selection" onClick={deleteSelected} className="p-1.5 rounded transition-colors shrink-0" style={{ backgroundColor: "oklch(0.95 0.05 15)" }}>
@@ -3552,28 +3533,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         {/* Tools row — horizontal scroll with fade indicator */}
         <div className="relative">
         <div className="flex items-center overflow-x-auto gap-0 px-1 py-1" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
-          {/* Undo / Redo buttons */}
-          <button
-            onClick={undo}
-            disabled={historyIndex <= 0}
-            className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg shrink-0 transition-all disabled:opacity-30"
-            style={{ color: "oklch(0.35 0.02 250)", minWidth: 56 }}
-          >
-            <Undo2 className="w-5 h-5" />
-            <span style={{ fontSize: 10, whiteSpace: "nowrap" }}>{t.editor_undo}</span>
-          </button>
-          <button
-            onClick={redo}
-            disabled={historyIndex >= history.length - 1}
-            className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg shrink-0 transition-all disabled:opacity-30"
-            style={{ color: "oklch(0.35 0.02 250)", minWidth: 56 }}
-          >
-            <Redo2 className="w-5 h-5" />
-            <span style={{ fontSize: 10, whiteSpace: "nowrap" }}>{t.editor_redo}</span>
-          </button>
-          {/* Separator */}
-          <div className="w-px h-8 mx-0.5 shrink-0" style={{ backgroundColor: "oklch(0.88 0.02 250)" }} />
-          {/* Tool buttons */}
           {[
             { id: "notes" as ToolName, icon: StickyNote, label: t.editor_notes },
             { id: "move" as ToolName, icon: Move, label: t.editor_move },
@@ -3603,25 +3562,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               <span style={{ fontSize: 10, whiteSpace: "nowrap" }}>{label}</span>
             </button>
           ))}
-          {/* Separator */}
-          <div className="w-px h-8 mx-0.5 shrink-0" style={{ backgroundColor: "oklch(0.88 0.02 250)" }} />
-          {/* Page actions: Rotate & Delete */}
-          <button
-            onClick={rotatePage}
-            className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg shrink-0 transition-all"
-            style={{ color: "oklch(0.45 0.02 250)", minWidth: 56 }}
-          >
-            <RotateCw className="w-5 h-5" />
-            <span style={{ fontSize: 10, whiteSpace: "nowrap" }}>{t.editor_rotate}</span>
-          </button>
-          <button
-            onClick={deletePage}
-            className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg shrink-0 transition-all"
-            style={{ color: "oklch(0.55 0.15 15)", minWidth: 56 }}
-          >
-            <Trash2 className="w-5 h-5" />
-            <span style={{ fontSize: 10, whiteSpace: "nowrap" }}>{t.editor_delete_page}</span>
-          </button>
         </div>
         {/* Fade gradient on right to indicate more tools */}
         <div className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none" style={{ background: "linear-gradient(to right, transparent, white)" }} />

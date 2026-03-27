@@ -5,7 +5,7 @@
  * Checkout visible y usable inmediatamente
  */
 import { useState, useEffect, useCallback, useRef } from "react";
-import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield, FileText, Zap, Sparkles } from "lucide-react";
+import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield, FileText, Gift } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { fireConversionEvents, fireBeginCheckout } from "@/lib/conversionTracking";
@@ -49,8 +49,9 @@ function PaddleCheckoutForm({
   const [isLoading, setIsLoading] = useState(false);
   const [progressStep, setProgressStep] = useState<"idle" | "checkout" | "saving" | "done">("idle");
   const [paddleReady, setPaddleReady] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const paddleInitialized = useRef(false);
   const checkoutOpened = useRef(false);
-  const mountedRef = useRef(true);
 
   const confirmPaddleCheckout = trpc.subscription.confirmPaddleCheckout.useMutation();
   const paddleConfigQ = trpc.subscription.paddleConfig.useQuery();
@@ -95,11 +96,9 @@ function PaddleCheckoutForm({
     setIsLoading(true);
     setProgressStep("checkout");
     try {
-      const transactionId = eventData?.transaction_id || "";
-      // checkout.completed event doesn't include subscription_id - backend resolves it from transaction
-      const subscriptionId = eventData?.subscription_id || "";
-      // customer ID is nested under customer.id in the checkout.completed event
-      const customerId = eventData?.customer?.id || eventData?.customer_id || "";
+      const transactionId = eventData?.transaction_id || eventData?.data?.transaction_id || "";
+      const subscriptionId = eventData?.subscription_id || eventData?.data?.subscription_id || "";
+      const customerId = eventData?.customer_id || eventData?.data?.customer_id || "";
 
       // 1. Confirm subscription in our DB
       await confirmPaddleCheckout.mutateAsync({
@@ -165,71 +164,37 @@ function PaddleCheckoutForm({
     fireBeginCheckout();
   }, []);
 
-  // Track whether Paddle has been globally initialized (persists across mounts)
-  const paddleGloballyInitialized = useRef(!!(window as any).__paddleInitialized);
-
-  // Initialize Paddle.js and open checkout
+  // Initialize Paddle.js IMMEDIATELY
   useEffect(() => {
-    if (!paddleConfigQ.data?.clientToken || !paddleConfigQ.data?.priceId) return;
-
-    mountedRef.current = true;
-    let cancelled = false;
+    if (checkoutOpen || !paddleConfigQ.data?.clientToken || !paddleConfigQ.data?.priceId) return;
 
     const Paddle = (window as any).Paddle;
     if (!Paddle) {
-      // Load Paddle.js script if not yet loaded
-      const existingScript = document.querySelector('script[src*="paddle.com/paddle/v2/paddle.js"]');
-      if (!existingScript) {
-        const script = document.createElement("script");
-        script.src = "https://cdn.paddle.com/paddle/v2/paddle.js";
-        script.async = true;
-        script.onload = () => { if (!cancelled) initAndOpen(); };
-        script.onerror = () => {
-          console.error("[Paddle] Failed to load Paddle.js");
-          toast.error("Error loading payment system. Please refresh.");
-        };
-        document.head.appendChild(script);
-      } else {
-        // Script exists but Paddle not yet on window — wait for it
-        const waitForPaddle = setInterval(() => {
-          if ((window as any).Paddle && !cancelled) {
-            clearInterval(waitForPaddle);
-            initAndOpen();
-          }
-        }, 100);
-        // Cleanup interval if unmounted
-        setTimeout(() => clearInterval(waitForPaddle), 10000);
-      }
-      return () => { cancelled = true; };
+      const script = document.createElement("script");
+      script.src = "https://cdn.paddle.com/paddle/v2/paddle.js";
+      script.async = true;
+      script.onload = () => initAndOpen();
+      script.onerror = () => {
+        console.error("[Paddle] Failed to load Paddle.js");
+        toast.error("Error loading payment system. Please refresh.");
+      };
+      document.head.appendChild(script);
+      return;
     }
 
     initAndOpen();
 
     function initAndOpen() {
-      if (cancelled) return;
       const P = (window as any).Paddle;
       if (!P) return;
 
       const clientToken = paddleConfigQ.data!.clientToken;
       const priceId = paddleConfigQ.data!.priceId;
-      const trialPriceId = paddleConfigQ.data!.trialPriceId;
 
       try {
-        const eventHandler = (event: any) => {
-          if (cancelled) return;
-          console.log("[Paddle] Event:", event.name, event);
-          if (event.name === "checkout.loaded") setPaddleReady(true);
-          if (event.name === "checkout.completed") handleCheckoutComplete(event.data);
-          if (event.name === "checkout.error") {
-            console.error("[Paddle] Checkout error:", event);
-            toast.error("Error en el proceso de pago. Inténtalo de nuevo.");
-          }
-        };
-
-        if (!paddleGloballyInitialized.current && !(window as any).__paddleInitialized) {
+        if (!paddleInitialized.current) {
           P.Initialize({
             token: clientToken,
-            environment: "production",
             checkout: {
               settings: {
                 displayMode: "inline",
@@ -239,79 +204,65 @@ function PaddleCheckoutForm({
                 locale: lang || "en",
               },
             },
-            eventCallback: eventHandler,
+            eventCallback: (event: any) => {
+              console.log("[Paddle] Event:", event.name, event);
+              if (event.name === "checkout.loaded") setPaddleReady(true);
+              if (event.name === "checkout.completed") handleCheckoutComplete(event.data);
+              if (event.name === "checkout.error") {
+                console.error("[Paddle] Checkout error:", event);
+                toast.error("Error en el proceso de pago. Inténtalo de nuevo.");
+              }
+            },
           });
-          paddleGloballyInitialized.current = true;
-          (window as any).__paddleInitialized = true;
+          paddleInitialized.current = true;
         } else {
-          // Paddle already initialized — just update the event callback
-          try {
-            P.Update({
-              eventCallback: eventHandler,
-            });
-          } catch (updateErr) {
-            console.warn("[Paddle] Update failed, continuing:", updateErr);
-          }
+          P.Update({
+            eventCallback: (event: any) => {
+              console.log("[Paddle] Event:", event.name, event);
+              if (event.name === "checkout.loaded") setPaddleReady(true);
+              if (event.name === "checkout.completed") handleCheckoutComplete(event.data);
+              if (event.name === "checkout.error") {
+                console.error("[Paddle] Checkout error:", event);
+                toast.error("Error en el proceso de pago. Inténtalo de nuevo.");
+              }
+            },
+          });
         }
 
-        // Small delay to ensure the DOM container is rendered before opening checkout
-        setTimeout(() => {
-          if (cancelled) return;
+        P.Checkout.open({
+          items: [{ priceId, quantity: 1 }],
+          customer: {
+            email: user?.email || undefined,
+          },
+          customData: {
+            user_id: user?.id?.toString() || "",
+            user_email: user?.email || "",
+            user_name: user?.name || "",
+          },
+          settings: {
+            locale: lang || "en",
+            allowLogout: false,
+            showAddDiscounts: true,
+          },
+        });
 
-          // Pass both prices: one-time trial fee (0.99€) + recurring subscription (49.90€/month with 7-day trial)
-          const items: Array<{ priceId: string; quantity: number }> = [];
-          if (trialPriceId) {
-            items.push({ priceId: trialPriceId, quantity: 1 });
-          }
-          items.push({ priceId, quantity: 1 });
-
-          // Build successUrl for 3DS redirect handling — always use production domain
-          const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
-          const currentLang = langMatch ? langMatch[1] : "es";
-          const successUrl = `https://pdfup.io/${currentLang}/payment/success`;
-
-          P.Checkout.open({
-            items,
-            customer: {
-              email: user?.email || undefined,
-            },
-            customData: {
-              user_id: user?.id?.toString() || "",
-              user_email: user?.email || "",
-              user_name: user?.name || "",
-            },
-            settings: {
-              locale: lang || "en",
-              allowLogout: false,
-              showAddDiscounts: true,
-              successUrl,
-            },
-          });
-
-          checkoutOpened.current = true;
-          console.log("[Paddle] Inline checkout opened");
-        }, 150);
+        setCheckoutOpen(true);
+        checkoutOpened.current = true;
+        console.log("[Paddle] Inline checkout opened");
       } catch (err) {
         console.error("[Paddle] Init/open error:", err);
         toast.error("Error opening payment form. Please try again.");
       }
     }
-
-    return () => { cancelled = true; };
-  }, [paddleConfigQ.data, user, handleCheckoutComplete, lang]);
+  }, [checkoutOpen, paddleConfigQ.data, user, handleCheckoutComplete]);
 
   // Close Paddle checkout when component unmounts
   useEffect(() => {
     return () => {
-      mountedRef.current = false;
       if (checkoutOpened.current && (window as any).Paddle) {
         try {
           (window as any).Paddle.Checkout.close();
-          console.log("[Paddle] Checkout closed on unmount");
-        } catch (e) {
-          console.warn("[Paddle] Error closing checkout:", e);
-        }
-        checkoutOpened.current = false;
+        } catch {}
       }
     };
   }, []);
@@ -348,17 +299,20 @@ function PaddleCheckoutForm({
             </div>
           </div>
 
-          {/* Trial badge — prominent */}
+          {/* FREE badge — prominent */}
           <div
             className="rounded-xl p-4 mb-6 text-center"
-            style={{ backgroundColor: "rgba(245, 158, 11, 0.12)", border: "1px solid rgba(245, 158, 11, 0.3)" }}
+            style={{ backgroundColor: "rgba(34, 197, 94, 0.12)", border: "1px solid rgba(34, 197, 94, 0.25)" }}
           >
             <div className="flex items-center justify-center gap-2 mb-2">
-              <Zap className="w-5 h-5 text-amber-400" />
-              <span className="text-lg font-bold text-amber-400">{t.paywall_free_badge}</span>
+              <Gift className="w-5 h-5 text-green-400" />
+              <span className="text-lg font-bold text-green-400">{t.paywall_free_badge}</span>
             </div>
             <p className="text-3xl font-extrabold text-white mb-2">{t.paywall_free_price}</p>
-            <p className="text-xs text-amber-300/70 mt-1.5">
+            <p className="text-xs text-green-300/90 leading-relaxed font-medium">
+              {t.paywall_free_trial_days}
+            </p>
+            <p className="text-[10px] text-slate-500 mt-1.5">
               {t.paywall_free_cancel}
             </p>
           </div>
@@ -368,7 +322,7 @@ function PaddleCheckoutForm({
             {[
               { icon: Shield, text: t.paywall_secure },
               { icon: CreditCard, text: t.paywall_instant },
-              { icon: Sparkles, text: t.paywall_cancel },
+              { icon: X, text: t.paywall_cancel },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-2.5">
                 <item.icon className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
@@ -463,20 +417,6 @@ export default function PaywallModal({
   const [showPassword, setShowPassword] = useState(false);
   const [emailMode, setEmailMode] = useState<"register" | "login">("register");
   const [emailLoading, setEmailLoading] = useState(false);
-
-  // Reset modal state when it opens — ensures it always starts from the initial step
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (isOpen) {
-      setStep(isAuthenticated ? "plans" : "auth-choice");
-      setEmailInput("");
-      setPasswordInput("");
-      setNameInput("");
-      setShowPassword(false);
-      setEmailMode("register");
-      setEmailLoading(false);
-    }
-  }, [isOpen]);
   const registerMutation = trpc.auth.register.useMutation();
   const loginMutation = trpc.auth.login.useMutation();
   const { refresh } = useAuth();
