@@ -662,3 +662,8 @@
 - [x] Mostrar estado correcto de suscripción en BillingTab (trial, activa, cancelada, expirada)
 - [x] Panel admin: mostrar por usuario si tiene sub activa, si está en trial, si ha pagado, fecha de cancelación
 - [x] Tests para cancelación y admin panel con Paddle (82/82 OK)
+
+## Fix Paddle 401 — environment: production
+- [x] Añadido environment: "production" a P.Initialize() en PaywallModal, Pricing y Dashboard (token live requiere environment production)
+- [x] Añadido Environment.production al Paddle SDK del servidor (routers.ts getPaddle + index.ts webhook)
+- [x] 82/82 tests OK
