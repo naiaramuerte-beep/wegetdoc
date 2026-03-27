@@ -72,7 +72,10 @@ export default function Pricing() {
 
   const handleSubscribe = () => {
     if (!isAuthenticated) {
-      window.location.href = getLoginUrl();
+      // Redirect to home page with login modal instead of Manus OAuth
+      const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
+      const currentLang = langMatch ? langMatch[1] : "es";
+      window.location.href = `/${currentLang}?login=true`;
       return;
     }
     setShowCheckout(true);

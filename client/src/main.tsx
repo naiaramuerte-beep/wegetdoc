@@ -18,7 +18,10 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
   if (!isUnauthorized) return;
 
-  window.location.href = getLoginUrl();
+  // Redirect to home page instead of Manus OAuth
+  const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
+  const currentLang = langMatch ? langMatch[1] : "es";
+  window.location.href = `/${currentLang}?login=true`;
 };
 
 queryClient.getQueryCache().subscribe(event => {

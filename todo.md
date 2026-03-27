@@ -649,3 +649,8 @@
 - [x] Añadir logo de PDFUp y diseño más atractivo al panel izquierdo
 - [x] Añadir info del precio trial (0,00€ total due today, secure payment)
 - [x] Fix overflow del checkout de Paddle (se come el borde derecho)
+
+## Bug - Panel de usuario redirige a Manus
+- [x] Fix: al hacer clic en panel/cuenta de usuario redirige a Manus en vez de quedarse en pdfup.io
+- [x] Cambiar redirect de getLoginUrl() (Manus OAuth) a /{lang}?login=true en Dashboard, main.tsx, Pricing, DashboardLayout
+- [x] Auto-abrir AuthModal en Navbar cuando URL tiene ?login=true

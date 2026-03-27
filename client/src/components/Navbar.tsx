@@ -4,7 +4,7 @@
    Responsive: mobile hamburger (<md), desktop nav (md+)
    ============================================================= */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Menu, X, FileText, LogOut, LayoutDashboard, Crown, Globe, ChevronDown, Settings } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -42,6 +42,17 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
 
   const openLogin = () => { setAuthMode("login"); setAuthOpen(true); };
   const openSignup = () => { setAuthMode("signup"); setAuthOpen(true); };
+
+  // Auto-open login modal when redirected with ?login=true
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("login") === "true" && !isAuthenticated) {
+      openLogin();
+      // Clean URL
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, "", cleanUrl);
+    }
+  }, [isAuthenticated]);
 
   return (
     <>

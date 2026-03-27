@@ -69,9 +69,11 @@ export default function DashboardLayout({
             </p>
           </div>
           <Button
-            onClick={() => {
-              window.location.href = getLoginUrl();
-            }}
+             onClick={() => {
+               const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
+               const currentLang = langMatch ? langMatch[1] : "es";
+               window.location.href = `/${currentLang}?login=true`;
+             }}
             size="lg"
             className="w-full shadow-lg hover:shadow-xl transition-all"
           >
