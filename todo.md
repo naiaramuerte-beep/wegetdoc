@@ -708,3 +708,7 @@
 - [x] Fix: cancel endpoint busca subscriptionId en Paddle API si no lo tiene en DB (via transaction o customer list)
 - [x] Fix: Extracción correcta de customer.id del evento checkout.completed (customer.id en vez de customer_id)
 - [x] Fix: Webhook fallback busca userId en DB por paddleSubscriptionId o paddleCustomerId
+
+## Bug - PaywallModal no resetea estado al cerrar
+- [x] Bug: Al cerrar el PaywallModal desde la vista de "Sign in" y volver a abrirlo, muestra "Sign in" en vez de la pantalla inicial "Create an account to download"
+- [x] Fix: Resetear el estado del modal (authStep) a "initial" cuando se cierra — useEffect resetea step, emailInput, passwordInput, etc. cuando isOpen cambia

@@ -456,6 +456,20 @@ export default function PaywallModal({
   const [showPassword, setShowPassword] = useState(false);
   const [emailMode, setEmailMode] = useState<"register" | "login">("register");
   const [emailLoading, setEmailLoading] = useState(false);
+
+  // Reset modal state when it opens — ensures it always starts from the initial step
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (isOpen) {
+      setStep(isAuthenticated ? "plans" : "auth-choice");
+      setEmailInput("");
+      setPasswordInput("");
+      setNameInput("");
+      setShowPassword(false);
+      setEmailMode("register");
+      setEmailLoading(false);
+    }
+  }, [isOpen]);
   const registerMutation = trpc.auth.register.useMutation();
   const loginMutation = trpc.auth.login.useMutation();
   const { refresh } = useAuth();
