@@ -165,7 +165,7 @@ function ToolBtn({
 }
 
 // ── Main component ─────────────────────────────────────────────
-export default function PdfEditor({ initialTool, initialFile, fullscreen, initialOpenPaywall, onPaywallOpened }: { initialTool?: string; initialFile?: File; fullscreen?: boolean; initialOpenPaywall?: boolean; onPaywallOpened?: () => void }) {
+export default function PdfEditor({ initialTool, initialFile, fullscreen, initialOpenPaywall, onPaywallOpened, onFileNameChange }: { initialTool?: string; initialFile?: File; fullscreen?: boolean; initialOpenPaywall?: boolean; onPaywallOpened?: () => void; onFileNameChange?: (name: string) => void }) {
   const [file, setFile] = useState<File | null>(null);
   const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null); // eslint-disable-line
@@ -479,6 +479,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const isPdf = initialFile.name.toLowerCase().endsWith(".pdf") || initialFile.type === "application/pdf";
     if (isPdf) {
       setFile(initialFile);
+      onFileNameChange?.(initialFile.name);
       loadPdf(initialFile);
       return;
     }
@@ -516,6 +517,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         const pdfFile = new File([pdfBlob], name, { type: "application/pdf" });
         setConvertFileProgress(95);
         setFile(pdfFile);
+        onFileNameChange?.(pdfFile.name);
         // CRITICAL: Update the context pendingFile with the converted PDF
         // so that savePdfToSession() saves the real PDF bytes (not the original image)
         // This prevents "not a valid PDF" error after OAuth redirect
@@ -755,6 +757,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const isPdf = f.name.toLowerCase().endsWith(".pdf") || f.type === "application/pdf";
     if (isPdf) {
       setFile(f);
+      onFileNameChange?.(f.name);
       loadPdf(f);
       toast.success(t.editor_toast_pdf_loaded ?? "PDF loaded successfully");
       return;
@@ -791,6 +794,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const pdfFile = new File([pdfBlob], name, { type: "application/pdf" });
       setConvertFileProgress(95);
       setFile(pdfFile);
+      onFileNameChange?.(pdfFile.name);
       await loadPdf(pdfFile);
       setConvertFileProgress(100);
       // Save original file info for the "converted" banner
@@ -2940,8 +2944,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           <Redo2 className="w-4 h-4" style={{ color: "oklch(0.35 0.02 250)" }} />
         </button>
         <div className="w-px h-5 mx-1 shrink-0" style={{ backgroundColor: "oklch(0.88 0.02 250)" }} />
-        {/* Tool buttons — scrollable */}
-        <div className="flex items-center gap-0.5 flex-1 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+        {/* Tool buttons — centered */}
+        <div className="flex items-center gap-0.5 flex-1 justify-center overflow-x-auto" style={{ scrollbarWidth: "none" }}>
           {[
             { id: "sign" as ToolName, icon: PenTool, label: t.editor_sign },
             { id: "text" as ToolName, icon: Type, label: t.editor_add_text },
