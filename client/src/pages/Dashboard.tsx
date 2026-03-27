@@ -722,7 +722,7 @@ function DashboardPaddleInline({
         // Detect current language for successUrl
         const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
         const currentLang = langMatch ? langMatch[1] : "es";
-        const successUrl = `${window.location.origin}/${currentLang}/payment/success`;
+        const successUrl = `https://pdfup.io/${currentLang}/payment/success`;
 
         P.Checkout.open({
           items: checkoutItems,

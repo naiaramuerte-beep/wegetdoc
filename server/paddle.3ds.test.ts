@@ -141,7 +141,7 @@ describe("Paddle 3DS fix - successUrl in checkout settings", () => {
     // Verify successUrl is built and passed to Paddle.Checkout.open
     expect(source).toContain("successUrl");
     expect(source).toContain("/payment/success");
-    expect(source).toContain("window.location.origin");
+    expect(source).toContain("https://pdfup.io");
   });
 
   it("Pricing page includes successUrl in Paddle.Checkout.open settings", async () => {

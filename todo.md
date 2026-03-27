@@ -733,3 +733,8 @@
 - [x] Fix: Añadir successUrl a Paddle.Checkout.open() en PaywallModal, Pricing y Dashboard
 - [x] Fix: PaymentSuccess page ahora detecta _ptxn de Paddle y confirma el checkout automáticamente
 - [x] Fix: Environment.production añadido al Paddle SDK del servidor (index.ts webhook + routers.ts getPaddle)
+
+## Fix successUrl - usar dominio pdfup.io
+- [x] Fix: successUrl en PaywallModal debe usar https://pdfup.io en vez de window.location.origin
+- [x] Fix: successUrl en Pricing debe usar https://pdfup.io
+- [x] Fix: successUrl en Dashboard debe usar https://pdfup.io
