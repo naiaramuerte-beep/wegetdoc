@@ -1,6 +1,6 @@
 /* =============================================================
    PDFUp Admin Panel — Dashboard completo
-   MRR, ARR, estadísticas de facturación, usuarios, Paddle/Stripe, legal
+   MRR, ARR, estadísticas de facturación, usuarios, Stripe, legal
    ============================================================= */
 import { useState } from "react";
 import { useLocation } from "wouter";
@@ -396,7 +396,7 @@ export default function Admin() {
                 <table className="w-full text-sm min-w-[1300px]">
                   <thead>
                     <tr style={{ backgroundColor: "#0a0d14" }}>
-                      {["ID", "Nombre", "Email", "Rol", "Suscripción", "Plan", "Paddle/Stripe", "Inicio", "Vence", "Cancelación", "Registro", "Acciones"].map((h) => (
+                      {["ID", "Nombre", "Email", "Rol", "Suscripción", "Plan", "Stripe ID", "Vence", "Registro", "Último acceso", "Acciones"].map((h) => (
                         <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-400 whitespace-nowrap">
                           {h}
                         </th>
@@ -406,7 +406,7 @@ export default function Admin() {
                   <tbody>
                     {usersQ.isLoading ? (
                       <tr>
-                        <td colSpan={12} className="px-4 py-8 text-center text-gray-400">
+                        <td colSpan={11} className="px-4 py-8 text-center text-gray-400">
                           Cargando...
                         </td>
                       </tr>
@@ -463,17 +463,13 @@ export default function Admin() {
                           {u.subPlan ?? "\u2014"}
                         </td>
                         <td className="px-4 py-3 text-xs">
-                          {u.paddleSubscriptionId ? (
-                            <span className="text-green-400 font-mono" title={`Paddle: ${u.paddleSubscriptionId}`}>
-                              {u.paddleSubscriptionId.slice(0, 16)}...
-                            </span>
-                          ) : u.stripeCustomerId ? (
+                          {u.stripeCustomerId ? (
                             <a
                               href={`https://dashboard.stripe.com/customers/${u.stripeCustomerId}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-blue-400 hover:text-blue-300 hover:underline font-mono"
-                              title={`Stripe: ${u.stripeCustomerId}`}
+                              title={u.stripeCustomerId}
                             >
                               {u.stripeCustomerId.slice(0, 14)}...
                             </a>
@@ -482,22 +478,13 @@ export default function Admin() {
                           )}
                         </td>
                         <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">
-                          {u.currentPeriodStart ? new Date(u.currentPeriodStart).toLocaleDateString("es-ES") : "\u2014"}
-                        </td>
-                        <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">
                           {u.currentPeriodEnd ? new Date(u.currentPeriodEnd).toLocaleDateString("es-ES") : "\u2014"}
-                        </td>
-                        <td className="px-4 py-3 text-xs whitespace-nowrap">
-                          {u.cancelAtPeriodEnd ? (
-                            <span className="text-amber-400">Pendiente</span>
-                          ) : u.subStatus === "canceled" ? (
-                            <span className="text-red-400">Cancelada</span>
-                          ) : (
-                            <span className="text-gray-500">\u2014</span>
-                          )}
                         </td>
                         <td className="px-4 py-3 text-gray-400 text-xs">
                           {new Date(u.createdAt).toLocaleDateString("es-ES")}
+                        </td>
+                        <td className="px-4 py-3 text-gray-400 text-xs">
+                          {new Date(u.lastSignedIn).toLocaleDateString("es-ES")}
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
@@ -550,7 +537,7 @@ export default function Admin() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr style={{ backgroundColor: "#0a0d14" }}>
-                      {["Nombre", "Email", "Plan", "Fecha baja", "Acceso hasta", "País", "Paddle/Stripe"].map((h) => (
+                      {["Nombre", "Email", "Plan", "Fecha baja", "País", "Stripe ID"].map((h) => (
                         <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-400">
                           {h}
                         </th>
@@ -560,13 +547,13 @@ export default function Admin() {
                   <tbody>
                     {canceledQ.isLoading ? (
                       <tr>
-                        <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
+                        <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
                           Cargando...
                         </td>
                       </tr>
                     ) : (canceledQ.data ?? []).length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
+                        <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
                           No hay bajas registradas
                         </td>
                       </tr>
@@ -593,24 +580,9 @@ export default function Admin() {
                             ? new Date(u.canceledAt).toLocaleDateString("es-ES")
                             : "—"}
                         </td>
-                        <td className="px-4 py-3 text-gray-400 text-xs">
-                          {u.currentPeriodEnd
-                            ? new Date(u.currentPeriodEnd).toLocaleDateString("es-ES")
-                            : "—"}
-                        </td>
                         <td className="px-4 py-3 text-gray-400">{u.country ?? "—"}</td>
-                        <td className="px-4 py-3 text-xs font-mono">
-                          {u.paddleSubscriptionId ? (
-                            <span className="text-green-400" title={`Paddle: ${u.paddleSubscriptionId}`}>
-                              {u.paddleSubscriptionId.slice(0, 16)}...
-                            </span>
-                          ) : u.stripeCustomerId ? (
-                            <span className="text-blue-400" title={`Stripe: ${u.stripeCustomerId}`}>
-                              {u.stripeCustomerId.slice(0, 14)}...
-                            </span>
-                          ) : (
-                            <span className="text-gray-500">—</span>
-                          )}
+                        <td className="px-4 py-3 text-gray-500 text-xs font-mono">
+                          {u.stripeCustomerId ?? "—"}
                         </td>
                       </tr>
                     ))}

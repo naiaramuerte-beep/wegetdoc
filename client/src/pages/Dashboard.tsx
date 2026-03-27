@@ -23,14 +23,11 @@ import PaywallModal from "@/components/PaywallModal";
 import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
 import { usePdfFile } from "@/contexts/PdfFileContext";
-import { fireConversionEvents } from "@/lib/conversionTracking";
-import { useLanguage } from "@/contexts/LanguageContext";
 
 type Tab = "account" | "documents" | "team" | "billing";
 
 export default function Dashboard() {
   const { user, isAuthenticated, loading, logout } = useAuth();
-  const { lang } = useLanguage();
   const [, navigate] = useLocation();
   // Read tab from URL query param (e.g. ?tab=documents after payment)
   const getInitialTab = (): Tab => {
@@ -49,9 +46,16 @@ export default function Dashboard() {
       utils.subscription.status.invalidate();
       toast.success("¡Pago completado! Tu suscripción está activa. Ya puedes descargar tus documentos.");
 
-      // Fire conversion tracking (Google Ads + GA4)
-      const sessionId = params.get("txn") || params.get("session_id") || `pmt_${Date.now()}`;
-      fireConversionEvents(sessionId);
+      // Google Ads conversion tracking — use session_id from URL as transaction_id
+      const sessionId = params.get("session_id") || `pmt_${Date.now()}`;
+      if (typeof window.gtag === "function") {
+        window.gtag("event", "conversion", {
+          send_to: "AW-18038723667/IUjxCNKbjI8cENLLwJLD",
+          value: 0.50,
+          currency: "EUR",
+          transaction_id: sessionId,
+        });
+      }
 
       // Clean URL without reload
       const cleanUrl = window.location.pathname + "?tab=documents";
@@ -665,12 +669,10 @@ function DashboardPaddleInline({
   paddleConfig,
   user,
   onComplete,
-  lang,
 }: {
-  paddleConfig?: { clientToken: string; priceId: string; trialPriceId?: string } | null;
+  paddleConfig?: { clientToken: string; priceId: string } | null;
   user?: { id: number; email: string | null; name?: string | null } | null;
   onComplete: (data: any) => void;
-  lang?: string;
 }) {
   const [ready, setReady] = useState(false);
   const initialized = useRef(false);
@@ -711,22 +713,15 @@ function DashboardPaddleInline({
         });
       }
       if (!opened.current) {
-        // Pass both prices: one-time trial fee + recurring subscription
-        const checkoutItems: Array<{ priceId: string; quantity: number }> = [];
-        if (paddleConfig.trialPriceId) {
-          checkoutItems.push({ priceId: paddleConfig.trialPriceId, quantity: 1 });
-        }
-        checkoutItems.push({ priceId: paddleConfig.priceId, quantity: 1 });
-
         P.Checkout.open({
-          items: checkoutItems,
+          items: [{ priceId: paddleConfig.priceId, quantity: 1 }],
           customer: { email: user?.email || undefined },
           customData: {
             user_id: user?.id?.toString() || "",
             user_email: user?.email || "",
             user_name: user?.name || "",
           },
-          settings: { variant: "one-page", locale: lang || "en", allowLogout: false, showAddDiscounts: true },
+          settings: { locale: "es", allowLogout: false, showAddDiscounts: true },
         });
         opened.current = true;
       }
@@ -762,7 +757,6 @@ function DashboardPaddleInline({
 // ─── Billing Tab ──────────────────────────────────────────────
 function BillingTab() {
   const { user } = useAuth();
-  const { lang } = useLanguage();
   const { data: subData, isLoading } = trpc.subscription.status.useQuery();
   const utils = trpc.useUtils();
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -968,11 +962,24 @@ function BillingTab() {
           <DashboardPaddleInline
             paddleConfig={paddleConfigQ.data}
             user={user}
-            lang={lang}
             onComplete={(data: any) => {
               const txnId = data.transaction_id || data.subscription_id || "";
-              // Fire conversion tracking (Google Ads + GA4)
-              fireConversionEvents(txnId);
+              // Google Ads conversion tracking
+              if (typeof window.gtag === "function") {
+                window.gtag("event", "conversion", {
+                  send_to: "AW-18038723667/IUjxCNKbjI8cENLLwJLD",
+                  value: 0.50,
+                  currency: "EUR",
+                  transaction_id: txnId,
+                });
+                window.gtag("event", "purchase", {
+                  transaction_id: txnId,
+                  value: 0.50,
+                  currency: "EUR",
+                  items: [{ item_id: "pdfup_trial", item_name: "PDFUp Trial Subscription", price: 0.50, quantity: 1 }],
+                });
+                console.log("[Dashboard] Conversion tracking fired", { txnId });
+              }
               confirmPaddleCheckout.mutate({
                 transactionId: data.transaction_id || "",
                 subscriptionId: data.subscription_id || "",

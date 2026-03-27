@@ -2269,13 +2269,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             {ActionBar}
             <div className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>
-              {isEditingExisting ? t.editor_text_panel_edit : t.editor_text_panel_add}
+              {isEditingExisting ? "Editar texto" : "Añadir texto"}
             </h3>
 
             {/* Instruction when no text is selected */}
             {!isEditingExisting && (
               <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.06)", color: "oklch(0.35 0.02 250)" }}>
-                <strong>{t.editor_how_to_use}</strong> {t.editor_text_panel_hint_new}
+                <strong>Cómo usar:</strong> Haz clic en cualquier parte del PDF para colocar un nuevo texto. Puedes configurar el formato antes o después.
               </div>
             )}
 
@@ -2383,7 +2383,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               ))}
             </div>
             <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: highlightColor + "33", color: "oklch(0.30 0.02 250)" }}>
-              <strong>{t.editor_how_to_use}</strong> {t.editor_highlight_panel_hint}
+              <strong>Cómo usar:</strong> Haz clic y arrastra sobre el PDF para crear un resaltado del tamaño que quieras.
             </div>
             </div>
           </div>
@@ -2651,7 +2651,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               <span className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>{eraserSize}px</span>
             </div>
             <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.95 0.01 250)", color: "oklch(0.30 0.02 250)" }}>
-              <strong>{t.editor_how_to_use}</strong> {t.editor_erase_panel_hint}
+              <strong>Cómo usar:</strong> Haz clic y arrastra sobre el área que quieres borrar. Se creará un rectángulo blanco sobre ese contenido.
             </div>
             </div>
           </div>
@@ -2675,7 +2675,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               <div style={{ width: 40, height: brushSize, backgroundColor: brushColor, borderRadius: brushSize / 2 }} />
             </div>
             <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.95 0.01 250)", color: "oklch(0.30 0.02 250)" }}>
-              <strong>{t.editor_how_to_use}</strong> {t.editor_brush_panel_hint}
+              <strong>Cómo usar:</strong> Haz clic y arrastra sobre el PDF para dibujar a mano alzada.
             </div>
             </div>
           </div>
@@ -2684,13 +2684,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         return (
           <div className="flex flex-col">
             <div className="p-4 flex flex-col gap-3">
-            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>{t.editor_edittext_title}</h3>
+            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>Editar texto nativo</h3>
             <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.08)", color: "oklch(0.30 0.02 250)" }}>
               {t.editor_edittext_hint}
             </div>
             {/* Color picker for replacement text */}
             <div className="flex gap-2 items-center">
-              <label className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>{t.editor_text_color_label}</label>
+              <label className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>Color texto</label>
               <input type="color" value={editTextColor} onChange={e => setEditTextColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0" />
             </div>
             {/* Block count */}
@@ -2699,7 +2699,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 {nativeTextBlocks.length} {t.editor_text_blocks_detected}
                 {nativeTextBlocks.filter(b => b.editedStr !== undefined).length > 0 && (
                   <span className="ml-1 font-semibold" style={{ color: "oklch(0.45 0.20 150)" }}>
-                    ({nativeTextBlocks.filter(b => b.editedStr !== undefined).length} {t.editor_edittext_edited_count})
+                    ({nativeTextBlocks.filter(b => b.editedStr !== undefined).length} editados)
                   </span>
                 )}
               </div>
@@ -2711,7 +2711,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             {/* Instruction when a block is selected */}
             {editingBlockId && (
               <div className="p-2 rounded text-xs" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.1)", color: "oklch(0.30 0.02 250)" }}>
-                {t.editor_edittext_instruction}
+                Edita el texto directamente sobre el PDF. Pulsa Enter o el botón Guardar para confirmar.
               </div>
             )}
             </div>
@@ -2722,9 +2722,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           <div className="flex flex-col gap-0">
             {ActionBar}
             <div className="p-4 flex flex-col gap-3">
-              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "oklch(0.45 0.02 250)" }}>{t.editor_move_panel_title}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "oklch(0.45 0.02 250)" }}>Mover elementos</p>
               <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.06)", color: "oklch(0.35 0.02 250)" }}>
-                <p className="font-medium mb-1" style={{ color: "oklch(0.25 0.03 250)" }}>{t.editor_how_to_use}</p>
+                <p className="font-medium mb-1" style={{ color: "oklch(0.25 0.03 250)" }}>Cómo usar:</p>
                 <p>{t.editor_move_hint}</p>
               </div>
               <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "oklch(0.96 0.005 250)", color: "oklch(0.45 0.02 250)" }}>
@@ -2928,14 +2928,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
       {/* ── TOP TOOLBAR — desktop only ── */}
       <div className="hidden md:flex items-center gap-1 px-3 py-1.5 border-b min-w-0" style={{ backgroundColor: "oklch(1 0 0)", borderColor: "oklch(0.90 0.01 250)" }}>
-        {/* Undo / Redo — with labels */}
-        <button title={t.editor_undo + " (Ctrl+Z)"} onClick={undo} disabled={historyIndex <= 0} className="flex items-center gap-1 px-2 py-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
+        {/* Undo / Redo */}
+        <button title={t.editor_undo + " (Ctrl+Z)"} onClick={undo} disabled={historyIndex <= 0} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
           <Undo2 className="w-4 h-4" style={{ color: "oklch(0.35 0.02 250)" }} />
-          <span className="text-xs font-medium" style={{ color: "oklch(0.35 0.02 250)" }}>{t.editor_undo}</span>
         </button>
-        <button title={t.editor_redo + " (Ctrl+Y)"} onClick={redo} disabled={historyIndex >= history.length - 1} className="flex items-center gap-1 px-2 py-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
+        <button title={t.editor_redo + " (Ctrl+Y)"} onClick={redo} disabled={historyIndex >= history.length - 1} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
           <Redo2 className="w-4 h-4" style={{ color: "oklch(0.35 0.02 250)" }} />
-          <span className="text-xs font-medium" style={{ color: "oklch(0.35 0.02 250)" }}>{t.editor_redo}</span>
         </button>
         <div className="w-px h-5 mx-1 shrink-0" style={{ backgroundColor: "oklch(0.88 0.02 250)" }} />
         {/* Tool buttons — scrollable */}
@@ -2959,15 +2957,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             <ToolBtn key={id} icon={icon} label={label} active={activeTool === id} onClick={() => { setActiveTool(id); setSelectedId(null); setShowMobilePanel(true); }} />
           ))}
         </div>
-        <div className="w-px h-5 mx-1 shrink-0" style={{ backgroundColor: "oklch(0.88 0.02 250)" }} />
-        {/* Page actions — with labels */}
-        <button title={t.editor_rotate} onClick={rotatePage} className="flex items-center gap-1 px-2 py-1.5 rounded hover:bg-gray-100 transition-colors shrink-0">
+        {/* Page actions */}
+        <button title={t.editor_rotate} onClick={rotatePage} className="p-1.5 rounded hover:bg-gray-100 transition-colors shrink-0">
           <RotateCw className="w-4 h-4" style={{ color: "oklch(0.45 0.02 250)" }} />
-          <span className="text-xs font-medium" style={{ color: "oklch(0.45 0.02 250)" }}>{t.editor_rotate}</span>
         </button>
-        <button title={t.editor_delete_page} onClick={deletePage} className="flex items-center gap-1 px-2 py-1.5 rounded hover:bg-gray-100 transition-colors shrink-0">
+        <button title={t.editor_delete_page} onClick={deletePage} className="p-1.5 rounded hover:bg-gray-100 transition-colors shrink-0">
           <Trash2 className="w-4 h-4" style={{ color: "oklch(0.55 0.15 15)" }} />
-          <span className="text-xs font-medium" style={{ color: "oklch(0.55 0.15 15)" }}>{t.editor_delete_page}</span>
         </button>
         {selectedId && (
           <button title="Delete selection" onClick={deleteSelected} className="p-1.5 rounded transition-colors shrink-0" style={{ backgroundColor: "oklch(0.95 0.05 15)" }}>
@@ -3538,28 +3533,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         {/* Tools row — horizontal scroll with fade indicator */}
         <div className="relative">
         <div className="flex items-center overflow-x-auto gap-0 px-1 py-1" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
-          {/* Undo / Redo buttons */}
-          <button
-            onClick={undo}
-            disabled={historyIndex <= 0}
-            className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg shrink-0 transition-all disabled:opacity-30"
-            style={{ color: "oklch(0.35 0.02 250)", minWidth: 56 }}
-          >
-            <Undo2 className="w-5 h-5" />
-            <span style={{ fontSize: 10, whiteSpace: "nowrap" }}>{t.editor_undo}</span>
-          </button>
-          <button
-            onClick={redo}
-            disabled={historyIndex >= history.length - 1}
-            className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg shrink-0 transition-all disabled:opacity-30"
-            style={{ color: "oklch(0.35 0.02 250)", minWidth: 56 }}
-          >
-            <Redo2 className="w-5 h-5" />
-            <span style={{ fontSize: 10, whiteSpace: "nowrap" }}>{t.editor_redo}</span>
-          </button>
-          {/* Separator */}
-          <div className="w-px h-8 mx-0.5 shrink-0" style={{ backgroundColor: "oklch(0.88 0.02 250)" }} />
-          {/* Tool buttons */}
           {[
             { id: "notes" as ToolName, icon: StickyNote, label: t.editor_notes },
             { id: "move" as ToolName, icon: Move, label: t.editor_move },
@@ -3589,25 +3562,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               <span style={{ fontSize: 10, whiteSpace: "nowrap" }}>{label}</span>
             </button>
           ))}
-          {/* Separator */}
-          <div className="w-px h-8 mx-0.5 shrink-0" style={{ backgroundColor: "oklch(0.88 0.02 250)" }} />
-          {/* Page actions: Rotate & Delete */}
-          <button
-            onClick={rotatePage}
-            className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg shrink-0 transition-all"
-            style={{ color: "oklch(0.45 0.02 250)", minWidth: 56 }}
-          >
-            <RotateCw className="w-5 h-5" />
-            <span style={{ fontSize: 10, whiteSpace: "nowrap" }}>{t.editor_rotate}</span>
-          </button>
-          <button
-            onClick={deletePage}
-            className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg shrink-0 transition-all"
-            style={{ color: "oklch(0.55 0.15 15)", minWidth: 56 }}
-          >
-            <Trash2 className="w-5 h-5" />
-            <span style={{ fontSize: 10, whiteSpace: "nowrap" }}>{t.editor_delete_page}</span>
-          </button>
         </div>
         {/* Fade gradient on right to indicate more tools */}
         <div className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none" style={{ background: "linear-gradient(to right, transparent, white)" }} />

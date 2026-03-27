@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";
 
-const CONVERSION_SEND_TO = "AW-18038723667/r5NBCLfb-Y8cENOoxJlD";
+const CONVERSION_SEND_TO = "AW-18038723667/IUjxCNKbjI8cENLLwJLD";
 const GOOGLE_ADS_ID = "AW-18038723667";
 const GOOGLE_ANALYTICS_ID = "G-XBHZ3TMG7K";
 
@@ -37,72 +37,85 @@ describe("Google Ads Conversion Tracking", () => {
     expect(html).toContain("'ad_storage': 'granted'");
     expect(html).toContain("'ad_user_data': 'granted'");
     expect(html).toContain("'analytics_storage': 'granted'");
+    // Should NOT have ad_storage denied anymore
     expect(html).not.toContain("'ad_storage': 'denied'");
     expect(html).not.toContain("'ad_user_data': 'denied'");
   });
 
-  // ── Centralized helper tests ──
-  it("conversionTracking.ts helper contains correct Google Ads conversion config", () => {
-    const src = readFileSync(
-      join(__dirname, "../client/src/lib/conversionTracking.ts"),
-      "utf-8"
-    );
-    expect(src).toContain(`"${CONVERSION_SEND_TO}"`);
-    expect(src).toContain("CONVERSION_VALUE = 0.50");
-    expect(src).toContain('CONVERSION_CURRENCY = "EUR"');
-    expect(src).toContain('window.gtag("event", "conversion"');
-    expect(src).toContain('window.gtag("event", "purchase"');
-    expect(src).toContain("item_id: \"pdfup_trial\"");
-    expect(src).toContain("fireBeginCheckout");
-    expect(src).toContain('window.gtag("event", "begin_checkout"');
-  });
-
-  it("conversionTracking.ts exports fireConversionEvents and fireBeginCheckout", () => {
-    const src = readFileSync(
-      join(__dirname, "../client/src/lib/conversionTracking.ts"),
-      "utf-8"
-    );
-    expect(src).toContain("export function fireConversionEvents");
-    expect(src).toContain("export function fireBeginCheckout");
-  });
-
-  // ── All payment flows use the centralized helper ──
-  it("PaywallModal.tsx uses centralized fireConversionEvents", () => {
-    const src = readFileSync(
-      join(__dirname, "../client/src/components/PaywallModal.tsx"),
-      "utf-8"
-    );
-    expect(src).toContain("fireConversionEvents(");
-    expect(src).toContain("fireBeginCheckout");
-    expect(src).toContain('from "@/lib/conversionTracking"');
-  });
-
-  it("PaymentSuccess.tsx uses centralized fireConversionEvents", () => {
+  it("PaymentSuccess.tsx fires conversion event with correct send_to and transaction_id", () => {
     const src = readFileSync(
       join(__dirname, "../client/src/pages/PaymentSuccess.tsx"),
       "utf-8"
     );
-    expect(src).toContain("fireConversionEvents(");
-    expect(src).toContain('from "@/lib/conversionTracking"');
-    expect(src).toContain('params.get("txn")');
+    expect(src).toContain('window.gtag("event", "conversion"');
+    expect(src).toContain(`send_to: "${CONVERSION_SEND_TO}"`);
+    expect(src).toContain("value: 0.50");
+    expect(src).toContain('currency: "EUR"');
+    // Uses Paddle transaction ID from URL param "txn"
+    expect(src).toContain("transaction_id: transactionId");
   });
 
-  it("Dashboard.tsx uses centralized fireConversionEvents", () => {
+  it("PaymentSuccess.tsx fires GA4 purchase event", () => {
+    const src = readFileSync(
+      join(__dirname, "../client/src/pages/PaymentSuccess.tsx"),
+      "utf-8"
+    );
+    expect(src).toContain('window.gtag("event", "purchase"');
+    expect(src).toContain("transaction_id: transactionId");
+    expect(src).toContain("item_id: \"pdfup_trial\"");
+  });
+
+  it("PaymentSuccess.tsx reads txn param from URL for Paddle transaction ID", () => {
+    const src = readFileSync(
+      join(__dirname, "../client/src/pages/PaymentSuccess.tsx"),
+      "utf-8"
+    );
+    expect(src).toContain('params.get("txn")');
+    expect(src).toContain('params.get("transaction_id")');
+  });
+
+  it("Dashboard.tsx fires conversion event on Paddle checkout complete", () => {
     const src = readFileSync(
       join(__dirname, "../client/src/pages/Dashboard.tsx"),
       "utf-8"
     );
-    expect(src).toContain("fireConversionEvents(");
-    expect(src).toContain('from "@/lib/conversionTracking"');
+    expect(src).toContain('window.gtag("event", "conversion"');
+    expect(src).toContain(`send_to: "${CONVERSION_SEND_TO}"`);
+    expect(src).toContain("value: 0.50");
+    expect(src).toContain('currency: "EUR"');
+    expect(src).toContain("transaction_id: txnId");
   });
 
-  it("Pricing.tsx uses centralized fireConversionEvents", () => {
+  it("Dashboard.tsx fires GA4 purchase event on Paddle checkout complete", () => {
+    const src = readFileSync(
+      join(__dirname, "../client/src/pages/Dashboard.tsx"),
+      "utf-8"
+    );
+    expect(src).toContain('window.gtag("event", "purchase"');
+    expect(src).toContain("item_id: \"pdfup_trial\"");
+  });
+
+  it("Pricing.tsx fires conversion event on Paddle checkout complete", () => {
     const src = readFileSync(
       join(__dirname, "../client/src/pages/Pricing.tsx"),
       "utf-8"
     );
-    expect(src).toContain("fireConversionEvents(");
-    expect(src).toContain('from "@/lib/conversionTracking"');
+    expect(src).toContain('window.gtag("event", "conversion"');
+    expect(src).toContain(`send_to: "${CONVERSION_SEND_TO}"`);
+    expect(src).toContain("transaction_id: txnId");
+  });
+
+  it("PaywallModal.tsx fires conversion event with Paddle transactionId or subscriptionId", () => {
+    const src = readFileSync(
+      join(__dirname, "../client/src/components/PaywallModal.tsx"),
+      "utf-8"
+    );
+    expect(src).toContain('window.gtag("event", "conversion"');
+    expect(src).toContain(`send_to: "${CONVERSION_SEND_TO}"`);
+    expect(src).toContain("value: 0.50");
+    expect(src).toContain('currency: "EUR"');
+    // Now uses Paddle's transactionId or subscriptionId
+    expect(src).toContain("transaction_id: transactionId || subscriptionId");
   });
 
   it("gtag type declaration exists for TypeScript", () => {
@@ -119,6 +132,7 @@ describe("Google Ads Conversion Tracking", () => {
       join(__dirname, "../client/src/components/CookieBanner.tsx"),
       "utf-8"
     );
+    // ad_storage and ad_user_data should always be granted
     expect(src).toContain('ad_storage: "granted"');
     expect(src).toContain('ad_user_data: "granted"');
   });

@@ -217,7 +217,6 @@ export const appRouter = router({
       return {
         clientToken: process.env.VITE_PADDLE_CLIENT_TOKEN || "",
         priceId: process.env.VITE_PADDLE_PRICE_ID || "",
-        trialPriceId: process.env.PADDLE_TRIAL_PRICE_ID || "",
       };
     }),
 

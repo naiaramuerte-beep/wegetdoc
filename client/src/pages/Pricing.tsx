@@ -13,13 +13,12 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { fireConversionEvents } from "@/lib/conversionTracking";
 
 export default function Pricing() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [showCheckout, setShowCheckout] = useState(false);
   const { isAuthenticated, user } = useAuth();
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const paddleConfigQ = trpc.subscription.paddleConfig.useQuery();
   const confirmPaddleCheckout = trpc.subscription.confirmPaddleCheckout.useMutation({
     onSuccess: () => {
@@ -299,11 +298,24 @@ export default function Pricing() {
               <PaddleInlineCheckout
                 paddleConfig={paddleConfigQ.data}
                 user={user}
-                lang={lang}
               onComplete={(data: any) => {
                    const txnId = data.transaction_id || data.subscription_id || "";
-                    // Fire conversion tracking (Google Ads + GA4)
-                    fireConversionEvents(txnId);
+                   // Google Ads conversion tracking
+                   if (typeof window.gtag === "function") {
+                     window.gtag("event", "conversion", {
+                       send_to: "AW-18038723667/IUjxCNKbjI8cENLLwJLD",
+                       value: 0.50,
+                       currency: "EUR",
+                       transaction_id: txnId,
+                     });
+                     window.gtag("event", "purchase", {
+                       transaction_id: txnId,
+                       value: 0.50,
+                       currency: "EUR",
+                       items: [{ item_id: "pdfup_trial", item_name: "PDFUp Trial Subscription", price: 0.50, quantity: 1 }],
+                     });
+                     console.log("[Pricing] Conversion tracking fired", { txnId });
+                   }
                    confirmPaddleCheckout.mutate({
                      transactionId: data.transaction_id || "",
                      subscriptionId: data.subscription_id || "",
@@ -457,12 +469,10 @@ function PaddleInlineCheckout({
   paddleConfig,
   user,
   onComplete,
-  lang,
 }: {
-  paddleConfig?: { clientToken: string; priceId: string; trialPriceId?: string } | null;
+  paddleConfig?: { clientToken: string; priceId: string } | null;
   user?: { id: number; email: string | null; name?: string | null } | null;
   onComplete: (data: any) => void;
-  lang?: string;
 }) {
   const [ready, setReady] = useState(false);
   const initialized = useRef(false);
@@ -514,15 +524,8 @@ function PaddleInlineCheckout({
       }
 
       if (!opened.current) {
-        // Pass both prices: one-time trial fee + recurring subscription
-        const checkoutItems: Array<{ priceId: string; quantity: number }> = [];
-        if (paddleConfig.trialPriceId) {
-          checkoutItems.push({ priceId: paddleConfig.trialPriceId, quantity: 1 });
-        }
-        checkoutItems.push({ priceId: paddleConfig.priceId, quantity: 1 });
-
         P.Checkout.open({
-          items: checkoutItems,
+          items: [{ priceId: paddleConfig.priceId, quantity: 1 }],
           customer: { email: user?.email || undefined },
           customData: {
             user_id: user?.id?.toString() || "",
@@ -530,8 +533,7 @@ function PaddleInlineCheckout({
             user_name: user?.name || "",
           },
           settings: {
-            variant: "one-page",
-            locale: lang || "en",
+            locale: "es",
             allowLogout: false,
             showAddDiscounts: true,
           },

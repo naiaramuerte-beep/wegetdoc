@@ -1,14 +1,13 @@
 /*
  * PaywallModal — Paddle Inline Checkout embebido
- * Diseño tipo Stripe: limpio, profesional
- * Sin checkbox propio — Paddle ya gestiona los términos
- * Checkout visible y usable inmediatamente
+ * - Izquierda: preview del PDF + info del plan
+ * - Derecha: formulario de Paddle renderizado inline dentro del modal
+ * Checkbox obligatorio con borde rojo si no se acepta
  */
 import { useState, useEffect, useCallback, useRef } from "react";
-import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield, FileText, Zap, Sparkles } from "lucide-react";
+import { X, Check, Loader2, Mail, CreditCard, ArrowRight, AlertCircle, Eye, EyeOff, Lock } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-import { fireConversionEvents, fireBeginCheckout } from "@/lib/conversionTracking";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { usePdfFile } from "@/contexts/PdfFileContext";
@@ -44,13 +43,16 @@ function PaddleCheckoutForm({
   thumbnailUrl?: string;
   buildPdfForUpload?: () => Promise<{ base64: string; name: string; size: number } | null>;
 }) {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const { user } = useAuth();
+  const [agreed, setAgreed] = useState(false);
+  const [showCheckboxError, setShowCheckboxError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [progressStep, setProgressStep] = useState<"idle" | "checkout" | "saving" | "done">("idle");
   const [paddleReady, setPaddleReady] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const paddleInitialized = useRef(false);
   const checkoutOpened = useRef(false);
-  const mountedRef = useRef(true);
 
   const confirmPaddleCheckout = trpc.subscription.confirmPaddleCheckout.useMutation();
   const paddleConfigQ = trpc.subscription.paddleConfig.useQuery();
@@ -110,6 +112,7 @@ function PaddleCheckoutForm({
       // 2. Upload PDF now that subscription is active
       setProgressStep("saving");
 
+      // Case A: pdfData has a tempKey (uploaded to S3 before login redirect)
       if (pdfData && "tempKey" in pdfData) {
         try {
           await claimTempPdf(pdfData.tempKey, pdfData.name);
@@ -118,6 +121,7 @@ function PaddleCheckoutForm({
           console.error("[PaywallModal] claimTempPdf failed:", claimErr);
         }
       } else {
+        // Case B: pdfData has base64 (built in-memory, user was already logged in)
         let resolvedPdfData = pdfData as { base64: string; name: string; size: number } | undefined;
         if (!resolvedPdfData && buildPdfForUpload) {
           try {
@@ -145,8 +149,16 @@ function PaddleCheckoutForm({
       setProgressStep("done");
       toast.success(t.paywall_doc_ready + " " + t.paywall_processing);
 
-      // Fire Google Ads conversion + GA4 purchase events
-      fireConversionEvents(transactionId || subscriptionId);
+      // Google Ads conversion tracking (fires here AND on PaymentSuccess page for redundancy)
+      if (typeof window.gtag === "function") {
+        window.gtag("event", "conversion", {
+          send_to: "AW-18038723667/IUjxCNKbjI8cENLLwJLD",
+          value: 0.50,
+          currency: "EUR",
+          transaction_id: transactionId || subscriptionId,
+        });
+        console.log("[PaywallModal] Google Ads conversion fired", { transactionId, subscriptionId });
+      }
 
       onSuccess(transactionId || subscriptionId);
     } catch (err: unknown) {
@@ -158,73 +170,36 @@ function PaddleCheckoutForm({
     }
   }, [pdfData, buildPdfForUpload, onSuccess, confirmPaddleCheckout, utils, t]);
 
-  // Fire begin_checkout event when checkout form mounts
+  // Initialize Paddle.js with INLINE mode and open checkout
   useEffect(() => {
-    fireBeginCheckout();
-  }, []);
-
-  // Track whether Paddle has been globally initialized (persists across mounts)
-  const paddleGloballyInitialized = useRef(!!(window as any).__paddleInitialized);
-
-  // Initialize Paddle.js and open checkout
-  useEffect(() => {
-    if (!paddleConfigQ.data?.clientToken || !paddleConfigQ.data?.priceId) return;
-
-    mountedRef.current = true;
-    let cancelled = false;
+    if (!agreed || checkoutOpen || !paddleConfigQ.data?.clientToken || !paddleConfigQ.data?.priceId) return;
 
     const Paddle = (window as any).Paddle;
     if (!Paddle) {
-      // Load Paddle.js script if not yet loaded
-      const existingScript = document.querySelector('script[src*="paddle.com/paddle/v2/paddle.js"]');
-      if (!existingScript) {
-        const script = document.createElement("script");
-        script.src = "https://cdn.paddle.com/paddle/v2/paddle.js";
-        script.async = true;
-        script.onload = () => { if (!cancelled) initAndOpen(); };
-        script.onerror = () => {
-          console.error("[Paddle] Failed to load Paddle.js");
-          toast.error("Error loading payment system. Please refresh.");
-        };
-        document.head.appendChild(script);
-      } else {
-        // Script exists but Paddle not yet on window — wait for it
-        const waitForPaddle = setInterval(() => {
-          if ((window as any).Paddle && !cancelled) {
-            clearInterval(waitForPaddle);
-            initAndOpen();
-          }
-        }, 100);
-        // Cleanup interval if unmounted
-        setTimeout(() => clearInterval(waitForPaddle), 10000);
-      }
-      return () => { cancelled = true; };
+      // Load script first
+      const script = document.createElement("script");
+      script.src = "https://cdn.paddle.com/paddle/v2/paddle.js";
+      script.async = true;
+      script.onload = () => initAndOpen();
+      script.onerror = () => {
+        console.error("[Paddle] Failed to load Paddle.js");
+        toast.error("Error loading payment system. Please refresh.");
+      };
+      document.head.appendChild(script);
+      return;
     }
 
     initAndOpen();
 
     function initAndOpen() {
-      if (cancelled) return;
       const P = (window as any).Paddle;
       if (!P) return;
 
       const clientToken = paddleConfigQ.data!.clientToken;
       const priceId = paddleConfigQ.data!.priceId;
-      const trialPriceId = paddleConfigQ.data!.trialPriceId;
 
       try {
-        const eventHandler = (event: any) => {
-          if (cancelled) return;
-          console.log("[Paddle] Event:", event.name, event);
-          if (event.name === "checkout.loaded") setPaddleReady(true);
-          if (event.name === "checkout.completed") handleCheckoutComplete(event.data);
-          if (event.name === "checkout.error") {
-            console.error("[Paddle] Checkout error:", event);
-            toast.error("Error en el proceso de pago. Inténtalo de nuevo.");
-          }
-        };
-
-        if (!paddleGloballyInitialized.current && !(window as any).__paddleInitialized) {
+        if (!paddleInitialized.current) {
           P.Initialize({
             token: clientToken,
             checkout: {
@@ -233,171 +208,232 @@ function PaddleCheckoutForm({
                 frameTarget: "paddle-checkout-container",
                 frameInitialHeight: "450",
                 frameStyle: "width: 100%; min-width: 312px; background-color: transparent; border: none;",
-                locale: lang || "en",
               },
             },
-            eventCallback: eventHandler,
+            eventCallback: (event: any) => {
+              console.log("[Paddle] Event:", event.name, event);
+              if (event.name === "checkout.loaded") {
+                setPaddleReady(true);
+              }
+              if (event.name === "checkout.completed") {
+                handleCheckoutComplete(event.data);
+              }
+              if (event.name === "checkout.closed") {
+                // User closed the checkout
+              }
+              if (event.name === "checkout.error") {
+                console.error("[Paddle] Checkout error:", event);
+                toast.error("Error en el proceso de pago. Inténtalo de nuevo.");
+              }
+            },
           });
-          paddleGloballyInitialized.current = true;
-          (window as any).__paddleInitialized = true;
+          paddleInitialized.current = true;
         } else {
-          // Paddle already initialized — just update the event callback
-          try {
-            P.Update({
-              eventCallback: eventHandler,
-            });
-          } catch (updateErr) {
-            console.warn("[Paddle] Update failed, continuing:", updateErr);
-          }
+          // Already initialized, update the event callback
+          P.Update({
+            eventCallback: (event: any) => {
+              console.log("[Paddle] Event:", event.name, event);
+              if (event.name === "checkout.loaded") {
+                setPaddleReady(true);
+              }
+              if (event.name === "checkout.completed") {
+                handleCheckoutComplete(event.data);
+              }
+              if (event.name === "checkout.error") {
+                console.error("[Paddle] Checkout error:", event);
+                toast.error("Error en el proceso de pago. Inténtalo de nuevo.");
+              }
+            },
+          });
         }
 
-        // Small delay to ensure the DOM container is rendered before opening checkout
-        setTimeout(() => {
-          if (cancelled) return;
+        // Open the checkout — it will render inside the div with class "paddle-checkout-container"
+        P.Checkout.open({
+          items: [{ priceId, quantity: 1 }],
+          customer: {
+            email: user?.email || undefined,
+          },
+          customData: {
+            user_id: user?.id?.toString() || "",
+            user_email: user?.email || "",
+            user_name: user?.name || "",
+          },
+          settings: {
+            locale: "es",
+            allowLogout: false,
+            showAddDiscounts: true,
+          },
+        });
 
-          // Pass both prices: one-time trial fee (0.99€) + recurring subscription (49.90€/month with 7-day trial)
-          const items: Array<{ priceId: string; quantity: number }> = [];
-          if (trialPriceId) {
-            items.push({ priceId: trialPriceId, quantity: 1 });
-          }
-          items.push({ priceId, quantity: 1 });
-
-          P.Checkout.open({
-            items,
-            customer: {
-              email: user?.email || undefined,
-            },
-            customData: {
-              user_id: user?.id?.toString() || "",
-              user_email: user?.email || "",
-              user_name: user?.name || "",
-            },
-            settings: {
-              variant: "one-page",
-              locale: lang || "en",
-              allowLogout: false,
-              showAddDiscounts: true,
-            },
-          });
-
-          checkoutOpened.current = true;
-          console.log("[Paddle] Inline checkout opened");
-        }, 150);
+        setCheckoutOpen(true);
+        checkoutOpened.current = true;
+        console.log("[Paddle] Inline checkout opened");
       } catch (err) {
         console.error("[Paddle] Init/open error:", err);
         toast.error("Error opening payment form. Please try again.");
       }
     }
-
-    return () => { cancelled = true; };
-  }, [paddleConfigQ.data, user, handleCheckoutComplete, lang]);
+  }, [agreed, checkoutOpen, paddleConfigQ.data, user, handleCheckoutComplete]);
 
   // Close Paddle checkout when component unmounts
   useEffect(() => {
     return () => {
-      mountedRef.current = false;
       if (checkoutOpened.current && (window as any).Paddle) {
         try {
           (window as any).Paddle.Checkout.close();
-          console.log("[Paddle] Checkout closed on unmount");
-        } catch (e) {
-          console.warn("[Paddle] Error closing checkout:", e);
-        }
-        checkoutOpened.current = false;
+        } catch {}
       }
     };
   }, []);
 
   return (
-    <div className="flex flex-col md:flex-row min-h-0" style={{ minHeight: 520 }}>
-      {/* ── Left column: Order summary ── */}
-      <div
-        className="flex flex-col justify-between p-6 md:p-8"
-        style={{
-          minWidth: 280,
-          maxWidth: 320,
-          background: "linear-gradient(180deg, #0f172a 0%, #1e293b 100%)",
-        }}
-      >
-        <div>
-          {/* Document preview */}
-          <div className="flex items-center gap-3 mb-6">
-            <div
-              className="w-12 h-14 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}
-            >
-              {thumbnailUrl ? (
-                <img src={thumbnailUrl} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <FileText className="w-5 h-5 text-slate-400" />
-              )}
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-white truncate">
-                {pdfData?.name ?? "documento.pdf"}
-              </p>
-              <p className="text-xs text-slate-400">{t.paywall_pdf_edited}</p>
-            </div>
-          </div>
-
-          {/* Trial badge — prominent */}
+    <div className="flex flex-col md:flex-row min-h-0">
+      {/* ── Left column: PDF Preview + Plan info ── */}
+      <div className="flex flex-col bg-slate-50 border-r border-slate-100 p-6" style={{ minWidth: 260, maxWidth: 300 }}>
+        {/* PDF thumbnail */}
+        <div className="flex flex-col items-center mb-4">
           <div
-            className="rounded-xl p-4 mb-6 text-center"
-            style={{ backgroundColor: "rgba(245, 158, 11, 0.12)", border: "1px solid rgba(245, 158, 11, 0.3)" }}
+            className="w-full rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden flex items-center justify-center"
+            style={{ aspectRatio: "0.707", maxHeight: 180 }}
           >
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Zap className="w-5 h-5 text-amber-400" />
-              <span className="text-lg font-bold text-amber-400">{t.paywall_free_badge}</span>
-            </div>
-            <p className="text-3xl font-extrabold text-white mb-2">{t.paywall_free_price}</p>
-            <p className="text-xs text-amber-300/70 mt-1.5">
-              {t.paywall_free_cancel}
-            </p>
-          </div>
-
-          {/* Trust signals */}
-          <div className="space-y-2.5">
-            {[
-              { icon: Shield, text: t.paywall_secure },
-              { icon: CreditCard, text: t.paywall_instant },
-              { icon: Sparkles, text: t.paywall_cancel },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center gap-2.5">
-                <item.icon className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-                <span className="text-[11px] text-slate-500">{item.text}</span>
+            {thumbnailUrl ? (
+              <img
+                src={thumbnailUrl}
+                alt="Vista previa del documento"
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              /* Skeleton PDF page */
+              <div className="w-full h-full p-3 flex flex-col gap-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-7 bg-red-100 rounded flex items-center justify-center flex-shrink-0">
+                    <span className="text-red-500 text-[8px] font-bold">PDF</span>
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <div className="h-1.5 bg-slate-200 rounded w-full" />
+                    <div className="h-1.5 bg-slate-200 rounded w-3/4" />
+                  </div>
+                </div>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-1.5 bg-slate-100 rounded" style={{ width: `${70 + (i % 3) * 10}%` }} />
+                ))}
               </div>
-            ))}
+            )}
+          </div>
+          <p className="text-xs text-slate-400 mt-2 text-center leading-tight">
+            {pdfData?.name ?? "documento.pdf"}
+          </p>
+        </div>
+
+        {/* Plan info */}
+        <div className="mb-4 pb-4 border-b border-slate-200">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0">
+              <span className="text-sm">🎁</span>
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-semibold text-slate-800">99% Discount</p>
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">New User</span>
+              </div>
+              <p className="text-xs text-slate-400">{t.paywall_trial_plan}</p>
+            </div>
           </div>
         </div>
 
+        {/* Payment info */}
+        <div className="mb-4 p-3 rounded-lg bg-white border border-slate-100">
+          <div className="flex items-center gap-2 mb-1.5">
+            <CreditCard className="w-3.5 h-3.5 text-[#1a3c6e]" />
+            <p className="text-xs font-semibold text-slate-700">{t.paywall_secure}</p>
+          </div>
+          <p className="text-[11px] text-slate-500 leading-relaxed">
+            {t.paywall_instant} · {t.paywall_cancel}
+          </p>
+          <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+            Se cobrará 0,50€ como pago de activación del período de prueba de 7 días.
+          </p>
+        </div>
+
+        {/* Legal checkbox */}
+        <div
+          className="rounded-lg p-3 cursor-pointer transition-all"
+          style={{
+            border: showCheckboxError && !agreed ? "1.5px solid #ef4444" : "1.5px solid #e2e8f0",
+            backgroundColor: showCheckboxError && !agreed ? "#fff5f5" : "#f8faff",
+          }}
+          onClick={() => {
+            setAgreed(!agreed);
+            if (!agreed) setShowCheckboxError(false);
+          }}
+        >
+          <label className="flex items-start gap-2 cursor-pointer">
+            <div
+              className="mt-0.5 w-4 h-4 rounded flex-shrink-0 flex items-center justify-center border-2 transition-all"
+              style={{
+                borderColor: agreed ? "#1a3c6e" : (showCheckboxError ? "#ef4444" : "#cbd5e1"),
+                backgroundColor: agreed ? "#1a3c6e" : "white",
+              }}
+            >
+              {agreed && <Check className="w-2.5 h-2.5 text-white" />}
+            </div>
+            <span className="text-[10px] leading-relaxed text-slate-600">
+              {t.paywall_legal_text}{" "}
+              <a
+                href="mailto:support@pdfup.io"
+                className="underline text-slate-700 hover:text-slate-900"
+                onClick={(e) => e.stopPropagation()}
+              >
+                support@pdfup.io
+              </a>
+            </span>
+          </label>
+        </div>
+
+        {showCheckboxError && !agreed && (
+          <div className="flex items-center gap-1.5 mt-2 text-red-500">
+            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="text-xs font-medium">Campo obligatorio</span>
+          </div>
+        )}
+
+        {/* If not agreed, show prompt to accept terms */}
+        {!agreed && !showCheckboxError && (
+          <p className="text-[11px] text-slate-400 mt-3 text-center">
+            Acepta los términos para ver el formulario de pago
+          </p>
+        )}
+
         {/* Progress steps — visible during payment processing */}
         {isLoading && (
-          <div className="mt-6 rounded-xl p-3" style={{ backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+          <div className="mt-4 rounded-xl border border-slate-100 bg-white p-3">
             {([
-              { key: "checkout", label: t.paywall_progress_processing },
-              { key: "saving", label: t.paywall_progress_saving },
-              { key: "done", label: t.paywall_progress_done },
-            ] as const).map((step) => {
+              { key: "checkout",     label: "Procesando pago...",           icon: "💳" },
+              { key: "saving",       label: "Guardando documento...",       icon: "📄" },
+              { key: "done",         label: "¡Todo listo!",                 icon: "🎉" },
+            ] as const).map((step, idx) => {
               const stepOrder = ["checkout", "saving", "done"] as const;
               const currentIdx = stepOrder.indexOf(progressStep as typeof stepOrder[number]);
               const stepIdx = stepOrder.indexOf(step.key);
-              const isDone = stepIdx < currentIdx;
-              const isActive = stepIdx === currentIdx;
+              const isDone    = stepIdx < currentIdx;
+              const isActive  = stepIdx === currentIdx;
               return (
                 <div key={step.key} className="flex items-center gap-2 py-1">
-                  <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
+                  <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
                     {isDone ? (
-                      <div className="w-3.5 h-3.5 rounded-full bg-green-500 flex items-center justify-center">
-                        <Check className="w-2 h-2 text-white" />
+                      <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                        <Check className="w-2.5 h-2.5 text-white" />
                       </div>
                     ) : isActive ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                      <Loader2 className="w-4 h-4 animate-spin text-[#1a3c6e]" />
                     ) : (
-                      <div className="w-3.5 h-3.5 rounded-full" style={{ border: "1.5px solid rgba(255,255,255,0.15)" }} />
+                      <div className="w-4 h-4 rounded-full border-2 border-slate-200" />
                     )}
                   </div>
-                  <span className={`text-xs font-medium ${
-                    isDone ? "text-green-400" : isActive ? "text-blue-400" : "text-slate-500"
+                  <span className={`text-xs font-medium transition-colors ${
+                    isDone    ? "text-green-600" :
+                    isActive  ? "text-[#1a3c6e]" :
+                    "text-slate-300"
                   }`}>
                     {step.label}
                   </span>
@@ -409,27 +445,48 @@ function PaddleCheckoutForm({
       </div>
 
       {/* ── Right column: Paddle Inline Checkout ── */}
-      <div className="flex-1 flex flex-col min-h-0 relative bg-white">
-        {/* Loading state while Paddle loads */}
-        {!paddleReady && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
-            <div className="flex flex-col items-center gap-3">
-              <Loader2 className="w-7 h-7 animate-spin text-slate-400" />
-              <p className="text-sm text-slate-400">{t.paywall_loading_form}</p>
+      <div className="flex-1 flex flex-col min-h-0">
+        {agreed ? (
+          <>
+            {/* Loading state while Paddle loads */}
+            {!paddleReady && (
+              <div className="flex items-center justify-center p-8">
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 className="w-8 h-8 animate-spin text-[#1a3c6e]" />
+                  <p className="text-sm text-slate-500">{t.paywall_loading_form}</p>
+                </div>
+              </div>
+            )}
+            {/* Paddle inline checkout renders here */}
+            <div
+              className="paddle-checkout-container flex-1"
+              style={{
+                minHeight: 450,
+                opacity: paddleReady ? 1 : 0,
+                transition: "opacity 0.3s ease",
+              }}
+            />
+          </>
+        ) : (
+          /* Placeholder when terms not accepted */
+          <div className="flex-1 flex items-center justify-center p-8">
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                <CreditCard className="w-8 h-8 text-slate-300" />
+              </div>
+              <p className="text-sm font-medium text-slate-500 mb-2">Formulario de pago</p>
+              <p className="text-xs text-slate-400 max-w-[200px] mx-auto">
+                Acepta los términos y condiciones en el panel izquierdo para continuar con el pago
+              </p>
+              <button
+                onClick={() => setShowCheckboxError(true)}
+                className="mt-4 px-6 py-3 rounded-xl bg-[#1a3c6e] text-white font-bold text-sm hover:bg-[#15305a] transition-colors"
+              >
+                {t.paywall_pay_download}
+              </button>
             </div>
           </div>
         )}
-
-        {/* Paddle inline checkout renders here — NO overlay, directly usable */}
-        <div
-          className="paddle-checkout-container flex-1"
-          style={{
-            minHeight: 450,
-            opacity: paddleReady ? 1 : 0,
-            transition: "opacity 0.3s ease",
-            padding: "8px 16px",
-          }}
-        />
       </div>
     </div>
   );
@@ -462,21 +519,25 @@ export default function PaywallModal({
   if (!isOpen) return null;
 
   const currentStep = isAuthenticated ? "plans" : step;
+  // Use pdfData from prop OR from sessionStorage-restored pendingEditedPdf (after login redirect)
   const effectivePdfData = pdfData ?? pendingEditedPdf ?? undefined;
 
   const handleGoogleLogin = async () => {
+    // Save the original PDF file
     if (pendingFile) {
       try { await savePdfToSession(pendingFile); } catch {}
     }
+     // Save the EDITED PDF (with annotations) so it survives the OAuth redirect
     if (pdfData) {
       try { await saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size); } catch {}
     }
     setPendingPaywall(true);
+    // Also set the pending action flag so the auto-resume useEffect has a reliable signal
     sessionStorage.setItem("pdfup_pending_action", "download");
+    // Use direct Google OAuth (shows "PDFUp" on Google consent screen)
     const returnPath = window.location.pathname + window.location.search;
     window.location.href = `/api/auth/google?origin=${encodeURIComponent(window.location.origin)}&returnPath=${encodeURIComponent(returnPath)}`;
   };
-
   const handleEmailSubmit = async () => {
     if (!emailInput.trim() || !emailInput.includes("@")) {
       toast.error(t.paywall_enter_email);
@@ -500,7 +561,9 @@ export default function PaywallModal({
           password: passwordInput,
         });
       }
+      // Refresh auth state — cookie is set by the server
       await refresh();
+      // Auth state is now updated, step will auto-switch to "plans"
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Error";
       toast.error(message);
@@ -518,20 +581,19 @@ export default function PaywallModal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+      style={{ backgroundColor: "rgba(0,0,0,0.55)", backdropFilter: "blur(3px)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
         className="relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden"
-        style={{ maxWidth: currentStep === "plans" ? 880 : 520, maxHeight: "92vh", overflowY: "auto" }}
+        style={{ maxWidth: currentStep === "plans" ? 860 : 520, maxHeight: "92vh", overflowY: "auto" }}
       >
         {/* Close */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 z-30 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-          style={{ backgroundColor: currentStep === "plans" ? "rgba(255,255,255,0.1)" : "#f1f5f9" }}
+          className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 transition-colors"
         >
-          <X className={`w-4 h-4 ${currentStep === "plans" ? "text-slate-400" : "text-gray-500"}`} />
+          <X className="w-4 h-4 text-gray-500" />
         </button>
 
         {/* ── Auth Choice ── */}
@@ -664,12 +726,28 @@ export default function PaywallModal({
 
         {/* ── Plans: payment step ── */}
         {currentStep === "plans" && (
-          <PaddleCheckoutForm
-            onSuccess={handlePaymentSuccess}
-            pdfData={effectivePdfData}
-            thumbnailUrl={thumbnailUrl}
-            buildPdfForUpload={buildPdfForUpload}
-          />
+          <>
+            {/* Header */}
+            <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-slate-100">
+              <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                <Check className="w-3.5 h-3.5 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-green-600">{t.paywall_doc_ready}</p>
+                <h2 className="text-lg font-bold text-slate-900 leading-tight">
+                  {t.paywall_one_step}
+                </h2>
+              </div>
+            </div>
+
+            {/* Paddle Inline Checkout form */}
+            <PaddleCheckoutForm
+              onSuccess={handlePaymentSuccess}
+              pdfData={effectivePdfData}
+              thumbnailUrl={thumbnailUrl}
+              buildPdfForUpload={buildPdfForUpload}
+            />
+          </>
         )}
       </div>
     </div>
