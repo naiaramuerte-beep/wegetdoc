@@ -482,6 +482,7 @@ function PaddleInlineCheckout({
       if (!initialized.current) {
         P.Initialize({
           token: paddleConfig.clientToken,
+          environment: "production",
           checkout: {
             settings: {
               displayMode: "inline",
@@ -534,6 +535,7 @@ function PaddleInlineCheckout({
             locale: lang || "en",
             allowLogout: false,
             showAddDiscounts: true,
+            successUrl: `https://pdfup.io/${lang || "es"}/payment/success`,
           },
         });
         opened.current = true;

@@ -697,3 +697,18 @@
 - [x] Añadir variant: "one-page" a Paddle.Checkout.open() en PaywallModal
 - [x] Añadir variant: "one-page" a Paddle.Checkout.open() en Pricing
 - [x] Añadir variant: "one-page" a Paddle.Checkout.open() en Dashboard
+
+## Bug - Paddle checkout.error en /es/editor
+- [ ] Mejorar logging del error de Paddle para ver el contenido del objeto
+- [ ] Investigar y corregir la causa raíz del checkout.error
+
+## Fix 3D Secure / Google Pay - Internal Server Error
+- [x] Añadir environment: "production" a P.Initialize() en PaywallModal.tsx
+- [x] Añadir environment: "production" a P.Initialize() en Pricing.tsx
+- [x] Añadir environment: "production" a P.Initialize() en Dashboard.tsx
+- [x] Añadir Environment.production a Paddle SDK en server/routers.ts (getPaddle)
+- [x] Añadir Environment.production a Paddle SDK en server/_core/index.ts (webhook)
+- [x] Añadir successUrl a Paddle.Checkout.open() en PaywallModal para 3DS redirect
+- [x] Añadir successUrl a Paddle.Checkout.open() en Pricing para 3DS redirect
+- [x] Añadir successUrl a Paddle.Checkout.open() en Dashboard para 3DS redirect
+- [x] Actualizar PaymentSuccess para confirmar checkout via _ptxn parameter de Paddle

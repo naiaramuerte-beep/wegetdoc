@@ -688,6 +688,7 @@ function DashboardPaddleInline({
       if (!initialized.current) {
         P.Initialize({
           token: paddleConfig.clientToken,
+          environment: "production",
           checkout: {
             settings: {
               displayMode: "inline",
@@ -726,7 +727,7 @@ function DashboardPaddleInline({
             user_email: user?.email || "",
             user_name: user?.name || "",
           },
-          settings: { variant: "one-page", locale: lang || "en", allowLogout: false, showAddDiscounts: true },
+          settings: { variant: "one-page", locale: lang || "en", allowLogout: false, showAddDiscounts: true, successUrl: `https://pdfup.io/${lang || "es"}/payment/success` },
         });
         opened.current = true;
       }

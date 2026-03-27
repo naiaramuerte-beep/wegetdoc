@@ -227,6 +227,7 @@ function PaddleCheckoutForm({
         if (!paddleGloballyInitialized.current && !(window as any).__paddleInitialized) {
           P.Initialize({
             token: clientToken,
+            environment: "production",
             checkout: {
               settings: {
                 displayMode: "inline",
@@ -277,6 +278,7 @@ function PaddleCheckoutForm({
               locale: lang || "en",
               allowLogout: false,
               showAddDiscounts: true,
+              successUrl: `https://pdfup.io/${lang || "es"}/payment/success`,
             },
           });
 
