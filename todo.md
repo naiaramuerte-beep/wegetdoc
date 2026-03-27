@@ -689,4 +689,10 @@
 - [x] Bug: Paddle checkout se queda en "Cargando formulario de pago..." cuando el usuario cierra el modal y vuelve a abrirlo
 
 ## Bug - Imagen desplazada en PDF exportado
-- [x] Bug: Las imágenes añadidas al PDF se muestran en posición correcta en el editor pero aparecen desplazadas en el PDF descargado
+- [ ] Bug: Las imágenes añadidas al PDF se muestran en posición correcta en el editor pero aparecen desplazadas en el PDF descargado (pendiente - necesita enfoque diferente)
+
+## Bug - PDF no se descarga tras fix de coordenadas
+- [x] Bug: El PDF se queda en "Preparando descarga..." y no completa la descarga tras el fix de coordenadas con scale (REVERTIDO - se restauró buildAnnotatedPdf original)
+
+## Bug - Paddle payment falla con "Service Unavailable"
+- [ ] Bug: Al completar pago con Paddle (3DSecure), el servidor devuelve "Service Unavailable" en texto plano en vez de JSON, causando error "Unexpected token 'S'"
