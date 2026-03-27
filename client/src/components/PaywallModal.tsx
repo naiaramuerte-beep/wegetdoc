@@ -4,7 +4,7 @@
  * - Derecha: formulario de Paddle renderizado inline dentro del modal
  */
 import { useState, useEffect, useCallback, useRef } from "react";
-import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock } from "lucide-react";
+import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
@@ -294,102 +294,141 @@ function PaddleCheckoutForm({
   }, []);
 
   return (
-    <div className="flex flex-col md:flex-row min-h-0">
-      {/* ── Left column: PDF Preview only ── */}
-      <div className="flex flex-col items-center justify-center bg-slate-50 border-r border-slate-100 p-6" style={{ minWidth: 240, maxWidth: 280 }}>
-        {/* PDF thumbnail */}
-        <div
-          className="w-full rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden flex items-center justify-center"
-          style={{ aspectRatio: "0.707", maxHeight: 200 }}
-        >
-          {thumbnailUrl ? (
-            <img
-              src={thumbnailUrl}
-              alt="Document preview"
-              className="w-full h-full object-contain"
-            />
-          ) : (
-            /* Skeleton PDF page */
-            <div className="w-full h-full p-3 flex flex-col gap-2">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-6 h-7 bg-red-100 rounded flex items-center justify-center flex-shrink-0">
-                  <span className="text-red-500 text-[8px] font-bold">PDF</span>
+    <div className="flex flex-col min-h-0">
+      {/* ── Header: "Your document is ready!" ── */}
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
+        <div className="w-7 h-7 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+          <Check className="w-4 h-4 text-white" />
+        </div>
+        <p className="text-base font-semibold text-slate-800">Your document is ready!</p>
+      </div>
+
+      {/* ── Price info bar ── */}
+      <div className="px-6 py-3 border-b border-slate-100 bg-white">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0">
+              <Shield className="w-4 h-4 text-orange-500" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-700">Total due today</p>
+              <p className="text-xs text-slate-400">100% secure payment · Cancel anytime</p>
+            </div>
+          </div>
+          <p className="text-xl font-bold text-green-600">0,00 &euro;</p>
+        </div>
+      </div>
+
+      <div className="flex flex-col md:flex-row min-h-0">
+        {/* ── Left column: Logo + PDF Preview ── */}
+        <div className="hidden md:flex flex-col items-center bg-slate-50 border-r border-slate-100 p-5" style={{ minWidth: 220, maxWidth: 260 }}>
+          {/* PDFUp Logo */}
+          <div className="flex items-center gap-1 mb-5">
+            <svg width="24" height="28" viewBox="0 0 28 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+              <rect x="2" y="2" width="24" height="28" rx="3" fill="#1a3c6e" />
+              <rect x="6" y="8" width="10" height="2" rx="1" fill="white" opacity="0.9" />
+              <rect x="6" y="13" width="16" height="2" rx="1" fill="white" opacity="0.7" />
+              <rect x="6" y="18" width="13" height="2" rx="1" fill="white" opacity="0.5" />
+              <rect x="6" y="23" width="16" height="2" rx="1" fill="white" opacity="0.3" />
+            </svg>
+            <span className="font-extrabold text-lg" style={{ color: "#1a3c6e" }}>PDF</span>
+            <span className="font-light text-xs text-slate-400">Up</span>
+          </div>
+
+          {/* PDF thumbnail */}
+          <div
+            className="w-full rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden flex items-center justify-center"
+            style={{ aspectRatio: "0.707", maxHeight: 200 }}
+          >
+            {thumbnailUrl ? (
+              <img
+                src={thumbnailUrl}
+                alt="Document preview"
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <div className="w-full h-full p-3 flex flex-col gap-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-7 bg-red-100 rounded flex items-center justify-center flex-shrink-0">
+                    <span className="text-red-500 text-[8px] font-bold">PDF</span>
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <div className="h-1.5 bg-slate-200 rounded w-full" />
+                    <div className="h-1.5 bg-slate-200 rounded w-3/4" />
+                  </div>
                 </div>
-                <div className="flex-1 space-y-1">
-                  <div className="h-1.5 bg-slate-200 rounded w-full" />
-                  <div className="h-1.5 bg-slate-200 rounded w-3/4" />
-                </div>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-1.5 bg-slate-100 rounded" style={{ width: `${70 + (i % 3) * 10}%` }} />
+                ))}
               </div>
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-1.5 bg-slate-100 rounded" style={{ width: `${70 + (i % 3) * 10}%` }} />
-              ))}
+            )}
+          </div>
+          <p className="text-xs text-slate-400 mt-2 text-center leading-tight truncate w-full">
+            {pdfData?.name ?? "documento.pdf"}
+          </p>
+
+          {/* Progress steps — visible during payment processing */}
+          {isLoading && (
+            <div className="mt-4 w-full rounded-xl border border-slate-100 bg-white p-3">
+              {([
+                { key: "checkout",     label: "Processing payment..." },
+                { key: "saving",       label: "Saving document..." },
+                { key: "done",         label: "All done!" },
+              ] as const).map((step) => {
+                const stepOrder = ["checkout", "saving", "done"] as const;
+                const currentIdx = stepOrder.indexOf(progressStep as typeof stepOrder[number]);
+                const stepIdx = stepOrder.indexOf(step.key);
+                const isDone    = stepIdx < currentIdx;
+                const isActive  = stepIdx === currentIdx;
+                return (
+                  <div key={step.key} className="flex items-center gap-2 py-1">
+                    <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+                      {isDone ? (
+                        <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                          <Check className="w-2.5 h-2.5 text-white" />
+                        </div>
+                      ) : isActive ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-[#1a3c6e]" />
+                      ) : (
+                        <div className="w-4 h-4 rounded-full border-2 border-slate-200" />
+                      )}
+                    </div>
+                    <span className={`text-xs font-medium transition-colors ${
+                      isDone    ? "text-green-600" :
+                      isActive  ? "text-[#1a3c6e]" :
+                      "text-slate-300"
+                    }`}>
+                      {step.label}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
-        <p className="text-xs text-slate-400 mt-2 text-center leading-tight">
-          {pdfData?.name ?? "documento.pdf"}
-        </p>
 
-        {/* Progress steps — visible during payment processing */}
-        {isLoading && (
-          <div className="mt-4 w-full rounded-xl border border-slate-100 bg-white p-3">
-            {([
-              { key: "checkout",     label: "Processing payment...",    icon: "💳" },
-              { key: "saving",       label: "Saving document...",       icon: "📄" },
-              { key: "done",         label: "All done!",                icon: "🎉" },
-            ] as const).map((step) => {
-              const stepOrder = ["checkout", "saving", "done"] as const;
-              const currentIdx = stepOrder.indexOf(progressStep as typeof stepOrder[number]);
-              const stepIdx = stepOrder.indexOf(step.key);
-              const isDone    = stepIdx < currentIdx;
-              const isActive  = stepIdx === currentIdx;
-              return (
-                <div key={step.key} className="flex items-center gap-2 py-1">
-                  <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
-                    {isDone ? (
-                      <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
-                        <Check className="w-2.5 h-2.5 text-white" />
-                      </div>
-                    ) : isActive ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-[#1a3c6e]" />
-                    ) : (
-                      <div className="w-4 h-4 rounded-full border-2 border-slate-200" />
-                    )}
-                  </div>
-                  <span className={`text-xs font-medium transition-colors ${
-                    isDone    ? "text-green-600" :
-                    isActive  ? "text-[#1a3c6e]" :
-                    "text-slate-300"
-                  }`}>
-                    {step.label}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* ── Right column: Paddle Inline Checkout ── */}
-      <div className="flex-1 flex flex-col min-h-0">
-        {/* Loading state while Paddle loads */}
-        {!paddleReady && (
-          <div className="flex items-center justify-center p-8">
-            <div className="flex flex-col items-center gap-3">
-              <Loader2 className="w-8 h-8 animate-spin text-[#1a3c6e]" />
-              <p className="text-sm text-slate-500">Loading payment form...</p>
+        {/* ── Right column: Paddle Inline Checkout ── */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          {/* Loading state while Paddle loads */}
+          {!paddleReady && (
+            <div className="flex items-center justify-center p-8">
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="w-8 h-8 animate-spin text-[#1a3c6e]" />
+                <p className="text-sm text-slate-500">Loading payment form...</p>
+              </div>
             </div>
-          </div>
-        )}
-        {/* Paddle inline checkout renders here */}
-        <div
-          className="paddle-checkout-container flex-1"
-          style={{
-            minHeight: 450,
-            opacity: paddleReady ? 1 : 0,
-            transition: "opacity 0.3s ease",
-          }}
-        />
+          )}
+          {/* Paddle inline checkout renders here */}
+          <div
+            className="paddle-checkout-container flex-1"
+            style={{
+              minHeight: 450,
+              padding: "0 8px",
+              opacity: paddleReady ? 1 : 0,
+              transition: "opacity 0.3s ease",
+            }}
+          />
+        </div>
       </div>
     </div>
   );

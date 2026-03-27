@@ -641,3 +641,11 @@
 - [x] Eliminar header "Documento listo / Un paso más"
 - [x] Abrir Paddle checkout directamente sin esperar checkbox
 - [x] Mantener solo: preview del PDF + Paddle inline checkout
+
+## Añadir precio del trial en PaywallModal
+- [ ] Añadir header con precio del trial encima del formulario de Paddle (estilo: "Start your subscription..." + precio trial + precio mensual)
+
+## Mejorar diseño PaywallModal
+- [x] Añadir logo de PDFUp y diseño más atractivo al panel izquierdo
+- [x] Añadir info del precio trial (0,00€ total due today, secure payment)
+- [x] Fix overflow del checkout de Paddle (se come el borde derecho)
