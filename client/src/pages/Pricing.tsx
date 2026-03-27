@@ -301,13 +301,13 @@ export default function Pricing() {
                 user={user}
                 lang={lang}
               onComplete={(data: any) => {
-                   const txnId = data.transaction_id || data.subscription_id || "";
+                   const txnId = data.transaction_id || "";
                     // Fire conversion tracking (Google Ads + GA4)
                     fireConversionEvents(txnId);
                    confirmPaddleCheckout.mutate({
                      transactionId: data.transaction_id || "",
                      subscriptionId: data.subscription_id || "",
-                     customerId: data.customer_id || "",
+                     customerId: data.customer?.id || data.customer_id || "",
                    });
                  }}
               />

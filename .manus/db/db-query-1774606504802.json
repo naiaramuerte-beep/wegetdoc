@@ -1,0 +1,120 @@
+{
+  "query": "SELECT id, userId, paddleSubscriptionId, paddleCustomerId, plan, status, cancelAtPeriodEnd, currentPeriodStart, currentPeriodEnd FROM subscriptions ORDER BY id DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4AvtuQasrcUbqPZ.root --database HUwJ6fxw58gKVZz5QkmFWk --execute SELECT id, userId, paddleSubscriptionId, paddleCustomerId, plan, status, cancelAtPeriodEnd, currentPeriodStart, currentPeriodEnd FROM subscriptions ORDER BY id DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "240003",
+      "userId": "2100127",
+      "paddleSubscriptionId": "",
+      "paddleCustomerId": "",
+      "plan": "trial",
+      "status": "canceled",
+      "cancelAtPeriodEnd": "1",
+      "currentPeriodStart": "2026-03-27 10:02:45",
+      "currentPeriodEnd": "2026-04-03 10:02:45"
+    },
+    {
+      "id": "240002",
+      "userId": "2880485",
+      "paddleSubscriptionId": "",
+      "paddleCustomerId": "",
+      "plan": "trial",
+      "status": "canceled",
+      "cancelAtPeriodEnd": "1",
+      "currentPeriodStart": "2026-03-27 09:57:24",
+      "currentPeriodEnd": "2026-04-03 09:57:24"
+    },
+    {
+      "id": "240001",
+      "userId": "2880091",
+      "paddleSubscriptionId": "",
+      "paddleCustomerId": "",
+      "plan": "trial",
+      "status": "active",
+      "cancelAtPeriodEnd": "0",
+      "currentPeriodStart": "2026-03-27 08:29:22",
+      "currentPeriodEnd": "2026-04-03 08:29:22"
+    },
+    {
+      "id": "210001",
+      "userId": "2430007",
+      "paddleSubscriptionId": "",
+      "paddleCustomerId": "",
+      "plan": "trial",
+      "status": "active",
+      "cancelAtPeriodEnd": "0",
+      "currentPeriodStart": "2026-03-26 13:11:41",
+      "currentPeriodEnd": "2026-04-02 13:11:41"
+    },
+    {
+      "id": "180002",
+      "userId": "2370127",
+      "paddleSubscriptionId": "",
+      "paddleCustomerId": "",
+      "plan": "trial",
+      "status": "canceled",
+      "cancelAtPeriodEnd": "1",
+      "currentPeriodStart": "2026-03-26 10:46:43",
+      "currentPeriodEnd": "2026-04-02 10:46:43"
+    },
+    {
+      "id": "180001",
+      "userId": "2370055",
+      "paddleSubscriptionId": "",
+      "paddleCustomerId": "",
+      "plan": "trial",
+      "status": "active",
+      "cancelAtPeriodEnd": "0",
+      "currentPeriodStart": "2026-03-26 10:13:01",
+      "currentPeriodEnd": "2026-04-02 10:13:01"
+    },
+    {
+      "id": "150002",
+      "userId": "2190510",
+      "paddleSubscriptionId": "NULL",
+      "paddleCustomerId": "NULL",
+      "plan": "trial",
+      "status": "trialing",
+      "cancelAtPeriodEnd": "0",
+      "currentPeriodStart": "2026-03-25 18:10:02",
+      "currentPeriodEnd": "2026-04-01 18:10:00"
+    },
+    {
+      "id": "150001",
+      "userId": "2190337",
+      "paddleSubscriptionId": "NULL",
+      "paddleCustomerId": "NULL",
+      "plan": "trial",
+      "status": "trialing",
+      "cancelAtPeriodEnd": "1",
+      "currentPeriodStart": "2026-03-25 18:05:28",
+      "currentPeriodEnd": "2026-04-01 18:05:26"
+    },
+    {
+      "id": "120001",
+      "userId": "2100143",
+      "paddleSubscriptionId": "NULL",
+      "paddleCustomerId": "NULL",
+      "plan": "trial",
+      "status": "trialing",
+      "cancelAtPeriodEnd": "1",
+      "currentPeriodStart": "2026-03-25 12:05:07",
+      "currentPeriodEnd": "2026-04-01 12:05:05"
+    },
+    {
+      "id": "90001",
+      "userId": "540005",
+      "paddleSubscriptionId": "NULL",
+      "paddleCustomerId": "NULL",
+      "plan": "trial",
+      "status": "trialing",
+      "cancelAtPeriodEnd": "1",
+      "currentPeriodStart": "2026-03-19 20:04:21",
+      "currentPeriodEnd": "2026-03-26 20:04:19"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\tpaddleSubscriptionId\tpaddleCustomerId\tplan\tstatus\tcancelAtPeriodEnd\tcurrentPeriodStart\tcurrentPeriodEnd\n240003\t2100127\t\t\ttrial\tcanceled\t1\t2026-03-27 10:02:45\t2026-04-03 10:02:45\n240002\t2880485\t\t\ttrial\tcanceled\t1\t2026-03-27 09:57:24\t2026-04-03 09:57:24\n240001\t2880091\t\t\ttrial\tactive\t0\t2026-03-27 08:29:22\t2026-04-03 08:29:22\n210001\t2430007\t\t\ttrial\tactive\t0\t2026-03-26 13:11:41\t2026-04-02 13:11:41\n180002\t2370127\t\t\ttrial\tcanceled\t1\t2026-03-26 10:46:43\t2026-04-02 10:46:43\n180001\t2370055\t\t\ttrial\tactive\t0\t2026-03-26 10:13:01\t2026-04-02 10:13:01\n150002\t2190510\tNULL\tNULL\ttrial\ttrialing\t0\t2026-03-25 18:10:02\t2026-04-01 18:10:00\n150001\t2190337\tNULL\tNULL\ttrial\ttrialing\t1\t2026-03-25 18:05:28\t2026-04-01 18:05:26\n120001\t2100143\tNULL\tNULL\ttrial\ttrialing\t1\t2026-03-25 12:05:07\t2026-04-01 12:05:05\n90001\t540005\tNULL\tNULL\ttrial\ttrialing\t1\t2026-03-19 20:04:21\t2026-03-26 20:04:19\n",
+  "stderr": "",
+  "execution_time_ms": 211
+}

@@ -72,7 +72,6 @@ import {
   getActiveSubscription,
   userHasActiveSubscription,
   upsertSubscription,
-  cancelSubscriptionDb,
   markDocumentsPaid,
 } from "./db";
 
@@ -211,6 +210,7 @@ describe("subscription.confirmPaddleCheckout", () => {
     });
 
     expect(result.success).toBe(true);
+    // When subscriptionId is provided directly, it should be used as-is
     expect(result.subscriptionId).toBe("sub_test_456");
 
     // Verify upsertSubscription was called with correct params
@@ -240,6 +240,7 @@ describe("subscription.confirmPaddleCheckout", () => {
     const result = await caller.subscription.confirmPaddleCheckout({});
 
     expect(result.success).toBe(true);
+    // When no subscriptionId provided and no transactionId to look up, returns empty
     expect(result.subscriptionId).toBe("");
   });
 });
@@ -249,7 +250,16 @@ describe("subscription.cancel", () => {
     vi.clearAllMocks();
   });
 
-  it("cancels subscription in DB when no Paddle subscription ID", async () => {
+  it("throws NOT_FOUND when no active subscription exists", async () => {
+    vi.mocked(getActiveSubscription).mockResolvedValue(null);
+
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(caller.subscription.cancel()).rejects.toThrow("No active subscription found");
+  });
+
+  it("updates DB with cancelAtPeriodEnd when no Paddle subscription ID", async () => {
     vi.mocked(getActiveSubscription).mockResolvedValue({
       id: 1,
       userId: 42,
@@ -263,12 +273,12 @@ describe("subscription.cancel", () => {
       plan: "trial",
       status: "active",
       currentPeriodStart: new Date(),
-      currentPeriodEnd: new Date(),
+      currentPeriodEnd: new Date("2026-04-20"),
       cancelAtPeriodEnd: false,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    vi.mocked(cancelSubscriptionDb).mockResolvedValue(undefined as any);
+    vi.mocked(upsertSubscription).mockResolvedValue(undefined as any);
 
     const ctx = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -276,7 +286,15 @@ describe("subscription.cancel", () => {
     const result = await caller.subscription.cancel();
 
     expect(result.success).toBe(true);
-    expect(cancelSubscriptionDb).toHaveBeenCalledWith(42);
+    // Without Paddle subscription ID, paddleCanceled should be false
+    expect(result.paddleCanceled).toBe(false);
+    // DB should still be updated with cancelAtPeriodEnd
+    expect(upsertSubscription).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 42,
+        cancelAtPeriodEnd: true,
+      })
+    );
   });
 
   it("calls Paddle API and updates DB when subscription has Paddle ID", async () => {
@@ -304,13 +322,14 @@ describe("subscription.cancel", () => {
     const ctx = createAuthContext();
     const caller = appRouter.createCaller(ctx);
 
-    // The Paddle API call will fail in test env, but the DB update should still happen
+    // The Paddle API call will fail in test env (no real API key), but the DB update should still happen
     const result = await caller.subscription.cancel();
 
     expect(result.success).toBe(true);
     expect(upsertSubscription).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 42,
+        paddleSubscriptionId: "sub_paddle_123",
         cancelAtPeriodEnd: true,
       })
     );

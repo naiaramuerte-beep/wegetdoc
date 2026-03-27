@@ -1,0 +1,9 @@
+{
+  "query": "SELECT id, userId, paddleSubscriptionId, paddleCustomerId, paddleTransactionId, plan, status FROM subscriptions WHERE paddleSubscriptionId IS NOT NULL AND paddleSubscriptionId != '' AND paddleSubscriptionId != 'NULL' ORDER BY id DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4AvtuQasrcUbqPZ.root --database HUwJ6fxw58gKVZz5QkmFWk --execute SELECT id, userId, paddleSubscriptionId, paddleCustomerId, paddleTransactionId, plan, status FROM subscriptions WHERE paddleSubscriptionId IS NOT NULL AND paddleSubscriptionId != '' AND paddleSubscriptionId != 'NULL' ORDER BY id DESC LIMIT 10;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 58
+}

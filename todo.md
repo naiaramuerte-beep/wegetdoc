@@ -689,10 +689,22 @@
 - [x] Bug: Paddle checkout se queda en "Cargando formulario de pago..." cuando el usuario cierra el modal y vuelve a abrirlo (REVERTIDO a versión original por posible conflicto con pagos)
 
 ## Bug - Imagen desplazada en PDF exportado
-- [ ] Bug: Las imágenes añadidas al PDF se muestran en posición correcta en el editor pero aparecen desplazadas en el PDF descargado (pendiente - necesita enfoque diferente)
+- [x] Bug: Las imágenes añadidas al PDF se muestran en posición correcta en el editor pero aparecen desplazadas en el PDF descargado
+- [x] Fix: buildAnnotatedPdf ahora divide coordenadas de canvas por scale factor para convertir a PDF points
 
 ## Bug - PDF no se descarga tras fix de coordenadas
 - [x] Bug: El PDF se queda en "Preparando descarga..." y no completa la descarga tras el fix de coordenadas con scale (REVERTIDO - se restauró buildAnnotatedPdf original)
 
 ## Bug - Paddle payment falla con "Service Unavailable"
 - [ ] Bug: Al completar pago con Paddle (3DSecure), el servidor devuelve "Service Unavailable" en texto plano en vez de JSON, causando error "Unexpected token 'S'"
+
+## Re-aplicar fix PaywallModal
+- [x] Restaurar fix del PaywallModal para que Paddle checkout recargue al reabrir el modal
+
+## Bug - Cancelación de suscripción no llega a Paddle
+- [x] Bug: Al cancelar suscripción desde el panel del usuario, no se cancela realmente en Paddle
+- [x] Bug: El primer intento de cancelar suscripción da error, el segundo dice "cancelada" pero no se refleja en Paddle
+- [x] Fix: confirmPaddleCheckout ahora resuelve subscriptionId desde Paddle API via transactionId
+- [x] Fix: cancel endpoint busca subscriptionId en Paddle API si no lo tiene en DB (via transaction o customer list)
+- [x] Fix: Extracción correcta de customer.id del evento checkout.completed (customer.id en vez de customer_id)
+- [x] Fix: Webhook fallback busca userId en DB por paddleSubscriptionId o paddleCustomerId

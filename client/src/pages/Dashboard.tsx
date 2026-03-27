@@ -786,13 +786,22 @@ function BillingTab() {
   };
 
   const cancelMutation = trpc.subscription.cancel.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       utils.subscription.status.invalidate();
       setShowCancelModal(false);
-      toast.success("Suscripción cancelada. Seguirás teniendo acceso hasta el final del período.");
+      if (data.paddleCanceled) {
+        toast.success("Suscripción cancelada correctamente. Seguirás teniendo acceso hasta el final del período.");
+      } else {
+        toast.success("Suscripción marcada como cancelada. Si sigues viendo cargos, contacta soporte.");
+      }
     },
-    onError: () => {
-      toast.error("Error al cancelar la suscripción. Inténtalo de nuevo.");
+    onError: (err) => {
+      console.error("[Cancel] Error:", err);
+      if (err.message?.includes("No active subscription")) {
+        toast.error("No se encontró una suscripción activa.");
+      } else {
+        toast.error("Error al cancelar la suscripción. Inténtalo de nuevo.");
+      }
     },
   });
 
@@ -970,13 +979,13 @@ function BillingTab() {
             user={user}
             lang={lang}
             onComplete={(data: any) => {
-              const txnId = data.transaction_id || data.subscription_id || "";
+              const txnId = data.transaction_id || "";
               // Fire conversion tracking (Google Ads + GA4)
               fireConversionEvents(txnId);
               confirmPaddleCheckout.mutate({
                 transactionId: data.transaction_id || "",
                 subscriptionId: data.subscription_id || "",
-                customerId: data.customer_id || "",
+                customerId: data.customer?.id || data.customer_id || "",
               });
             }}
           />

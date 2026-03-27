@@ -1,0 +1,64 @@
+{
+  "query": "SELECT id, userId, paddleSubscriptionId, paddleCustomerId, paddleTransactionId, plan, status FROM subscriptions WHERE paddleTransactionId IS NOT NULL AND paddleTransactionId != '' ORDER BY id DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4AvtuQasrcUbqPZ.root --database HUwJ6fxw58gKVZz5QkmFWk --execute SELECT id, userId, paddleSubscriptionId, paddleCustomerId, paddleTransactionId, plan, status FROM subscriptions WHERE paddleTransactionId IS NOT NULL AND paddleTransactionId != '' ORDER BY id DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "240003",
+      "userId": "2100127",
+      "paddleSubscriptionId": "",
+      "paddleCustomerId": "",
+      "paddleTransactionId": "txn_01kmqbwsm5ehwv4nd7ey4tv58k",
+      "plan": "trial",
+      "status": "canceled"
+    },
+    {
+      "id": "240002",
+      "userId": "2880485",
+      "paddleSubscriptionId": "",
+      "paddleCustomerId": "",
+      "paddleTransactionId": "txn_01kmqbhnp0w293204mnj1f44vg",
+      "plan": "trial",
+      "status": "canceled"
+    },
+    {
+      "id": "240001",
+      "userId": "2880091",
+      "paddleSubscriptionId": "",
+      "paddleCustomerId": "",
+      "paddleTransactionId": "txn_01kmq62bk11xbafvqrjemr6kyz",
+      "plan": "trial",
+      "status": "active"
+    },
+    {
+      "id": "210001",
+      "userId": "2430007",
+      "paddleSubscriptionId": "",
+      "paddleCustomerId": "",
+      "paddleTransactionId": "txn_01kmn4a0jdf1p1ah1r4cn7h9km",
+      "plan": "trial",
+      "status": "active"
+    },
+    {
+      "id": "180002",
+      "userId": "2370127",
+      "paddleSubscriptionId": "",
+      "paddleCustomerId": "",
+      "paddleTransactionId": "txn_01kmmvsk5dw2wmbsgj2twqq45k",
+      "plan": "trial",
+      "status": "canceled"
+    },
+    {
+      "id": "180001",
+      "userId": "2370055",
+      "paddleSubscriptionId": "",
+      "paddleCustomerId": "",
+      "paddleTransactionId": "txn_01kmmt009cy8e1k34r1hv6f5qs",
+      "plan": "trial",
+      "status": "active"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\tpaddleSubscriptionId\tpaddleCustomerId\tpaddleTransactionId\tplan\tstatus\n240003\t2100127\t\t\ttxn_01kmqbwsm5ehwv4nd7ey4tv58k\ttrial\tcanceled\n240002\t2880485\t\t\ttxn_01kmqbhnp0w293204mnj1f44vg\ttrial\tcanceled\n240001\t2880091\t\t\ttxn_01kmq62bk11xbafvqrjemr6kyz\ttrial\tactive\n210001\t2430007\t\t\ttxn_01kmn4a0jdf1p1ah1r4cn7h9km\ttrial\tactive\n180002\t2370127\t\t\ttxn_01kmmvsk5dw2wmbsgj2twqq45k\ttrial\tcanceled\n180001\t2370055\t\t\ttxn_01kmmt009cy8e1k34r1hv6f5qs\ttrial\tactive\n",
+  "stderr": "",
+  "execution_time_ms": 185
+}
