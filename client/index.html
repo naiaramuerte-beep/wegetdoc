@@ -1,16 +1,177 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 
   <head>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>PDFPro - Editor de PDF Online Gratuito</title>
-    <meta name="description" content="Convierte, edita y firma tus PDFs fácilmente desde cualquier dispositivo. Herramientas gratuitas de PDF online." />
+
+    <!-- Google Search Console Verification -->
+    <meta name="google-site-verification" content="AEaJtYOIC1wqLOjvTK6G4EpKKz9TIQqdjztpGVf37bg" />
+
+    <!-- Bing Webmaster Tools Verification -->
+    <meta name="msvalidate.01" content="2E5D54B1E539C39E03CB1D5A66ED18D1" />
+
+    <!-- Primary SEO -->
+    <title>Free Online PDF Editor – Edit, Sign &amp; Convert PDF | PDFUp</title>
+    <meta name="description" content="Edit PDF files online for free. Add text, signatures, images and annotations. Convert PDF to Word, JPG, Excel. No installation needed. Works on any device." />
+    <meta name="keywords" content="edit PDF online, free PDF editor, PDF to Word, sign PDF online, convert PDF, merge PDF, compress PDF" />
+    <link rel="canonical" href="https://pdfup.io/" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://pdfup.io/" />
+    <meta property="og:title" content="Free Online PDF Editor – Edit, Sign &amp; Convert PDF | PDFUp" />
+    <meta property="og:description" content="Edit PDF files online for free. Add text, signatures, images and annotations. Convert PDF to Word, JPG, Excel. No installation needed." />
+    <meta property="og:image" content="https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/og-image-JaG7GRVpqhSVhvmEzFdFDF.png" />
+    <meta property="og:image:width" content="2752" />
+    <meta property="og:image:height" content="1536" />
+    <meta property="og:site_name" content="PDFUp" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Free Online PDF Editor – Edit, Sign &amp; Convert PDF | PDFUp" />
+    <meta name="twitter:description" content="Edit PDF files online for free. Add text, signatures, images and annotations. Convert PDF to Word, JPG, Excel. No installation needed." />
+    <meta name="twitter:image" content="https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/og-image-JaG7GRVpqhSVhvmEzFdFDF.png" />
+
+    <!-- JSON-LD: WebApplication -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "PDFUp",
+      "url": "https://pdfup.io",
+      "description": "Free online PDF editor. Edit, convert, sign and compress PDF files directly in your browser. No installation required.",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Any",
+      "browserRequirements": "Requires JavaScript. Works in Chrome, Firefox, Safari, Edge.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR",
+        "description": "Free to use with optional premium subscription"
+      },
+      "featureList": [
+        "Edit text in PDF",
+        "Add digital signature to PDF",
+        "Convert PDF to Word",
+        "Convert PDF to JPG",
+        "Merge PDF files",
+        "Compress PDF",
+        "Password protect PDF",
+        "Annotate PDF online"
+      ]
+    }
+    </script>
+
+    <!-- JSON-LD: FAQPage -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "How to edit a PDF online for free?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Go to pdfup.io, drag your PDF file to the upload area or click Upload PDF. Then use the available tools to add text, signatures, images or annotations, and download when done. No installation required."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I edit a PDF without downloading software?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. PDFUp works entirely in your browser. No app or software download is needed. It works in Chrome, Firefox, Safari and Edge."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How to convert PDF to Word online?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Upload your PDF to pdfup.io, select the PDF to Word conversion tool, and download the resulting Word document. The conversion preserves formatting and layout."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How to sign a PDF online?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Upload your PDF, select the Sign tool, draw your signature with the mouse or touchscreen, type your name, or upload a signature image. Then position it on the document and download."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is PDFUp free to use?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, PDFUp is free to use. You can edit, annotate and view PDFs for free. Downloading the edited file requires a subscription with a 7-day free trial."
+          }
+        }
+      ]
+    }
+    </script>
+    <!-- Google Consent Mode v2 — MUST run before gtag config -->
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+
+      // All consent granted by default for maximum conversion tracking
+      gtag('consent', 'default', {
+        'ad_storage': 'granted',
+        'ad_user_data': 'granted',
+        'ad_personalization': 'granted',
+        'analytics_storage': 'granted'
+      });
+
+      // Enable URL passthrough for better cross-domain measurement
+      gtag('set', 'url_passthrough', true);
+
+      // If user explicitly rejected cookies, downgrade consent
+      (function() {
+        try {
+          var consent = localStorage.getItem('pdfup_cookie_consent');
+          if (consent === 'essential') {
+            gtag('consent', 'update', {
+              'ad_personalization': 'denied'
+            });
+          }
+        } catch(e) {}
+      })();
+    </script>
+
+    <!-- Google tag (gtag.js) — Analytics G-XBHZ3TMG7K + Ads AW-18038723667 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XBHZ3TMG7K"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XBHZ3TMG7K');
+      gtag('config', 'AW-18038723667');
+    </script>
+
+    <!-- Hotjar Tracking Code for web pdfUP -->
+    <script>
+      (function(h,o,t,j,a,r){
+        h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
+        h._hjSettings={hjid:6676659,hjsv:6};
+        a=o.getElementsByTagName('head')[0];
+        r=o.createElement('script');r.async=1;
+        r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
+        a.appendChild(r);
+      })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
+    </script>
+
+    <!-- Paddle.js v2 -->
+    <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&family=Dancing+Script:wght@600;700&family=Alex+Brush&family=Great+Vibes&family=Pacifico&family=Sacramento&display=swap" rel="stylesheet" />
   </head>
 
   <body>

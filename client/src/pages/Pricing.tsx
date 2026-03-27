@@ -1,59 +1,87 @@
 /* =============================================================
-   PDFPro Pricing Page — Deep Navy Pro design
+   PDFUp Pricing Page — Deep Navy Pro design
    Two plans: Trial + Monthly, with feature comparison table
+   Paddle inline checkout embebido (no overlay)
    ============================================================= */
 
-import { useState } from "react";
-import { Check, X, ChevronDown, ChevronUp, Zap, Crown } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Check, X, ChevronDown, ChevronUp, Zap, Crown, Loader2, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-
-const features = [
-  { name: "Convertir sin límites", trial: false, monthly: true },
-  { name: "Editar sin límites", trial: false, monthly: true },
-  { name: "Organizar en carpetas", trial: false, monthly: true },
-  { name: "Almacenar PDFs más de 24 horas", trial: false, monthly: true },
-  { name: "Colaborar con tu equipo", trial: false, monthly: true },
-  { name: "Crear notas", trial: true, monthly: true },
-  { name: "Gestionar páginas", trial: true, monthly: true },
-  { name: "Firmar documentos", trial: true, monthly: true },
-  { name: "Editar imágenes", trial: true, monthly: true },
-  { name: "Editar objetos y formas", trial: true, monthly: true },
-  { name: "Resaltar textos", trial: true, monthly: true },
-  { name: "Proteger tus documentos", trial: true, monthly: true },
-];
-
-const pricingFaqs = [
-  {
-    question: "¿Puedo probar todas las funciones durante el período de prueba?",
-    answer:
-      "Durante el período de prueba de 7 días tendrás acceso a las funciones básicas de edición. Para acceder a todas las funciones sin límites, como conversiones ilimitadas y almacenamiento extendido, necesitarás el plan mensual.",
-  },
-  {
-    question: "¿Qué ocurre después de que terminen los 7 días de prueba?",
-    answer:
-      "Al finalizar el período de prueba, tu plan se renovará automáticamente al plan mensual. Puedes cancelar en cualquier momento antes de que finalice el período de prueba para evitar el cargo.",
-  },
-  {
-    question: "¿Hay algún compromiso con la suscripción mensual?",
-    answer:
-      "No, no hay ningún compromiso a largo plazo. Puedes cancelar tu suscripción mensual en cualquier momento y seguirás teniendo acceso hasta el final del período de facturación actual.",
-  },
-  {
-    question: "¿Puedo cancelar mi suscripción en cualquier momento?",
-    answer:
-      "Sí, puedes cancelar tu suscripción en cualquier momento desde la configuración de tu cuenta. No hay penalizaciones por cancelación.",
-  },
-  {
-    question: "¿Puedo solicitar un reembolso por una suscripción no utilizada?",
-    answer:
-      "Evaluamos las solicitudes de reembolso caso por caso. Si tienes algún problema con tu suscripción, contacta con nuestro equipo de soporte y haremos todo lo posible para ayudarte.",
-  },
-];
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { fireConversionEvents } from "@/lib/conversionTracking";
 
 export default function Pricing() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [showCheckout, setShowCheckout] = useState(false);
+  const { isAuthenticated, user } = useAuth();
+  const { t, lang } = useLanguage();
+  const paddleConfigQ = trpc.subscription.paddleConfig.useQuery();
+  const confirmPaddleCheckout = trpc.subscription.confirmPaddleCheckout.useMutation({
+    onSuccess: () => {
+      toast.success("Subscription activated!");
+      setShowCheckout(false);
+    },
+    onError: () => toast.error(t.pricing_error ?? "Error processing payment. Please try again."),
+  });
+
+  const features = [
+    { name: t.pricing_feature_convert ?? "Unlimited conversions", trial: false, monthly: true },
+    { name: t.pricing_feature_edit ?? "Unlimited editing", trial: false, monthly: true },
+    { name: t.pricing_feature_folders ?? "Organize in folders", trial: false, monthly: true },
+    { name: t.pricing_feature_storage ?? "Store PDFs over 24 hours", trial: false, monthly: true },
+    { name: t.pricing_feature_team ?? "Team collaboration", trial: false, monthly: true },
+    { name: t.pricing_feature_notes ?? "Create notes", trial: true, monthly: true },
+    { name: t.pricing_feature_pages ?? "Manage pages", trial: true, monthly: true },
+    { name: t.pricing_feature_sign ?? "Sign documents", trial: true, monthly: true },
+    { name: t.pricing_feature_images ?? "Edit images", trial: true, monthly: true },
+    { name: t.pricing_feature_shapes ?? "Edit objects & shapes", trial: true, monthly: true },
+    { name: t.pricing_feature_highlight ?? "Highlight text", trial: true, monthly: true },
+    { name: t.pricing_feature_protect ?? "Protect documents", trial: true, monthly: true },
+  ];
+
+  const pricingFaqs = [
+    {
+      question: t.pricing_faq_q1 ?? "Can I try all features during the trial?",
+      answer: t.pricing_faq_a1 ?? "During the 7-day trial you have access to basic editing features. For unlimited access, you'll need the monthly plan.",
+    },
+    {
+      question: t.pricing_faq_q2 ?? "What happens after the 7-day trial?",
+      answer: t.pricing_faq_a2 ?? "After the trial, your plan automatically renews to the monthly plan. You can cancel anytime before the trial ends.",
+    },
+    {
+      question: t.pricing_faq_q3 ?? "Is there any commitment with the monthly subscription?",
+      answer: t.pricing_faq_a3 ?? "No long-term commitment. Cancel your monthly subscription anytime and you'll retain access until the end of the billing period.",
+    },
+    {
+      question: t.pricing_faq_q4 ?? "Can I cancel my subscription at any time?",
+      answer: t.pricing_faq_a4 ?? "Yes, you can cancel anytime from your account settings. No cancellation penalties.",
+    },
+    {
+      question: t.pricing_faq_q5 ?? "Can I request a refund for an unused subscription?",
+      answer: t.pricing_faq_a5 ?? "We evaluate refund requests case by case. Contact our support team and we'll do our best to help.",
+    },
+    {
+      question: t.faq_q7,
+      answer: t.faq_a7,
+    },
+  ];
+
+  const handleSubscribe = () => {
+    if (!isAuthenticated) {
+      window.location.href = getLoginUrl();
+      return;
+    }
+    setShowCheckout(true);
+    // Scroll to checkout section
+    setTimeout(() => {
+      document.getElementById("pricing-checkout")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
+  };
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "oklch(0.98 0.005 250)" }}>
@@ -66,13 +94,13 @@ export default function Pricing() {
             className="text-4xl md:text-5xl font-extrabold mb-4"
             style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
           >
-            Elige el plan que mejor se adapte a ti
+            {t.pricing_title}
           </h1>
           <p
             className="text-base"
             style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
           >
-            Comienza gratis y actualiza cuando lo necesites
+            {t.pricing_subtitle}
           </p>
         </div>
       </section>
@@ -101,7 +129,7 @@ export default function Pricing() {
                   }}
                 >
                   <Zap className="w-3 h-3" />
-                  Más popular
+                  {t.pricing_popular ?? "Most popular"}
                 </span>
               </div>
 
@@ -116,7 +144,7 @@ export default function Pricing() {
                   className="text-xl font-bold"
                   style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
                 >
-                  Plan de prueba
+                  {t.pricing_trial_name}
                 </h2>
               </div>
 
@@ -125,13 +153,13 @@ export default function Pricing() {
                   className="text-4xl font-extrabold"
                   style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
                 >
-                  $0.99
+                  {t.pricing_trial_price}
                 </span>
                 <span
                   className="text-sm ml-1"
                   style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
                 >
-                  / 7 días
+                  / {t.pricing_trial_period}
                 </span>
               </div>
 
@@ -139,24 +167,24 @@ export default function Pricing() {
                 className="text-sm leading-relaxed mb-6 flex-1"
                 style={{ color: "oklch(0.45 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
               >
-                Con el plan de prueba de 7 días, puedes disfrutar del servicio con limitaciones antes de decidir actualizar al siguiente plan para desbloquear todas las funciones. Después de ese período, el plan se renueva automáticamente al plan mensual; puedes cancelar en cualquier momento.
+                {t.pricing_trial_desc}
               </p>
 
               <button
                 className="w-full py-3 rounded-xl font-semibold text-sm text-white transition-all duration-200"
                 style={{
-                  backgroundColor: "oklch(0.18 0.04 250)",
+                  backgroundColor: showCheckout ? "oklch(0.55 0.22 260)" : "oklch(0.18 0.04 250)",
                   fontFamily: "'DM Sans', sans-serif",
                 }}
                 onMouseEnter={(e) =>
                   (e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)")
                 }
                 onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = "oklch(0.18 0.04 250)")
+                  (e.currentTarget.style.backgroundColor = showCheckout ? "oklch(0.55 0.22 260)" : "oklch(0.18 0.04 250)")
                 }
-                onClick={() => toast.success("Iniciando período de prueba...")}
+                onClick={handleSubscribe}
               >
-                Iniciar prueba
+                {t.pricing_cta_trial}
               </button>
             </div>
 
@@ -180,7 +208,7 @@ export default function Pricing() {
                   className="text-xl font-bold"
                   style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
                 >
-                  Plan mensual
+                  {t.pricing_monthly_name}
                 </h2>
               </div>
 
@@ -189,13 +217,13 @@ export default function Pricing() {
                   className="text-4xl font-extrabold"
                   style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
                 >
-                  $9.99
+                  {t.pricing_monthly_price}
                 </span>
                 <span
                   className="text-sm ml-1"
                   style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
                 >
-                  / mes
+                  / {t.pricing_monthly_period}
                 </span>
               </div>
 
@@ -203,13 +231,13 @@ export default function Pricing() {
                 className="text-sm mb-1"
                 style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
               >
-                Facturado mensualmente
+                {t.pricing_billed_monthly ?? "Billed monthly"}
               </p>
               <p
                 className="text-sm leading-relaxed mb-6 flex-1"
                 style={{ color: "oklch(0.45 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
               >
-                Se renovará automáticamente a menos que canceles la suscripción.
+                {t.pricing_monthly_desc}
               </p>
 
               <button
@@ -228,14 +256,65 @@ export default function Pricing() {
                   e.currentTarget.style.backgroundColor = "transparent";
                   e.currentTarget.style.color = "oklch(0.18 0.04 250)";
                 }}
-                onClick={() => toast.success("Procesando tu suscripción...")}
+                onClick={handleSubscribe}
               >
-                Comprar ahora
+                {t.pricing_cta_monthly}
               </button>
             </div>
           </div>
         </div>
       </section>
+
+      {/* ── INLINE CHECKOUT ──────────────────────────────── */}
+      {showCheckout && isAuthenticated && (
+        <section id="pricing-checkout" className="pb-16">
+          <div className="container max-w-2xl mx-auto">
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{
+                border: "2px solid oklch(0.55 0.22 260)",
+                backgroundColor: "oklch(1 0 0)",
+                boxShadow: "0 4px 24px oklch(0.18 0.04 250 / 0.1)",
+              }}
+            >
+              <div
+                className="px-6 py-4 border-b flex items-center gap-3"
+                style={{ borderColor: "oklch(0.88 0.01 250)", backgroundColor: "oklch(0.98 0.005 250)" }}
+              >
+                <CreditCard className="w-5 h-5" style={{ color: "oklch(0.55 0.22 260)" }} />
+                <h3
+                  className="text-lg font-bold"
+                  style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
+                >
+                  {t.paywall_secure ?? "Pago 100% seguro"}
+                </h3>
+                <button
+                  onClick={() => setShowCheckout(false)}
+                  className="ml-auto text-sm hover:underline"
+                  style={{ color: "oklch(0.50 0.02 250)" }}
+                >
+                  Cancelar
+                </button>
+              </div>
+              <PaddleInlineCheckout
+                paddleConfig={paddleConfigQ.data}
+                user={user}
+                lang={lang}
+              onComplete={(data: any) => {
+                   const txnId = data.transaction_id || data.subscription_id || "";
+                    // Fire conversion tracking (Google Ads + GA4)
+                    fireConversionEvents(txnId);
+                   confirmPaddleCheckout.mutate({
+                     transactionId: data.transaction_id || "",
+                     subscriptionId: data.subscription_id || "",
+                     customerId: data.customer_id || "",
+                   });
+                 }}
+              />
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── COMPARISON TABLE ─────────────────────────────── */}
       <section
@@ -247,7 +326,7 @@ export default function Pricing() {
             className="text-2xl md:text-3xl font-bold mb-8"
             style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
           >
-            Descubre qué incluye cada plan
+            {t.pricing_compare_title ?? "Discover what each plan includes"}
           </h2>
 
           <div
@@ -266,19 +345,19 @@ export default function Pricing() {
                 className="text-sm font-semibold"
                 style={{ color: "oklch(0.35 0.02 250)", fontFamily: "'Sora', sans-serif" }}
               >
-                Funciones principales
+                {t.pricing_features_col ?? "Main features"}
               </div>
               <div
                 className="text-sm font-semibold text-center"
                 style={{ color: "oklch(0.55 0.22 260)", fontFamily: "'Sora', sans-serif" }}
               >
-                Plan de prueba
+                {t.pricing_trial_name}
               </div>
               <div
                 className="text-sm font-semibold text-center"
                 style={{ color: "oklch(0.15 0.03 250)", fontFamily: "'Sora', sans-serif" }}
               >
-                Plan mensual
+                {t.pricing_monthly_name}
               </div>
             </div>
 
@@ -325,7 +404,7 @@ export default function Pricing() {
             className="text-2xl md:text-3xl font-bold mb-8"
             style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
           >
-            Preguntas frecuentes
+            {t.faq_title}
           </h2>
 
           <div className="space-y-3">
@@ -369,6 +448,128 @@ export default function Pricing() {
       </section>
 
       <Footer />
+    </div>
+  );
+}
+
+// ── Paddle Inline Checkout component (reusable) ─────────────────────────────
+function PaddleInlineCheckout({
+  paddleConfig,
+  user,
+  onComplete,
+  lang,
+}: {
+  paddleConfig?: { clientToken: string; priceId: string; trialPriceId?: string } | null;
+  user?: { id: number; email: string | null; name?: string | null } | null;
+  onComplete: (data: any) => void;
+  lang?: string;
+}) {
+  const [ready, setReady] = useState(false);
+  const initialized = useRef(false);
+  const opened = useRef(false);
+
+  const handleComplete = useCallback((eventData: any) => {
+    onComplete(eventData);
+  }, [onComplete]);
+
+  useEffect(() => {
+    if (!paddleConfig?.clientToken || !paddleConfig?.priceId) return;
+
+    const P = (window as any).Paddle;
+    if (!P) return;
+
+    try {
+      if (!initialized.current) {
+        P.Initialize({
+          token: paddleConfig.clientToken,
+          checkout: {
+            settings: {
+              displayMode: "inline",
+              frameTarget: "pricing-paddle-checkout",
+              frameInitialHeight: "450",
+              frameStyle: "width: 100%; min-width: 312px; background-color: transparent; border: none;",
+            },
+          },
+          eventCallback: (event: any) => {
+            if (event.name === "checkout.loaded") setReady(true);
+            if (event.name === "checkout.completed") handleComplete(event.data);
+            if (event.name === "checkout.error") {
+              console.error("[Paddle] Checkout error:", event);
+              toast.error("Error en el proceso de pago.");
+            }
+          },
+        });
+        initialized.current = true;
+      } else {
+        P.Update({
+          eventCallback: (event: any) => {
+            if (event.name === "checkout.loaded") setReady(true);
+            if (event.name === "checkout.completed") handleComplete(event.data);
+            if (event.name === "checkout.error") {
+              console.error("[Paddle] Checkout error:", event);
+              toast.error("Error en el proceso de pago.");
+            }
+          },
+        });
+      }
+
+      if (!opened.current) {
+        // Pass both prices: one-time trial fee + recurring subscription
+        const checkoutItems: Array<{ priceId: string; quantity: number }> = [];
+        if (paddleConfig.trialPriceId) {
+          checkoutItems.push({ priceId: paddleConfig.trialPriceId, quantity: 1 });
+        }
+        checkoutItems.push({ priceId: paddleConfig.priceId, quantity: 1 });
+
+        P.Checkout.open({
+          items: checkoutItems,
+          customer: { email: user?.email || undefined },
+          customData: {
+            user_id: user?.id?.toString() || "",
+            user_email: user?.email || "",
+            user_name: user?.name || "",
+          },
+          settings: {
+            variant: "one-page",
+            locale: lang || "en",
+            allowLogout: false,
+            showAddDiscounts: true,
+          },
+        });
+        opened.current = true;
+      }
+    } catch (err) {
+      console.error("[Paddle] Init error:", err);
+      toast.error("Error loading payment form.");
+    }
+  }, [paddleConfig, user, handleComplete]);
+
+  useEffect(() => {
+    return () => {
+      if (opened.current && (window as any).Paddle) {
+        try { (window as any).Paddle.Checkout.close(); } catch {}
+      }
+    };
+  }, []);
+
+  return (
+    <div className="p-4">
+      {!ready && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: "oklch(0.55 0.22 260)" }} />
+          <span className="ml-3 text-sm" style={{ color: "oklch(0.50 0.02 250)" }}>
+            Cargando formulario de pago...
+          </span>
+        </div>
+      )}
+      <div
+        className="pricing-paddle-checkout"
+        style={{
+          minHeight: ready ? "auto" : 0,
+          opacity: ready ? 1 : 0,
+          transition: "opacity 0.3s ease",
+        }}
+      />
     </div>
   );
 }

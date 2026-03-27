@@ -1,6 +1,6 @@
 /* =============================================================
-   PDFPro Tools Page — All PDF tools in one place
-   Deep Navy Pro design
+   PDFUp Tools Page — All PDF tools in one place
+   Deep Navy Pro design — fully i18n-ready
    ============================================================= */
 
 import { toast } from "sonner";
@@ -20,204 +20,87 @@ import {
   FileImage,
   FileSpreadsheet,
   Presentation,
-  ArrowRight,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import UploadZone from "@/components/UploadZone";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { TranslationKeys } from "@/lib/i18n";
+import type { LucideIcon } from "lucide-react";
 
-const toolGroups = [
+/* ── Tool definition (icon + i18n key references) ────────────── */
+interface ToolDef {
+  icon: LucideIcon;
+  titleKey: keyof TranslationKeys;
+  descKey: keyof TranslationKeys;
+  color: string;
+  bg: string;
+}
+
+interface ToolGroup {
+  categoryKey: keyof TranslationKeys;
+  tools: ToolDef[];
+}
+
+const EDIT_COLOR = "oklch(0.55 0.22 260)";
+const EDIT_BG = "oklch(0.55 0.22 260 / 0.08)";
+const ORG_COLOR = "oklch(0.50 0.18 290)";
+const ORG_BG = "oklch(0.50 0.18 290 / 0.08)";
+const FROM_COLOR = "oklch(0.45 0.18 145)";
+const FROM_BG = "oklch(0.45 0.18 145 / 0.08)";
+const TO_COLOR = "oklch(0.60 0.20 30)";
+const TO_BG = "oklch(0.60 0.20 30 / 0.08)";
+
+const toolGroups: ToolGroup[] = [
   {
-    category: "Editar y firmar",
+    categoryKey: "tools_tab_edit",
     tools: [
-      {
-        icon: Type,
-        title: "Editar texto PDF",
-        description: "Reemplaza o añade texto con fuentes personalizables directamente en tu PDF.",
-        color: "oklch(0.55 0.22 260)",
-        bg: "oklch(0.55 0.22 260 / 0.08)",
-      },
-      {
-        icon: PenTool,
-        title: "Firmar PDF",
-        description: "Añade tu firma digital usando el cursor, escribiendo o subiendo una imagen.",
-        color: "oklch(0.55 0.22 260)",
-        bg: "oklch(0.55 0.22 260 / 0.08)",
-      },
-      {
-        icon: MessageSquare,
-        title: "Anotar PDF",
-        description: "Añade comentarios, notas y anotaciones a tus documentos PDF.",
-        color: "oklch(0.55 0.22 260)",
-        bg: "oklch(0.55 0.22 260 / 0.08)",
-      },
-      {
-        icon: Image,
-        title: "Editar imágenes",
-        description: "Modifica, reemplaza o elimina imágenes en tus archivos PDF.",
-        color: "oklch(0.55 0.22 260)",
-        bg: "oklch(0.55 0.22 260 / 0.08)",
-      },
-      {
-        icon: Lock,
-        title: "Proteger PDF",
-        description: "Añade contraseña y cifrado para proteger tus documentos confidenciales.",
-        color: "oklch(0.55 0.22 260)",
-        bg: "oklch(0.55 0.22 260 / 0.08)",
-      },
-      {
-        icon: Share2,
-        title: "Compartir PDF",
-        description: "Comparte tus documentos por enlace o correo electrónico fácilmente.",
-        color: "oklch(0.55 0.22 260)",
-        bg: "oklch(0.55 0.22 260 / 0.08)",
-      },
+      { icon: Type, titleKey: "tool_edit_text", descKey: "tool_edit_text_desc", color: EDIT_COLOR, bg: EDIT_BG },
+      { icon: PenTool, titleKey: "tool_add_sign", descKey: "tool_add_sign_desc", color: EDIT_COLOR, bg: EDIT_BG },
+      { icon: MessageSquare, titleKey: "tool_annotate", descKey: "tool_annotate_desc", color: EDIT_COLOR, bg: EDIT_BG },
+      { icon: Image, titleKey: "tool_images", descKey: "tool_images_desc", color: EDIT_COLOR, bg: EDIT_BG },
+      { icon: Lock, titleKey: "tool_protect", descKey: "tool_protect_desc", color: EDIT_COLOR, bg: EDIT_BG },
+      { icon: Share2, titleKey: "tool_share", descKey: "tool_share_desc", color: EDIT_COLOR, bg: EDIT_BG },
     ],
   },
   {
-    category: "Organizar páginas",
+    categoryKey: "tools_cat_organize",
     tools: [
-      {
-        icon: Layers,
-        title: "Reorganizar páginas",
-        description: "Mueve, reordena y organiza las páginas de tu PDF con facilidad.",
-        color: "oklch(0.50 0.18 290)",
-        bg: "oklch(0.50 0.18 290 / 0.08)",
-      },
-      {
-        icon: Scissors,
-        title: "Dividir PDF",
-        description: "Divide un PDF en múltiples archivos por páginas o rangos específicos.",
-        color: "oklch(0.50 0.18 290)",
-        bg: "oklch(0.50 0.18 290 / 0.08)",
-      },
-      {
-        icon: Merge,
-        title: "Fusionar PDFs",
-        description: "Combina múltiples archivos PDF en un único documento organizado.",
-        color: "oklch(0.50 0.18 290)",
-        bg: "oklch(0.50 0.18 290 / 0.08)",
-      },
-      {
-        icon: RotateCcw,
-        title: "Rotar páginas",
-        description: "Rota páginas individuales o todas las páginas de tu PDF.",
-        color: "oklch(0.50 0.18 290)",
-        bg: "oklch(0.50 0.18 290 / 0.08)",
-      },
-      {
-        icon: Minimize2,
-        title: "Comprimir PDF",
-        description: "Reduce el tamaño de tus PDFs sin perder calidad visual.",
-        color: "oklch(0.50 0.18 290)",
-        bg: "oklch(0.50 0.18 290 / 0.08)",
-      },
-      {
-        icon: FileText,
-        title: "Eliminar páginas",
-        description: "Elimina páginas específicas o no deseadas de tu documento PDF.",
-        color: "oklch(0.50 0.18 290)",
-        bg: "oklch(0.50 0.18 290 / 0.08)",
-      },
+      { icon: Layers, titleKey: "tool_rearrange", descKey: "tool_rearrange_desc", color: ORG_COLOR, bg: ORG_BG },
+      { icon: Scissors, titleKey: "tool_split", descKey: "tool_split_desc", color: ORG_COLOR, bg: ORG_BG },
+      { icon: Merge, titleKey: "tool_merge", descKey: "tool_merge_desc", color: ORG_COLOR, bg: ORG_BG },
+      { icon: RotateCcw, titleKey: "tool_rotate", descKey: "tool_rotate_desc", color: ORG_COLOR, bg: ORG_BG },
+      { icon: Minimize2, titleKey: "tool_compress", descKey: "tool_compress_desc", color: ORG_COLOR, bg: ORG_BG },
+      { icon: FileText, titleKey: "tool_delete_pages", descKey: "tool_delete_pages_desc", color: ORG_COLOR, bg: ORG_BG },
     ],
   },
   {
-    category: "Convertir desde PDF",
+    categoryKey: "tools_tab_from_pdf",
     tools: [
-      {
-        icon: FileText,
-        title: "PDF a Word",
-        description: "Convierte tus PDFs a documentos Word editables manteniendo el formato.",
-        color: "oklch(0.45 0.18 145)",
-        bg: "oklch(0.45 0.18 145 / 0.08)",
-      },
-      {
-        icon: FileSpreadsheet,
-        title: "PDF a Excel",
-        description: "Extrae tablas y datos de PDFs a hojas de cálculo Excel.",
-        color: "oklch(0.45 0.18 145)",
-        bg: "oklch(0.45 0.18 145 / 0.08)",
-      },
-      {
-        icon: Presentation,
-        title: "PDF a PowerPoint",
-        description: "Transforma presentaciones PDF en diapositivas PowerPoint editables.",
-        color: "oklch(0.45 0.18 145)",
-        bg: "oklch(0.45 0.18 145 / 0.08)",
-      },
-      {
-        icon: FileImage,
-        title: "PDF a JPG",
-        description: "Convierte páginas de PDF a imágenes JPG de alta calidad.",
-        color: "oklch(0.45 0.18 145)",
-        bg: "oklch(0.45 0.18 145 / 0.08)",
-      },
-      {
-        icon: FileImage,
-        title: "PDF a PNG",
-        description: "Exporta páginas de PDF como imágenes PNG con fondo transparente.",
-        color: "oklch(0.45 0.18 145)",
-        bg: "oklch(0.45 0.18 145 / 0.08)",
-      },
-      {
-        icon: FileText,
-        title: "PDF a HTML",
-        description: "Convierte documentos PDF a formato HTML para publicación web.",
-        color: "oklch(0.45 0.18 145)",
-        bg: "oklch(0.45 0.18 145 / 0.08)",
-      },
+      { icon: FileText, titleKey: "tool_pdf_word", descKey: "tool_pdf_word_desc", color: FROM_COLOR, bg: FROM_BG },
+      { icon: FileSpreadsheet, titleKey: "tool_pdf_excel", descKey: "tool_pdf_excel_desc", color: FROM_COLOR, bg: FROM_BG },
+      { icon: Presentation, titleKey: "tool_pdf_ppt", descKey: "tool_pdf_ppt_desc", color: FROM_COLOR, bg: FROM_BG },
+      { icon: FileImage, titleKey: "tool_pdf_jpg", descKey: "tool_pdf_jpg_desc", color: FROM_COLOR, bg: FROM_BG },
+      { icon: FileImage, titleKey: "tool_pdf_png", descKey: "tool_pdf_png_desc", color: FROM_COLOR, bg: FROM_BG },
+      { icon: FileText, titleKey: "tool_pdf_html", descKey: "tool_pdf_html_desc", color: FROM_COLOR, bg: FROM_BG },
     ],
   },
   {
-    category: "Convertir a PDF",
+    categoryKey: "tools_tab_to_pdf",
     tools: [
-      {
-        icon: FileText,
-        title: "Word a PDF",
-        description: "Convierte documentos Word (.doc, .docx) a PDF con formato perfecto.",
-        color: "oklch(0.60 0.20 30)",
-        bg: "oklch(0.60 0.20 30 / 0.08)",
-      },
-      {
-        icon: FileSpreadsheet,
-        title: "Excel a PDF",
-        description: "Transforma hojas de cálculo Excel a PDF manteniendo tablas y datos.",
-        color: "oklch(0.60 0.20 30)",
-        bg: "oklch(0.60 0.20 30 / 0.08)",
-      },
-      {
-        icon: Presentation,
-        title: "PowerPoint a PDF",
-        description: "Convierte presentaciones PowerPoint a PDF para compartir fácilmente.",
-        color: "oklch(0.60 0.20 30)",
-        bg: "oklch(0.60 0.20 30 / 0.08)",
-      },
-      {
-        icon: FileImage,
-        title: "JPG a PDF",
-        description: "Convierte imágenes JPG a PDF de una o varias páginas.",
-        color: "oklch(0.60 0.20 30)",
-        bg: "oklch(0.60 0.20 30 / 0.08)",
-      },
-      {
-        icon: FileImage,
-        title: "PNG a PDF",
-        description: "Transforma imágenes PNG a documentos PDF profesionales.",
-        color: "oklch(0.60 0.20 30)",
-        bg: "oklch(0.60 0.20 30 / 0.08)",
-      },
-      {
-        icon: FileText,
-        title: "HTML a PDF",
-        description: "Convierte páginas web HTML a documentos PDF para archivar.",
-        color: "oklch(0.60 0.20 30)",
-        bg: "oklch(0.60 0.20 30 / 0.08)",
-      },
+      { icon: FileText, titleKey: "tool_word_pdf", descKey: "tool_word_pdf_desc", color: TO_COLOR, bg: TO_BG },
+      { icon: FileSpreadsheet, titleKey: "tool_excel_pdf", descKey: "tool_excel_pdf_desc", color: TO_COLOR, bg: TO_BG },
+      { icon: Presentation, titleKey: "tool_ppt_pdf", descKey: "tool_ppt_pdf_desc", color: TO_COLOR, bg: TO_BG },
+      { icon: FileImage, titleKey: "tool_jpg_pdf", descKey: "tool_jpg_pdf_desc", color: TO_COLOR, bg: TO_BG },
+      { icon: FileImage, titleKey: "tool_png_pdf", descKey: "tool_png_pdf_desc", color: TO_COLOR, bg: TO_BG },
+      { icon: FileText, titleKey: "tool_html_pdf", descKey: "tool_html_pdf_desc", color: TO_COLOR, bg: TO_BG },
     ],
   },
 ];
 
 export default function Tools() {
+  const { t } = useLanguage();
+
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "oklch(0.98 0.005 250)" }}>
       <Navbar />
@@ -230,13 +113,13 @@ export default function Tools() {
               className="text-4xl md:text-5xl font-extrabold mb-4"
               style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
             >
-              Todas las herramientas PDF
+              {t.tools_page_title}
             </h1>
             <p
               className="text-lg"
               style={{ color: "oklch(0.45 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
             >
-              Todo lo que necesitas para trabajar con PDFs en un solo lugar
+              {t.tools_page_subtitle}
             </p>
           </div>
 
@@ -252,7 +135,7 @@ export default function Tools() {
                   className="text-2xl font-bold mb-6"
                   style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
                 >
-                  {group.category}
+                  {t[group.categoryKey]}
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {group.tools.map((tool, ti) => (
@@ -273,7 +156,7 @@ export default function Tools() {
                         e.currentTarget.style.boxShadow = "none";
                         e.currentTarget.style.transform = "translateY(0)";
                       }}
-                      onClick={() => toast.info("Sube un archivo para usar esta herramienta")}
+                      onClick={() => toast.info(t.tool_upload_cta)}
                     >
                       <div
                         className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -286,13 +169,13 @@ export default function Tools() {
                           className="font-semibold text-sm mb-1"
                           style={{ color: "oklch(0.15 0.03 250)", fontFamily: "'Sora', sans-serif" }}
                         >
-                          {tool.title}
+                          {t[tool.titleKey]}
                         </h3>
                         <p
                           className="text-xs leading-relaxed"
                           style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
                         >
-                          {tool.description}
+                          {t[tool.descKey]}
                         </p>
                       </div>
                     </button>
