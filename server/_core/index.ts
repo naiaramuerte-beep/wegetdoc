@@ -192,10 +192,20 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
+  // ── HTTPS Redirect (production only) ──────────────────────────────────────────
+  if (process.env.NODE_ENV === "production") {
+    app.use((req, res, next) => {
+      if (req.headers["x-forwarded-proto"] === "http") {
+        return res.redirect(301, `https://${req.headers.host}${req.url}`);
+      }
+      next();
+    });
+  }
+
   // ── Security Headers ─────────────────────────────────────────────────────────
-  // These headers help prevent Google Ads from flagging the site as compromised
+  // Comprehensive security headers to pass Sucuri/Google Ads security scans
   app.use((_req, res, next) => {
-    // Prevent clickjacking
+    // Prevent clickjacking (both legacy header and CSP frame-ancestors)
     res.setHeader("X-Frame-Options", "SAMEORIGIN");
     // Prevent MIME type sniffing
     res.setHeader("X-Content-Type-Options", "nosniff");
@@ -205,9 +215,9 @@ async function startServer() {
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     // Permissions policy — disable unnecessary browser features
     res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(self)");
-    // Strict Transport Security (HSTS)
-    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
-    // Content Security Policy — allow known trusted sources
+    // Strict Transport Security (HSTS) — force HTTPS for 1 year
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+    // Content Security Policy — comprehensive with frame-ancestors
     res.setHeader("Content-Security-Policy", [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://static.hotjar.com https://cdn.paddle.com https://*.google-analytics.com https://*.googleadservices.com https://*.googlesyndication.com",
@@ -216,6 +226,7 @@ async function startServer() {
       "img-src 'self' data: blob: https: http:",
       "connect-src 'self' https: wss:",
       "frame-src 'self' https://cdn.paddle.com https://*.paddle.com https://accounts.google.com https://*.hotjar.com",
+      "frame-ancestors 'self'",
       "media-src 'self' blob:",
       "worker-src 'self' blob:",
       "object-src 'none'",

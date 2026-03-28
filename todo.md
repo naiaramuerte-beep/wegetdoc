@@ -668,5 +668,9 @@
 - [x] Investigar scripts externos que puedan causar detección de malware
 - [x] Revisar cabeceras de seguridad (CSP, X-Frame-Options, etc.)
 - [x] Verificar que no hay descargas automáticas sin interacción del usuario
-- [x] Añadir cabeceras de seguridad al servidor (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy)
+- [x] Añadir cabeceras de seguridad al servidor (CSP con frame-ancestors, HSTS con preload, X-Frame-Options, X-Content-Type-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy)
 - [x] Verificar en Google Safe Browsing (resultado: No unsafe content found)
+- [x] Añadir redirección HTTP → HTTPS en producción
+- [x] Añadir frame-ancestors 'self' al CSP (requerido por Sucuri)
+- [x] Añadir HSTS preload flag
+- [x] Reforzar CSP con object-src 'none', base-uri 'self', form-action restrictivo
