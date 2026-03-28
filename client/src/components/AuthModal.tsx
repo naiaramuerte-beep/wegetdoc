@@ -1,5 +1,5 @@
 /* =============================================================
-   PDFUp AuthModal — Sign Up + Login estilo pdfe.com
+   PDFUp AuthModal — Sign Up + Login
    ============================================================= */
 import { useState, useEffect } from "react";
 import { X, Eye, EyeOff, Mail, Lock, User as UserIcon, Loader2 } from "lucide-react";

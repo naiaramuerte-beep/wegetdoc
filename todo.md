@@ -66,7 +66,7 @@
 
 - [x] Schema: añadir campos password_hash, google_id, reset_token a tabla users
 - [x] Endpoints: register, login, google-oauth, forgot-password, reset-password
-- [x] AuthModal: Sign Up + Login como modal estilo pdfe.com
+- [x] AuthModal: Sign Up + Login como modal personalizado
 - [x] Integrar AuthModal en Navbar y PaywallModal
 - [x] Reemplazar getLoginUrl() por apertura del AuthModal
 
@@ -75,14 +75,14 @@
 - [x] Modal login muestra signup por defecto (defaultMode no se aplica correctamente)
 - [x] Botón "Login con Google" falla con error "code and state are required"
 
-## Rediseño Editor PDF (estilo pdfe.com)
+## Rediseño Editor PDF
 
 - [x] Editor ocupa toda la pantalla (100vh - navbar)
 - [x] Páginas separadas con espacio entre ellas, fondo gris claro
-- [x] Panel de miniaturas compacto a la izquierda (como pdfe.com)
+- [x] Panel de miniaturas compacto a la izquierda
 - [x] Área de trabajo con scroll vertical, páginas centradas y a tamaño real
 
-## Editor pantalla completa (estilo pdfe.com)
+## Editor pantalla completa
 
 - [x] Crear ruta /editor con el PdfEditor en pantalla completa
 - [x] Home redirige a /editor al subir un PDF (pasando el archivo via contexto React)
@@ -93,7 +93,7 @@
 ## Drop zone mejorado
 
 - [x] Drop zone acepta cualquier formato (Word, Excel, JPG, PNG, etc.) con mensaje de conversión a PDF
-- [x] Editor PDF en pantalla completa estilo pdfe.com
+- [x] Editor PDF en pantalla completa
 
 ## Toolbar del editor
 
@@ -118,7 +118,7 @@
 - [x] Resize de anotaciones (notas, imágenes, texto, formas) no funciona — el handle de esquina no responde
 - [x] Barra de acciones (Deshacer / Borrar último / Borrar todo) en panel lateral de TODAS las herramientas
 
-## Modelo de pago Trial (pdfe.com style)
+## Modelo de pago Trial
 - [x] Stripe: checkout con trial_period_days=7 y 49,95€/mes (subscription mode)
 - [x] PaywallModal: mostrar "0€ hoy, luego 49,95€/mes" con texto legal del trial
 - [x] Checkout: primer cobro 0€ con tarjeta requerida
@@ -200,7 +200,7 @@
 - [x] Feature: formas — toggle 'solo borde' vs 'relleno' añadido en panel de formas
 - [x] Feature: imágenes — slider de opacidad y botón eliminar en panel lateral — en progreso
 
-## Editor Móvil (estilo pdfe.com)
+## Editor Móvil
 - [x] Barra de herramientas horizontal fija en la parte inferior (scroll horizontal) en móvil
 - [x] Botón Download grande fijo en la parte inferior en móvil
 - [x] Botón compartir a la izquierda del Download en móvil
@@ -218,7 +218,7 @@
 - [ ] Bug: dibujo de firma en canvas no funciona
 - [ ] Feature: firma electrónica (eSign) con nombre, fecha, IP y certificado
 
-## Stripe Elements - Pago embebido en modal (pdfe.com style)
+## Stripe Elements - Pago embebido en modal
 - [x] Instalar @stripe/react-stripe-js y @stripe/stripe-js
 - [x] Backend: endpoint createSetupIntent (crea customer + SetupIntent para capturar tarjeta)
 - [x] Backend: endpoint confirmSubscription (adjunta tarjeta + crea suscripción con trial 7 días)
@@ -495,7 +495,7 @@
 - [x] Añadir evento gtag('event', 'ads_conversion_purchase') al completar pago exitoso
 - [x] Añadir etiqueta Google Ads AW-18038662610 en index.html
 - [x] Añadir evento de conversión Google Ads con send_to AW-18038662610/IUjxCNKbjI8cENLLwJLD
-- [x] Reemplazar todas las referencias de editpdf.online por pdfup.io en todo el proyecto
+- [x] Reemplazar todas las referencias de dominios antiguos por pdfup.io en todo el proyecto
 - [x] Preparar textos de anuncios Google Ads para pdfup.io
 
 ## Logo icon visibility fix
@@ -674,3 +674,17 @@
 - [x] Añadir frame-ancestors 'self' al CSP (requerido por Sucuri)
 - [x] Añadir HSTS preload flag
 - [x] Reforzar CSP con object-src 'none', base-uri 'self', form-action restrictivo
+
+## Limpieza de referencias externas
+- [x] Eliminar todas las referencias a editpdf.online del proyecto
+- [x] Eliminar todas las referencias a pdfe.com del proyecto
+- [x] Limpiar comentarios de código con dominios ajenos (AuthModal.tsx, PdfEditor.tsx)
+- [x] Eliminar archivos AUDIT_PRE_LAUNCH.md y AUDIT_REPORT.md
+- [x] Limpiar referencias en todo.md
+
+## Investigación Google Ads - manuscdn.com
+- [x] Descubierto: manuscdn.com (CDN de Manus) es la causa raíz del rechazo de Google Ads
+- [x] Script inyectado por Manus: files.manuscdn.com/manus-space-dispatcher/spaceEditor-DPV-_I11.js
+- [x] Confirmado por múltiples usuarios en Reddit (r/ManusOfficial)
+- [x] Este script NO está en nuestro código — es inyectado por la plataforma Manus al publicar
+- [ ] Contactar soporte Manus para pedir desactivación del script spaceEditor en producción
