@@ -663,3 +663,10 @@
 ## Mejoras toolbar editor (estilo pdfE)
 - [ ] Centrar herramientas en la barra superior del editor
 - [ ] Añadir título del PDF editable encima de las herramientas (con icono lápiz)
+
+## Google Ads - Sitio detectado como vulnerado / software malicioso
+- [x] Investigar scripts externos que puedan causar detección de malware
+- [x] Revisar cabeceras de seguridad (CSP, X-Frame-Options, etc.)
+- [x] Verificar que no hay descargas automáticas sin interacción del usuario
+- [x] Añadir cabeceras de seguridad al servidor (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy)
+- [x] Verificar en Google Safe Browsing (resultado: No unsafe content found)

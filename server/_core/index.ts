@@ -191,6 +191,39 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  // ── Security Headers ─────────────────────────────────────────────────────────
+  // These headers help prevent Google Ads from flagging the site as compromised
+  app.use((_req, res, next) => {
+    // Prevent clickjacking
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    // Prevent MIME type sniffing
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    // Enable XSS protection
+    res.setHeader("X-XSS-Protection", "1; mode=block");
+    // Referrer policy
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    // Permissions policy — disable unnecessary browser features
+    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(self)");
+    // Strict Transport Security (HSTS)
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    // Content Security Policy — allow known trusted sources
+    res.setHeader("Content-Security-Policy", [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://static.hotjar.com https://cdn.paddle.com https://*.google-analytics.com https://*.googleadservices.com https://*.googlesyndication.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      "img-src 'self' data: blob: https: http:",
+      "connect-src 'self' https: wss:",
+      "frame-src 'self' https://cdn.paddle.com https://*.paddle.com https://accounts.google.com https://*.hotjar.com",
+      "media-src 'self' blob:",
+      "worker-src 'self' blob:",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self' https://accounts.google.com https://*.paddle.com",
+    ].join("; "));
+    next();
+  });
   // OAuth callback under /api/oauth/callback (Manus)
   registerOAuthRoutes(app);
   // Google OAuth direct routes: /api/auth/google and /api/auth/google/callback
