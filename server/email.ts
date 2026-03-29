@@ -5,7 +5,9 @@
 
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
 // Sender address — use onboarding@resend.dev for testing,
 // change to a verified domain address in production
@@ -143,6 +145,11 @@ export async function sendPaymentConfirmationEmail({
 </html>
   `.trim();
 
+  if (!resend) {
+    console.warn("[Email] Resend not configured, skipping confirmation email");
+    return false;
+  }
+
   try {
     const result = await resend.emails.send({
       from: FROM_ADDRESS,
@@ -267,6 +274,11 @@ export async function sendCancellationEmail({
 </body>
 </html>
   `.trim();
+
+  if (!resend) {
+    console.warn("[Email] Resend not configured, skipping cancellation email");
+    return false;
+  }
 
   try {
     const result = await resend.emails.send({
