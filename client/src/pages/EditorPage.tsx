@@ -11,14 +11,20 @@ import { Pencil, X as XIcon, Check } from "lucide-react";
 
 const FILE_FREE_TOOLS = ["jpg-to-pdf", "png-to-pdf", "word-to-pdf", "excel-to-pdf", "ppt-to-pdf"];
 
-/* Inline SVG logo (same as Navbar) */
+/* Inline SVG logo — CloudPDF cloud icon */
 const LogoSvg = () => (
-  <svg width="22" height="26" viewBox="0 0 28 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-    <path d="M2 0H19L26 7V30C26 31.1 25.1 32 24 32H2C0.9 32 0 31.1 0 30V2C0 0.9 0.9 0 2 0Z" fill="white" fillOpacity="0.15" />
-    <path d="M2 0H19L26 7V30C26 31.1 25.1 32 24 32H2C0.9 32 0 31.1 0 30V2C0 0.9 0.9 0 2 0Z" stroke="white" strokeWidth="1.5" />
-    <path d="M19 0V5C19 6.1 19.9 7 21 7H26" stroke="white" strokeWidth="1.5" />
-    <path d="M13 24V13M13 13L8.5 17.5M13 13L17.5 17.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+  <svg width="26" height="18" viewBox="0 0 32 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+    <path d="M25.5 12.5C25.5 12.5 26 12 26 11c0-2.8-2.2-5-5-5-.5 0-1 .1-1.5.2C18.3 3.7 15.9 2 13 2 9.4 2 6.5 4.9 6.5 8.5c0 .2 0 .4 0 .6C4.5 9.6 3 11.4 3 13.5 3 16 5 18 7.5 18h16c2.2 0 4-1.8 4-4 0-1.5-.8-2.8-2-3.5z" fill="oklch(0.55 0.22 260)" />
+    <rect x="13" y="6" width="6" height="8" rx="0.8" fill="white" fillOpacity="0.9" />
+    <path d="M16.5 6V6L19 8.5H16.5V6Z" fill="oklch(0.45 0.18 260)" />
   </svg>
+);
+
+const LogoText = () => (
+  <span style={{ fontFamily: "'Sora', sans-serif" }}>
+    <span className="font-medium text-lg" style={{ color: "rgba(255,255,255,0.85)" }}>Cloud</span>
+    <span className="font-extrabold text-lg" style={{ color: "oklch(0.55 0.22 260)" }}>PDF</span>
+  </span>
 );
 
 export default function EditorPage() {
@@ -50,12 +56,7 @@ export default function EditorPage() {
     return (
       <div className="flex flex-col min-h-screen" style={{ backgroundColor: "oklch(0.97 0.005 250)" }}>
         <div className="flex items-center px-4 h-12 border-b" style={{ backgroundColor: "oklch(0.18 0.04 250)", borderColor: "oklch(0.25 0.04 250)" }}>
-          <div className="flex items-center gap-1"><LogoSvg />
-            <span style={{ fontFamily: "'Sora', sans-serif" }}>
-              <span className="font-extrabold text-lg" style={{ color: "oklch(0.55 0.22 260)" }}>PDF</span>
-              <span className="font-light text-xs" style={{ color: "rgba(255,255,255,0.75)" }}>Up</span>
-            </span>
-          </div>
+          <div className="flex items-center gap-1"><LogoSvg /><LogoText /></div>
         </div>
         {isRestoringFromSession && (
           <div className="flex-1 flex items-center justify-center">
@@ -77,10 +78,7 @@ export default function EditorPage() {
         {/* Left: Logo */}
         <button onClick={handleClose} className="flex items-center gap-1 shrink-0 hover:opacity-80 transition-opacity" title="Back to home">
           <LogoSvg />
-          <span style={{ fontFamily: "'Sora', sans-serif" }}>
-            <span className="font-extrabold text-lg" style={{ color: "oklch(0.55 0.22 260)" }}>PDF</span>
-            <span className="font-light text-xs" style={{ color: "rgba(255,255,255,0.75)" }}>Up</span>
-          </span>
+          <LogoText />
         </button>
         {/* Center: Editable filename */}
         <div className="flex items-center gap-1.5 min-w-0 max-w-[50%]">

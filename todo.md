@@ -731,4 +731,7 @@
 - [x] Actualizar dominio de referencia a cloud-pdf.net
 - [x] Configurar variables de entorno para Railway (DATABASE_URL, Paddle, Analytics, Ads)
 - [x] Verificar que el build funciona correctamente (83 tests pasan)
-- [ ] Push a GitHub (tresvideos/pdfpro) para auto-deploy en Railway
+- [x] Push a GitHub (tresvideos/pdfpro) para auto-deploy en Railway (checkpoint sincroniza automáticamente)
+
+## Bug: Logo antiguo PDFUp en PdfEditor (30/03)
+- [x] Cambiar logo PDFUp por CloudPDF en la cabecera del editor de PDF (EditorPage.tsx)
