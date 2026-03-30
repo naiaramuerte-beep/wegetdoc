@@ -759,3 +759,6 @@
 ## Inline checkout con contenido de valor (30/03)
 - [ ] Cambiar de overlay checkout a inline checkout de Paddle
 - [ ] Añadir contenido de valor alrededor del checkout (beneficios, testimonios, garantías)
+
+## Bug: Renombrar archivo en editor no se refleja al guardar (30/03)
+- [x] Al guardar, usar el nombre editado del archivo en vez del nombre original

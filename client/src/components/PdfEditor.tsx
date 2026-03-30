@@ -165,7 +165,7 @@ function ToolBtn({
 }
 
 // ── Main component ─────────────────────────────────────────────
-export default function PdfEditor({ initialTool, initialFile, fullscreen, initialOpenPaywall, onPaywallOpened, onFileNameChange }: { initialTool?: string; initialFile?: File; fullscreen?: boolean; initialOpenPaywall?: boolean; onPaywallOpened?: () => void; onFileNameChange?: (name: string) => void }) {
+export default function PdfEditor({ initialTool, initialFile, fullscreen, initialOpenPaywall, onPaywallOpened, onFileNameChange, displayName }: { initialTool?: string; initialFile?: File; fullscreen?: boolean; initialOpenPaywall?: boolean; onPaywallOpened?: () => void; onFileNameChange?: (name: string) => void; displayName?: string }) {
   const [file, setFile] = useState<File | null>(null);
   const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null); // eslint-disable-line
@@ -369,8 +369,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const safeBuffer = out.buffer.slice(out.byteOffset, out.byteOffset + out.byteLength) as ArrayBuffer;
       const blob = new Blob([safeBuffer], { type: "application/pdf" });
       const formData = new FormData();
-      formData.append("file", blob, file?.name ?? "document.pdf");
-      formData.append("name", file?.name ?? "document.pdf");
+      const saveName = displayName || file?.name || "document.pdf";
+      formData.append("file", blob, saveName);
+      formData.append("name", saveName);
       const resp = await fetch("/api/documents/upload", {
         method: "POST",
         credentials: "include",
@@ -1917,8 +1918,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const safeBuffer = pdfOut.buffer.slice(pdfOut.byteOffset, pdfOut.byteOffset + pdfOut.byteLength) as ArrayBuffer;
       const blob = new Blob([safeBuffer], { type: "application/pdf" });
       const formData = new FormData();
-      formData.append("file", blob, file?.name ?? "document.pdf");
-      formData.append("name", file?.name ?? "document.pdf");
+      const autoSaveName = displayName || file?.name || "document.pdf";
+      formData.append("file", blob, autoSaveName);
+      formData.append("name", autoSaveName);
       const resp = await fetch("/api/documents/auto-save", {
         method: "POST",
         credentials: "include",

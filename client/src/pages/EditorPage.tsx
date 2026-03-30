@@ -116,6 +116,7 @@ export default function EditorPage() {
           onPaywallOpened={() => setPendingPaywall(false)}
           fullscreen
           onFileNameChange={setFileName}
+          displayName={fileName}
         />
       </div>
     </div>
