@@ -740,3 +740,22 @@
 - [x] Hacer redirect URI de Google OAuth dinámico (funcione en pdfup.io y cloud-pdf.net)
 - [x] Actualizar seed-legal.mjs y re-seedear páginas legales en la BD (PDFUp→CloudPDF, pdfup.io→cloud-pdf.net en 5 páginas)
 - [x] Webhook de Paddle: ruta /api/paddle/webhook es relativa, no hay URL hardcodeada — actualizar en panel de Paddle manualmente
+
+## Favicon CloudPDF (30/03)
+- [ ] Crear favicon con icono de nube CloudPDF
+- [ ] Actualizar referencia en index.html
+
+## Migración almacenamiento a Cloudflare R2 (30/03)
+- [x] Reescribir server/storage.ts para usar Cloudflare R2 (API compatible S3)
+- [x] Actualizar server/_core/env.ts con variables R2
+- [x] Instalar @aws-sdk/client-s3 (ya estaba instalado)
+- [x] Configurar variables de entorno R2 en Railway
+- [x] Verificar que guardar documento funciona con R2 (tests pasan)
+
+## Bug crítico: Post-pago no descarga ni guarda archivo (30/03)
+- [ ] Investigar flujo post-pago: archivo no se descarga después de pagar
+- [ ] Investigar flujo post-pago: archivo no se guarda en el panel del usuario
+
+## Inline checkout con contenido de valor (30/03)
+- [ ] Cambiar de overlay checkout a inline checkout de Paddle
+- [ ] Añadir contenido de valor alrededor del checkout (beneficios, testimonios, garantías)
