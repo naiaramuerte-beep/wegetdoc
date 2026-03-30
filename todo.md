@@ -735,3 +735,8 @@
 
 ## Bug: Logo antiguo PDFUp en PdfEditor (30/03)
 - [x] Cambiar logo PDFUp por CloudPDF en la cabecera del editor de PDF (EditorPage.tsx)
+
+## Pasos post-migración (30/03)
+- [x] Hacer redirect URI de Google OAuth dinámico (funcione en pdfup.io y cloud-pdf.net)
+- [x] Actualizar seed-legal.mjs y re-seedear páginas legales en la BD (PDFUp→CloudPDF, pdfup.io→cloud-pdf.net en 5 páginas)
+- [x] Webhook de Paddle: ruta /api/paddle/webhook es relativa, no hay URL hardcodeada — actualizar en panel de Paddle manualmente

@@ -82,9 +82,15 @@ export function registerGoogleOAuthRoutes(app: Express) {
     const stateData = JSON.stringify({ origin, returnPath });
     const state = Buffer.from(stateData).toString("base64url");
 
-    // Always use the fixed production redirect URI registered in Google Cloud Console
-    // This must match EXACTLY what is registered: https://cloud-pdf.net/api/auth/google/callback
-    const redirectUri = "https://cloud-pdf.net/api/auth/google/callback";
+    // Use the origin to determine which redirect URI to use
+    // Both must be registered in Google Cloud Console
+    const ALLOWED_ORIGINS: Record<string, string> = {
+      "https://cloud-pdf.net": "https://cloud-pdf.net/api/auth/google/callback",
+      "https://www.cloud-pdf.net": "https://cloud-pdf.net/api/auth/google/callback",
+      "https://pdfup.io": "https://pdfup.io/api/auth/google/callback",
+      "https://www.pdfup.io": "https://pdfup.io/api/auth/google/callback",
+    };
+    const redirectUri = ALLOWED_ORIGINS[origin] || "https://cloud-pdf.net/api/auth/google/callback";
     const authUrl = buildGoogleAuthUrl(redirectUri, state);
 
     res.redirect(302, authUrl);
@@ -120,8 +126,14 @@ export function registerGoogleOAuthRoutes(app: Express) {
         // Use defaults
       }
 
-      // Must match exactly what was used in the auth request
-      const redirectUri = "https://cloud-pdf.net/api/auth/google/callback";
+      // Must match exactly what was used in the auth request — derive from origin in state
+      const ALLOWED_ORIGINS: Record<string, string> = {
+        "https://cloud-pdf.net": "https://cloud-pdf.net/api/auth/google/callback",
+        "https://www.cloud-pdf.net": "https://cloud-pdf.net/api/auth/google/callback",
+        "https://pdfup.io": "https://pdfup.io/api/auth/google/callback",
+        "https://www.pdfup.io": "https://pdfup.io/api/auth/google/callback",
+      };
+      const redirectUri = ALLOWED_ORIGINS[origin] || "https://cloud-pdf.net/api/auth/google/callback";
 
       // Exchange code for tokens
       const tokens = await exchangeCodeForTokens(code, redirectUri);
