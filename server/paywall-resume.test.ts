@@ -118,13 +118,13 @@ describe("Session storage key management for OAuth redirect", () => {
   it("should have consistent key names between save and restore", () => {
     // These are the keys used in the codebase
     const keys = {
-      pdf: "pdfup_pending_pdf_b64",
-      name: "pdfup_pending_pdf_name",
-      tool: "pdfup_pending_tool",
-      paywall: "pdfup_open_paywall",
-      pendingAction: "pdfup_pending_action",
-      tempKey: "pdfup_edited_temp_key",
-      tempName: "pdfup_edited_temp_name",
+      pdf: "cloudpdf_pending_pdf_b64",
+      name: "cloudpdf_pending_pdf_name",
+      tool: "cloudpdf_pending_tool",
+      paywall: "cloudpdf_open_paywall",
+      pendingAction: "cloudpdf_pending_action",
+      tempKey: "cloudpdf_edited_temp_key",
+      tempName: "cloudpdf_edited_temp_name",
     };
     
     // Verify all keys are unique

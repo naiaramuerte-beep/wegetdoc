@@ -10,7 +10,7 @@ const articles = [
     title: "Cómo editar un PDF online gratis en 2025: guía completa paso a paso",
     excerpt: "Aprende a editar cualquier PDF directamente desde tu navegador sin instalar ningún programa. Texto, imágenes, firmas y más en menos de 2 minutos.",
     content: `<h2>¿Se puede editar un PDF online sin instalar nada?</h2>
-<p>Sí. Con <strong>editPDF.online</strong> puedes editar cualquier documento PDF directamente desde tu navegador, sin descargar ningún programa y completamente gratis. Solo necesitas subir el archivo y empezar a editar.</p>
+<p>Sí. Con <strong>cloud-pdf.net</strong> puedes editar cualquier documento PDF directamente desde tu navegador, sin descargar ningún programa y completamente gratis. Solo necesitas subir el archivo y empezar a editar.</p>
 
 <h2>Qué puedes editar en un PDF online</h2>
 <p>Las herramientas de edición de PDF online modernas permiten realizar prácticamente cualquier modificación que necesites:</p>
@@ -23,7 +23,7 @@ const articles = [
   <li><strong>Añadir formas y flechas</strong>: para señalar o destacar áreas específicas</li>
 </ul>
 
-<h2>Cómo editar un PDF paso a paso con editPDF</h2>
+<h2>Cómo editar un PDF paso a paso con CloudPDF</h2>
 <p>El proceso es muy sencillo y lleva menos de 2 minutos:</p>
 <ol>
   <li><strong>Sube tu PDF</strong>: arrastra el archivo al editor o haz clic en "Subir PDF para editar"</li>
@@ -33,7 +33,7 @@ const articles = [
 </ol>
 
 <h2>¿Es seguro editar PDFs online?</h2>
-<p>editPDF.online procesa los documentos directamente en tu navegador usando tecnología WebAssembly. Esto significa que <strong>el contenido de tus archivos nunca sale de tu dispositivo</strong>. No almacenamos ni transmitimos tus documentos a ningún servidor externo.</p>
+<p>cloud-pdf.net procesa los documentos directamente en tu navegador usando tecnología WebAssembly. Esto significa que <strong>el contenido de tus archivos nunca sale de tu dispositivo</strong>. No almacenamos ni transmitimos tus documentos a ningún servidor externo.</p>
 
 <h2>Diferencia entre editar un PDF y convertirlo</h2>
 <p>Muchos usuarios confunden "editar un PDF" con "convertir un PDF". Aquí está la diferencia:</p>
@@ -45,14 +45,14 @@ const articles = [
 
 <h2>Preguntas frecuentes sobre edición de PDF</h2>
 <h3>¿Puedo editar un PDF escaneado?</h3>
-<p>Los PDFs escaneados son imágenes, no texto editable. Para editarlos necesitas OCR (reconocimiento óptico de caracteres). editPDF permite añadir texto encima de documentos escaneados, aunque no puede modificar el texto de la imagen original.</p>
+<p>Los PDFs escaneados son imágenes, no texto editable. Para editarlos necesitas OCR (reconocimiento óptico de caracteres). CloudPDF permite añadir texto encima de documentos escaneados, aunque no puede modificar el texto de la imagen original.</p>
 
 <h3>¿Funciona en móvil?</h3>
-<p>Sí, editPDF.online funciona en cualquier dispositivo con navegador web: ordenador, tablet y móvil. No necesitas instalar ninguna app.</p>
+<p>Sí, cloud-pdf.net funciona en cualquier dispositivo con navegador web: ordenador, tablet y móvil. No necesitas instalar ninguna app.</p>
 
 <h3>¿Hay límite de tamaño de archivo?</h3>
 <p>Los usuarios gratuitos pueden editar PDFs de hasta 10 MB. Con el plan Pro, el límite sube a 100 MB.</p>`,
-    metaTitle: "Cómo editar un PDF online gratis en 2025 | editPDF",
+    metaTitle: "Cómo editar un PDF online gratis en 2025 | CloudPDF",
     metaDescription: "Guía completa para editar PDFs online sin instalar nada. Edita texto, añade firmas e imágenes en tu PDF directamente desde el navegador, gratis.",
     category: "guides",
     tags: "editar pdf, pdf online, editar pdf gratis, editor pdf, pdf sin instalar",
@@ -74,7 +74,7 @@ const articles = [
 
 <h2>Los 5 mejores métodos para convertir PDF a Word gratis</h2>
 
-<h3>1. editPDF.online (recomendado para uso rápido)</h3>
+<h3>1. cloud-pdf.net (recomendado para uso rápido)</h3>
 <p>La forma más rápida: sube el PDF, selecciona "PDF a Word" y descarga el .docx. No requiere registro para archivos pequeños.</p>
 
 <h3>2. Microsoft Word (si tienes Office instalado)</h3>
@@ -93,7 +93,7 @@ const articles = [
 <p>La calidad de la conversión depende del tipo de PDF:</p>
 <ul>
   <li><strong>PDFs de texto simple</strong>: cualquier método funciona bien</li>
-  <li><strong>PDFs con tablas y columnas</strong>: Adobe Acrobat o editPDF dan mejores resultados</li>
+  <li><strong>PDFs con tablas y columnas</strong>: Adobe Acrobat o CloudPDF dan mejores resultados</li>
   <li><strong>PDFs escaneados</strong>: necesitas un servicio con OCR (reconocimiento de texto)</li>
   <li><strong>PDFs protegidos con contraseña</strong>: primero debes desprotegerlos</li>
 </ul>
@@ -106,8 +106,8 @@ const articles = [
 <p>Sí, pero necesitas un servicio con OCR. La tecnología OCR "lee" el texto de la imagen y lo convierte en texto editable. La precisión depende de la calidad del escaneo.</p>
 
 <h3>¿Es seguro subir documentos confidenciales?</h3>
-<p>editPDF.online procesa los archivos en tu navegador sin enviarlos a servidores externos. Para documentos muy sensibles, usa siempre herramientas que procesen localmente.</p>`,
-    metaTitle: "Cómo convertir PDF a Word online gratis (2025) | editPDF",
+<p>cloud-pdf.net procesa los archivos en tu navegador sin enviarlos a servidores externos. Para documentos muy sensibles, usa siempre herramientas que procesen localmente.</p>`,
+    metaTitle: "Cómo convertir PDF a Word online gratis (2025) | CloudPDF",
     metaDescription: "Los 5 mejores métodos para convertir PDF a Word online gratis. Comparativa con pros y contras de cada opción. Sin instalar nada.",
     category: "comparisons",
     tags: "convertir pdf a word, pdf a word, pdf a docx, convertir pdf, word online",
@@ -126,9 +126,9 @@ const articles = [
 </ul>
 <p>En este artículo explicamos cómo añadir una <strong>firma electrónica simple</strong>, que es suficiente para la mayoría de documentos cotidianos (contratos privados, formularios, acuerdos internos).</p>
 
-<h2>Cómo firmar un PDF con editPDF paso a paso</h2>
+<h2>Cómo firmar un PDF con CloudPDF paso a paso</h2>
 <ol>
-  <li><strong>Sube tu PDF</strong> a editPDF.online</li>
+  <li><strong>Sube tu PDF</strong> a cloud-pdf.net</li>
   <li>Selecciona la herramienta <strong>"Añadir firma"</strong> en el panel lateral</li>
   <li>Dibuja tu firma con el ratón o el dedo (en móvil/tablet)</li>
   <li>Ajusta el tamaño y colócala en el lugar correcto del documento</li>
@@ -136,7 +136,7 @@ const articles = [
 </ol>
 
 <h2>Tipos de firma que puedes añadir</h2>
-<p>editPDF ofrece tres formas de crear tu firma:</p>
+<p>CloudPDF ofrece tres formas de crear tu firma:</p>
 <ul>
   <li><strong>Dibujar</strong>: traza tu firma directamente con el ratón o el dedo</li>
   <li><strong>Escribir</strong>: escribe tu nombre y elige entre diferentes estilos caligráficos</li>
@@ -161,14 +161,14 @@ const articles = [
 
 <h2>Preguntas frecuentes sobre firma de PDFs</h2>
 <h3>¿Puedo firmar un PDF desde el móvil?</h3>
-<p>Sí, editPDF.online funciona perfectamente en móvil. Puedes dibujar tu firma con el dedo directamente en la pantalla táctil.</p>
+<p>Sí, cloud-pdf.net funciona perfectamente en móvil. Puedes dibujar tu firma con el dedo directamente en la pantalla táctil.</p>
 
 <h3>¿Se puede eliminar una firma añadida a un PDF?</h3>
 <p>Sí, mientras estés editando el documento puedes seleccionar la firma y eliminarla. Una vez descargado el PDF, la firma queda integrada en el documento.</p>
 
 <h3>¿Cómo sé si un PDF ya tiene firma digital?</h3>
 <p>En Adobe Reader, ve a Panel de firmas (Ver → Mostrar/Ocultar → Paneles de navegación → Firmas). Si el PDF tiene firma digital certificada, aparecerá aquí con información sobre el firmante y la validez.</p>`,
-    metaTitle: "Cómo añadir firma digital a un PDF online gratis | editPDF",
+    metaTitle: "Cómo añadir firma digital a un PDF online gratis | CloudPDF",
     metaDescription: "Tutorial paso a paso para firmar un PDF online sin certificados ni software. Añade tu firma manuscrita a cualquier PDF en segundos, gratis.",
     category: "tutorials",
     tags: "firma digital pdf, firmar pdf online, firma electronica, pdf firma, firmar documento",

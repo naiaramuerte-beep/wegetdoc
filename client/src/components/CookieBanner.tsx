@@ -9,7 +9,7 @@ import { Link } from "wouter";
 
 type CookieConsent = "all" | "essential" | null;
 
-const COOKIE_CONSENT_KEY = "pdfup_cookie_consent";
+const COOKIE_CONSENT_KEY = "cloudpdf_cookie_consent";
 
 function getCookieConsent(): CookieConsent {
   try {

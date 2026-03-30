@@ -1,5 +1,5 @@
 /* =============================================================
-   PDFUp PdfEditor — Professional PDF editor layout
+   CloudPDF PdfEditor — Professional PDF editor layout
    Top toolbar | Left thumbnails | Center viewer | Right tool panel
    All tools functional: sign, text, highlight, compress, convert, protect
    ============================================================= */
@@ -555,7 +555,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // 2. If premium → trigger download immediately
   // 3. If not premium → open paywall
   //
-  // APPROACH: On mount, check sessionStorage for "pdfup_pending_action". If found,
+  // APPROACH: On mount, check sessionStorage for "cloudpdf_pending_action". If found,
   // start a polling interval that waits for isAuthenticated to become true.
   // This avoids the React useEffect dependency race condition entirely.
   const autoResumeTriggeredRef = useRef(false);
@@ -573,7 +573,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
   useEffect(() => {
     // Only run once on mount
-    const pendingAction = sessionStorage.getItem("pdfup_pending_action");
+    const pendingAction = sessionStorage.getItem("cloudpdf_pending_action");
     const hasPendingPaywall = initialOpenPaywall || pendingAction === "download";
     if (!hasPendingPaywall || autoResumeTriggeredRef.current) return;
 
@@ -593,7 +593,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       if (attempts >= maxAttempts) {
         console.log("[autoResume] Timed out waiting for auth/pdf");
         clearInterval(interval);
-        sessionStorage.removeItem("pdfup_pending_action");
+        sessionStorage.removeItem("cloudpdf_pending_action");
         return;
       }
 
@@ -609,7 +609,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       clearInterval(interval);
       if (autoResumeTriggeredRef.current) return;
       autoResumeTriggeredRef.current = true;
-      sessionStorage.removeItem("pdfup_pending_action");
+      sessionStorage.removeItem("cloudpdf_pending_action");
       onPaywallOpened?.();
 
       console.log("[autoResume] Triggering auto-resume download flow");
@@ -1974,7 +1974,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
 
     if (!isAuthenticated) {
-      sessionStorage.setItem("pdfup_pending_action", "download");
+      sessionStorage.setItem("cloudpdf_pending_action", "download");
       if (file) { try { await savePdfToSession(file); } catch {} }
     }
 
@@ -2005,7 +2005,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     if (!isAuthenticated) {
       // Store PDF data so the paywall modal can use it after login
       setPdfDataForPaywall({ base64, name: docName, size: docSize });
-      sessionStorage.setItem("pdfup_pending_action", "download");
+      sessionStorage.setItem("cloudpdf_pending_action", "download");
       // Also save the original PDF file to session so it survives OAuth redirect
       if (file) {
         try { await savePdfToSession(file); } catch {}

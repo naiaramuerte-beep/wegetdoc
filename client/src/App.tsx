@@ -1,5 +1,5 @@
 /* =============================================================
-   PDFUp App — Routes & Top-level layout
+   CloudPDF App — Routes & Top-level layout
    Deep Navy Pro design system + i18n routing
    ============================================================= */
 

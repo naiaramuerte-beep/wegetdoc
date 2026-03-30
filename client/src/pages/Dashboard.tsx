@@ -1,5 +1,5 @@
 /* =============================================================
-   PDFUp — Dashboard de usuario
+   CloudPDF — Dashboard de usuario
    Pestañas: Mi Cuenta | Mis Documentos | Equipo | Facturación
    ============================================================= */
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -979,7 +979,7 @@ function BillingTab() {
                   transaction_id: txnId,
                   value: 0.50,
                   currency: "EUR",
-                  items: [{ item_id: "pdfup_trial", item_name: "PDFUp Trial Subscription", price: 0.50, quantity: 1 }],
+                  items: [{ item_id: "cloudpdf_trial", item_name: "CloudPDF Trial Subscription", price: 0.50, quantity: 1 }],
                 });
                 console.log("[Dashboard] Conversion tracking fired", { txnId });
               }

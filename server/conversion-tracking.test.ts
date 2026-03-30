@@ -62,7 +62,7 @@ describe("Google Ads Conversion Tracking", () => {
     );
     expect(src).toContain('window.gtag("event", "purchase"');
     expect(src).toContain("transaction_id: transactionId");
-    expect(src).toContain("item_id: \"pdfup_trial\"");
+    expect(src).toContain("item_id: \"cloudpdf_trial\"");
   });
 
   it("PaymentSuccess.tsx reads txn param from URL for Paddle transaction ID", () => {
@@ -92,7 +92,7 @@ describe("Google Ads Conversion Tracking", () => {
       "utf-8"
     );
     expect(src).toContain('window.gtag("event", "purchase"');
-    expect(src).toContain("item_id: \"pdfup_trial\"");
+    expect(src).toContain("item_id: \"cloudpdf_trial\"");
   });
 
   it("Pricing.tsx fires conversion event on Paddle checkout complete", () => {

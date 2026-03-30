@@ -1,6 +1,6 @@
 /**
  * Google OAuth 2.0 — Direct integration (no Manus portal)
- * Shows "PDFUp" on the Google consent screen.
+ * Shows "CloudPDF" on the Google consent screen.
  *
  * Routes:
  *   GET /api/auth/google          — Redirect user to Google
@@ -83,8 +83,8 @@ export function registerGoogleOAuthRoutes(app: Express) {
     const state = Buffer.from(stateData).toString("base64url");
 
     // Always use the fixed production redirect URI registered in Google Cloud Console
-    // This must match EXACTLY what is registered: https://pdfup.io/api/auth/google/callback
-    const redirectUri = "https://pdfup.io/api/auth/google/callback";
+    // This must match EXACTLY what is registered: https://cloud-pdf.net/api/auth/google/callback
+    const redirectUri = "https://cloud-pdf.net/api/auth/google/callback";
     const authUrl = buildGoogleAuthUrl(redirectUri, state);
 
     res.redirect(302, authUrl);
@@ -121,7 +121,7 @@ export function registerGoogleOAuthRoutes(app: Express) {
       }
 
       // Must match exactly what was used in the auth request
-      const redirectUri = "https://pdfup.io/api/auth/google/callback";
+      const redirectUri = "https://cloud-pdf.net/api/auth/google/callback";
 
       // Exchange code for tokens
       const tokens = await exchangeCodeForTokens(code, redirectUri);

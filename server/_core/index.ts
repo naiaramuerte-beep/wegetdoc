@@ -101,7 +101,7 @@ async function startServer() {
               to: user.email,
               name: user.name || "Usuario",
               trialEndDate: new Date(periodEnd),
-              cancelUrl: "https://pdfup.io/cancelar-suscripcion",
+              cancelUrl: "https://cloud-pdf.net/cancelar-suscripcion",
             }).catch((err: unknown) => console.error("[Email] Confirmation email failed:", err));
           }
 
@@ -109,7 +109,7 @@ async function startServer() {
           import("./notification").then(({ notifyOwner }) => {
             const user2 = customData;
             notifyOwner({
-              title: "\uD83D\uDCB3 Nuevo pago Paddle \u2014 PDFUp",
+              title: "\uD83D\uDCB3 Nuevo pago Paddle \u2014 CloudPDF",
               content: `Usuario ID: ${userId}\nPlan: ${status}\nPaddle Sub: ${data.id}`,
             }).catch(() => {});
           }).catch(() => {});
@@ -156,7 +156,7 @@ async function startServer() {
               to: user.email,
               name: user.name || "Usuario",
               accessUntilDate: new Date(),
-              reactivateUrl: "https://pdfup.io/es/dashboard?tab=billing",
+              reactivateUrl: "https://cloud-pdf.net/es/dashboard?tab=billing",
             }).catch((err: unknown) => console.error("[Email] Cancellation email failed:", err));
           }
 
@@ -244,7 +244,7 @@ async function startServer() {
   app.get("/sitemap.xml", async (_req, res) => {
     try {
       const posts = await getBlogPosts(true);
-      const base = "https://pdfup.io";
+      const base = "https://cloud-pdf.net";
       const staticUrls: Array<{ loc: string; priority: string; changefreq: string; lastmod?: string }> = [
         { loc: `${base}/es`, priority: "1.0", changefreq: "weekly" },
         { loc: `${base}/en`, priority: "1.0", changefreq: "weekly" },

@@ -275,7 +275,7 @@ export const appRouter = router({
           to: user.email,
           name: user.name || "Usuario",
           accessUntilDate: sub.currentPeriodEnd,
-          reactivateUrl: "https://pdfup.io/es/dashboard?tab=billing",
+          reactivateUrl: "https://cloud-pdf.net/es/dashboard?tab=billing",
         }).catch((err: unknown) => console.error("[Email] Cancellation email failed:", err));
       }
       return { success: true };
@@ -315,14 +315,14 @@ export const appRouter = router({
             to: user.email,
             name: user.name || "Usuario",
             trialEndDate: trialEnd,
-            cancelUrl: "https://pdfup.io/cancelar-suscripcion",
+            cancelUrl: "https://cloud-pdf.net/cancelar-suscripcion",
           }).catch((err) => console.error("[Email] Confirmation email failed:", err));
         }
 
         // Notify owner
         import("./_core/notification").then(({ notifyOwner }) => {
           notifyOwner({
-            title: "\uD83D\uDCB3 Nuevo pago Paddle \u2014 PDFUp",
+            title: "\uD83D\uDCB3 Nuevo pago Paddle \u2014 CloudPDF",
             content: `Usuario: ${user.name || "An\u00F3nimo"} (${user.email || "sin email"})\nPlan: Trial 7 d\u00EDas\nFin de prueba: ${trialEnd.toLocaleDateString("es-ES")}`,
           }).catch(() => {});
         }).catch(() => {});

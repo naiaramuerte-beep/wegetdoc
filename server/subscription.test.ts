@@ -18,7 +18,7 @@ function createAuthContext(): TrpcContext {
   const user: AuthenticatedUser = {
     id: 42,
     openId: "test-user-openid",
-    email: "test@pdfup.com",
+    email: "test@cloud-pdf.net",
     name: "Test User",
     loginMethod: "manus",
     role: "user",

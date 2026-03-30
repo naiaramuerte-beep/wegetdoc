@@ -1,5 +1,5 @@
 /* =============================================================
-   PDFUp — usePdfEditor hook
+   CloudPDF — usePdfEditor hook
    Manages PDF state: loaded file, pages, current tool, etc.
    ============================================================= */
 

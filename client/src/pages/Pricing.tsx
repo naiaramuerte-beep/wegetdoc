@@ -1,5 +1,5 @@
 /* =============================================================
-   PDFUp Pricing Page — Deep Navy Pro design
+   CloudPDF Pricing Page — Deep Navy Pro design
    Two plans: Trial + Monthly, with feature comparison table
    Paddle inline checkout embebido (no overlay)
    ============================================================= */
@@ -315,7 +315,7 @@ export default function Pricing() {
                        transaction_id: txnId,
                        value: 0.50,
                        currency: "EUR",
-                       items: [{ item_id: "pdfup_trial", item_name: "PDFUp Trial Subscription", price: 0.50, quantity: 1 }],
+                       items: [{ item_id: "cloudpdf_trial", item_name: "CloudPDF Trial Subscription", price: 0.50, quantity: 1 }],
                      });
                      console.log("[Pricing] Conversion tracking fired", { txnId });
                    }

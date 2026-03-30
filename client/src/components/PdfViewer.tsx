@@ -1,5 +1,5 @@
 /* =============================================================
-   PDFUp PdfViewer — renders PDF pages using pdfjs-dist canvas
+   CloudPDF PdfViewer — renders PDF pages using pdfjs-dist canvas
    ============================================================= */
 
 import { useEffect, useRef, useState, useCallback } from "react";

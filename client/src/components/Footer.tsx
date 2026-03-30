@@ -1,5 +1,5 @@
 /* =============================================================
-   PDFUp Footer — Deep Navy Pro design — fully i18n-ready
+   CloudPDF Footer — Deep Navy Pro design — fully i18n-ready
    Dark navy background, matching the navbar
    ============================================================= */
 
@@ -50,17 +50,16 @@ export default function Footer() {
           {/* Brand */}
           <div className="md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <svg width="28" height="32" viewBox="0 0 28 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-                <path d="M2 0H19L26 7V30C26 31.1 25.1 32 24 32H2C0.9 32 0 31.1 0 30V2C0 0.9 0.9 0 2 0Z" fill="white" fillOpacity="0.15" />
-                <path d="M2 0H19L26 7V30C26 31.1 25.1 32 24 32H2C0.9 32 0 31.1 0 30V2C0 0.9 0.9 0 2 0Z" stroke="white" strokeWidth="1.5" />
-                <path d="M19 0V5C19 6.1 19.9 7 21 7H26" stroke="white" strokeWidth="1.5" />
-                <path d="M13 24V13M13 13L8.5 17.5M13 13L17.5 17.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              <svg width="32" height="24" viewBox="0 0 32 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+                <path d="M25.5 12.5C25.5 12.5 26 12 26 11c0-2.8-2.2-5-5-5-.5 0-1 .1-1.5.2C18.3 3.7 15.9 2 13 2 9.4 2 6.5 4.9 6.5 8.5c0 .2 0 .4 0 .6C4.5 9.6 3 11.4 3 13.5 3 16 5 18 7.5 18h16c2.2 0 4-1.8 4-4 0-1.5-.8-2.8-2-3.5z" fill="oklch(0.55 0.22 260)" />
+                <rect x="13" y="6" width="6" height="8" rx="0.8" fill="white" fillOpacity="0.9" />
+                <path d="M16.5 6V6L19 8.5H16.5V6Z" fill="oklch(0.45 0.18 260)" />
               </svg>
               <span
                 className="text-white font-bold text-xl tracking-tight"
                 style={{ fontFamily: "'Sora', sans-serif" }}
               >
-                PDF<span style={{ color: accentColor }}>Up</span>
+                Cloud<span style={{ color: accentColor }}>PDF</span>
               </span>
             </div>
             <p className="text-sm leading-relaxed" style={{ color: linkColor, fontFamily: "'DM Sans', sans-serif" }}>
@@ -88,7 +87,7 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* PDFUp links */}
+          {/* CloudPDF links */}
           <div>
             <h4
               className="text-sm font-semibold text-white mb-4"

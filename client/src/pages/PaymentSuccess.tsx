@@ -40,8 +40,8 @@ export default function PaymentSuccess() {
           currency: "EUR",
           items: [
             {
-              item_id: "pdfup_trial",
-              item_name: "PDFUp Trial Subscription",
+              item_id: "cloudpdf_trial",
+              item_name: "CloudPDF Trial Subscription",
               price: 0.50,
               quantity: 1,
             },

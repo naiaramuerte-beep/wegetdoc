@@ -1,5 +1,5 @@
 /**
- * PDFUp — Stripe Products & Prices
+ * CloudPDF — Stripe Products & Prices
  * Model: 0,50€ activation fee + 7-day trial → 49,90€/month subscription after 7 days
  * Stripe charges 0,50€ immediately when the user subscribes.
  * After 7 days, the subscription renews automatically at 49,90€/month.

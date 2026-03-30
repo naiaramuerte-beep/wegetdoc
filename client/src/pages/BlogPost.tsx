@@ -23,9 +23,9 @@ export default function BlogPost() {
 
     const title = post.metaTitle || post.title;
     const description = post.metaDescription || post.excerpt;
-    const url = `https://pdfup.io/blog/${post.slug}`;
+    const url = `https://cloud-pdf.net/blog/${post.slug}`;
 
-    document.title = `${title} | PDFUp Blog`;
+    document.title = `${title} | CloudPDF Blog`;
 
     const setMeta = (name: string, content: string, prop = false) => {
       const attr = prop ? "property" : "name";
@@ -43,7 +43,7 @@ export default function BlogPost() {
     setMeta("og:description", description, true);
     setMeta("og:type", "article", true);
     setMeta("og:url", url, true);
-    setMeta("og:site_name", "PDFUp", true);
+    setMeta("og:site_name", "CloudPDF", true);
     setMeta("article:published_time", new Date(post.publishedAt).toISOString(), true);
     setMeta("article:modified_time", new Date(post.updatedAt).toISOString(), true);
     if (post.tags) setMeta("article:tag", post.tags, true);
@@ -62,16 +62,16 @@ export default function BlogPost() {
       "dateModified": new Date(post.updatedAt).toISOString(),
       "author": {
         "@type": "Organization",
-        "name": "PDFUp",
-        "url": "https://pdfup.io"
+        "name": "CloudPDF",
+        "url": "https://cloud-pdf.net"
       },
       "publisher": {
         "@type": "Organization",
-        "name": "PDFUp",
-        "url": "https://pdfup.io",
+        "name": "CloudPDF",
+        "url": "https://cloud-pdf.net",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://pdfup.io/favicon.ico"
+          "url": "https://cloud-pdf.net/favicon.ico"
         }
       },
       "mainEntityOfPage": {
@@ -94,7 +94,7 @@ export default function BlogPost() {
     scriptEl.textContent = JSON.stringify(jsonLd);
 
     return () => {
-      document.title = "PDFUp — Online PDF Editor";
+      document.title = "CloudPDF — Online PDF Editor";
       scriptEl?.remove();
     };
   }, [post]);
@@ -208,7 +208,7 @@ export default function BlogPost() {
             >
               <h3 className="text-xl font-bold text-white mb-2">¿Listo para editar tu PDF?</h3>
               <p className="text-slate-300 mb-5 text-sm">
-                Prueba PDFUp — sin registro, sin instalación, directamente en tu navegador.
+                Prueba CloudPDF — sin registro, sin instalación, directamente en tu navegador.
               </p>
               <button
                 onClick={() => navigate("/")}

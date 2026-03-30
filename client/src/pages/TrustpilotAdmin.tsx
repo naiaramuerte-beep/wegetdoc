@@ -35,7 +35,7 @@ const DEMO_REVIEWS = [
     id: "r1",
     stars: 5,
     title: "Excelente editor de PDF online",
-    text: "Llevo meses usando PDFUp y es sin duda la mejor herramienta que he encontrado. La interfaz es intuitiva, rápida y hace exactamente lo que promete. Muy recomendable.",
+    text: "Llevo meses usando CloudPDF y es sin duda la mejor herramienta que he encontrado. La interfaz es intuitiva, rápida y hace exactamente lo que promete. Muy recomendable.",
     author: "María García",
     date: "2026-03-15T10:30:00Z",
     language: "es",
@@ -47,12 +47,12 @@ const DEMO_REVIEWS = [
     id: "r2",
     stars: 5,
     title: "Perfect for daily use",
-    text: "I use PDFUp every day for my work documents. The conversion quality is outstanding and the interface is clean and easy to use. Worth every penny!",
+    text: "I use CloudPDF every day for my work documents. The conversion quality is outstanding and the interface is clean and easy to use. Worth every penny!",
     author: "James Wilson",
     date: "2026-03-14T15:20:00Z",
     language: "en",
     replied: true,
-    replyText: "Thank you so much, James! We're thrilled to hear PDFUp is part of your daily workflow. We'll keep improving the tool for you.",
+    replyText: "Thank you so much, James! We're thrilled to hear CloudPDF is part of your daily workflow. We'll keep improving the tool for you.",
     verified: true,
   },
   {
@@ -95,7 +95,7 @@ const DEMO_REVIEWS = [
     id: "r6",
     stars: 5,
     title: "Meilleur éditeur PDF en ligne",
-    text: "J'ai essayé de nombreux outils similaires mais PDFUp est clairement le meilleur. L'interface est moderne, les fonctionnalités sont complètes et le prix est très raisonnable.",
+    text: "J'ai essayé de nombreux outils similaires mais CloudPDF est clairement le meilleur. L'interface est moderne, les fonctionnalités sont complètes et le prix est très raisonnable.",
     author: "Sophie Dubois",
     date: "2026-03-09T16:30:00Z",
     language: "fr",
@@ -308,7 +308,7 @@ function ReviewCard({
           className="rounded-lg p-3 border-l-2 ml-4"
           style={{ backgroundColor: "#0f1117", borderLeftColor: "#00b67a" }}
         >
-          <p className="text-xs font-medium text-green-400 mb-1">Respuesta de PDFUp</p>
+          <p className="text-xs font-medium text-green-400 mb-1">Respuesta de CloudPDF</p>
           <p className="text-xs text-gray-400">{review.replyText}</p>
         </div>
       )}
@@ -537,7 +537,7 @@ export default function TrustpilotAdmin() {
               </p>
               <div className="flex items-center gap-1.5 mt-2">
                 <Globe size={12} className="text-gray-500" />
-                <span className="text-xs text-gray-500">pdfup.io</span>
+                <span className="text-xs text-gray-500">cloud-pdf.net</span>
               </div>
             </div>
           </div>
@@ -671,7 +671,7 @@ export default function TrustpilotAdmin() {
             <a href="https://business.trustpilot.com" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
               business.trustpilot.com
             </a>{" "}
-            y verifica tu dominio <strong className="text-gray-300">pdfup.io</strong>
+            y verifica tu dominio <strong className="text-gray-300">cloud-pdf.net</strong>
           </li>
           <li className="flex gap-2">
             <span className="w-5 h-5 rounded-full bg-blue-900/50 text-blue-400 flex items-center justify-center flex-shrink-0 font-bold">2</span>
@@ -685,7 +685,7 @@ export default function TrustpilotAdmin() {
           </li>
           <li className="flex gap-2">
             <span className="w-5 h-5 rounded-full bg-blue-900/50 text-blue-400 flex items-center justify-center flex-shrink-0 font-bold">4</span>
-            Avisa al equipo de PDFUp para activar el endpoint real en el servidor y desactivar el modo demo
+            Avisa al equipo de CloudPDF para activar el endpoint real en el servidor y desactivar el modo demo
           </li>
         </ol>
       </div>

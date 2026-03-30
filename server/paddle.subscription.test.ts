@@ -95,7 +95,7 @@ function createAuthContext(): TrpcContext {
     user,
     req: {
       protocol: "https",
-      headers: { origin: "https://pdfup.io" },
+      headers: { origin: "https://cloud-pdf.net" },
     } as TrpcContext["req"],
     res: {
       clearCookie: vi.fn(),

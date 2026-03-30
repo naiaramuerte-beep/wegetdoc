@@ -8,13 +8,13 @@
    tempKey string in sessionStorage (avoids 5MB quota issues).
    ============================================================= */
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-const SESSION_KEY_PDF = "pdfup_pending_pdf_b64";
-const SESSION_KEY_NAME = "pdfup_pending_pdf_name";
-const SESSION_KEY_TOOL = "pdfup_pending_tool";
-const SESSION_KEY_PAYWALL = "pdfup_open_paywall";
+const SESSION_KEY_PDF = "cloudpdf_pending_pdf_b64";
+const SESSION_KEY_NAME = "cloudpdf_pending_pdf_name";
+const SESSION_KEY_TOOL = "cloudpdf_pending_tool";
+const SESSION_KEY_PAYWALL = "cloudpdf_open_paywall";
 // Keys for the EDITED PDF temp reference (S3 key, not base64)
-const SESSION_KEY_TEMP_KEY = "pdfup_edited_temp_key";
-const SESSION_KEY_TEMP_NAME = "pdfup_edited_temp_name";
+const SESSION_KEY_TEMP_KEY = "cloudpdf_edited_temp_key";
+const SESSION_KEY_TEMP_NAME = "cloudpdf_edited_temp_name";
 
 interface PdfFileContextValue {
   pendingFile: File | null;
@@ -63,7 +63,7 @@ export function PdfFileProvider({ children }: { children: ReactNode }) {
       // Check for ANY session restoration signal: original PDF, paywall flag, or pending action
       return !!sessionStorage.getItem(SESSION_KEY_PDF) ||
              sessionStorage.getItem(SESSION_KEY_PAYWALL) === "1" ||
-             sessionStorage.getItem("pdfup_pending_action") === "download";
+             sessionStorage.getItem("cloudpdf_pending_action") === "download";
     } catch {
       return false;
     }

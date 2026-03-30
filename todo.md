@@ -723,3 +723,12 @@
 - [x] Eliminado de: Login.tsx, Signup.tsx, Blog.tsx, BlogPost.tsx, Dashboard.tsx, BlogAdmin.tsx, TrustpilotAdmin.tsx
 - [x] Eliminado de i18n.ts en 10 idiomas: pricing_cta_trial, footer_desc, paywall_subtitle_auth, paywall_legal_text, hero_trust_free, urgency_trial, faq_q1, faq_q6
 - [x] Dashboard: "Plan Gratuito" → "Plan Básico", "Gratis" → "Básico"
+
+## Migración a Railway / Rebranding CloudPDF (30/03)
+- [x] Crear logo nuevo CloudPDF con icono de nube, estilo similar al actual
+- [x] Rebranding: cambiar PDFUp/pdfUP → CloudPDF en toda la web (i18n 10 idiomas, Navbar, Footer, páginas)
+- [x] Actualizar meta tags, títulos, copyright a CloudPDF
+- [x] Actualizar dominio de referencia a cloud-pdf.net
+- [x] Configurar variables de entorno para Railway (DATABASE_URL, Paddle, Analytics, Ads)
+- [x] Verificar que el build funciona correctamente (83 tests pasan)
+- [ ] Push a GitHub (tresvideos/pdfpro) para auto-deploy en Railway
