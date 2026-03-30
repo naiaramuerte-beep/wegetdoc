@@ -706,3 +706,14 @@
 - [x] Paywall solo aparece al pulsar "Descargar" el PDF final
 - [x] Comprimir PDF: mejorar flujo con modal de resultado (tamaño antes/después) y botones Volver/Descargar
 - [x] Proteger PDF: permitir poner contraseña sin paywall, solo al descargar pide registro/pago
+
+## Bugs comprimir/proteger - Toasts incorrectos (30/03)
+- [x] Bug: toast dice "PDF comprimido descargado" cuando solo se ha comprimido (no descargado) — verificado: toast ya era correcto ("PDF comprimido correctamente")
+- [x] Bug: toast dice "PDF protegido y descargado" cuando solo se ha protegido — verificado: toast ya era correcto ("PDF protegido correctamente")
+- [x] Bug: compresión muestra 0% ahorro (2.1 MB → 2.1 MB) — CORREGIDO: reescrita función compressPdf() para renderizar páginas a canvas y re-codificar como JPEG
+
+## Limpieza dominio editpdf.online (30/03)
+- [x] Reemplazar editpdf.online → pdfup.io en 10 blog posts de la base de datos
+- [x] Reemplazar editpdf.online → pdfup.io en scripts/seed-legal.mjs
+- [x] Verificar que no quedan referencias a editpdf.online en código fuente
+- [x] Corregir errores TypeScript (Uint8Array/BlobPart y RenderParameters)

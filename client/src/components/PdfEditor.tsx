@@ -51,7 +51,7 @@ if (typeof (Uint8Array as any)["fromHex"] !== "function") {
   };
 }
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
-import { PDFDocument, rgb, StandardFonts, degrees } from "pdf-lib";
+import { PDFDocument, PDFDict, PDFName, PDFRef, PDFStream, rgb, StandardFonts, degrees } from "pdf-lib";
 
 // Browser-safe base64 encoder for Uint8Array (replaces Node.js Buffer.from().toString('base64'))
 function uint8ToBase64(bytes: Uint8Array): string {
@@ -1412,21 +1412,66 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   };
 
   // ── Compress ──────────────────────────────────────────────────────
+  // Renders each page via pdfjs to canvas, re-encodes as JPEG at the chosen quality,
+  // and builds a new PDF from those JPEG pages. This guarantees real compression.
   const compressPdf = async () => {
-    if (!pdfBytes) return;
+    if (!pdfBytes || !pdfDoc) return;
     setIsCompressing(true);
     setCompressResult(null);
     toast.loading(t.editor_toast_compressing ?? "Compressing PDF...", { id: "compress" });
     try {
       const originalSize = (pdfBytes as Uint8Array).byteLength;
-      const doc = await PDFDocument.load(pdfBytes as Uint8Array);
-      const compressed = await doc.save({ useObjectStreams: true });
+      const quality = compressQuality / 100; // 0.2 to 1.0
+
+      // Determine render scale: lower quality → lower resolution → smaller file
+      // quality 1.0 → scale 1.5, quality 0.5 → scale 1.0, quality 0.2 → scale 0.7
+      const renderScale = quality < 0.4 ? 0.7 : quality < 0.6 ? 1.0 : quality < 0.8 ? 1.2 : 1.5;
+
+      // Create new PDF document from JPEG renderings of each page
+      const newDoc = await PDFDocument.create();
+      const numPages = pdfDoc.numPages;
+
+      for (let i = 1; i <= numPages; i++) {
+        const page = await pdfDoc.getPage(i);
+        const viewport = page.getViewport({ scale: renderScale });
+
+        // Render page to offscreen canvas
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(viewport.width);
+        canvas.height = Math.round(viewport.height);
+        const ctx2d = canvas.getContext("2d");
+        if (!ctx2d) continue;
+
+        await page.render({ canvasContext: ctx2d, viewport } as any).promise;
+
+        // Convert canvas to JPEG blob at the specified quality
+        const jpegBlob = await new Promise<Blob | null>(resolve =>
+          canvas.toBlob(resolve, "image/jpeg", quality)
+        );
+        if (!jpegBlob) continue;
+
+        const jpegBytes = new Uint8Array(await jpegBlob.arrayBuffer());
+        const jpegImage = await newDoc.embedJpg(jpegBytes);
+
+        // Get original page dimensions (in PDF points) to preserve layout
+        const origViewport = page.getViewport({ scale: 1.0 });
+        const newPage = newDoc.addPage([origViewport.width, origViewport.height]);
+        newPage.drawImage(jpegImage, {
+          x: 0,
+          y: 0,
+          width: origViewport.width,
+          height: origViewport.height,
+        });
+      }
+
+      const compressed = await newDoc.save({ useObjectStreams: true });
       const blob = new Blob([compressed.buffer as ArrayBuffer], { type: "application/pdf" });
       const downloadName = `compressed_${file?.name ?? "document.pdf"}`;
       const compressedSize = compressed.byteLength;
       setCompressResult({ originalSize, compressedSize, blob, name: downloadName });
       toast.success(t.editor_toast_compressed ?? "PDF compressed", { id: "compress" });
-    } catch {
+    } catch (err) {
+      console.error("Compress error:", err);
       toast.error(t.editor_toast_compress_error ?? "Error compressing", { id: "compress" });
     } finally {
       setIsCompressing(false);

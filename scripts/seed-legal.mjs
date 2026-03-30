@@ -1,5 +1,5 @@
 /**
- * Seed all legal pages for EDITPDF.ONLINE
+ * Seed all legal pages for PDFUP.IO
  * Run with: node scripts/seed-legal.mjs
  */
 import mysql from "mysql2/promise";
@@ -13,11 +13,11 @@ const termsContent = `# Términos y Condiciones de Uso
 
 **Última actualización:** 23 de marzo de 2026
 
-Bienvenido a **EDITPDF.ONLINE** (en adelante, "el Servicio"), una plataforma de edición de documentos PDF online accesible a través del dominio editpdf.online. Al acceder o utilizar el Servicio, aceptas quedar vinculado por estos Términos y Condiciones. Si no estás de acuerdo con alguno de estos términos, no utilices el Servicio.
+Bienvenido a **PDFUP.IO** (en adelante, "el Servicio"), una plataforma de edición de documentos PDF online accesible a través del dominio pdfup.io. Al acceder o utilizar el Servicio, aceptas quedar vinculado por estos Términos y Condiciones. Si no estás de acuerdo con alguno de estos términos, no utilices el Servicio.
 
 ## 1. Descripción del Servicio
 
-EDITPDF.ONLINE es un editor de documentos PDF online que permite a los usuarios editar, anotar, firmar, comprimir, proteger con contraseña y convertir archivos PDF directamente desde el navegador, sin necesidad de instalar ningún software. El Servicio ofrece tanto funciones gratuitas como funciones premium accesibles mediante suscripción de pago.
+PDFUP.IO es un editor de documentos PDF online que permite a los usuarios editar, anotar, firmar, comprimir, proteger con contraseña y convertir archivos PDF directamente desde el navegador, sin necesidad de instalar ningún software. El Servicio ofrece tanto funciones gratuitas como funciones premium accesibles mediante suscripción de pago.
 
 ## 2. Registro y Cuenta
 
@@ -31,7 +31,7 @@ Al contratar el Servicio, se aplica un **período de prueba de 7 días** con un 
 
 ### 3.2 Renovación automática
 
-**IMPORTANTE:** Al completar el pago inicial de 0,50 €, **autorizas expresamente** a EDITPDF.ONLINE a cargar automáticamente **49,90 €/mes** (IVA incluido) en tu método de pago al finalizar el período de prueba de 7 días, y de forma recurrente cada mes a partir de entonces, hasta que canceles tu suscripción.
+**IMPORTANTE:** Al completar el pago inicial de 0,50 €, **autorizas expresamente** a PDFUP.IO a cargar automáticamente **49,90 €/mes** (IVA incluido) en tu método de pago al finalizar el período de prueba de 7 días, y de forma recurrente cada mes a partir de entonces, hasta que canceles tu suscripción.
 
 El cargo mensual de 49,90 € se realizará automáticamente en la misma tarjeta o método de pago utilizado para el pago inicial, salvo que canceles antes de que finalice el período de prueba.
 
@@ -39,7 +39,7 @@ El cargo mensual de 49,90 € se realizará automáticamente en la misma tarjeta
 
 Puedes cancelar tu suscripción en cualquier momento **antes de que finalice el período de prueba** sin coste adicional. Si cancelas durante el período de prueba, no se realizará ningún cargo adicional. Si cancelas después de que comience el período de facturación mensual, la cancelación entrará en vigor al final del ciclo de facturación en curso y no se realizarán reembolsos por el período parcial.
 
-Para cancelar, accede a tu cuenta en [editpdf.online/es/dashboard](https://editpdf.online/es/dashboard), ve a la pestaña **Facturación** y haz clic en **Cancelar suscripción**.
+Para cancelar, accede a tu cuenta en [pdfup.io/es/dashboard](https://pdfup.io/es/dashboard), ve a la pestaña **Facturación** y haz clic en **Cancelar suscripción**.
 
 ### 3.4 Reembolsos
 
@@ -63,7 +63,7 @@ Nos reservamos el derecho a suspender o cancelar cuentas que incumplan estas con
 
 ## 5. Propiedad Intelectual
 
-Todo el contenido, diseño, código, logotipos y marcas del Servicio son propiedad exclusiva de EDITPDF.ONLINE y están protegidos por las leyes de propiedad intelectual aplicables. Los documentos que subas al Servicio siguen siendo de tu propiedad exclusiva.
+Todo el contenido, diseño, código, logotipos y marcas del Servicio son propiedad exclusiva de PDFUP.IO y están protegidos por las leyes de propiedad intelectual aplicables. Los documentos que subas al Servicio siguen siendo de tu propiedad exclusiva.
 
 ## 6. Tratamiento de Archivos
 
@@ -71,9 +71,9 @@ Los archivos que subas al Servicio se procesan en nuestros servidores exclusivam
 
 ## 7. Limitación de Responsabilidad
 
-El Servicio se proporciona "tal cual" y "según disponibilidad". EDITPDF.ONLINE no garantiza que el Servicio sea ininterrumpido, libre de errores o que cumpla con todos tus requisitos específicos. En la máxima medida permitida por la ley, EDITPDF.ONLINE no será responsable de daños indirectos, incidentales, especiales o consecuentes derivados del uso del Servicio.
+El Servicio se proporciona "tal cual" y "según disponibilidad". PDFUP.IO no garantiza que el Servicio sea ininterrumpido, libre de errores o que cumpla con todos tus requisitos específicos. En la máxima medida permitida por la ley, PDFUP.IO no será responsable de daños indirectos, incidentales, especiales o consecuentes derivados del uso del Servicio.
 
-En ningún caso la responsabilidad total de EDITPDF.ONLINE excederá el importe pagado por el usuario durante los 12 meses anteriores al evento que dio lugar a la reclamación.
+En ningún caso la responsabilidad total de PDFUP.IO excederá el importe pagado por el usuario durante los 12 meses anteriores al evento que dio lugar a la reclamación.
 
 ## 8. Modificaciones
 
@@ -85,25 +85,25 @@ Estos Términos se rigen por la legislación de la Unión Europea y, en particul
 
 ## 10. Contacto
 
-Para cualquier consulta relacionada con estos Términos y Condiciones, puedes contactarnos a través de la página de contacto en [editpdf.online/es/contact](https://editpdf.online/es/contact).`;
+Para cualquier consulta relacionada con estos Términos y Condiciones, puedes contactarnos a través de la página de contacto en [pdfup.io/es/contact](https://pdfup.io/es/contact).`;
 
 // ─── Política de Privacidad ─────────────────────────────────────────
 const privacyContent = `# Política de Privacidad
 
 **Última actualización:** 23 de marzo de 2026
 
-En **EDITPDF.ONLINE** nos comprometemos a proteger tu privacidad y tus datos personales. Esta Política de Privacidad describe cómo recopilamos, utilizamos, almacenamos y protegemos tu información cuando utilizas nuestro servicio de edición de PDF online accesible en editpdf.online.
+En **PDFUP.IO** nos comprometemos a proteger tu privacidad y tus datos personales. Esta Política de Privacidad describe cómo recopilamos, utilizamos, almacenamos y protegemos tu información cuando utilizas nuestro servicio de edición de PDF online accesible en pdfup.io.
 
 ## 1. Responsable del Tratamiento
 
-El responsable del tratamiento de tus datos personales es **EDITPDF.ONLINE**, con domicilio digital en editpdf.online. Puedes contactarnos en cualquier momento a través de nuestra página de contacto en [editpdf.online/es/contact](https://editpdf.online/es/contact).
+El responsable del tratamiento de tus datos personales es **PDFUP.IO**, con domicilio digital en pdfup.io. Puedes contactarnos en cualquier momento a través de nuestra página de contacto en [pdfup.io/es/contact](https://pdfup.io/es/contact).
 
 ## 2. Datos que Recopilamos
 
 ### 2.1 Datos proporcionados directamente por el usuario
 
 - **Datos de registro:** nombre, dirección de correo electrónico y datos de autenticación proporcionados a través del sistema de inicio de sesión.
-- **Datos de pago:** información de facturación procesada de forma segura a través de Stripe. EDITPDF.ONLINE no almacena números completos de tarjeta de crédito ni datos financieros sensibles en sus servidores.
+- **Datos de pago:** información de facturación procesada de forma segura a través de Stripe. PDFUP.IO no almacena números completos de tarjeta de crédito ni datos financieros sensibles en sus servidores.
 - **Datos de contacto:** información que nos proporcionas voluntariamente a través de formularios de contacto o soporte.
 
 ### 2.2 Datos recopilados automáticamente
@@ -172,7 +172,7 @@ Conforme al RGPD, tienes los siguientes derechos sobre tus datos personales:
 - **Derecho de oposición:** oponerte al tratamiento de tus datos en determinadas circunstancias.
 - **Derecho a retirar el consentimiento:** en cualquier momento, sin que ello afecte a la licitud del tratamiento basado en el consentimiento previo a su retirada.
 
-Para ejercer cualquiera de estos derechos, contacta con nosotros a través de [editpdf.online/es/contact](https://editpdf.online/es/contact). Responderemos a tu solicitud en un plazo máximo de 30 días.
+Para ejercer cualquiera de estos derechos, contacta con nosotros a través de [pdfup.io/es/contact](https://pdfup.io/es/contact). Responderemos a tu solicitud en un plazo máximo de 30 días.
 
 También tienes derecho a presentar una reclamación ante la Agencia Española de Protección de Datos (AEPD) en [www.aepd.es](https://www.aepd.es) o ante la autoridad de protección de datos de tu país de residencia.
 
@@ -190,14 +190,14 @@ Nos reservamos el derecho a modificar esta Política de Privacidad. Cualquier ca
 
 ## 12. Contacto
 
-Para cualquier consulta relacionada con esta Política de Privacidad o el tratamiento de tus datos personales, contacta con nosotros en [editpdf.online/es/contact](https://editpdf.online/es/contact).`;
+Para cualquier consulta relacionada con esta Política de Privacidad o el tratamiento de tus datos personales, contacta con nosotros en [pdfup.io/es/contact](https://pdfup.io/es/contact).`;
 
 // ─── Política de Cookies ────────────────────────────────────────────
 const cookiesContent = `# Política de Cookies
 
 **Última actualización:** 23 de marzo de 2026
 
-En **EDITPDF.ONLINE** utilizamos cookies y tecnologías similares para mejorar tu experiencia de navegación, analizar el uso del Servicio y personalizar el contenido. Esta Política de Cookies explica qué son las cookies, qué tipos utilizamos y cómo puedes gestionarlas.
+En **PDFUP.IO** utilizamos cookies y tecnologías similares para mejorar tu experiencia de navegación, analizar el uso del Servicio y personalizar el contenido. Esta Política de Cookies explica qué son las cookies, qué tipos utilizamos y cómo puedes gestionarlas.
 
 ## 1. ¿Qué son las cookies?
 
@@ -261,7 +261,7 @@ Podemos actualizar esta Política de Cookies periódicamente para reflejar cambi
 
 ## 6. Contacto
 
-Si tienes alguna pregunta sobre nuestra Política de Cookies, puedes contactarnos en [editpdf.online/es/contact](https://editpdf.online/es/contact).`;
+Si tienes alguna pregunta sobre nuestra Política de Cookies, puedes contactarnos en [pdfup.io/es/contact](https://pdfup.io/es/contact).`;
 
 // ─── Aviso Legal ────────────────────────────────────────────────────
 const legalContent = `# Aviso Legal
@@ -272,44 +272,44 @@ const legalContent = `# Aviso Legal
 
 En cumplimiento del deber de información establecido en el artículo 10 de la Ley 34/2002, de 11 de julio, de Servicios de la Sociedad de la Información y de Comercio Electrónico (LSSI-CE), se informa que el presente sitio web es propiedad de:
 
-- **Denominación:** EDITPDF.ONLINE
-- **Sitio web:** [editpdf.online](https://editpdf.online)
-- **Contacto:** A través de la página de contacto en [editpdf.online/es/contact](https://editpdf.online/es/contact)
+- **Denominación:** PDFUP.IO
+- **Sitio web:** [pdfup.io](https://pdfup.io)
+- **Contacto:** A través de la página de contacto en [pdfup.io/es/contact](https://pdfup.io/es/contact)
 
 ## 2. Objeto
 
-EDITPDF.ONLINE pone a disposición de los usuarios un servicio de edición de documentos PDF online que permite editar, anotar, firmar, comprimir, proteger y convertir archivos PDF directamente desde el navegador web.
+PDFUP.IO pone a disposición de los usuarios un servicio de edición de documentos PDF online que permite editar, anotar, firmar, comprimir, proteger y convertir archivos PDF directamente desde el navegador web.
 
 ## 3. Propiedad Intelectual e Industrial
 
-Todos los contenidos del sitio web, incluyendo a título enunciativo pero no limitativo, textos, fotografías, gráficos, imágenes, iconos, tecnología, software, enlaces y demás contenidos audiovisuales o sonoros, así como su diseño gráfico y códigos fuente, son propiedad intelectual de EDITPDF.ONLINE o de terceros que han autorizado su uso, sin que puedan entenderse cedidos al usuario ninguno de los derechos de explotación sobre los mismos más allá de lo estrictamente necesario para el correcto uso del Servicio.
+Todos los contenidos del sitio web, incluyendo a título enunciativo pero no limitativo, textos, fotografías, gráficos, imágenes, iconos, tecnología, software, enlaces y demás contenidos audiovisuales o sonoros, así como su diseño gráfico y códigos fuente, son propiedad intelectual de PDFUP.IO o de terceros que han autorizado su uso, sin que puedan entenderse cedidos al usuario ninguno de los derechos de explotación sobre los mismos más allá de lo estrictamente necesario para el correcto uso del Servicio.
 
-Las marcas, nombres comerciales o signos distintivos son titularidad de EDITPDF.ONLINE, sin que pueda entenderse que el acceso al sitio web atribuya ningún derecho sobre las citadas marcas, nombres comerciales y/o signos distintivos.
+Las marcas, nombres comerciales o signos distintivos son titularidad de PDFUP.IO, sin que pueda entenderse que el acceso al sitio web atribuya ningún derecho sobre las citadas marcas, nombres comerciales y/o signos distintivos.
 
 ## 4. Condiciones de Uso
 
-El usuario se compromete a hacer un uso adecuado de los contenidos y servicios que EDITPDF.ONLINE ofrece y a no emplearlos para:
+El usuario se compromete a hacer un uso adecuado de los contenidos y servicios que PDFUP.IO ofrece y a no emplearlos para:
 
 - Realizar actividades ilícitas o contrarias a la buena fe y al orden público.
 - Difundir contenidos o propaganda de carácter racista, xenófobo, pornográfico, de apología del terrorismo o que atenten contra los derechos humanos.
-- Provocar daños en los sistemas físicos y lógicos de EDITPDF.ONLINE, de sus proveedores o de terceros.
+- Provocar daños en los sistemas físicos y lógicos de PDFUP.IO, de sus proveedores o de terceros.
 - Introducir o difundir virus informáticos o cualesquiera otros sistemas que sean susceptibles de provocar daños.
 
 ## 5. Exclusión de Garantías y Responsabilidad
 
-EDITPDF.ONLINE no se hace responsable, en ningún caso, de los daños y perjuicios de cualquier naturaleza que pudieran ocasionar, a título enunciativo: errores u omisiones en los contenidos, falta de disponibilidad del sitio web o la transmisión de virus o programas maliciosos en los contenidos, a pesar de haber adoptado todas las medidas tecnológicas necesarias para evitarlo.
+PDFUP.IO no se hace responsable, en ningún caso, de los daños y perjuicios de cualquier naturaleza que pudieran ocasionar, a título enunciativo: errores u omisiones en los contenidos, falta de disponibilidad del sitio web o la transmisión de virus o programas maliciosos en los contenidos, a pesar de haber adoptado todas las medidas tecnológicas necesarias para evitarlo.
 
 ## 6. Enlaces
 
-En el caso de que en el sitio web se dispusiesen enlaces o hipervínculos hacia otros sitios de Internet, EDITPDF.ONLINE no ejercerá ningún tipo de control sobre dichos sitios y contenidos. En ningún caso asumirá responsabilidad alguna por los contenidos de algún enlace perteneciente a un sitio web ajeno, ni garantizará la disponibilidad técnica, calidad, fiabilidad, exactitud, amplitud, veracidad, validez y constitucionalidad de cualquier material o información contenida en dichos hipervínculos.
+En el caso de que en el sitio web se dispusiesen enlaces o hipervínculos hacia otros sitios de Internet, PDFUP.IO no ejercerá ningún tipo de control sobre dichos sitios y contenidos. En ningún caso asumirá responsabilidad alguna por los contenidos de algún enlace perteneciente a un sitio web ajeno, ni garantizará la disponibilidad técnica, calidad, fiabilidad, exactitud, amplitud, veracidad, validez y constitucionalidad de cualquier material o información contenida en dichos hipervínculos.
 
 ## 7. Derecho de Exclusión
 
-EDITPDF.ONLINE se reserva el derecho a denegar o retirar el acceso al sitio web y/o los servicios ofrecidos sin necesidad de preaviso, a instancia propia o de un tercero, a aquellos usuarios que incumplan las presentes Condiciones de Uso.
+PDFUP.IO se reserva el derecho a denegar o retirar el acceso al sitio web y/o los servicios ofrecidos sin necesidad de preaviso, a instancia propia o de un tercero, a aquellos usuarios que incumplan las presentes Condiciones de Uso.
 
 ## 8. Legislación Aplicable y Jurisdicción
 
-La relación entre EDITPDF.ONLINE y el usuario se regirá por la normativa española y europea vigente. Para la resolución de cualquier controversia, las partes se someterán a los Juzgados y Tribunales del domicilio del usuario consumidor, conforme a la normativa de protección del consumidor de la UE.
+La relación entre PDFUP.IO y el usuario se regirá por la normativa española y europea vigente. Para la resolución de cualquier controversia, las partes se someterán a los Juzgados y Tribunales del domicilio del usuario consumidor, conforme a la normativa de protección del consumidor de la UE.
 
 Asimismo, conforme al Reglamento (UE) 524/2013, informamos que la Comisión Europea facilita una plataforma de resolución de litigios en línea disponible en [ec.europa.eu/consumers/odr](https://ec.europa.eu/consumers/odr).`;
 
@@ -318,11 +318,11 @@ const gdprContent = `# Cumplimiento del RGPD
 
 **Última actualización:** 23 de marzo de 2026
 
-En **EDITPDF.ONLINE** estamos comprometidos con el cumplimiento del Reglamento General de Protección de Datos (Reglamento (UE) 2016/679, "RGPD") y la normativa española de protección de datos (Ley Orgánica 3/2018, de Protección de Datos Personales y garantía de los derechos digitales, "LOPDGDD").
+En **PDFUP.IO** estamos comprometidos con el cumplimiento del Reglamento General de Protección de Datos (Reglamento (UE) 2016/679, "RGPD") y la normativa española de protección de datos (Ley Orgánica 3/2018, de Protección de Datos Personales y garantía de los derechos digitales, "LOPDGDD").
 
 ## 1. Nuestro Compromiso
 
-EDITPDF.ONLINE aplica los principios fundamentales del RGPD en todas sus operaciones:
+PDFUP.IO aplica los principios fundamentales del RGPD en todas sus operaciones:
 
 - **Licitud, lealtad y transparencia:** Tratamos los datos de forma lícita y transparente, informando siempre sobre cómo y por qué los utilizamos.
 - **Limitación de la finalidad:** Solo recopilamos datos para finalidades determinadas, explícitas y legítimas.
@@ -333,7 +333,7 @@ EDITPDF.ONLINE aplica los principios fundamentales del RGPD en todas sus operaci
 
 ## 2. Derechos de los Interesados
 
-Como usuario de EDITPDF.ONLINE, tienes los siguientes derechos reconocidos por el RGPD:
+Como usuario de PDFUP.IO, tienes los siguientes derechos reconocidos por el RGPD:
 
 - **Acceso** (Art. 15): Obtener confirmación de si tratamos tus datos y acceder a una copia.
 - **Rectificación** (Art. 16): Solicitar la corrección de datos inexactos o incompletos.
@@ -345,13 +345,13 @@ Como usuario de EDITPDF.ONLINE, tienes los siguientes derechos reconocidos por e
 
 ### Cómo ejercer tus derechos
 
-Puedes ejercer cualquiera de estos derechos contactándonos a través de [editpdf.online/es/contact](https://editpdf.online/es/contact). Necesitaremos verificar tu identidad antes de procesar tu solicitud. Responderemos en un plazo máximo de 30 días desde la recepción de tu solicitud.
+Puedes ejercer cualquiera de estos derechos contactándonos a través de [pdfup.io/es/contact](https://pdfup.io/es/contact). Necesitaremos verificar tu identidad antes de procesar tu solicitud. Responderemos en un plazo máximo de 30 días desde la recepción de tu solicitud.
 
 Si consideras que tus derechos no han sido debidamente atendidos, puedes presentar una reclamación ante la **Agencia Española de Protección de Datos (AEPD)** en [www.aepd.es](https://www.aepd.es), o ante la autoridad de protección de datos de tu país de residencia dentro de la UE.
 
 ## 3. Medidas de Seguridad
 
-EDITPDF.ONLINE implementa las siguientes medidas técnicas y organizativas para garantizar la seguridad de tus datos personales:
+PDFUP.IO implementa las siguientes medidas técnicas y organizativas para garantizar la seguridad de tus datos personales:
 
 **Medidas técnicas:**
 
@@ -386,14 +386,14 @@ Mantenemos un registro de actividades de tratamiento conforme al artículo 30 de
 
 ## 7. Notificación de Brechas de Seguridad
 
-En caso de producirse una brecha de seguridad que afecte a datos personales, EDITPDF.ONLINE:
+En caso de producirse una brecha de seguridad que afecte a datos personales, PDFUP.IO:
 
 1. Notificará a la autoridad de control competente en un plazo máximo de 72 horas desde que tenga conocimiento de la brecha (Art. 33 RGPD).
 2. Comunicará la brecha a los interesados afectados sin dilación indebida cuando la brecha entrañe un alto riesgo para sus derechos y libertades (Art. 34 RGPD).
 
 ## 8. Contacto
 
-Para cualquier consulta relacionada con la protección de datos o el ejercicio de tus derechos, puedes contactarnos en [editpdf.online/es/contact](https://editpdf.online/es/contact).
+Para cualquier consulta relacionada con la protección de datos o el ejercicio de tus derechos, puedes contactarnos en [pdfup.io/es/contact](https://pdfup.io/es/contact).
 
 ## 9. Actualizaciones
 
