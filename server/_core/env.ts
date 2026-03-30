@@ -13,9 +13,9 @@ export const ENV = {
   paddleWebhookNotificationId: process.env.PADDLE_WEBHOOK_NOTIFICATION_ID ?? "",
   paddlePriceId: process.env.VITE_PADDLE_PRICE_ID ?? "",
   // Cloudflare R2 storage
-  r2AccountId: process.env.R2_ACCOUNT_ID ?? "",
-  r2AccessKeyId: process.env.R2_ACCESS_KEY_ID ?? "",
-  r2SecretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? "",
-  r2BucketName: process.env.R2_BUCKET_NAME ?? "",
-  r2PublicUrl: process.env.R2_PUBLIC_URL ?? "",
+  r2AccountId: process.env.CF_R2_ACCOUNT_ID ?? process.env.R2_ACCOUNT_ID ?? "",
+  r2AccessKeyId: process.env.CF_R2_ACCESS_KEY_ID ?? process.env.R2_ACCESS_KEY_ID ?? "",
+  r2SecretAccessKey: process.env.CF_R2_SECRET_ACCESS_KEY ?? process.env.R2_SECRET_ACCESS_KEY ?? "",
+  r2BucketName: process.env.CF_R2_BUCKET_NAME ?? process.env.R2_BUCKET_NAME ?? "",
+  r2PublicUrl: process.env.CF_R2_PUBLIC_URL ?? process.env.R2_PUBLIC_URL ?? "",
 };

@@ -5,11 +5,11 @@ import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 function getR2Config() {
-  const accountId = process.env.R2_ACCOUNT_ID ?? "";
-  const accessKeyId = process.env.R2_ACCESS_KEY_ID ?? "";
-  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY ?? "";
-  const bucketName = process.env.R2_BUCKET_NAME ?? "";
-  const publicUrl = process.env.R2_PUBLIC_URL ?? ""; // e.g. https://pub-xxx.r2.dev
+  const accountId = process.env.CF_R2_ACCOUNT_ID ?? process.env.R2_ACCOUNT_ID ?? "";
+  const accessKeyId = process.env.CF_R2_ACCESS_KEY_ID ?? process.env.R2_ACCESS_KEY_ID ?? "";
+  const secretAccessKey = process.env.CF_R2_SECRET_ACCESS_KEY ?? process.env.R2_SECRET_ACCESS_KEY ?? "";
+  const bucketName = process.env.CF_R2_BUCKET_NAME ?? process.env.R2_BUCKET_NAME ?? "";
+  const publicUrl = process.env.CF_R2_PUBLIC_URL ?? process.env.R2_PUBLIC_URL ?? ""; // e.g. https://pub-xxx.r2.dev
 
   if (!accountId || !accessKeyId || !secretAccessKey || !bucketName) {
     // Fallback: check if Manus forge API is available
