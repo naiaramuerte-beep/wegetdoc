@@ -700,3 +700,9 @@
 - [x] Bug: panel de Resaltador no traduce descripción ("Click and drag over the PDF...")
 - [x] Bug: panel de Borrador no traduce descripción ("Click and drag over the area...")
 - [x] Bug: panel de Buscar no traduce placeholder ("Search in PDF...")
+
+## Flujo editor - Paywall solo al descargar (30/03)
+- [x] Quitar paywall de herramientas individuales (comprimir, proteger, etc.) - el usuario debe poder usar todo libremente
+- [x] Paywall solo aparece al pulsar "Descargar" el PDF final
+- [x] Comprimir PDF: mejorar flujo con modal de resultado (tamaño antes/después) y botones Volver/Descargar
+- [x] Proteger PDF: permitir poner contraseña sin paywall, solo al descargar pide registro/pago

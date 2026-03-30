@@ -252,6 +252,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
   // Compress state
   const [compressQuality, setCompressQuality] = useState(70);
+  const [compressResult, setCompressResult] = useState<{ originalSize: number; compressedSize: number; blob: Blob; name: string } | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
+  // Protect result state
+  const [protectResult, setProtectResult] = useState<{ blob: Blob; name: string } | null>(null);
 
   // Shape state
   const [shapeType, setShapeType] = useState<"rect" | "circle" | "line">("rect");
@@ -1410,16 +1414,29 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // ── Compress ──────────────────────────────────────────────────────
   const compressPdf = async () => {
     if (!pdfBytes) return;
+    setIsCompressing(true);
+    setCompressResult(null);
     toast.loading(t.editor_toast_compressing ?? "Compressing PDF...", { id: "compress" });
     try {
+      const originalSize = (pdfBytes as Uint8Array).byteLength;
       const doc = await PDFDocument.load(pdfBytes as Uint8Array);
       const compressed = await doc.save({ useObjectStreams: true });
       const blob = new Blob([compressed.buffer as ArrayBuffer], { type: "application/pdf" });
       const downloadName = `compressed_${file?.name ?? "document.pdf"}`;
-      await guardedDownload(blob, downloadName, "compress");
+      const compressedSize = compressed.byteLength;
+      setCompressResult({ originalSize, compressedSize, blob, name: downloadName });
+      toast.success(t.editor_toast_compressed ?? "PDF compressed", { id: "compress" });
     } catch {
       toast.error(t.editor_toast_compress_error ?? "Error compressing", { id: "compress" });
+    } finally {
+      setIsCompressing(false);
     }
+  };
+
+  // ── Download compressed PDF (goes through paywall) ──
+  const downloadCompressedPdf = async () => {
+    if (!compressResult) return;
+    await guardedDownload(compressResult.blob, compressResult.name, "compress");
   };
 
   // ── Protect with password ─────────────────────────────────────
@@ -1445,14 +1462,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const ownerPw = password + "_owner";
       const encryptedBytes = await encryptPDF(finalBytes, password, ownerPw);
       setProtectProgress(90);
-      // 3. Download the protected PDF via paywall guard
+      // 3. Store the protected PDF result (paywall only on download)
       const filename = file?.name ?? "document.pdf";
       const protectedBlob = new Blob([encryptedBytes.buffer as ArrayBuffer], { type: "application/pdf" });
       const downloadName = filename.replace(/\.pdf$/i, "") + "_protected.pdf";
       clearInterval(progressInterval);
       setProtectProgress(100);
+      setProtectResult({ blob: protectedBlob, name: downloadName });
+      toast.success(t.editor_toast_protected ?? "PDF protected!", { id: "protect" });
       setTimeout(() => { setIsProtecting(false); setProtectProgress(0); }, 1500);
-      await guardedDownload(protectedBlob, downloadName, "protect");
     } catch (err) {
       clearInterval(progressInterval);
       setIsProtecting(false); setProtectProgress(0);
@@ -1461,6 +1479,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       clearInterval(progressInterval);
     }
   };
+  // ── Download protected PDF (goes through paywall) ──
+  const downloadProtectedPdf = async () => {
+    if (!protectResult) return;
+    await guardedDownload(protectResult.blob, protectResult.name, "protect");
+  };
+
   // ── Export PDF to Word/Excel/PPT ──────────────────────────────
   const exportPdf = async (format: "docx" | "xlsx" | "pptx") => {
     if (!pdfBytes) { toast.error("No PDF loaded"); return; }
@@ -2476,101 +2500,167 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       case "protect":
         return (
           <div className="p-4 flex flex-col gap-3">
-            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>{t.editor_protect_title}</h3>
-            <div className="border rounded-lg overflow-hidden" style={{ borderColor: "oklch(0.85 0.03 260)" }}>
-              <div className="px-3 py-2" style={{ backgroundColor: "oklch(0.96 0.01 260)" }}>
-                <p className="text-xs font-medium" style={{ color: "oklch(0.35 0.03 250)" }}>{t.editor_protect_desc}</p>
-              </div>
-              <div className="p-3 flex flex-col gap-2">
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password} onChange={e => setPassword(e.target.value)}
-                    placeholder={t.editor_protect_placeholder}
-                    className="w-full border rounded px-3 py-2 text-sm pr-10"
-                    style={{ borderColor: "oklch(0.80 0.05 260)" }}
-                  />
-                  <button onClick={() => setShowPassword(v => !v)} className="absolute right-2 top-2.5">
-                    {showPassword ? <EyeOff className="w-4 h-4" style={{ color: "oklch(0.55 0.02 250)" }} /> : <Eye className="w-4 h-4" style={{ color: "oklch(0.55 0.02 250)" }} />}
+            {protectResult ? (
+              /* ── Protect Result View ── */
+              <>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "oklch(0.85 0.15 145)" }}>
+                    <svg className="w-5 h-5" style={{ color: "oklch(0.40 0.20 145)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                  </div>
+                  <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>{t.editor_protect_result_title}</h3>
+                </div>
+                <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>{t.editor_protect_result_desc}</p>
+                <div className="flex gap-2">
+                  <button onClick={() => { setProtectResult(null); setPassword(""); setConfirmPassword(""); }} className="flex-1 py-2 rounded text-sm font-medium border" style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.40 0.02 250)" }}>
+                    {t.editor_protect_return}
+                  </button>
+                  <button onClick={downloadProtectedPdf} className="flex-1 py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "oklch(0.25 0.03 250)" }}>
+                    <Download className="w-4 h-4 inline mr-1" />{t.editor_protect_download}
                   </button>
                 </div>
-                <div className="relative">
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
-                    placeholder={t.editor_protect_confirm_placeholder}
-                    className="w-full border rounded px-3 py-2 text-sm pr-10"
-                    style={{ borderColor: confirmPassword && password !== confirmPassword ? "oklch(0.55 0.22 25)" : "oklch(0.80 0.05 260)" }}
-                  />
-                  <button onClick={() => setShowConfirmPassword(v => !v)} className="absolute right-2 top-2.5">
-                    {showConfirmPassword ? <EyeOff className="w-4 h-4" style={{ color: "oklch(0.55 0.02 250)" }} /> : <Eye className="w-4 h-4" style={{ color: "oklch(0.55 0.02 250)" }} />}
-                  </button>
+              </>
+            ) : (
+              /* ── Protect Controls ── */
+              <>
+                <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>{t.editor_protect_title}</h3>
+                <div className="border rounded-lg overflow-hidden" style={{ borderColor: "oklch(0.85 0.03 260)" }}>
+                  <div className="px-3 py-2" style={{ backgroundColor: "oklch(0.96 0.01 260)" }}>
+                    <p className="text-xs font-medium" style={{ color: "oklch(0.35 0.03 250)" }}>{t.editor_protect_desc}</p>
+                  </div>
+                  <div className="p-3 flex flex-col gap-2">
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password} onChange={e => setPassword(e.target.value)}
+                        placeholder={t.editor_protect_placeholder}
+                        className="w-full border rounded px-3 py-2 text-sm pr-10"
+                        style={{ borderColor: "oklch(0.80 0.05 260)" }}
+                      />
+                      <button onClick={() => setShowPassword(v => !v)} className="absolute right-2 top-2.5">
+                        {showPassword ? <EyeOff className="w-4 h-4" style={{ color: "oklch(0.55 0.02 250)" }} /> : <Eye className="w-4 h-4" style={{ color: "oklch(0.55 0.02 250)" }} />}
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                        placeholder={t.editor_protect_confirm_placeholder}
+                        className="w-full border rounded px-3 py-2 text-sm pr-10"
+                        style={{ borderColor: confirmPassword && password !== confirmPassword ? "oklch(0.55 0.22 25)" : "oklch(0.80 0.05 260)" }}
+                      />
+                      <button onClick={() => setShowConfirmPassword(v => !v)} className="absolute right-2 top-2.5">
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" style={{ color: "oklch(0.55 0.02 250)" }} /> : <Eye className="w-4 h-4" style={{ color: "oklch(0.55 0.02 250)" }} />}
+                      </button>
+                    </div>
+                    {confirmPassword && password !== confirmPassword && (
+                      <p className="text-xs" style={{ color: "oklch(0.50 0.22 25)" }}>{t.editor_protect_passwords_mismatch}</p>
+                    )}
+                  </div>
                 </div>
-                {confirmPassword && password !== confirmPassword && (
-                  <p className="text-xs" style={{ color: "oklch(0.50 0.22 25)" }}>{t.editor_protect_passwords_mismatch}</p>
+                <div className="border rounded-lg overflow-hidden" style={{ borderColor: "oklch(0.85 0.03 260)" }}>
+                  <div className="px-3 py-2" style={{ backgroundColor: "oklch(0.96 0.01 260)" }}>
+                    <p className="text-xs font-medium" style={{ color: "oklch(0.35 0.03 250)" }}>{t.editor_protect_algo_label}</p>
+                  </div>
+                  <div className="p-3 flex flex-col gap-1.5">
+                    <div className="flex items-center gap-2">
+                      <Lock className="w-3.5 h-3.5" style={{ color: "oklch(0.45 0.05 250)" }} />
+                      <span className="text-xs" style={{ color: "oklch(0.35 0.02 250)" }}>128-bit RC4</span>
+                    </div>
+                  </div>
+                </div>
+                {/* Progress bar */}
+                {isProtecting && (
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between text-xs" style={{ color: "oklch(0.45 0.02 250)" }}>
+                      <span>{protectProgress < 100 ? (t.editor_toast_protecting ?? "Protecting PDF...") : (t.editor_toast_protected ?? "Protected!")}</span>
+                      <span>{Math.round(protectProgress)}%</span>
+                    </div>
+                    <div className="w-full rounded-full overflow-hidden" style={{ height: 6, backgroundColor: "oklch(0.90 0.02 260)" }}>
+                      <div
+                        className="h-full rounded-full transition-all duration-200"
+                        style={{ width: `${protectProgress}%`, backgroundColor: protectProgress === 100 ? "oklch(0.55 0.18 145)" : "oklch(0.55 0.22 260)" }}
+                      />
+                    </div>
+                  </div>
                 )}
-              </div>
-            </div>
-            <div className="border rounded-lg overflow-hidden" style={{ borderColor: "oklch(0.85 0.03 260)" }}>
-              <div className="px-3 py-2" style={{ backgroundColor: "oklch(0.96 0.01 260)" }}>
-                <p className="text-xs font-medium" style={{ color: "oklch(0.35 0.03 250)" }}>{t.editor_protect_algo_label}</p>
-              </div>
-              <div className="p-3 flex flex-col gap-1.5">
-                <div className="flex items-center gap-2">
-                  <Lock className="w-3.5 h-3.5" style={{ color: "oklch(0.45 0.05 250)" }} />
-                  <span className="text-xs" style={{ color: "oklch(0.35 0.02 250)" }}>128-bit RC4</span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setPassword(""); setConfirmPassword(""); }}
+                    disabled={isProtecting}
+                    className="flex-1 py-2 rounded text-sm border font-medium disabled:opacity-40"
+                    style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.40 0.02 250)" }}
+                  >
+                    {t.editor_cancel_btn}
+                  </button>
+                  <button
+                    onClick={protectPdf}
+                    disabled={!password || password !== confirmPassword || isProtecting}
+                    className="flex-1 py-2 rounded text-white text-sm font-semibold disabled:opacity-50"
+                    style={{ backgroundColor: "oklch(0.25 0.03 250)" }}
+                  >
+                    {isProtecting ? `${Math.round(protectProgress)}%` : t.editor_protect_btn}
+                  </button>
                 </div>
-              </div>
-            </div>
-            {/* Progress bar */}
-            {isProtecting && (
-              <div className="flex flex-col gap-1.5">
-                <div className="flex justify-between text-xs" style={{ color: "oklch(0.45 0.02 250)" }}>
-                  <span>{protectProgress < 100 ? (t.editor_toast_protecting ?? "Protecting PDF...") : (t.editor_toast_protected ?? "Protected!")}</span>
-                  <span>{Math.round(protectProgress)}%</span>
-                </div>
-                <div className="w-full rounded-full overflow-hidden" style={{ height: 6, backgroundColor: "oklch(0.90 0.02 260)" }}>
-                  <div
-                    className="h-full rounded-full transition-all duration-200"
-                    style={{ width: `${protectProgress}%`, backgroundColor: protectProgress === 100 ? "oklch(0.55 0.18 145)" : "oklch(0.55 0.22 260)" }}
-                  />
-                </div>
-              </div>
+              </>
             )}
-            <div className="flex gap-2">
-              <button
-                onClick={() => { setPassword(""); setConfirmPassword(""); }}
-                disabled={isProtecting}
-                className="flex-1 py-2 rounded text-sm border font-medium disabled:opacity-40"
-                style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.40 0.02 250)" }}
-              >
-                {t.editor_cancel_btn}
-              </button>
-              <button
-                onClick={protectPdf}
-                disabled={!password || password !== confirmPassword || isProtecting}
-                className="flex-1 py-2 rounded text-white text-sm font-semibold disabled:opacity-50"
-                style={{ backgroundColor: "oklch(0.25 0.03 250)" }}
-              >
-                {isProtecting ? `${Math.round(protectProgress)}%` : t.editor_protect_btn}
-              </button>
-            </div>
           </div>
         );
       case "compress":
         return (
           <div className="p-4 flex flex-col gap-3">
-            <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>{t.editor_panel_compress_pdf}</h3>
-            <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>{t.editor_panel_compress_desc}</p>
-            <div className="flex flex-col gap-1">
-              <div className="flex justify-between text-xs" style={{ color: "oklch(0.45 0.02 250)" }}>
-                <span>{t.editor_compress_quality}</span><span>{compressQuality}%</span>
-              </div>
-              <input type="range" min={20} max={100} value={compressQuality} onChange={e => setCompressQuality(Number(e.target.value))} className="w-full" />
-            </div>
-            <button onClick={compressPdf} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>
-              <Minimize2 className="w-4 h-4 inline mr-1" />{t.editor_panel_compress_btn}
-            </button>
+            {compressResult ? (
+              /* ── Compress Result View ── */
+              <>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "oklch(0.85 0.15 145)" }}>
+                    <svg className="w-5 h-5" style={{ color: "oklch(0.40 0.20 145)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                  </div>
+                  <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>{t.editor_compress_result_title}</h3>
+                </div>
+                <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>{t.editor_compress_result_desc}</p>
+                <div className="rounded-lg p-3 flex flex-col gap-2" style={{ backgroundColor: "oklch(0.97 0.005 250)" }}>
+                  <div className="flex justify-between text-xs">
+                    <span style={{ color: "oklch(0.50 0.02 250)" }}>{t.editor_compress_original}</span>
+                    <span className="font-medium" style={{ color: "oklch(0.30 0.02 250)" }}>{(compressResult.originalSize / 1024 / 1024).toFixed(1)} MB</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span style={{ color: "oklch(0.50 0.02 250)" }}>{t.editor_compress_compressed}</span>
+                    <span className="font-medium" style={{ color: "oklch(0.30 0.02 250)" }}>{compressResult.compressedSize < 1024 * 1024 ? (compressResult.compressedSize / 1024).toFixed(1) + " KB" : (compressResult.compressedSize / 1024 / 1024).toFixed(1) + " MB"}</span>
+                  </div>
+                  <div className="border-t pt-2 flex justify-between text-xs" style={{ borderColor: "oklch(0.90 0.01 250)" }}>
+                    <span style={{ color: "oklch(0.40 0.15 145)" }}>{t.editor_compress_saved}</span>
+                    <span className="font-semibold" style={{ color: "oklch(0.40 0.20 145)" }}>{Math.max(0, Math.round((1 - compressResult.compressedSize / compressResult.originalSize) * 100))}%</span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setCompressResult(null)} className="flex-1 py-2 rounded text-sm font-medium border" style={{ borderColor: "oklch(0.80 0.05 260)", color: "oklch(0.40 0.02 250)" }}>
+                    {t.editor_compress_return}
+                  </button>
+                  <button onClick={downloadCompressedPdf} className="flex-1 py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "oklch(0.35 0.05 250)" }}>
+                    <Download className="w-4 h-4 inline mr-1" />{t.editor_compress_download}
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* ── Compress Controls ── */
+              <>
+                <h3 className="font-semibold text-sm" style={{ color: "oklch(0.15 0.03 250)" }}>{t.editor_panel_compress_pdf}</h3>
+                <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>{t.editor_panel_compress_desc}</p>
+                <div className="flex flex-col gap-1">
+                  <div className="flex justify-between text-xs" style={{ color: "oklch(0.45 0.02 250)" }}>
+                    <span>{t.editor_compress_quality}</span><span>{compressQuality}%</span>
+                  </div>
+                  <input type="range" min={20} max={100} value={compressQuality} onChange={e => setCompressQuality(Number(e.target.value))} className="w-full" />
+                </div>
+                <button onClick={compressPdf} disabled={isCompressing} className="py-2 rounded text-white text-sm font-semibold disabled:opacity-50" style={{ backgroundColor: "oklch(0.55 0.22 260)" }}>
+                  {isCompressing ? (
+                    <><svg className="w-4 h-4 inline mr-1 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>{t.editor_toast_compressing}</>
+                  ) : (
+                    <><Minimize2 className="w-4 h-4 inline mr-1" />{t.editor_compress_btn_only}</>
+                  )}
+                </button>
+              </>  
+            )}
             <div className="border-t pt-3" style={{ borderColor: "oklch(0.90 0.01 250)" }}>
               <p className="text-xs font-medium mb-2" style={{ color: "oklch(0.35 0.02 250)" }}>{t.editor_panel_convert_to_image}</p>
               <div className="flex gap-2">
