@@ -688,3 +688,15 @@
 - [x] Confirmado por múltiples usuarios en Reddit (r/ManusOfficial)
 - [x] Este script NO está en nuestro código — es inyectado por la plataforma Manus al publicar
 - [ ] Contactar soporte Manus para pedir desactivación del script spaceEditor en producción
+
+## Bugs editor PDF - Traducciones y cursor (30/03)
+- [x] Bug: cursor de mover solo aparece en el borde azul, debería aparecer en toda la caja del elemento
+- [x] Bug: nombres de herramientas en la toolbar del editor NO se traducen (Sign, Add text, Edit Text, Highlight, Eraser, Brush, Image, Pointer, Shapes, Find, Protect, Compress, Move, Notes)
+- [x] Bug: textos descriptivos y botones en paneles laterales de herramientas NO se traducen completamente
+- [x] Bug: panel de Formas no traduce botones (Rectangle, Circle, Line, Outline only, Fill)
+- [x] Bug: panel de Mover no traduce descripción ("Click on any annotation...")
+- [x] Bug: panel de Notas no traduce placeholder ("Write your note here...")
+- [x] Bug: panel de Editar texto no traduce descripción ("Click on any text block...")
+- [x] Bug: panel de Resaltador no traduce descripción ("Click and drag over the PDF...")
+- [x] Bug: panel de Borrador no traduce descripción ("Click and drag over the area...")
+- [x] Bug: panel de Buscar no traduce placeholder ("Search in PDF...")
