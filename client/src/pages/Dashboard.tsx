@@ -834,7 +834,7 @@ function BillingTab() {
                   ? sub?.cancelAtPeriodEnd
                     ? "Suscripción cancelada"
                     : `Plan ${sub?.plan === "trial" ? "Prueba (7 días)" : "Premium Mensual"}`
-                  : "Plan Gratuito"}
+                  : "Plan Básico"}
               </h2>
             </div>
 
@@ -873,7 +873,7 @@ function BillingTab() {
                 </p>
               </div>
             ) : (
-              <p className="text-3xl font-bold text-slate-800">Gratis</p>
+              <p className="text-3xl font-bold text-slate-800">Básico</p>
             )}
           </div>
         </div>
@@ -915,7 +915,7 @@ function BillingTab() {
         </div>
       )}
 
-      {/* Features comparison (only for free users) */}
+      {/* Features comparison (only for basic users) */}
       {!isPremium && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
           <h3 className="font-semibold text-slate-800 mb-4">Funciones disponibles con Premium</h3>

@@ -94,7 +94,7 @@ export default function BlogPost() {
     scriptEl.textContent = JSON.stringify(jsonLd);
 
     return () => {
-      document.title = "PDFUp — Free Online PDF Editor";
+      document.title = "PDFUp — Online PDF Editor";
       scriptEl?.remove();
     };
   }, [post]);
@@ -208,7 +208,7 @@ export default function BlogPost() {
             >
               <h3 className="text-xl font-bold text-white mb-2">¿Listo para editar tu PDF?</h3>
               <p className="text-slate-300 mb-5 text-sm">
-                Prueba PDFUp gratis — sin registro, sin instalación, directamente en tu navegador.
+                Prueba PDFUp — sin registro, sin instalación, directamente en tu navegador.
               </p>
               <button
                 onClick={() => navigate("/")}

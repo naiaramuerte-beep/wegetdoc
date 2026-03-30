@@ -58,7 +58,7 @@ export default function Signup() {
               className="text-2xl font-bold text-white mb-3"
               style={{ fontFamily: "'Sora', sans-serif" }}
             >
-              Empieza gratis hoy
+              Empieza a editar hoy
             </h2>
             <p
               className="text-sm mb-8"
@@ -115,7 +115,7 @@ export default function Signup() {
             className="text-sm mb-6"
             style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
           >
-            Crea tu cuenta gratuita de PDFUp
+            Crea tu cuenta de PDFUp
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -227,7 +227,7 @@ export default function Signup() {
                 (e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)")
               }
             >
-              Crear cuenta gratuita
+              Crear cuenta
             </button>
           </form>
 

@@ -71,7 +71,7 @@ const DEMO_REVIEWS = [
     id: "r4",
     stars: 5,
     title: "Ottimo servizio, lo consiglio!",
-    text: "Ho provato molti editor PDF online ma questo è il migliore. Veloce, preciso e con tutte le funzionalità che servono. La prova gratuita di 7 giorni è stata sufficiente per convincermi.",
+    text: "Ho provato molti editor PDF online ma questo è il migliore. Veloce, preciso e con tutte le funzionalità che servono. La prova di 7 giorni è stata sufficiente per convincermi.",
     author: "Luca Bianchi",
     date: "2026-03-11T14:00:00Z",
     language: "it",

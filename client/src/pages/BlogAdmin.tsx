@@ -370,7 +370,7 @@ export default function BlogAdmin() {
                   id="title"
                   value={form.title}
                   onChange={(e) => handleTitleChange(e.target.value)}
-                  placeholder="Cómo editar un PDF online gratis en 2025"
+                  placeholder="Cómo editar un PDF online en 2025"
                   className="mt-1 text-lg font-semibold"
                 />
               </div>
@@ -463,7 +463,7 @@ export default function BlogAdmin() {
                   id="tags"
                   value={form.tags}
                   onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
-                  placeholder="pdf, editor, online, gratis"
+                  placeholder="pdf, editor, online, herramientas"
                   className="mt-1 text-sm"
                 />
               </div>
@@ -485,7 +485,7 @@ export default function BlogAdmin() {
                   id="metaTitle"
                   value={form.metaTitle}
                   onChange={(e) => setForm((f) => ({ ...f, metaTitle: e.target.value }))}
-                  placeholder="Cómo editar PDF online gratis | PDFUp"
+                  placeholder="Cómo editar PDF online | PDFUp"
                   className="mt-1 text-sm"
                   maxLength={70}
                 />

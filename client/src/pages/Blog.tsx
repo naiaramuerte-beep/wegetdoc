@@ -23,13 +23,13 @@ export default function Blog() {
       }
       el.setAttribute("content", content);
     };
-    setMeta("description", "Aprende a editar, convertir, firmar y proteger PDFs con nuestras guías paso a paso. Tutoriales gratuitos para sacar el máximo partido a PDFUp.online.");
+    setMeta("description", "Aprende a editar, convertir, firmar y proteger PDFs con nuestras guías paso a paso. Tutoriales para sacar el máximo partido a PDFUp.");
     setMeta("og:title", "Blog — PDFUp | Guías y tutoriales sobre PDF", true);
     setMeta("og:description", "Guías, tutoriales y consejos sobre cómo trabajar con PDFs online. Todo lo que necesitas saber sobre edición, conversión y firma de documentos.", true);
     setMeta("og:type", "website", true);
     setMeta("og:url", "https://pdfup.io/blog", true);
     return () => {
-      document.title = "PDFUp — Free Online PDF Editor";
+      document.title = "PDFUp — Online PDF Editor";
     };
   }, []);
 
@@ -135,14 +135,14 @@ export default function Blog() {
             <div className="container max-w-2xl text-center">
               <h2 className="text-2xl font-bold text-foreground mb-3">¿Listo para editar tu PDF?</h2>
               <p className="text-muted-foreground mb-6">
-                Prueba PDFUp gratis — sin registro, sin instalación, directamente en tu navegador.
+                Prueba PDFUp — sin registro, sin instalación, directamente en tu navegador.
               </p>
               <button
                 onClick={() => navigate("/")}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white transition-all hover:opacity-90"
                 style={{ background: "oklch(0.55 0.22 260)" }}
               >
-                Empezar gratis <ArrowRight size={16} />
+                Empezar ahora <ArrowRight size={16} />
               </button>
             </div>
           </section>

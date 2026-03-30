@@ -717,3 +717,9 @@
 - [x] Reemplazar editpdf.online → pdfup.io en scripts/seed-legal.mjs
 - [x] Verificar que no quedan referencias a editpdf.online en código fuente
 - [x] Corregir errores TypeScript (Uint8Array/BlobPart y RenderParameters)
+
+## Eliminar textos "gratis/free" (30/03)
+- [x] Buscar y eliminar todos los textos que digan "gratis", "free", "gratuito" excepto el H1 principal
+- [x] Eliminado de: Login.tsx, Signup.tsx, Blog.tsx, BlogPost.tsx, Dashboard.tsx, BlogAdmin.tsx, TrustpilotAdmin.tsx
+- [x] Eliminado de i18n.ts en 10 idiomas: pricing_cta_trial, footer_desc, paywall_subtitle_auth, paywall_legal_text, hero_trust_free, urgency_trial, faq_q1, faq_q6
+- [x] Dashboard: "Plan Gratuito" → "Plan Básico", "Gratis" → "Básico"

@@ -163,7 +163,7 @@ export default function Login() {
             className="font-semibold transition-colors duration-200"
             style={{ color: "oklch(0.55 0.22 260)" }}
           >
-            Regístrate gratis
+            Regístrate ahora
           </Link>
         </p>
 
