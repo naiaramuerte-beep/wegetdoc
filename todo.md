@@ -742,8 +742,8 @@
 - [x] Webhook de Paddle: ruta /api/paddle/webhook es relativa, no hay URL hardcodeada — actualizar en panel de Paddle manualmente
 
 ## Favicon CloudPDF (30/03)
-- [ ] Crear favicon con icono de nube CloudPDF
-- [ ] Actualizar referencia en index.html
+- [x] Crear favicon con icono de nube CloudPDF
+- [x] Actualizar referencia en index.html
 
 ## Migración almacenamiento a Cloudflare R2 (30/03)
 - [x] Reescribir server/storage.ts para usar Cloudflare R2 (API compatible S3)
