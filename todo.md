@@ -762,3 +762,12 @@
 
 ## Bug: Renombrar archivo en editor no se refleja al guardar (30/03)
 - [x] Al guardar, usar el nombre editado del archivo en vez del nombre original
+
+## Bug: Cancelar suscripción no cancela en Paddle (30/03)
+- [x] Investigar por qué la cancelación solo actualiza la BD local y no llama a la API de Paddle
+  - Causa raíz: paddleSubscriptionId nunca se guardaba en BD (siempre vacío)
+  - confirmPaddleCheckout no resolvía subscriptionId desde la API de Paddle
+- [x] Implementar llamada real a Paddle API para cancelar suscripción
+  - Añadido lookup por customerId y transactionId si paddleSubscriptionId está vacío
+  - confirmPaddleCheckout ahora resuelve subscriptionId vía transactions.get()
+- [ ] Verificar que la cancelación se refleja en el dashboard de Paddle

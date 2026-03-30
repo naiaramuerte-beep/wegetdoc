@@ -244,24 +244,84 @@ export const appRouter = router({
     // Cancel subscription via Paddle API
     cancel: protectedProcedure.mutation(async ({ ctx }) => {
       const sub = await getActiveSubscription(ctx.user.id);
-      if (!sub?.paddleSubscriptionId) {
-        // No Paddle subscription — just cancel in DB
+      if (!sub) {
         await cancelSubscriptionDb(ctx.user.id);
         return { success: true };
       }
-      try {
-        const paddle = getPaddle();
-        await paddle.subscriptions.cancel(sub.paddleSubscriptionId, {
-          effectiveFrom: "next_billing_period",
-        });
-      } catch (err) {
-        console.error("[Paddle] Cancel subscription failed:", err);
-        // Still cancel in DB even if Paddle API fails
+
+      let paddleSubId = sub.paddleSubscriptionId || "";
+      const paddle = getPaddle();
+
+      // If we don't have a paddleSubscriptionId, try to find it via Paddle API
+      if (!paddleSubId && sub.paddleCustomerId) {
+        try {
+          console.log(`[Paddle] Looking up subscription for customer ${sub.paddleCustomerId}`);
+          const subs = paddle.subscriptions.list({ customerId: [sub.paddleCustomerId], status: ["active", "trialing"] });
+          for await (const s of subs) {
+            paddleSubId = s.id;
+            // Update our DB with the found subscriptionId
+            await upsertSubscription({
+              userId: ctx.user.id,
+              paddleCustomerId: sub.paddleCustomerId ?? undefined,
+              paddleSubscriptionId: paddleSubId,
+              plan: sub.plan ?? "monthly",
+              status: sub.status,
+              currentPeriodStart: sub.currentPeriodStart ?? undefined,
+              currentPeriodEnd: sub.currentPeriodEnd ?? undefined,
+              cancelAtPeriodEnd: false,
+            });
+            break; // Take the first active subscription
+          }
+        } catch (err) {
+          console.error("[Paddle] Failed to look up subscription by customer:", err);
+        }
       }
+
+      // If we still don't have a paddleSubscriptionId but have a transactionId, try via transaction
+      if (!paddleSubId && sub.paddleTransactionId) {
+        try {
+          console.log(`[Paddle] Looking up subscription via transaction ${sub.paddleTransactionId}`);
+          const txn = await paddle.transactions.get(sub.paddleTransactionId);
+          if (txn.subscriptionId) {
+            paddleSubId = txn.subscriptionId;
+            await upsertSubscription({
+              userId: ctx.user.id,
+              paddleCustomerId: sub.paddleCustomerId ?? undefined,
+              paddleSubscriptionId: paddleSubId,
+              plan: sub.plan ?? "monthly",
+              status: sub.status,
+              currentPeriodStart: sub.currentPeriodStart ?? undefined,
+              currentPeriodEnd: sub.currentPeriodEnd ?? undefined,
+              cancelAtPeriodEnd: false,
+            });
+          }
+        } catch (err) {
+          console.error("[Paddle] Failed to look up subscription via transaction:", err);
+        }
+      }
+
+      // Now cancel in Paddle if we have the ID
+      if (paddleSubId) {
+        try {
+          await paddle.subscriptions.cancel(paddleSubId, {
+            effectiveFrom: "next_billing_period",
+          });
+          console.log(`[Paddle] Successfully canceled subscription ${paddleSubId}`);
+        } catch (err: any) {
+          console.error("[Paddle] Cancel subscription failed:", err);
+          // If it's already canceled, that's fine
+          if (!err?.message?.includes("already_canceled")) {
+            throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Error al cancelar la suscripción en Paddle. Inténtalo de nuevo." });
+          }
+        }
+      } else {
+        console.warn(`[Paddle] No paddleSubscriptionId found for user ${ctx.user.id}, canceling only in DB`);
+      }
+
       await upsertSubscription({
         userId: ctx.user.id,
         paddleCustomerId: sub.paddleCustomerId ?? undefined,
-        paddleSubscriptionId: sub.paddleSubscriptionId ?? undefined,
+        paddleSubscriptionId: paddleSubId || undefined,
         plan: sub.plan ?? "monthly",
         status: sub.status,
         currentPeriodStart: sub.currentPeriodStart ?? undefined,
@@ -294,10 +354,30 @@ export const appRouter = router({
         const now = new Date();
         const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
+        let subscriptionId = input.subscriptionId || "";
+        let customerId = input.customerId || "";
+
+        // If we have a transactionId but no subscriptionId, fetch it from Paddle API
+        if (!subscriptionId && input.transactionId) {
+          try {
+            const paddle = getPaddle();
+            const txn = await paddle.transactions.get(input.transactionId);
+            if (txn.subscriptionId) {
+              subscriptionId = txn.subscriptionId;
+              console.log(`[Paddle] Resolved subscriptionId ${subscriptionId} from transaction ${input.transactionId}`);
+            }
+            if (txn.customerId && !customerId) {
+              customerId = txn.customerId;
+            }
+          } catch (err) {
+            console.error("[Paddle] Failed to fetch transaction details:", err);
+          }
+        }
+
         await upsertSubscription({
           userId: user.id,
-          paddleCustomerId: input.customerId ?? undefined,
-          paddleSubscriptionId: input.subscriptionId ?? undefined,
+          paddleCustomerId: customerId || undefined,
+          paddleSubscriptionId: subscriptionId || undefined,
           paddleTransactionId: input.transactionId ?? undefined,
           plan: "trial",
           status: "active",
@@ -323,11 +403,11 @@ export const appRouter = router({
         import("./_core/notification").then(({ notifyOwner }) => {
           notifyOwner({
             title: "\uD83D\uDCB3 Nuevo pago Paddle \u2014 CloudPDF",
-            content: `Usuario: ${user.name || "An\u00F3nimo"} (${user.email || "sin email"})\nPlan: Trial 7 d\u00EDas\nFin de prueba: ${trialEnd.toLocaleDateString("es-ES")}`,
+            content: `Usuario: ${user.name || "An\u00F3nimo"} (${user.email || "sin email"})\nPlan: Trial 7 d\u00EDas\nSub: ${subscriptionId}\nFin de prueba: ${trialEnd.toLocaleDateString("es-ES")}`,
           }).catch(() => {});
         }).catch(() => {});
 
-        return { success: true, subscriptionId: input.subscriptionId || "" };
+        return { success: true, subscriptionId };
       }),
   }),
 
