@@ -796,3 +796,8 @@
 
 ## Redirección pdfup.io → cloud-pdf.net (31/03)
 - [x] Añadir middleware 301 redirect de pdfup.io a cloud-pdf.net (preservando ruta y query params)
+
+## Reemplazar pdfup.io por cloud-pdf.net en todo el proyecto (31/03)
+- [x] Buscar y reemplazar todas las referencias a pdfup.io por cloud-pdf.net (excepto middleware de redirección)
+- [x] Verificar y corregir branding "pdfUP" si aplica (solo quedaba comentario CSS)
+- [x] Crear/actualizar página de Términos y Condiciones basada en pdfe.com/terms adaptada para cloud-pdf.net

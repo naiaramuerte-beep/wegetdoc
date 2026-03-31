@@ -8,8 +8,8 @@ dotenv.config();
 
 const db = await mysql.createConnection(process.env.DATABASE_URL);
 
-// ─── Términos y Condiciones ─────────────────────────────────────────
-const termsContent = `# Términos y Condiciones de Uso
+// ─── Términos de Uso y Contrato ─────────────────────────────────────────
+const termsContent = `# Términos de Uso y Contrato
 
 **Última actualización:** 23 de marzo de 2026
 
@@ -401,7 +401,7 @@ Esta página se actualizará periódicamente para reflejar cualquier cambio en n
 
 // ─── Insert/Update all pages ────────────────────────────────────────
 const pages = [
-  { slug: "terms", title: "Términos y Condiciones", content: termsContent },
+  { slug: "terms", title: "Términos de Uso y Contrato", content: termsContent },
   { slug: "privacy", title: "Política de Privacidad", content: privacyContent },
   { slug: "cookies", title: "Política de Cookies", content: cookiesContent },
   { slug: "legal", title: "Aviso Legal", content: legalContent },

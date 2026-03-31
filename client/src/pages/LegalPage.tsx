@@ -16,7 +16,7 @@ export default function LegalPage({ slug }: LegalPageProps) {
 
   const defaultTitles: Record<string, string> = {
     privacy: "Política de Privacidad",
-    terms: "Términos y Condiciones",
+    terms: "Términos de Uso y Contrato",
     cookies: "Política de Cookies",
     legal: "Aviso Legal",
   };

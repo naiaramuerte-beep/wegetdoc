@@ -721,7 +721,7 @@ export default function Admin() {
               ) : (
                 <div className="grid grid-cols-2 gap-4">
                   {[
-                    { slug: "terms", title: "Términos y condiciones" },
+                    { slug: "terms", title: "Términos de Uso y Contrato" },
                     { slug: "privacy", title: "Política de privacidad" },
                     { slug: "cookies", title: "Política de cookies" },
                     { slug: "legal", title: "Aviso legal" },
