@@ -801,3 +801,19 @@
 - [x] Buscar y reemplazar todas las referencias a pdfup.io por cloud-pdf.net (excepto middleware de redirección)
 - [x] Verificar y corregir branding "pdfUP" si aplica (solo quedaba comentario CSS)
 - [x] Crear/actualizar página de Términos y Condiciones basada en pdfe.com/terms adaptada para cloud-pdf.net
+
+## Imágenes para campañas de Google Ads (31/03)
+- [ ] Crear imágenes atractivas para Google Ads sin mencionar pagos/precios
+- [ ] Formato cuadrado: 1200x1200 px
+- [ ] Formato horizontal: 1200x628 px
+- [ ] Mensajes enfocados en funcionalidades y beneficios de CloudPDF
+
+## Rutas faltantes para Google Ads sitelinks (31/03- [x] Verificar y corregir ruta /en/editor (Editor PDF) — ahora muestra upload zoneOnline F- [x] Verificar y corregir ruta /es/tools (Herramientas ES) — funciona correctamente funciona correctamenteOnline)
+- [ ] Verificar y corregir ruta /es/tools (PDF to Word Converter)
+- [x] Verificar y corregir ruta /en/pricing (Precios) — funciona correctamente
+- [x] Verificar y corregir ruta /en/blog (Blog) — funciona correctamente
+
+## Imágenes Google Ads en inglés (31/03)
+- [ ] Regenerar imágenes de Google Ads en inglés (cuadrado 1200x1200, horizontal 1200x628)
+- [x] Arreglar /editor para que no redirija al home cuando no hay archivo cargado (mostrar zona de subida)
+- [ ] Publicar para que las rutas funcionen en producción (cloud-pdf.net)
