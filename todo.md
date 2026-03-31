@@ -817,3 +817,6 @@
 - [ ] Regenerar imágenes de Google Ads en inglés (cuadrado 1200x1200, horizontal 1200x628)
 - [x] Arreglar /editor para que no redirija al home cuando no hay archivo cargado (mostrar zona de subida)
 - [ ] Publicar para que las rutas funcionen en producción (cloud-pdf.net)
+
+## Bug i18n en /en/tools (31/03)
+- [x] Arreglar zona de subida en /en/tools que muestra texto en español cuando el idioma es inglés
