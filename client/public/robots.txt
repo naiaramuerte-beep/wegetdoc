@@ -1,5 +1,5 @@
-# robots.txt for PDFUP.IO
-# https://pdfup.io
+# robots.txt for CloudPDF
+# https://cloud-pdf.net
 
 User-agent: *
 Allow: /
@@ -20,4 +20,4 @@ Disallow: /*/payment/
 Disallow: /*/cancelar-suscripcion
 
 # Sitemap
-Sitemap: https://pdfup.io/sitemap.xml
+Sitemap: https://cloud-pdf.net/sitemap.xml

@@ -62,8 +62,15 @@ vi.mock("./storage", () => ({
   storageGet: vi.fn(),
 }));
 
-vi.mock("./_core/notification", () => ({
-  notifyOwner: vi.fn(() => Promise.resolve(true)),
+vi.mock("@paddle/paddle-node-sdk", () => ({
+  Paddle: vi.fn().mockImplementation(() => ({
+    subscriptions: {
+      cancel: vi.fn().mockResolvedValue({ id: "sub_paddle_123", status: "canceled" }),
+    },
+    transactions: {
+      get: vi.fn().mockResolvedValue({ subscriptionId: "sub_paddle_123" }),
+    },
+  })),
 }));
 
 // Now import after mocks
@@ -250,6 +257,20 @@ describe("subscription.cancel", () => {
   });
 
   it("cancels subscription in DB when no Paddle subscription ID", async () => {
+    // When getActiveSubscription returns null, cancelSubscriptionDb is called
+    vi.mocked(getActiveSubscription).mockResolvedValue(null as any);
+    vi.mocked(cancelSubscriptionDb).mockResolvedValue(undefined as any);
+
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.subscription.cancel();
+
+    expect(result.success).toBe(true);
+    expect(cancelSubscriptionDb).toHaveBeenCalledWith(42);
+  });
+
+  it("cancels subscription via upsert when active sub has no Paddle IDs", async () => {
     vi.mocked(getActiveSubscription).mockResolvedValue({
       id: 1,
       userId: 42,
@@ -268,7 +289,7 @@ describe("subscription.cancel", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    vi.mocked(cancelSubscriptionDb).mockResolvedValue(undefined as any);
+    vi.mocked(upsertSubscription).mockResolvedValue(undefined as any);
 
     const ctx = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -276,7 +297,12 @@ describe("subscription.cancel", () => {
     const result = await caller.subscription.cancel();
 
     expect(result.success).toBe(true);
-    expect(cancelSubscriptionDb).toHaveBeenCalledWith(42);
+    expect(upsertSubscription).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 42,
+        cancelAtPeriodEnd: true,
+      })
+    );
   });
 
   it("calls Paddle API and updates DB when subscription has Paddle ID", async () => {

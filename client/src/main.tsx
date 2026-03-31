@@ -18,7 +18,7 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
   if (!isUnauthorized) return;
 
-  // Redirect to home page instead of Manus OAuth
+  // Redirect to home page with login modal
   const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
   const currentLang = langMatch ? langMatch[1] : "es";
   window.location.href = `/${currentLang}?login=true`;

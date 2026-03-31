@@ -105,16 +105,7 @@ async function startServer() {
             }).catch((err: unknown) => console.error("[Email] Confirmation email failed:", err));
           }
 
-          // Notify owner
-          import("./notification").then(({ notifyOwner }) => {
-            const user2 = customData;
-            notifyOwner({
-              title: "\uD83D\uDCB3 Nuevo pago Paddle \u2014 CloudPDF",
-              content: `Usuario ID: ${userId}\nPlan: ${status}\nPaddle Sub: ${data.id}`,
-            }).catch(() => {});
-          }).catch(() => {});
-
-          console.log(`[Paddle Webhook] Subscription ${status} for user ${userId}`);
+          console.log(`[Paddle Webhook] Subscription ${status} for user ${userId}, Paddle Sub: ${data.id}`);
         }
       } else if (eventData.eventType === EventName.SubscriptionUpdated) {
         if (userId) {

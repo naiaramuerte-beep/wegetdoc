@@ -771,3 +771,19 @@
   - Añadido lookup por customerId y transactionId si paddleSubscriptionId está vacío
   - confirmPaddleCheckout ahora resuelve subscriptionId vía transactions.get()
 - [ ] Verificar que la cancelación se refleja en el dashboard de Paddle
+
+## Limpieza de restos de Manus (31/03)
+- [x] Eliminar fallback a Manus Forge en server/storage.ts
+- [x] Reemplazar notifyOwner() por console.log en webhooks Paddle
+- [x] Eliminar módulos muertos: llm.ts, imageGeneration.ts, voiceTranscription.ts, map.ts, dataApi.ts
+- [x] Eliminar ManusDialog.tsx (no se usa)
+- [x] Eliminar client/public/__manus__/debug-collector.js
+- [x] Limpiar vite.config.ts: quitar plugins y allowedHosts de Manus
+- [x] Quitar vite-plugin-manus-runtime de package.json
+- [x] Limpiar useAuth.ts: renombrar localStorage key
+- [x] Limpiar env.ts: quitar forgeApiUrl y forgeApiKey
+- [x] Actualizar robots.txt a cloud-pdf.net
+- [x] Ejecutar tests y verificar build
+
+## Google Ads Tag GT-TBBKCJPW (31/03)
+- [x] Añadir GT-TBBKCJPW como tag principal en index.html (script src + gtag config)

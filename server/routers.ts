@@ -399,13 +399,8 @@ export const appRouter = router({
           }).catch((err) => console.error("[Email] Confirmation email failed:", err));
         }
 
-        // Notify owner
-        import("./_core/notification").then(({ notifyOwner }) => {
-          notifyOwner({
-            title: "\uD83D\uDCB3 Nuevo pago Paddle \u2014 CloudPDF",
-            content: `Usuario: ${user.name || "An\u00F3nimo"} (${user.email || "sin email"})\nPlan: Trial 7 d\u00EDas\nSub: ${subscriptionId}\nFin de prueba: ${trialEnd.toLocaleDateString("es-ES")}`,
-          }).catch(() => {});
-        }).catch(() => {});
+        // Log payment event
+        console.log(`[Payment] Nuevo pago Paddle — Usuario: ${user.name || "Anónimo"} (${user.email || "sin email"}), Plan: Trial 7 días, Sub: ${subscriptionId}, Fin de prueba: ${trialEnd.toLocaleDateString("es-ES")}`);
 
         return { success: true, subscriptionId };
       }),

@@ -12,20 +12,12 @@ function getR2Config() {
   const publicUrl = process.env.CF_R2_PUBLIC_URL ?? process.env.R2_PUBLIC_URL ?? ""; // e.g. https://pub-xxx.r2.dev
 
   if (!accountId || !accessKeyId || !secretAccessKey || !bucketName) {
-    // Fallback: check if Manus forge API is available
-    const forgeUrl = process.env.BUILT_IN_FORGE_API_URL ?? "";
-    const forgeKey = process.env.BUILT_IN_FORGE_API_KEY ?? "";
-    if (forgeUrl && forgeKey) {
-      return { mode: "manus" as const, forgeUrl, forgeKey };
-    }
     throw new Error(
-      "Storage credentials missing: set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME " +
-      "or BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY"
+      "Storage credentials missing: set CF_R2_ACCOUNT_ID, CF_R2_ACCESS_KEY_ID, CF_R2_SECRET_ACCESS_KEY, CF_R2_BUCKET_NAME"
     );
   }
 
   return {
-    mode: "r2" as const,
     accountId,
     accessKeyId,
     secretAccessKey,
@@ -54,62 +46,6 @@ function normalizeKey(relKey: string): string {
   return relKey.replace(/^\/+/, "");
 }
 
-// ── Manus Forge fallback helpers ──────────────────────────────
-function ensureTrailingSlash(value: string): string {
-  return value.endsWith("/") ? value : `${value}/`;
-}
-
-function buildAuthHeaders(apiKey: string): HeadersInit {
-  return { Authorization: `Bearer ${apiKey}` };
-}
-
-async function manusStoragePut(
-  forgeUrl: string,
-  forgeKey: string,
-  relKey: string,
-  data: Buffer | Uint8Array | string,
-  contentType: string
-): Promise<{ key: string; url: string }> {
-  const key = normalizeKey(relKey);
-  const url = new URL("v1/storage/upload", ensureTrailingSlash(forgeUrl));
-  url.searchParams.set("path", key);
-
-  const blob =
-    typeof data === "string"
-      ? new Blob([data], { type: contentType })
-      : new Blob([data as any], { type: contentType });
-  const form = new FormData();
-  form.append("file", blob, key.split("/").pop() ?? key);
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: buildAuthHeaders(forgeKey),
-    body: form,
-  });
-
-  if (!response.ok) {
-    const message = await response.text().catch(() => response.statusText);
-    throw new Error(`Storage upload failed (${response.status}): ${message}`);
-  }
-  const resultUrl = (await response.json()).url;
-  return { key, url: resultUrl };
-}
-
-async function manusStorageGet(
-  forgeUrl: string,
-  forgeKey: string,
-  relKey: string
-): Promise<{ key: string; url: string }> {
-  const key = normalizeKey(relKey);
-  const downloadApiUrl = new URL("v1/storage/downloadUrl", ensureTrailingSlash(forgeUrl));
-  downloadApiUrl.searchParams.set("path", key);
-  const response = await fetch(downloadApiUrl, {
-    method: "GET",
-    headers: buildAuthHeaders(forgeKey),
-  });
-  return { key, url: (await response.json()).url };
-}
-
 // ── Main exports ──────────────────────────────────────────────
 
 export async function storagePut(
@@ -117,15 +53,7 @@ export async function storagePut(
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream"
 ): Promise<{ key: string; url: string }> {
-  const config = getR2Config();
-
-  // Manus fallback
-  if (config.mode === "manus") {
-    return manusStoragePut(config.forgeUrl, config.forgeKey, relKey, data, contentType);
-  }
-
-  // Cloudflare R2
-  const { accountId, accessKeyId, secretAccessKey, bucketName, publicUrl } = config;
+  const { accountId, accessKeyId, secretAccessKey, bucketName, publicUrl } = getR2Config();
   const key = normalizeKey(relKey);
   const client = getS3Client(accountId, accessKeyId, secretAccessKey);
 
@@ -152,15 +80,7 @@ export async function storageGet(
   relKey: string,
   expiresIn = 3600
 ): Promise<{ key: string; url: string }> {
-  const config = getR2Config();
-
-  // Manus fallback
-  if (config.mode === "manus") {
-    return manusStorageGet(config.forgeUrl, config.forgeKey, relKey);
-  }
-
-  // Cloudflare R2
-  const { accountId, accessKeyId, secretAccessKey, bucketName, publicUrl } = config;
+  const { accountId, accessKeyId, secretAccessKey, bucketName, publicUrl } = getR2Config();
   const key = normalizeKey(relKey);
 
   // If bucket is public, just return the public URL
