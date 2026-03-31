@@ -197,8 +197,11 @@ async function startServer() {
   // 301 redirect preserving path and query params (for SEO and Google Ads gclid)
   app.use((req, res, next) => {
     const host = (req.headers.host || "").toLowerCase().replace(/:\d+$/, "");
-    if (host === "pdfup.io" || host === "www.pdfup.io") {
+    const xForwardedHost = (req.headers["x-forwarded-host"] || "").toString().toLowerCase();
+    console.log(`[Redirect Debug] host=${host} x-forwarded-host=${xForwardedHost} url=${req.originalUrl}`);
+    if (host === "pdfup.io" || host === "www.pdfup.io" || xForwardedHost === "pdfup.io" || xForwardedHost === "www.pdfup.io") {
       const target = `https://cloud-pdf.net${req.originalUrl}`;
+      console.log(`[Redirect] Redirecting to ${target}`);
       return res.redirect(301, target);
     }
     next();
