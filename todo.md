@@ -790,3 +790,9 @@
 
 ## Actualizar Google Ads conversion send_to ID (31/03)
 - [x] Cambiar IUjxCNKbjI8cENLLwJLD por 4QCcCKLZ3pIcENOoxJlD en todos los archivos
+
+## Redirección pdfup.io → cloud-pdf.net (31/03)
+- [x] Añadir middleware 301 redirect de pdfup.io a cloud-pdf.net (preservando ruta y query params)
+
+## Redirección pdfup.io → cloud-pdf.net (31/03)
+- [x] Añadir middleware 301 redirect de pdfup.io a cloud-pdf.net (preservando ruta y query params)

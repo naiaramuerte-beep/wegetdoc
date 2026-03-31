@@ -193,6 +193,17 @@ async function startServer() {
     });
   }
 
+  // ── Domain Redirect: pdfup.io → cloud-pdf.net ─────────────────────────────
+  // 301 redirect preserving path and query params (for SEO and Google Ads gclid)
+  app.use((req, res, next) => {
+    const host = (req.headers.host || "").toLowerCase().replace(/:\d+$/, "");
+    if (host === "pdfup.io" || host === "www.pdfup.io") {
+      const target = `https://cloud-pdf.net${req.originalUrl}`;
+      return res.redirect(301, target);
+    }
+    next();
+  });
+
   // ── Security Headers ─────────────────────────────────────────────────────────
   // Comprehensive security headers to pass Sucuri/Google Ads security scans
   app.use((_req, res, next) => {

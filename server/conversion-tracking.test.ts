@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";
 
-const CONVERSION_SEND_TO = "AW-18038723667/IUjxCNKbjI8cENLLwJLD";
+const CONVERSION_SEND_TO = "AW-18038723667/4QCcCKLZ3pIcENOoxJlD";
 const GOOGLE_ADS_ID = "AW-18038723667";
 const GOOGLE_ANALYTICS_ID = "G-XBHZ3TMG7K";
 
