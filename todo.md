@@ -823,3 +823,6 @@
 
 ## Apple Pay verificación de dominio (31/03)
 - [x] Servir archivo apple-developer-merchantid-domain-association en /.well-known/
+
+## Indicador de carga para PDFs (31/03)
+- [x] Añadir indicador de progreso/loading visible al subir PDFs para evitar que parezca que se queda colgado

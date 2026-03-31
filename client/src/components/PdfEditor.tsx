@@ -236,6 +236,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
 
+  // PDF loading state (for native PDFs)
+  const [isLoadingPdf, setIsLoadingPdf] = useState(false);
+  const [pdfLoadProgress, setPdfLoadProgress] = useState(0);
+
   // File conversion loading state
   const [isConvertingFile, setIsConvertingFile] = useState(false);
   const [convertFileProgress, setConvertFileProgress] = useState(0);
@@ -396,48 +400,70 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
   // ── Load PDF ─────────────────────────────────────────────────
   const loadPdf = useCallback(async (f: File) => {
-    // Use .slice() to ensure the stored bytes have their own independent ArrayBuffer.
-    // f.arrayBuffer() may return a shared/transferable buffer that can be detached later.
-    const bytes = new Uint8Array(await f.arrayBuffer()).slice();
-    // Validate PDF header: search for %PDF in first 1024 bytes (some PDFs have BOM or whitespace before header)
-    const headerSlice = bytes.slice(0, 1024);
-    const headerStr = String.fromCharCode(...Array.from(headerSlice));
-    if (!headerStr.includes("%PDF")) {
-      toast.error(t.editor_toast_invalid_pdf ?? "The file is not a valid PDF. Please upload a PDF file.");
-      return;
-    }
-    setPdfBytes(bytes);
-    const doc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
-    setPdfDoc(doc);
-    setTotalPages(doc.numPages);
-    setCurrentPage(1);
-    setAnnotations([]);
-    setHistory([]);
-    setHistoryIndex(-1);
-    setActiveTool("edit-text");
-    // Generate thumbnails
-    const thumbs: string[] = [];
-    for (let i = 1; i <= Math.min(doc.numPages, 20); i++) {
-      const page = await doc.getPage(i);
-      const vp = page.getViewport({ scale: 0.4 });
-      const c = document.createElement("canvas");
-      c.width = vp.width; c.height = vp.height;
-      const ctx = c.getContext("2d")!;
-      await page.render({ canvas: c, viewport: vp } as any).promise;
-      thumbs.push(c.toDataURL());
-    }
-    setThumbnails(thumbs);
-    // Auto-fit scale on mobile: fit PDF width to viewer container
-    const firstPage = await doc.getPage(1);
-    const naturalVp = firstPage.getViewport({ scale: 1 });
-    const isMobile = window.innerWidth < 768;
-    if (isMobile) {
-      // Available width = screen width minus 2*12px padding
-      const availableWidth = window.innerWidth - 24;
-      const fitScale = availableWidth / naturalVp.width;
-      setScale(Math.min(fitScale, 1.5)); // cap at 1.5 to avoid oversized on tablets
-    } else {
-      setScale(1.2);
+    setIsLoadingPdf(true);
+    setPdfLoadProgress(5);
+    try {
+      // Use .slice() to ensure the stored bytes have their own independent ArrayBuffer.
+      // f.arrayBuffer() may return a shared/transferable buffer that can be detached later.
+      const bytes = new Uint8Array(await f.arrayBuffer()).slice();
+      setPdfLoadProgress(15);
+      // Validate PDF header: search for %PDF in first 1024 bytes (some PDFs have BOM or whitespace before header)
+      const headerSlice = bytes.slice(0, 1024);
+      const headerStr = String.fromCharCode(...Array.from(headerSlice));
+      if (!headerStr.includes("%PDF")) {
+        toast.error(t.editor_toast_invalid_pdf ?? "The file is not a valid PDF. Please upload a PDF file.");
+        setIsLoadingPdf(false);
+        return;
+      }
+      setPdfBytes(bytes);
+      setPdfLoadProgress(30);
+      const doc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
+      setPdfLoadProgress(50);
+      setPdfDoc(doc);
+      setTotalPages(doc.numPages);
+      setCurrentPage(1);
+      setAnnotations([]);
+      setHistory([]);
+      setHistoryIndex(-1);
+      setActiveTool("edit-text");
+      // Generate thumbnails
+      setPdfLoadProgress(60);
+      const thumbs: string[] = [];
+      const thumbCount = Math.min(doc.numPages, 20);
+      for (let i = 1; i <= thumbCount; i++) {
+        const page = await doc.getPage(i);
+        const vp = page.getViewport({ scale: 0.4 });
+        const c = document.createElement("canvas");
+        c.width = vp.width; c.height = vp.height;
+        const ctx = c.getContext("2d")!;
+        await page.render({ canvas: c, viewport: vp } as any).promise;
+        thumbs.push(c.toDataURL());
+        setPdfLoadProgress(60 + Math.round((i / thumbCount) * 30));
+      }
+      setThumbnails(thumbs);
+      setPdfLoadProgress(95);
+      // Auto-fit scale on mobile: fit PDF width to viewer container
+      const firstPage = await doc.getPage(1);
+      const naturalVp = firstPage.getViewport({ scale: 1 });
+      const isMobile = window.innerWidth < 768;
+      if (isMobile) {
+        // Available width = screen width minus 2*12px padding
+        const availableWidth = window.innerWidth - 24;
+        const fitScale = availableWidth / naturalVp.width;
+        setScale(Math.min(fitScale, 1.5)); // cap at 1.5 to avoid oversized on tablets
+      } else {
+        setScale(1.2);
+      }
+      setPdfLoadProgress(100);
+    } catch (err) {
+      console.error("[loadPdf] Error:", err);
+      toast.error("Error loading PDF");
+    } finally {
+      // Small delay to show 100% before hiding
+      setTimeout(() => {
+        setIsLoadingPdf(false);
+        setPdfLoadProgress(0);
+      }, 300);
     }
   }, []);
 
@@ -2085,6 +2111,47 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // File-free tools: show a special layout without PDF viewer
   const FILE_FREE_TOOLS_SET = new Set(["jpg-to-pdf", "png-to-pdf", "word-to-pdf", "excel-to-pdf", "ppt-to-pdf"]);
   const isFileFreeMode = initialTool && FILE_FREE_TOOLS_SET.has(initialTool) && !file;
+
+  // Full-screen PDF loading overlay (for native PDFs)
+  if (isLoadingPdf) {
+    return (
+      <div className="w-full rounded-2xl flex flex-col items-center justify-center py-20 px-8 text-center" style={{ backgroundColor: "oklch(0.98 0.005 250)", border: "2px solid oklch(0.90 0.03 260)" }}>
+        {/* Animated PDF icon */}
+        <div className="relative mb-6">
+          <div className="w-20 h-20 rounded-2xl flex items-center justify-center" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.10)" }}>
+            <FileText className="w-10 h-10 animate-pulse" style={{ color: "oklch(0.55 0.22 260)" }} />
+          </div>
+          {/* Spinning ring around icon */}
+          <div className="absolute inset-0 w-20 h-20 rounded-2xl animate-spin" style={{ border: "3px solid transparent", borderTopColor: "oklch(0.55 0.22 260)", animationDuration: "1.5s" }} />
+        </div>
+        {/* Title */}
+        <p className="text-xl font-bold mb-2" style={{ color: "oklch(0.18 0.04 250)" }}>
+          {t.editor_loading_pdf}
+        </p>
+        <p className="text-sm mb-6" style={{ color: "oklch(0.50 0.02 250)" }}>
+          {initialFile?.name ?? ""}
+        </p>
+        {/* Progress bar */}
+        <div className="w-full max-w-xs mb-3">
+          <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: "oklch(0.92 0.02 260)" }}>
+            <div
+              className="h-full rounded-full transition-all duration-300 ease-out"
+              style={{
+                width: `${pdfLoadProgress}%`,
+                backgroundColor: pdfLoadProgress === 100 ? "oklch(0.55 0.18 145)" : "oklch(0.55 0.22 260)",
+              }}
+            />
+          </div>
+          <div className="flex justify-between mt-1.5">
+            <span className="text-xs font-medium" style={{ color: "oklch(0.45 0.02 250)" }}>
+              {pdfLoadProgress < 20 ? t.editor_loading_pdf_reading : pdfLoadProgress < 55 ? t.editor_loading_pdf_parsing : pdfLoadProgress < 95 ? t.editor_loading_pdf_thumbnails : t.editor_loading_pdf_ready}
+            </span>
+            <span className="text-xs font-semibold" style={{ color: "oklch(0.55 0.22 260)" }}>{pdfLoadProgress}%</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Full-screen conversion loading overlay
   if (isConvertingFile) {
