@@ -787,3 +787,6 @@
 
 ## Google Ads Tag GT-TBBKCJPW (31/03)
 - [x] Añadir GT-TBBKCJPW como tag principal en index.html (script src + gtag config)
+
+## Actualizar Google Ads conversion send_to ID (31/03)
+- [x] Cambiar IUjxCNKbjI8cENLLwJLD por 4QCcCKLZ3pIcENOoxJlD en todos los archivos
