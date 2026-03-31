@@ -1412,7 +1412,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     if (e.target === e.currentTarget) {
       setSelectedId(null);
     }
-    if (activeTool === "pointer") {
+    if (activeTool === "pointer" || activeTool === "move") {
       return;
     }
     if (activeTool === "text") {
@@ -2929,7 +2929,20 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             </div>
           </div>
         );
-      case "move":
+      case "move": {
+        const movePageAnns = annotations.filter(a => a.page === currentPage && a.type !== "drawing" && a.type !== "eraser");
+        const selectedAnn = selectedId ? movePageAnns.find(a => a.id === selectedId) : null;
+        const annTypeLabel = (type: string) => {
+          switch (type) {
+            case "text": return t.editor_add_text || "Text";
+            case "signature": return t.editor_sign || "Signature";
+            case "image": return t.editor_image || "Image";
+            case "note": return t.editor_notes || "Note";
+            case "shape": return t.editor_shapes || "Shape";
+            case "highlight": return t.editor_highlight || "Highlight";
+            default: return type;
+          }
+        };
         return (
           <div className="flex flex-col gap-0">
             {ActionBar}
@@ -2942,9 +2955,56 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "oklch(0.96 0.005 250)", color: "oklch(0.45 0.02 250)" }}>
                 <p>💡 {t.editor_move_tip}</p>
               </div>
+
+              {/* Selected annotation info */}
+              {selectedAnn && (
+                <div className="rounded-lg p-3 text-xs border" style={{ borderColor: "oklch(0.55 0.22 260 / 0.4)", backgroundColor: "oklch(0.55 0.22 260 / 0.04)" }}>
+                  <p className="font-semibold mb-1" style={{ color: "oklch(0.35 0.15 260)" }}>
+                    ✔ {annTypeLabel(selectedAnn.type)}
+                  </p>
+                  <p style={{ color: "oklch(0.45 0.02 250)" }}>
+                    X: {Math.round(selectedAnn.x)}px &middot; Y: {Math.round(selectedAnn.y)}px
+                  </p>
+                  {selectedAnn.text && selectedAnn.type === "text" && (
+                    <p className="mt-1 truncate" style={{ color: "oklch(0.45 0.02 250)" }}>
+                      “{selectedAnn.text.slice(0, 40)}{selectedAnn.text.length > 40 ? "…" : ""}”
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Annotation list for current page */}
+              <div className="mt-1">
+                <p className="text-xs font-medium mb-2" style={{ color: "oklch(0.35 0.02 250)" }}>
+                  {movePageAnns.length > 0
+                    ? `${movePageAnns.length} ${movePageAnns.length === 1 ? "elemento" : "elementos"} (pág. ${currentPage})`
+                    : "Sin elementos en esta página"}
+                </p>
+                <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
+                  {movePageAnns.map((ann, idx) => (
+                    <button
+                      key={ann.id}
+                      onClick={() => setSelectedId(ann.id)}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded text-xs text-left transition-colors"
+                      style={{
+                        backgroundColor: selectedId === ann.id ? "oklch(0.55 0.22 260 / 0.12)" : "transparent",
+                        color: selectedId === ann.id ? "oklch(0.35 0.15 260)" : "oklch(0.45 0.02 250)",
+                        border: selectedId === ann.id ? "1px solid oklch(0.55 0.22 260 / 0.3)" : "1px solid transparent",
+                      }}
+                    >
+                      <span className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.1)", color: "oklch(0.55 0.22 260)" }}>{idx + 1}</span>
+                      <span className="font-medium">{annTypeLabel(ann.type)}</span>
+                      {ann.type === "text" && ann.text && (
+                        <span className="truncate opacity-60" style={{ maxWidth: 80 }}>— {ann.text.slice(0, 20)}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         );
+      }
       case "convert-jpg":
       case "convert-png": {
         const fmt = activeTool === "convert-jpg" ? "JPG" : "PNG";
@@ -3308,6 +3368,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 style={{
                   cursor: activeTool === "pointer" ? "default"
                     : activeTool === "text" ? "text"
+                    : activeTool === "move" ? (isDragging ? "grabbing" : "grab")
                     : "default",
                   zIndex: 20,
                   pointerEvents: (activeTool === "brush" || activeTool === "eraser" || activeTool === "highlight") ? "none" : "auto",
@@ -3340,12 +3401,21 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       width: ann.type === "text" && editingTextId === ann.id ? Math.max(ann.width, 200) : ann.width,
                       height: ann.type === "text" && editingTextId === ann.id ? "auto" : ann.height,
                       minHeight: ann.height,
-                      cursor: "move",
+                      cursor: activeTool === "move" ? (isDragging && selectedId === ann.id ? "grabbing" : "grab") : "move",
                       outline: selectedId === ann.id ? "2px solid oklch(0.55 0.22 260)" : "none",
                       outlineOffset: 2,
                       userSelect: "none",
                       touchAction: "none",
-                      zIndex: editingTextId === ann.id ? 30 : undefined,
+                      zIndex: editingTextId === ann.id ? 30 : (selectedId === ann.id && activeTool === "move" ? 28 : undefined),
+                      transition: activeTool === "move" && !isDragging ? "box-shadow 0.15s ease" : "none",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (activeTool === "move" && !isDragging) {
+                        (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 3px oklch(0.55 0.22 260 / 0.3)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.boxShadow = "none";
                     }}
                     onMouseDown={(e) => startDrag(e, ann.id)}
                     onTouchStart={(e) => {
@@ -3365,7 +3435,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       e.stopPropagation();
                       setSelectedId(ann.id);
                       // When clicking a text annotation, switch to text tool and load its properties
-                      if (ann.type === "text") {
+                      // But NOT when the move tool is active — keep move tool active for repositioning
+                      if (ann.type === "text" && activeTool !== "move") {
                         setActiveTool("text");
                         setTextColor(ann.color ?? "#000000");
                         setTextSize(ann.fontSize ?? 14);

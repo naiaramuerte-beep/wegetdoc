@@ -142,10 +142,10 @@
 - [x] Al seleccionar herramienta en móvil, el panel se abre automáticamente
 
 ## Bugs Editor (v3)
-- [ ] Herramienta Mover no funciona (no permite arrastrar anotaciones)
+- [x] Herramienta Mover no funciona (no permite arrastrar anotaciones) → Corregido con cursor grab/grabbing, hover highlight, panel mejorado
 
 ## Nuevas tareas (v4)
-- [ ] Herramienta Mover: añadir panel con instrucciones y corregir drag
+- [x] Herramienta Mover: añadir panel con instrucciones y corregir drag
 - [x] Página /cancelar-suscripcion con formulario de motivo de baja y confirmación
 - [x] Resize de anotaciones: handle de esquina arrastrable para notas, imágenes y formas
 - [x] Conectar tarjetas de conversión de la Home al editor con herramienta activa
@@ -871,3 +871,9 @@
 - [x] Al hacer clic en "Editar" un documento guardado en el panel, muestra "Error al cargar el documento" → Corregido con proxy /api/documents/proxy
 - [x] Investigar flujo de carga: Dashboard → Editor con documento de S3
 - [x] Corregir el error
+
+## Herramienta Mover (31/03)
+- [x] Herramienta Mover: permitir arrastrar y reposicionar anotaciones (texto, firma, imagen, formas, notas, resaltado)
+- [x] Panel lateral con instrucciones al seleccionar herramienta Mover + lista de anotaciones de la página + info del elemento seleccionado
+- [x] Cursor adecuado (grab/grabbing) al usar herramienta Mover + hover highlight en anotaciones
+- [x] Verificar que el drag funciona correctamente con todas las anotaciones (no cambia a herramienta texto al hacer clic)
