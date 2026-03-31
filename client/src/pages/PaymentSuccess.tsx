@@ -25,7 +25,7 @@ export default function PaymentSuccess() {
       if (typeof window.gtag === "function") {
         window.gtag("event", "conversion", {
           send_to: "AW-18038723667/4QCcCKLZ3pIcENOoxJlD",
-          value: 0.50,
+          value: 0,
           currency: "EUR",
           transaction_id: transactionId,
         });
@@ -36,13 +36,13 @@ export default function PaymentSuccess() {
       if (typeof window.gtag === "function") {
         window.gtag("event", "purchase", {
           transaction_id: transactionId,
-          value: 0.50,
+          value: 0,
           currency: "EUR",
           items: [
             {
               item_id: "cloudpdf_trial",
               item_name: "CloudPDF Trial Subscription",
-              price: 0.50,
+              price: 0,
               quantity: 1,
             },
           ],

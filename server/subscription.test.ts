@@ -133,9 +133,9 @@ describe("stripe.liveKeys", () => {
     expect(STRIPE_PRICE_IDS.activation).toBe("price_1TCdcV2WMuUgq7vD5X99lzED");
   });
 
-  it("Trial plan has correct activation price of 0.50€", async () => {
+  it("Trial plan has correct activation price of 0€ (free trial)", async () => {
     const { PLANS } = await import("./products");
-    expect(PLANS.trial.activationPrice).toBe(0.50);
+    expect(PLANS.trial.activationPrice).toBe(0);
     expect(PLANS.trial.trialDays).toBe(7);
     expect(PLANS.trial.activationPriceId).toBe("price_1TCdcV2WMuUgq7vD5X99lzED");
   });

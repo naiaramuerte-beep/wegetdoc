@@ -51,7 +51,7 @@ export default function Dashboard() {
       if (typeof window.gtag === "function") {
         window.gtag("event", "conversion", {
           send_to: "AW-18038723667/4QCcCKLZ3pIcENOoxJlD",
-          value: 0.50,
+          value: 0,
           currency: "EUR",
           transaction_id: sessionId,
         });
@@ -866,7 +866,7 @@ function BillingTab() {
             {isPremium ? (
               <div>
                 <p className="text-3xl font-bold text-white">
-                  {sub?.plan === "trial" ? "0,50€" : "49,90€"}
+                  {sub?.plan === "trial" ? "0€" : "49,90€"}
                 </p>
                 <p className={`text-xs ${sub?.cancelAtPeriodEnd ? "text-amber-200" : "text-blue-200"}`}>
                   {sub?.plan === "trial" ? "prueba 7 días" : "/ mes"}
@@ -971,15 +971,15 @@ function BillingTab() {
               if (typeof window.gtag === "function") {
                 window.gtag("event", "conversion", {
                   send_to: "AW-18038723667/4QCcCKLZ3pIcENOoxJlD",
-                  value: 0.50,
-                  currency: "EUR",
-                  transaction_id: txnId,
-                });
-                window.gtag("event", "purchase", {
-                  transaction_id: txnId,
-                  value: 0.50,
-                  currency: "EUR",
-                  items: [{ item_id: "cloudpdf_trial", item_name: "CloudPDF Trial Subscription", price: 0.50, quantity: 1 }],
+          value: 0,
+          currency: "EUR",
+          transaction_id: txnId,
+        });
+        window.gtag("event", "purchase", {
+          transaction_id: txnId,
+          value: 0,
+          currency: "EUR",
+          items: [{ item_id: "cloudpdf_trial", item_name: "CloudPDF Trial Subscription", price: 0, quantity: 1 }],
                 });
                 console.log("[Dashboard] Conversion tracking fired", { txnId });
               }

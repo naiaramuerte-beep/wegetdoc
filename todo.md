@@ -826,3 +826,14 @@
 
 ## Indicador de carga para PDFs (31/03)
 - [x] Añadir indicador de progreso/loading visible al subir PDFs para evitar que parezca que se queda colgado
+
+## Bug precio trial incorrecto (31/03)
+- [x] Corregir precio de trial que muestra 0,50€ en vez de 0€ en toda la aplicación
+- [x] Actualizar i18n.ts: pricing_trial_price y paywall_legal_text en los 10 idiomas
+- [x] Actualizar Dashboard.tsx: precio trial y conversion tracking (value: 0)
+- [x] Actualizar PaywallModal.tsx: conversion tracking (value: 0)
+- [x] Actualizar PaymentSuccess.tsx: conversion tracking y GA4 purchase (value: 0)
+- [x] Actualizar Pricing.tsx: conversion tracking y GA4 purchase (value: 0)
+- [x] Actualizar server/email.ts: trialPrice default de 0,50€ a 0€
+- [x] Actualizar server/products.ts: activationPrice de 0.50 a 0, comentarios actualizados
+- [x] Actualizar tests: conversion-tracking.test.ts y subscription.test.ts (86/86 pasan)

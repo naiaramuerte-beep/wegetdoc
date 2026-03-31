@@ -49,7 +49,7 @@ describe("Google Ads Conversion Tracking", () => {
     );
     expect(src).toContain('window.gtag("event", "conversion"');
     expect(src).toContain(`send_to: "${CONVERSION_SEND_TO}"`);
-    expect(src).toContain("value: 0.50");
+    expect(src).toContain("value: 0,");
     expect(src).toContain('currency: "EUR"');
     // Uses Paddle transaction ID from URL param "txn"
     expect(src).toContain("transaction_id: transactionId");
@@ -81,7 +81,7 @@ describe("Google Ads Conversion Tracking", () => {
     );
     expect(src).toContain('window.gtag("event", "conversion"');
     expect(src).toContain(`send_to: "${CONVERSION_SEND_TO}"`);
-    expect(src).toContain("value: 0.50");
+    expect(src).toContain("value: 0,");
     expect(src).toContain('currency: "EUR"');
     expect(src).toContain("transaction_id: txnId");
   });
@@ -112,7 +112,7 @@ describe("Google Ads Conversion Tracking", () => {
     );
     expect(src).toContain('window.gtag("event", "conversion"');
     expect(src).toContain(`send_to: "${CONVERSION_SEND_TO}"`);
-    expect(src).toContain("value: 0.50");
+    expect(src).toContain("value: 0,");
     expect(src).toContain('currency: "EUR"');
     // Now uses Paddle's transactionId or subscriptionId
     expect(src).toContain("transaction_id: transactionId || subscriptionId");

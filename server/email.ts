@@ -21,7 +21,7 @@ export async function sendPaymentConfirmationEmail({
   name,
   trialEndDate,
   monthlyPrice = "49,90€",
-  trialPrice = "0,50€",
+  trialPrice = "0€",
   cancelUrl,
 }: {
   to: string;
