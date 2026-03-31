@@ -852,3 +852,22 @@
 - [x] Corregir send_to en PaywallModal, Dashboard, Pricing, PaymentSuccess
 - [x] Actualizar tests de conversion tracking (86/86 pasan)
 - [x] Mantener redirect 301 pdfup.io → cloud-pdf.net (necesario para SEO)
+
+## Bug editor de texto PDF (31/03)
+- [x] Al hacer clic para editar texto existente en el PDF, el campo de edición se posiciona mal (se va al centro/medio)
+- [x] El texto no se muestra completo en el campo de edición
+
+## Bug conversión Word a PDF (31/03)
+- [x] Archivos .doc/.docx muestran "Error al convertir" al subirlos
+- [x] Investigar el flujo de conversión y corregir
+- [x] Buscar alternativa a LibreOffice que funcione en producción (Cloud Run no tiene LibreOffice) → Implementado @matbee/libreoffice-converter (WASM)
+- [x] Añadir aviso de "archivo convertido a PDF" para archivos Word/Excel/PPT (igual que imágenes)
+
+## Bug editor de texto PDF (31/03) - posicionamiento
+- [x] Al hacer clic para editar texto existente en el PDF, el campo de edición se posiciona mal (se va al centro/medio)
+- [x] El texto no se muestra completo en el campo de edición
+
+## Bug error al cargar documento guardado (31/03)
+- [x] Al hacer clic en "Editar" un documento guardado en el panel, muestra "Error al cargar el documento" → Corregido con proxy /api/documents/proxy
+- [x] Investigar flujo de carga: Dashboard → Editor con documento de S3
+- [x] Corregir el error

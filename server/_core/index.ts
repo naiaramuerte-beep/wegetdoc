@@ -444,6 +444,33 @@ ${allUrls.map(u => `  <url>
     }
   });
 
+  // ── REST endpoint for proxying R2 file downloads (avoids CORS) ──────────────
+  app.get("/api/documents/proxy", async (req, res) => {
+    try {
+      const fileUrl = req.query.url as string;
+      if (!fileUrl) { res.status(400).json({ error: "Missing url parameter" }); return; }
+      // Only allow proxying from our R2 bucket domain for security
+      const allowedDomains = [
+        "pub-9115567915bb439c891a63ec2454650a.r2.dev",
+      ];
+      const parsedUrl = new URL(fileUrl);
+      if (!allowedDomains.some(d => parsedUrl.hostname === d)) {
+        res.status(403).json({ error: "Domain not allowed" }); return;
+      }
+      const response = await fetch(fileUrl);
+      if (!response.ok) { res.status(response.status).json({ error: "Failed to fetch file" }); return; }
+      const contentType = response.headers.get("content-type") || "application/octet-stream";
+      const contentLength = response.headers.get("content-length");
+      res.setHeader("Content-Type", contentType);
+      if (contentLength) res.setHeader("Content-Length", contentLength);
+      const buffer = Buffer.from(await response.arrayBuffer());
+      res.send(buffer);
+    } catch (err) {
+      console.error("[Proxy] Error:", err);
+      res.status(500).json({ error: "Proxy failed" });
+    }
+  });
+
   // ── REST endpoint for PDF password protection (uses pikepdf via Python) ────────
   const protectUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
   app.post("/api/documents/protect", protectUpload.single("file"), async (req, res) => {
@@ -558,17 +585,23 @@ ${allUrls.map(u => `  <url>
           "wb.save(sys.argv[2])",
         ];
       } else {
-        // pptx via LibreOffice impress_pdf_import
-        pyLines = [
-          "import subprocess, sys, os, shutil, tempfile, glob",
-          "tmpdir = tempfile.mkdtemp()",
-          "subprocess.run(['libreoffice', '--headless', '--norestore', '--nologo',",
-          "    '--infilter=impress_pdf_import', '--convert-to', 'pptx',",
-          "    '--outdir', tmpdir, sys.argv[1]], check=True)",
-          "files = glob.glob(os.path.join(tmpdir, '*.pptx'))",
-          "if files: shutil.copy(files[0], sys.argv[2])",
-          "shutil.rmtree(tmpdir, ignore_errors=True)",
-        ];
+        // pptx via LibreOffice WASM converter
+        try {
+          const { createWorkerConverter } = await import("@matbee/libreoffice-converter/server");
+          const converter = await createWorkerConverter();
+          const result = await converter.convert(file.buffer, { outputFormat: "pptx" });
+          await converter.destroy();
+          const originalName = (req.body.filename as string) || file.originalname || "document.pdf";
+          const baseName = originalName.replace(/\.pdf$/i, "");
+          res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
+          res.setHeader("Content-Disposition", `attachment; filename="${baseName}.pptx"`);
+          res.send(Buffer.from(result.data));
+          return;
+        } catch (wasmErr) {
+          console.error("[Export] WASM PPTX conversion failed:", wasmErr);
+          res.status(500).json({ error: "PPTX export not available" });
+          return;
+        }
       }
       await writeFile(tmpPy, pyLines.join("\n"));
       const cleanEnv = { ...process.env };
@@ -578,8 +611,8 @@ ${allUrls.map(u => `  <url>
       try {
         await execFileAsync("python3", [tmpPy, tmpIn, tmpOut], { timeout: 120000, env: cleanEnv });
         const outputBytes = await readFile(tmpOut);
-        const originalName = (req.body.filename as string) || file.originalname || "document.pdf";
-        const baseName = originalName.replace(/\.pdf$/i, "");
+        const originalName2 = (req.body.filename as string) || file.originalname || "document.pdf";
+        const baseName = originalName2.replace(/\.pdf$/i, "");
         const mimeTypes: Record<string, string> = {
           docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
           xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

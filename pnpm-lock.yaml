@@ -25,6 +25,9 @@ importers:
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.64.0(react@19.2.1))
+      '@matbee/libreoffice-converter':
+        specifier: ^2.6.0
+        version: 2.6.0(jszip@3.10.1)(sharp@0.34.5)
       '@paddle/paddle-js':
         specifier: ^1.6.2
         version: 1.6.2
@@ -1277,6 +1280,18 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
+
+  '@matbee/libreoffice-converter@2.6.0':
+    resolution: {integrity: sha512-Xoxp1/KGKt3tfDSDHZQJJaJu6XRiSTGBN0PaaN9XfZDlzweVZkChgipN2PujnwJshgGGuejP82PF3wQqC1ntxg==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      jszip: '>=3.0.0'
+      sharp: '>=0.32.0'
+    peerDependenciesMeta:
+      jszip:
+        optional: true
+      sharp:
+        optional: true
 
   '@mermaid-js/parser@0.6.3':
     resolution: {integrity: sha512-lnjOhe7zyHjc+If7yT4zoedx2vo4sHaTmtkl1+or8BRTnCtDmcTpAjpzDSfCZrshM5bCoz0GyidzadJAH1xobA==}
@@ -5180,6 +5195,9 @@ packages:
   zod@4.1.12:
     resolution: {integrity: sha512-JInaHOamG8pt5+Ey8kGmdcAcg3OL9reK8ltczgHTAwNhMys/6ThXHityHxVV2p3fkw/c+MAvBHFVYHFZDmjMCQ==}
 
+  zod@4.3.6:
+    resolution: {integrity: sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==}
+
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
@@ -6186,6 +6204,13 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
+
+  '@matbee/libreoffice-converter@2.6.0(jszip@3.10.1)(sharp@0.34.5)':
+    dependencies:
+      zod: 4.3.6
+    optionalDependencies:
+      jszip: 3.10.1
+      sharp: 0.34.5
 
   '@mermaid-js/parser@0.6.3':
     dependencies:
@@ -10662,5 +10687,7 @@ snapshots:
   yallist@5.0.0: {}
 
   zod@4.1.12: {}
+
+  zod@4.3.6: {}
 
   zwitch@2.0.4: {}

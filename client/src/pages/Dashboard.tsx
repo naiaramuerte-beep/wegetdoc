@@ -307,7 +307,9 @@ function DocumentsTab() {
     if (!doc.fileUrl) { toast.error("No se puede descargar este documento"); return; }
     try {
       toast.loading("Preparando descarga...", { id: "download-doc" });
-      const response = await fetch(doc.fileUrl);
+      // Use server-side proxy to avoid CORS issues with R2 storage
+      const proxyUrl = `/api/documents/proxy?url=${encodeURIComponent(doc.fileUrl)}`;
+      const response = await fetch(proxyUrl);
       if (!response.ok) throw new Error("Error al descargar el documento");
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
@@ -328,7 +330,9 @@ function DocumentsTab() {
     if (!doc.fileUrl) { toast.error("No se puede abrir este documento"); return; }
     try {
       toast.loading("Cargando documento...", { id: "load-doc" });
-      const response = await fetch(doc.fileUrl);
+      // Use server-side proxy to avoid CORS issues with R2 storage
+      const proxyUrl = `/api/documents/proxy?url=${encodeURIComponent(doc.fileUrl)}`;
+      const response = await fetch(proxyUrl);
       if (!response.ok) throw new Error("Error al descargar el documento");
       const blob = await response.blob();
       const file = new File([blob], doc.name, { type: "application/pdf" });

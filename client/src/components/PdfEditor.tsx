@@ -3337,12 +3337,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     style={{
                       position: "absolute",
                       left: ann.x, top: ann.y,
-                      width: ann.width, height: ann.height,
+                      width: ann.type === "text" && editingTextId === ann.id ? Math.max(ann.width, 200) : ann.width,
+                      height: ann.type === "text" && editingTextId === ann.id ? "auto" : ann.height,
+                      minHeight: ann.height,
                       cursor: "move",
                       outline: selectedId === ann.id ? "2px solid oklch(0.55 0.22 260)" : "none",
                       outlineOffset: 2,
                       userSelect: "none",
                       touchAction: "none",
+                      zIndex: editingTextId === ann.id ? 30 : undefined,
                     }}
                     onMouseDown={(e) => startDrag(e, ann.id)}
                     onTouchStart={(e) => {
@@ -3444,13 +3447,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                             display: "block",
                             lineHeight: 1.3,
                             width: "100%",
-                            height: "100%",
+                            minHeight: Math.max((ann.fontSize ?? 14) + 16, 30),
                             border: "none",
                             outline: "none",
                             background: "rgba(255,255,255,0.85)",
-                            resize: "none",
-                            padding: 2,
+                            resize: "both",
+                            padding: 4,
                             margin: 0,
+                            boxSizing: "border-box",
+                            overflow: "auto",
                           }}
                           placeholder={t.editor_panel_type_here}
                         />
@@ -3564,9 +3569,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         ? "rgba(255,255,255,0.95)"
                         : "transparent",
                     borderRadius: 2,
-                    zIndex: 25,
+                    zIndex: editingBlockId === block.id ? 30 : 25,
                     boxSizing: "border-box",
-                    overflow: "hidden",
+                    overflow: editingBlockId === block.id ? "visible" : "hidden",
                     display: "flex",
                     alignItems: "center",
                   }}

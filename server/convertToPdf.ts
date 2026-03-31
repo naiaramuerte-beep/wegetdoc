@@ -1,17 +1,11 @@
 /**
  * convertToPdf.ts
- * Converts various file types to PDF using LibreOffice (Office docs) and Sharp (images).
- * Always returns a Buffer containing the PDF bytes.
+ * Converts various file types to PDF using:
+ * - @matbee/libreoffice-converter (WASM) for Office docs (no native LibreOffice needed)
+ * - Sharp + pdf-lib for images
  */
 
-import { execFile } from "child_process";
-import { promisify } from "util";
-import * as fs from "fs";
 import * as path from "path";
-import * as os from "os";
-import * as crypto from "crypto";
-
-const execFileAsync = promisify(execFile);
 
 export type SupportedMimeType =
   | "application/pdf"
@@ -41,7 +35,7 @@ const IMAGE_TYPES = new Set([
   "image/tiff",
 ]);
 
-const LIBREOFFICE_TYPES = new Set([
+const OFFICE_TYPES = new Set([
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "application/vnd.ms-excel",
@@ -88,43 +82,36 @@ async function imageToPdf(buffer: Buffer, mimeType: string): Promise<Buffer> {
 }
 
 /**
- * Convert Office/HTML/text documents to PDF using LibreOffice headless
+ * Singleton converter instance for reuse across requests.
+ * Uses createWorkerConverter for non-blocking server usage.
  */
-async function libreOfficeToPdf(buffer: Buffer, originalName: string): Promise<Buffer> {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "pdf-convert-"));
-  const ext = path.extname(originalName) || ".tmp";
-  const inputPath = path.join(tmpDir, `input${ext}`);
-  const outputPath = path.join(tmpDir, "input.pdf");
+let converterPromise: Promise<any> | null = null;
 
-  try {
-    fs.writeFileSync(inputPath, buffer);
-
-    await execFileAsync("libreoffice", [
-      "--headless",
-      "--norestore",
-      "--nologo",
-      "--nofirststartwizard",
-      "--convert-to",
-      "pdf",
-      "--outdir",
-      tmpDir,
-      inputPath,
-    ], { timeout: 60000 });
-
-    if (!fs.existsSync(outputPath)) {
-      // LibreOffice may name it differently
-      const files = fs.readdirSync(tmpDir).filter(f => f.endsWith(".pdf"));
-      if (files.length === 0) throw new Error("LibreOffice conversion produced no PDF");
-      return fs.readFileSync(path.join(tmpDir, files[0]));
-    }
-
-    return fs.readFileSync(outputPath);
-  } finally {
-    // Cleanup temp files
-    try {
-      fs.rmSync(tmpDir, { recursive: true, force: true });
-    } catch {}
+async function getConverter() {
+  if (!converterPromise) {
+    converterPromise = (async () => {
+      try {
+        const { createWorkerConverter } = await import("@matbee/libreoffice-converter/server");
+        const converter = await createWorkerConverter();
+        console.log("[ConvertToPdf] LibreOffice WASM converter initialized");
+        return converter;
+      } catch (err) {
+        console.error("[ConvertToPdf] Failed to initialize WASM converter:", err);
+        converterPromise = null;
+        throw err;
+      }
+    })();
   }
+  return converterPromise;
+}
+
+/**
+ * Convert Office/HTML/text documents to PDF using LibreOffice WASM
+ */
+async function officeToPdf(buffer: Buffer, originalName: string): Promise<Buffer> {
+  const converter = await getConverter();
+  const result = await converter.convert(buffer, { outputFormat: "pdf" });
+  return Buffer.from(result.data);
 }
 
 /**
@@ -146,8 +133,8 @@ export async function convertToPdf(
     return { pdfBuffer, converted: true };
   }
 
-  if (LIBREOFFICE_TYPES.has(mimeType)) {
-    const pdfBuffer = await libreOfficeToPdf(buffer, originalName);
+  if (OFFICE_TYPES.has(mimeType)) {
+    const pdfBuffer = await officeToPdf(buffer, originalName);
     return { pdfBuffer, converted: true };
   }
 
@@ -158,14 +145,14 @@ export function isConvertibleType(mimeType: string): boolean {
   return (
     mimeType === "application/pdf" ||
     IMAGE_TYPES.has(mimeType) ||
-    LIBREOFFICE_TYPES.has(mimeType)
+    OFFICE_TYPES.has(mimeType)
   );
 }
 
 export const ACCEPTED_MIME_TYPES = [
   "application/pdf",
   ...Array.from(IMAGE_TYPES),
-  ...Array.from(LIBREOFFICE_TYPES),
+  ...Array.from(OFFICE_TYPES),
 ];
 
 export const ACCEPTED_EXTENSIONS =
