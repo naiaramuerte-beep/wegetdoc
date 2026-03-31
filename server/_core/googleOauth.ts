@@ -87,8 +87,6 @@ export function registerGoogleOAuthRoutes(app: Express) {
     const ALLOWED_ORIGINS: Record<string, string> = {
       "https://cloud-pdf.net": "https://cloud-pdf.net/api/auth/google/callback",
       "https://www.cloud-pdf.net": "https://cloud-pdf.net/api/auth/google/callback",
-      "https://pdfup.io": "https://cloud-pdf.net/api/auth/google/callback",
-      "https://www.pdfup.io": "https://cloud-pdf.net/api/auth/google/callback",
     };
     const redirectUri = ALLOWED_ORIGINS[origin] || "https://cloud-pdf.net/api/auth/google/callback";
     const authUrl = buildGoogleAuthUrl(redirectUri, state);
@@ -130,8 +128,6 @@ export function registerGoogleOAuthRoutes(app: Express) {
       const ALLOWED_ORIGINS: Record<string, string> = {
         "https://cloud-pdf.net": "https://cloud-pdf.net/api/auth/google/callback",
         "https://www.cloud-pdf.net": "https://cloud-pdf.net/api/auth/google/callback",
-        "https://pdfup.io": "https://cloud-pdf.net/api/auth/google/callback",
-        "https://www.pdfup.io": "https://cloud-pdf.net/api/auth/google/callback",
       };
       const redirectUri = ALLOWED_ORIGINS[origin] || "https://cloud-pdf.net/api/auth/google/callback";
 

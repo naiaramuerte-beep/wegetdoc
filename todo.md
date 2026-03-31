@@ -837,3 +837,18 @@
 - [x] Actualizar server/email.ts: trialPrice default de 0,50€ a 0€
 - [x] Actualizar server/products.ts: activationPrice de 0.50 a 0, comentarios actualizados
 - [x] Actualizar tests: conversion-tracking.test.ts y subscription.test.ts (86/86 pasan)
+
+## Bug cancelación suscripción (31/03)
+- [x] Investigar flujo de cancelación: usuario reporta que cancelar desde el panel no se refleja en Paddle
+- [x] Verificar que la llamada a Paddle API se ejecuta correctamente al cancelar
+- [x] Verificar estado de la suscripción en la BD tras cancelación
+- [x] Resultado: la cancelación SÍ funciona correctamente — Paddle muestra "Scheduled cancellation" para Apr 7, BD tiene cancelAtPeriodEnd=1 y paddleSubscriptionId correcto
+
+## Limpieza pdfup.io + Google Ads/Analytics correcto (31/03)
+- [x] Eliminar todas las referencias a pdfup.io del código (excepto redirect 301)
+- [x] Eliminar setup-stripe.ts (legacy pdfup)
+- [x] Eliminar pdfup.io de Google OAuth ALLOWED_ORIGINS
+- [x] Corregir index.html: AW-18038723667 → AW-18038662610, eliminar GT-TBBKCJPW
+- [x] Corregir send_to en PaywallModal, Dashboard, Pricing, PaymentSuccess
+- [x] Actualizar tests de conversion tracking (86/86 pasan)
+- [x] Mantener redirect 301 pdfup.io → cloud-pdf.net (necesario para SEO)
