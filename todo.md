@@ -820,3 +820,6 @@
 
 ## Bug i18n en /en/tools (31/03)
 - [x] Arreglar zona de subida en /en/tools que muestra texto en español cuando el idioma es inglés
+
+## Apple Pay verificación de dominio (31/03)
+- [x] Servir archivo apple-developer-merchantid-domain-association en /.well-known/
