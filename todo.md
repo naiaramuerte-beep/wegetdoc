@@ -877,3 +877,10 @@
 - [x] Panel lateral con instrucciones al seleccionar herramienta Mover + lista de anotaciones de la página + info del elemento seleccionado
 - [x] Cursor adecuado (grab/grabbing) al usar herramienta Mover + hover highlight en anotaciones
 - [x] Verificar que el drag funciona correctamente con todas las anotaciones (no cambia a herramienta texto al hacer clic)
+
+## Eliminar referencias a Manus (31/03)
+- [x] Buscar todas las referencias a "Manus" en el código fuente del cliente
+- [x] Buscar referencias a "Manus" en el código del servidor
+- [x] Eliminar o reemplazar todas las referencias visibles en el código
+- [x] Verificar que no queden referencias en HTML, meta tags, footer, etc.
+- [x] Única referencia restante: import de manusTypes.ts en sdk.ts (archivo _core del framework, no visible al usuario)

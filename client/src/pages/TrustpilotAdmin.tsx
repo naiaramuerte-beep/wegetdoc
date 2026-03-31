@@ -4,7 +4,7 @@
  * MODO DEMO: Muestra datos de ejemplo realistas.
  * Para conectar la API real de Trustpilot:
  *   1. Obtén tu Business Unit ID desde Trustpilot Business Portal
- *   2. Añade TRUSTPILOT_API_KEY en Settings → Secrets del panel de Manus
+ *   2. Añade TRUSTPILOT_API_KEY en Settings → Secrets del panel de administración
  *   3. Cambia DEMO_MODE = false y activa el endpoint en server/routers.ts
  *
  * API Trustpilot: https://developers.trustpilot.com/
@@ -679,7 +679,7 @@ export default function TrustpilotAdmin() {
           </li>
           <li className="flex gap-2">
             <span className="w-5 h-5 rounded-full bg-blue-900/50 text-blue-400 flex items-center justify-center flex-shrink-0 font-bold">3</span>
-            En el panel de Manus, ve a <strong className="text-gray-300">Settings → Secrets</strong> y añade:
+            En el panel de administración, ve a <strong className="text-gray-300">Settings → Secrets</strong> y añade:
             <code className="px-1.5 py-0.5 rounded bg-gray-800 text-green-400">TRUSTPILOT_API_KEY</code> y{" "}
             <code className="px-1.5 py-0.5 rounded bg-gray-800 text-green-400">TRUSTPILOT_BUSINESS_UNIT_ID</code>
           </li>

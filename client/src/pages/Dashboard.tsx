@@ -72,7 +72,7 @@ export default function Dashboard() {
   }
 
   if (!isAuthenticated) {
-    // Redirect to home page (with login modal) instead of Manus OAuth
+    // Redirect to home page (with login modal) for authentication
     const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
     const currentLang = langMatch ? langMatch[1] : "es";
     window.location.href = `/${currentLang}?login=true`;

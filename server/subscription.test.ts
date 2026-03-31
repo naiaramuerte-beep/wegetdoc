@@ -20,7 +20,7 @@ function createAuthContext(): TrpcContext {
     openId: "test-user-openid",
     email: "test@cloud-pdf.net",
     name: "Test User",
-    loginMethod: "manus",
+    loginMethod: "google",
     role: "user",
     createdAt: new Date(),
     updatedAt: new Date(),

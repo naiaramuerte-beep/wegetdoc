@@ -1,5 +1,5 @@
 /**
- * Google OAuth 2.0 — Direct integration (no Manus portal)
+ * Google OAuth 2.0 — Direct integration
  * Shows "CloudPDF" on the Google consent screen.
  *
  * Routes:

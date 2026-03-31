@@ -240,7 +240,7 @@ async function startServer() {
     ].join("; "));
     next();
   });
-  // OAuth callback under /api/oauth/callback (Manus)
+  // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
   // Google OAuth direct routes: /api/auth/google and /api/auth/google/callback
   registerGoogleOAuthRoutes(app);
@@ -509,7 +509,7 @@ ${allUrls.map(u => `  <url>
 
       // Build a clean environment without PYTHONHOME/PYTHONPATH so that
       // the system python3 (/usr/bin/python3.11) uses its own site-packages
-      // where pikepdf is installed (not the Manus agent's Python 3.13 venv).
+      // where pikepdf is installed (not the build agent's Python 3.13 venv).
       const cleanEnv = { ...process.env };
       delete cleanEnv.PYTHONHOME;
       delete cleanEnv.PYTHONPATH;
