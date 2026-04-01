@@ -385,30 +385,24 @@ export default function Home() {
       {/* ══════════════════════════════════════════════════════════
           STATS BAR
       ══════════════════════════════════════════════════════════ */}
-      <section className="py-10 border-y" style={{ backgroundColor: SURFACE, borderColor: BORDER }}>
+      <section className="py-10" style={{ background: GRAD }}>
         <div className="container">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0 divide-y-2 md:divide-y-0 md:divide-x" style={{ "--tw-divide-opacity": 1, borderColor: BORDER } as React.CSSProperties}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0 md:divide-x divide-white/20">
             {[
               { value: "15+",   label: (t as any).hero_social_tools ?? "Herramientas PDF", icon: Sparkles },
               { value: "2.3M+", label: (t as any).hero_social_users  ?? "Usuarios activos", icon: Users },
               { value: "4.8★",  label: (t as any).hero_social_rating ?? "Valoración media", icon: Star },
-              { value: "100%",  label: (t as any).hero_social_install ?? "Gratuito", icon: Sparkles },
+              { value: "100%",  label: (t as any).hero_social_install ?? "Gratuito", icon: CheckCircle2 },
             ].map((stat, i) => (
               <div key={i} className="flex flex-col items-center gap-1 px-6 py-2 text-center">
-                <stat.icon className="w-5 h-5 mb-1" style={{ color: INDIGO, opacity: 0.7 }} />
+                <stat.icon className="w-5 h-5 mb-1 text-white opacity-80" />
                 <div
-                  className="text-2xl md:text-3xl font-extrabold leading-none"
-                  style={{
-                    fontFamily: "'Sora', sans-serif",
-                    background: GRAD,
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                  }}
+                  className="text-2xl md:text-3xl font-extrabold leading-none text-white"
+                  style={{ fontFamily: "'Sora', sans-serif" }}
                 >
                   {stat.value}
                 </div>
-                <div className="text-xs font-medium mt-0.5" style={{ color: TEXT_MUTED }}>
+                <div className="text-xs font-medium mt-0.5 text-white/75">
                   {stat.label}
                 </div>
               </div>
