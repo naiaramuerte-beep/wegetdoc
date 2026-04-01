@@ -291,20 +291,20 @@ export default function Home() {
                   : "0 4px 32px oklch(0.13 0.015 264 / 0.07), 0 1px 4px oklch(0.13 0.015 264 / 0.04)",
               }}
             >
-              {/* Main row: icon + text + button */}
-              <div className="flex flex-col sm:flex-row items-center gap-6 px-8 py-7">
+              {/* Main content: icon → text → button, centrado vertical */}
+              <div className="flex flex-col items-center gap-5 px-8 py-10">
                 {/* Icon */}
                 <div
-                  className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: GRAD, boxShadow: `0 6px 20px oklch(0.47 0.24 264 / 0.28)` }}
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                  style={{ background: GRAD, boxShadow: `0 8px 24px oklch(0.47 0.24 264 / 0.28)` }}
                 >
-                  <FileText className="w-7 h-7 text-white" />
+                  <FileText className="w-8 h-8 text-white" />
                 </div>
 
                 {/* Text */}
-                <div className="flex-1 text-center sm:text-left">
+                <div className="text-center">
                   <p
-                    className="font-bold text-base mb-0.5"
+                    className="font-bold text-lg mb-1"
                     style={{ color: TEXT_MAIN, fontFamily: "'Sora', sans-serif" }}
                   >
                     {t.hero_drag_here}
@@ -316,7 +316,7 @@ export default function Home() {
 
                 {/* CTA button */}
                 <button
-                  className="flex-shrink-0 inline-flex items-center gap-2 px-7 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+                  className="inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
                   style={{ background: GRAD, boxShadow: `0 4px 16px oklch(0.47 0.24 264 / 0.35)` }}
                   onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
                 >
