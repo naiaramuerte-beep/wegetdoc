@@ -366,7 +366,7 @@ export default function Home() {
                   <RefreshCw className="w-3.5 h-3.5 text-white" />
                 </div>
                 <p className="text-xs leading-tight" style={{ color: "oklch(0.32 0.12 145)" }}>
-                  <strong>Conversión automática:</strong> Word, Excel, PPT, JPG y PNG se convierten a PDF automáticamente al subirlos.
+                  {t.hero_auto_convert}
                 </p>
               </div>
 
