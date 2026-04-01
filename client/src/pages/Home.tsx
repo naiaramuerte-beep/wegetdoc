@@ -192,7 +192,7 @@ export default function Home() {
           />
         </div>
 
-        <div className="container relative z-10 pt-12 pb-0 md:pt-20">
+        <div className="container relative z-10 pt-8 pb-0 md:pt-12">
           {/* Headline */}
           <div className="text-center max-w-3xl mx-auto mb-4">
             <h1
