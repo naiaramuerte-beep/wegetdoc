@@ -4,7 +4,7 @@
    social proof, testimonials, security section, tools, FAQ
    ============================================================= */
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
@@ -81,41 +81,32 @@ const TOOLS_TO_PDF = [
 const FILE_FREE_TOOLS = ["jpg-to-pdf", "png-to-pdf", "word-to-pdf", "excel-to-pdf", "ppt-to-pdf", "html-to-pdf"];
 
 // ─── Testimonials ─────────────────────────────────────────────
-const TESTIMONIALS = [
-  {
-    name: "María García",
-    role: "Diseñadora freelance",
-    avatar: "MG",
-    avatarColor: "oklch(0.55 0.18 264)",
-    text: "Llevo meses usando esta herramienta y no puedo creer lo fácil que es. Firmar contratos y editar PDFs nunca fue tan rápido. ¡Totalmente recomendada!",
-    rating: 5,
-  },
-  {
-    name: "Carlos Rodríguez",
-    role: "Responsable de RRHH",
-    avatar: "CR",
-    avatarColor: "oklch(0.48 0.18 145)",
-    text: "Procesamos cientos de documentos a la semana. Esta app nos ahorra tiempo y dinero — sin instalaciones, sin complicaciones. Funciona a la primera.",
-    rating: 5,
-  },
-  {
-    name: "Ana Martínez",
-    role: "Estudiante de Derecho",
-    avatar: "AM",
-    avatarColor: "oklch(0.52 0.20 30)",
-    text: "Perfecta para convertir apuntes a PDF y añadir notas. La interfaz es muy intuitiva y los resultados son impecables. Mucho mejor que otras alternativas.",
-    rating: 5,
-  },
+const TESTIMONIALS_META = [
+  { name: "María García",      avatar: "MG", avatarColor: "oklch(0.55 0.18 264)", textKey: "testimonial1_text", roleKey: "testimonial1_role" },
+  { name: "Carlos Rodríguez",  avatar: "CR", avatarColor: "oklch(0.48 0.18 145)", textKey: "testimonial2_text", roleKey: "testimonial2_role" },
+  { name: "Ana Martínez",      avatar: "AM", avatarColor: "oklch(0.52 0.20 30)",  textKey: "testimonial3_text", roleKey: "testimonial3_role" },
 ];
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"edit" | "fromPdf" | "toPdf">("edit");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [docsCount, setDocsCount] = useState(3847);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { setPendingFile, setPendingTool } = usePdfFile();
   const { lang, t } = useLanguage();
   const [, navigate] = useLocation();
+
+  // Animated counter: increment by 1 every 3-8 seconds randomly
+  useEffect(() => {
+    const tick = () => {
+      setDocsCount((c) => c + 1);
+      const next = 3000 + Math.random() * 5000;
+      timer = window.setTimeout(tick, next);
+    };
+    let timer = window.setTimeout(tick, 4000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const toolsMap = { edit: TOOLS_EDIT, fromPdf: TOOLS_FROM_PDF, toPdf: TOOLS_TO_PDF };
   const activeTools = toolsMap[activeTab].map((tool) => ({
@@ -333,9 +324,9 @@ export default function Home() {
             >
               {[
                 { value: "15+",   label: (t as any).hero_social_tools ?? "Herramientas PDF", icon: Sparkles },
-                { value: "2.3M+", label: (t as any).hero_social_users  ?? "Usuarios activos", icon: Users },
+                { value: docsCount.toLocaleString(), label: (t as any).hero_social_pdfs ?? "Documentos procesados hoy", icon: FileText },
                 { value: "4.8★",  label: (t as any).hero_social_rating ?? "Valoración media", icon: Star },
-                { value: "100%",  label: (t as any).hero_social_install ?? "Gratuito", icon: CheckCircle2 },
+                { value: "100%",  label: (t as any).hero_social_install ?? "Sin instalación", icon: Globe },
               ].map((stat, i) => (
                 <div
                   key={i}
@@ -544,7 +535,7 @@ export default function Home() {
                 desc: t.benefit1_desc,
                 color: "oklch(0.96 0.06 80)",
                 iconColor: "oklch(0.55 0.20 80)",
-                points: ["Procesado al instante", "Sin esperas ni colas", "Resultados en segundos"],
+                points: [(t as any).benefit1_point1, (t as any).benefit1_point2, (t as any).benefit1_point3],
               },
               {
                 icon: Shield,
@@ -552,7 +543,7 @@ export default function Home() {
                 desc: t.benefit2_desc,
                 color: "oklch(0.96 0.05 145)",
                 iconColor: "oklch(0.42 0.18 145)",
-                points: ["Cifrado SSL 256-bit", "Archivos eliminados en 1h", "Sin acceso de terceros"],
+                points: [(t as any).benefit2_point1, (t as any).benefit2_point2, (t as any).benefit2_point3],
               },
               {
                 icon: Edit3,
@@ -560,7 +551,7 @@ export default function Home() {
                 desc: t.benefit3_desc,
                 color: "oklch(0.96 0.03 264)",
                 iconColor: INDIGO,
-                points: ["15+ herramientas", "Sin registrarse", "Ilimitado en plan Pro"],
+                points: [(t as any).benefit3_point1, (t as any).benefit3_point2, (t as any).benefit3_point3],
               },
               {
                 icon: Monitor,
@@ -568,7 +559,7 @@ export default function Home() {
                 desc: t.benefit4_desc,
                 color: "oklch(0.96 0.06 290)",
                 iconColor: VIOLET,
-                points: ["Funciona en cualquier navegador", "Windows, Mac, Linux", "Móvil y tablet"],
+                points: [(t as any).benefit4_point1, (t as any).benefit4_point2, (t as any).benefit4_point3],
               },
             ].map((b, i) => (
               <div
@@ -622,15 +613,15 @@ export default function Home() {
               className="text-3xl md:text-4xl font-bold mb-2"
               style={{ fontFamily: "'Sora', sans-serif", color: TEXT_MAIN }}
             >
-              Lo que dicen nuestros usuarios
+              {(t as any).testimonials_title}
             </h2>
             <p className="text-base" style={{ color: TEXT_MUTED }}>
-              Más de 2.3 millones de personas ya confían en nosotros
+              {(t as any).testimonials_subtitle}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {TESTIMONIALS.map((t_user, i) => (
+            {TESTIMONIALS_META.map((tm, i) => (
               <div
                 key={i}
                 className="flex flex-col gap-4 p-6 rounded-2xl bg-white border hover:shadow-md transition-all duration-300"
@@ -638,30 +629,30 @@ export default function Home() {
               >
                 {/* Stars */}
                 <div className="flex items-center gap-0.5">
-                  {[...Array(t_user.rating)].map((_, j) => (
+                  {[...Array(5)].map((_, j) => (
                     <Star key={j} className="w-4 h-4 fill-current" style={{ color: "oklch(0.70 0.18 85)" }} />
                   ))}
                 </div>
 
                 {/* Quote */}
                 <p className="text-sm leading-relaxed flex-1" style={{ color: TEXT_MUTED }}>
-                  "{t_user.text}"
+                  "{(t as any)[tm.textKey]}"
                 </p>
 
                 {/* Author */}
                 <div className="flex items-center gap-3 pt-2 border-t" style={{ borderColor: BORDER }}>
                   <div
                     className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                    style={{ background: t_user.avatarColor }}
+                    style={{ background: tm.avatarColor }}
                   >
-                    {t_user.avatar}
+                    {tm.avatar}
                   </div>
                   <div>
                     <div className="text-sm font-semibold" style={{ color: TEXT_MAIN }}>
-                      {t_user.name}
+                      {tm.name}
                     </div>
                     <div className="text-xs" style={{ color: TEXT_LIGHT }}>
-                      {t_user.role}
+                      {(t as any)[tm.roleKey]}
                     </div>
                   </div>
                 </div>
@@ -693,10 +684,10 @@ export default function Home() {
                   className="text-xl font-bold"
                   style={{ fontFamily: "'Sora', sans-serif", color: TEXT_MAIN }}
                 >
-                  Tus archivos están seguros
+                  {(t as any).security_title}
                 </h2>
                 <p className="text-sm" style={{ color: TEXT_MUTED }}>
-                  Privacidad y seguridad como prioridad absoluta
+                  {(t as any).security_subtitle}
                 </p>
               </div>
             </div>
@@ -706,20 +697,20 @@ export default function Home() {
               {[
                 {
                   icon: Shield,
-                  title: "Cifrado SSL 256-bit",
-                  desc: "Toda la transferencia de datos está protegida con cifrado de grado bancario.",
+                  title: (t as any).security_ssl_title,
+                  desc: (t as any).security_ssl_desc,
                   color: "oklch(0.42 0.18 145)",
                 },
                 {
                   icon: Trash2,
-                  title: "Borrado automático",
-                  desc: "Tus archivos se eliminan automáticamente de nuestros servidores en 1 hora.",
+                  title: (t as any).security_delete_title,
+                  desc: (t as any).security_delete_desc,
                   color: "oklch(0.55 0.20 80)",
                 },
                 {
                   icon: Globe,
-                  title: "Privacidad total",
-                  desc: "No vendemos ni compartimos tus datos. No necesitas crear una cuenta para usarlo.",
+                  title: (t as any).security_privacy_title,
+                  desc: (t as any).security_privacy_desc,
                   color: INDIGO,
                 },
               ].map((item, i) => (
@@ -879,8 +870,8 @@ export default function Home() {
               className="flex items-center gap-2 text-sm rounded-xl px-5 py-3"
               style={{ color: "oklch(0.78 0.05 264)" }}
             >
-              <CheckCircle2 className="w-4 h-4" style={{ color: "oklch(0.75 0.16 145)" }} />
-              Sin tarjeta de crédito · Sin instalación
+              <Globe className="w-4 h-4" style={{ color: "oklch(0.75 0.16 145)" }} />
+              {(t as any).cta_no_card ?? "100% Online · Sin instalación"}
             </div>
           </div>
 
