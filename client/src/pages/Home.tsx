@@ -97,14 +97,14 @@ export default function Home() {
   const { lang, t } = useLanguage();
   const [, navigate] = useLocation();
 
-  // Animated counter: increment by 1 every 3-8 seconds randomly
+  // Animated counter: +1 to +8 every 0.5-1s randomly
   useEffect(() => {
     const tick = () => {
-      setDocsCount((c) => c + 1);
-      const next = 3000 + Math.random() * 5000;
+      setDocsCount((c) => c + 1 + Math.floor(Math.random() * 8));
+      const next = 500 + Math.random() * 500;
       timer = window.setTimeout(tick, next);
     };
-    let timer = window.setTimeout(tick, 4000);
+    let timer = window.setTimeout(tick, 800);
     return () => clearTimeout(timer);
   }, []);
 
