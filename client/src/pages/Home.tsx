@@ -317,10 +317,10 @@ export default function Home() {
           </div>
 
           {/* Stats — dentro del hero, debajo de la upload zone */}
-          <div className="max-w-3xl mx-auto w-full mt-5 pb-12">
+          <div className="max-w-3xl mx-auto w-full mt-8 pb-12">
             <div
-              className="grid grid-cols-2 md:grid-cols-4 rounded-2xl border overflow-hidden"
-              style={{ borderColor: "oklch(0.91 0.012 264)", backgroundColor: "oklch(0.975 0.008 264)" }}
+              className="grid grid-cols-2 md:grid-cols-4 rounded-2xl border"
+              style={{ borderColor: "oklch(0.91 0.012 264)", backgroundColor: "oklch(0.975 0.008 264)", borderRadius: "1rem" }}
             >
               {[
                 { value: "15+",   label: (t as any).hero_social_tools ?? "Herramientas PDF", icon: Sparkles },
