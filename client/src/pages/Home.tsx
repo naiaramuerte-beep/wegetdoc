@@ -363,56 +363,42 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Below upload trust row */}
-          <div
-            className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 mt-5 pb-14 text-xs"
-            style={{ color: TEXT_LIGHT }}
-          >
-            {[
-              { icon: Globe,    text: (t as any).hero_trust_browser ?? "Funciona en cualquier navegador" },
-              { icon: Trash2,   text: "Archivos eliminados automáticamente" },
-              { icon: Clock,    text: "Procesado en segundos" },
-            ].map((item, i) => (
-              <span key={i} className="flex items-center gap-1.5">
-                <item.icon className="w-3.5 h-3.5" style={{ color: INDIGO }} />
-                {item.text}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          STATS BAR
-      ══════════════════════════════════════════════════════════ */}
-      <section className="py-10 border-y" style={{ backgroundColor: "oklch(0.975 0.008 264)", borderColor: "oklch(0.91 0.012 264)" }}>
-        <div className="container">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0 md:divide-x" style={{ "--tw-divide-color": "oklch(0.88 0.012 264)" } as React.CSSProperties}>
-            {[
-              { value: "15+",   label: (t as any).hero_social_tools ?? "Herramientas PDF", icon: Sparkles },
-              { value: "2.3M+", label: (t as any).hero_social_users  ?? "Usuarios activos", icon: Users },
-              { value: "4.8★",  label: (t as any).hero_social_rating ?? "Valoración media", icon: Star },
-              { value: "100%",  label: (t as any).hero_social_install ?? "Gratuito", icon: CheckCircle2 },
-            ].map((stat, i) => (
-              <div key={i} className="flex flex-col items-center gap-1 px-6 py-2 text-center">
-                <stat.icon className="w-4 h-4 mb-1" style={{ color: INDIGO, opacity: 0.5 }} />
+          {/* Stats — dentro del hero, debajo de la upload zone */}
+          <div className="max-w-3xl mx-auto w-full mt-5 pb-12">
+            <div
+              className="grid grid-cols-2 md:grid-cols-4 rounded-2xl border overflow-hidden"
+              style={{ borderColor: "oklch(0.91 0.012 264)", backgroundColor: "oklch(0.975 0.008 264)" }}
+            >
+              {[
+                { value: "15+",   label: (t as any).hero_social_tools ?? "Herramientas PDF", icon: Sparkles },
+                { value: "2.3M+", label: (t as any).hero_social_users  ?? "Usuarios activos", icon: Users },
+                { value: "4.8★",  label: (t as any).hero_social_rating ?? "Valoración media", icon: Star },
+                { value: "100%",  label: (t as any).hero_social_install ?? "Gratuito", icon: CheckCircle2 },
+              ].map((stat, i) => (
                 <div
-                  className="text-2xl md:text-3xl font-extrabold leading-none"
-                  style={{
-                    fontFamily: "'Sora', sans-serif",
-                    background: GRAD,
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                  }}
+                  key={i}
+                  className="flex flex-col items-center gap-0.5 px-4 py-4 text-center border-r last:border-r-0"
+                  style={{ borderColor: "oklch(0.88 0.012 264)" }}
                 >
-                  {stat.value}
+                  <stat.icon className="w-4 h-4 mb-0.5" style={{ color: INDIGO, opacity: 0.45 }} />
+                  <div
+                    className="text-xl md:text-2xl font-extrabold leading-none"
+                    style={{
+                      fontFamily: "'Sora', sans-serif",
+                      background: GRAD,
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                    }}
+                  >
+                    {stat.value}
+                  </div>
+                  <div className="text-xs font-medium mt-0.5" style={{ color: TEXT_MUTED }}>
+                    {stat.label}
+                  </div>
                 </div>
-                <div className="text-xs font-medium mt-0.5" style={{ color: TEXT_MUTED }}>
-                  {stat.label}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </section>
