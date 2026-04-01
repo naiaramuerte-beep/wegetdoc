@@ -228,19 +228,23 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Cloud badge */}
-          <div className="flex justify-center mb-8">
-            <div
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold border"
-              style={{
-                backgroundColor: "oklch(0.97 0.02 264)",
-                borderColor: "oklch(0.47 0.24 264 / 0.20)",
-                color: INDIGO,
-              }}
-            >
-              <Shield className="w-3 h-3" />
-              {(t as any).hero_cloud_badge ?? "100% Cloud · SSL Encrypted · Sin instalación"}
-            </div>
+          {/* Social proof row */}
+          <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 mb-8 text-xs" style={{ color: TEXT_MUTED }}>
+            <span className="flex items-center gap-1.5">
+              <span className="flex">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-3.5 h-3.5 fill-current" style={{ color: "oklch(0.70 0.18 85)" }} />
+                ))}
+              </span>
+              <strong style={{ color: TEXT_MAIN }}>4.8/5</strong>
+              <span style={{ color: TEXT_LIGHT }}>{(t as any).hero_trust_rating ?? "de valoración"}</span>
+            </span>
+            <span className="w-px h-3 rounded-full" style={{ backgroundColor: BORDER }} />
+            <span className="flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5" style={{ color: INDIGO }} />
+              <strong style={{ color: TEXT_MAIN }}>2.3M+</strong>
+              <span style={{ color: TEXT_LIGHT }}>{(t as any).hero_social_users ?? "usuarios activos"}</span>
+            </span>
           </div>
 
           {/* Upload zone — wide, rectangular, clean */}
@@ -300,6 +304,7 @@ export default function Home() {
                   {t.hero_upload_btn}
                   <ArrowRight className="w-4 h-4" />
                 </button>
+                <p className="text-xs" style={{ color: TEXT_LIGHT }}>{t.hero_max_size}</p>
               </div>
 
               {/* Bottom bar: formats only */}
