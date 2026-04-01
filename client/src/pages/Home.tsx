@@ -326,7 +326,7 @@ export default function Home() {
                 { value: "15+",   label: (t as any).hero_social_tools ?? "Herramientas PDF", icon: Sparkles },
                 { value: docsCount.toLocaleString(), label: (t as any).hero_social_pdfs ?? "Documentos procesados hoy", icon: FileText },
                 { value: "4.8★",  label: (t as any).hero_social_rating ?? "Valoración media", icon: Star },
-                { value: "☁️",  label: (t as any).hero_social_install ?? "Sin instalación", icon: Cloud },
+                { value: "100%",  label: (t as any).hero_social_install ?? "Sin instalación", icon: Cloud },
               ].map((stat, i) => (
                 <div
                   key={i}
