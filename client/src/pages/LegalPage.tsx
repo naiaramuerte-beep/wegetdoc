@@ -63,9 +63,18 @@ export default function LegalPage({ slug }: LegalPageProps) {
   );
 }
 
-// Simple Markdown to HTML converter (basic)
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// Simple Markdown to HTML converter — escapes raw HTML before conversion
 function markdownToHtml(md: string): string {
-  return md
+  const safe = escapeHtml(md);
+  return safe
     .replace(/^### (.+)$/gm, "<h3>$1</h3>")
     .replace(/^## (.+)$/gm, "<h2>$1</h2>")
     .replace(/^# (.+)$/gm, "<h1>$1</h1>")

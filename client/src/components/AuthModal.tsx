@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import { X, Eye, EyeOff, Mail, Lock, User as UserIcon, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { getLoginUrl } from "@/const";
 
 interface AuthModalProps {
   open: boolean;

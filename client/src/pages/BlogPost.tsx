@@ -186,7 +186,7 @@ export default function BlogPost() {
                 [&_strong]:font-semibold [&_strong]:text-foreground
                 [&_hr]:border-border [&_hr]:my-8
                 [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_th]:border-border [&_th]:p-2 [&_th]:bg-muted [&_th]:text-left [&_th]:font-semibold [&_td]:border [&_td]:border-border [&_td]:p-2"
-              dangerouslySetInnerHTML={{ __html: post.content }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content) }}
             />
 
             {/* Tags */}
@@ -252,4 +252,15 @@ export default function BlogPost() {
       <Footer />
     </div>
   );
+}
+
+// Strip dangerous HTML before rendering blog content
+function sanitizeHtml(html: string): string {
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+    .replace(/<embed\b[^>]*>/gi, '')
+    .replace(/\bon\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '')
+    .replace(/javascript\s*:/gi, '');
 }

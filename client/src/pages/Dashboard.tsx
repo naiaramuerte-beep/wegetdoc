@@ -21,7 +21,6 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
 import { useLocation } from "wouter";
-import { getLoginUrl } from "@/const";
 import { usePdfFile } from "@/contexts/PdfFileContext";
 
 type Tab = "account" | "documents" | "team" | "billing";

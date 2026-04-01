@@ -6,7 +6,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { usePdfFile } from "@/contexts/PdfFileContext";

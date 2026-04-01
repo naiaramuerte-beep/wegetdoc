@@ -11,7 +11,6 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Pricing() {
