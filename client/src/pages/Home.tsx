@@ -385,16 +385,9 @@ export default function Home() {
       {/* ══════════════════════════════════════════════════════════
           STATS BAR
       ══════════════════════════════════════════════════════════ */}
-      <section
-        className="py-10"
-        style={{
-          background: GRAD,
-          WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%)",
-          maskImage: "linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%)",
-        }}
-      >
+      <section className="py-10 border-y" style={{ backgroundColor: "oklch(0.975 0.008 264)", borderColor: "oklch(0.91 0.012 264)" }}>
         <div className="container">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0 md:divide-x divide-white/20">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0 md:divide-x" style={{ "--tw-divide-color": "oklch(0.88 0.012 264)" } as React.CSSProperties}>
             {[
               { value: "15+",   label: (t as any).hero_social_tools ?? "Herramientas PDF", icon: Sparkles },
               { value: "2.3M+", label: (t as any).hero_social_users  ?? "Usuarios activos", icon: Users },
@@ -402,14 +395,20 @@ export default function Home() {
               { value: "100%",  label: (t as any).hero_social_install ?? "Gratuito", icon: CheckCircle2 },
             ].map((stat, i) => (
               <div key={i} className="flex flex-col items-center gap-1 px-6 py-2 text-center">
-                <stat.icon className="w-5 h-5 mb-1 text-white opacity-80" />
+                <stat.icon className="w-4 h-4 mb-1" style={{ color: INDIGO, opacity: 0.5 }} />
                 <div
-                  className="text-2xl md:text-3xl font-extrabold leading-none text-white"
-                  style={{ fontFamily: "'Sora', sans-serif" }}
+                  className="text-2xl md:text-3xl font-extrabold leading-none"
+                  style={{
+                    fontFamily: "'Sora', sans-serif",
+                    background: GRAD,
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}
                 >
                   {stat.value}
                 </div>
-                <div className="text-xs font-medium mt-0.5 text-white/75">
+                <div className="text-xs font-medium mt-0.5" style={{ color: TEXT_MUTED }}>
                   {stat.label}
                 </div>
               </div>
