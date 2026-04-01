@@ -202,21 +202,6 @@ export default function Home() {
         </div>
 
         <div className="container relative z-10 pt-12 pb-0 md:pt-20">
-          {/* Badge */}
-          <div className="flex justify-center mb-6">
-            <div
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold border"
-              style={{
-                backgroundColor: "oklch(0.97 0.02 264)",
-                borderColor: "oklch(0.47 0.24 264 / 0.20)",
-                color: INDIGO,
-              }}
-            >
-              <Sparkles className="w-3 h-3" />
-              {(t as any).hero_cloud_badge ?? "100% en la nube — Sin instalación"}
-            </div>
-          </div>
-
           {/* Headline */}
           <div className="text-center max-w-3xl mx-auto mb-4">
             <h1
@@ -259,11 +244,6 @@ export default function Home() {
               <Users className="w-3.5 h-3.5" style={{ color: INDIGO }} />
               <strong style={{ color: TEXT_MAIN }}>2.3M+</strong>
               <span style={{ color: TEXT_LIGHT }}>usuarios activos</span>
-            </span>
-            <span className="w-px h-3 rounded-full" style={{ backgroundColor: BORDER }} />
-            <span className="flex items-center gap-1.5">
-              <Shield className="w-3.5 h-3.5" style={{ color: INDIGO }} />
-              <span style={{ color: TEXT_MUTED }}>SSL Encrypted</span>
             </span>
           </div>
 
@@ -903,9 +883,6 @@ export default function Home() {
             </div>
           </div>
 
-          <p className="text-xs mt-6" style={{ color: "oklch(0.65 0.05 264)" }}>
-            {t.hero_max_size_detail}
-          </p>
         </div>
       </section>
 
