@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useLocation, useParams } from "wouter";
+import DOMPurify from "dompurify";
 import { trpc } from "@/lib/trpc";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -254,13 +255,20 @@ export default function BlogPost() {
   );
 }
 
-// Strip dangerous HTML before rendering blog content
+// Sanitize blog HTML with DOMPurify (OWASP-compliant)
 function sanitizeHtml(html: string): string {
-  return html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
-    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
-    .replace(/<embed\b[^>]*>/gi, '')
-    .replace(/\bon\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '')
-    .replace(/javascript\s*:/gi, '');
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: [
+      "h1", "h2", "h3", "h4", "h5", "h6", "p", "br", "hr",
+      "ul", "ol", "li", "a", "strong", "em", "b", "i", "u", "s",
+      "blockquote", "pre", "code", "img", "figure", "figcaption",
+      "table", "thead", "tbody", "tr", "th", "td",
+      "div", "span", "sub", "sup", "mark",
+    ],
+    ALLOWED_ATTR: [
+      "href", "target", "rel", "src", "alt", "title", "width", "height",
+      "class", "id", "colspan", "rowspan", "loading",
+    ],
+    ALLOW_DATA_ATTR: false,
+  });
 }
