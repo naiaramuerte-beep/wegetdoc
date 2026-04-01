@@ -328,7 +328,7 @@ export default function Home() {
 
               {/* Bottom bar: formats + trust badges */}
               <div
-                className="flex flex-wrap items-center justify-between gap-3 px-8 py-3 border-t"
+                className="flex flex-wrap items-center justify-center gap-3 px-8 py-3 border-t"
                 style={{ borderColor: "oklch(0.47 0.24 264 / 0.10)", backgroundColor: SURFACE }}
               >
                 {/* Format chips */}
