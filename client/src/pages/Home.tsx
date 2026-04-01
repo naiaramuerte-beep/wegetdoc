@@ -351,6 +351,25 @@ export default function Home() {
                 ))}
               </div>
 
+              {/* Auto-convert notice */}
+              <div
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border"
+                style={{
+                  backgroundColor: "oklch(0.97 0.03 145 / 0.6)",
+                  borderColor: "oklch(0.55 0.18 145 / 0.30)",
+                }}
+              >
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ background: "oklch(0.55 0.18 145)", boxShadow: "0 2px 8px oklch(0.55 0.18 145 / 0.35)" }}
+                >
+                  <RefreshCw className="w-3.5 h-3.5 text-white" />
+                </div>
+                <p className="text-xs leading-tight" style={{ color: "oklch(0.32 0.12 145)" }}>
+                  <strong>Conversión automática:</strong> Word, Excel, PPT, JPG y PNG se convierten a PDF automáticamente al subirlos.
+                </p>
+              </div>
+
               {/* Trust badges */}
               <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-xs" style={{ color: TEXT_LIGHT }}>
                 <span className="flex items-center gap-1">
