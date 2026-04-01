@@ -194,6 +194,7 @@
   /* Smooth scroll */
   html {
     scroll-behavior: smooth;
+    font-size: 105%;
   }
 
   /* Gradient button */
