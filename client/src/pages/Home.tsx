@@ -385,7 +385,14 @@ export default function Home() {
       {/* ══════════════════════════════════════════════════════════
           STATS BAR
       ══════════════════════════════════════════════════════════ */}
-      <section className="py-10" style={{ background: GRAD }}>
+      <section
+        className="py-10"
+        style={{
+          background: GRAD,
+          WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%)",
+          maskImage: "linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%)",
+        }}
+      >
         <div className="container">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0 md:divide-x divide-white/20">
             {[
