@@ -237,7 +237,7 @@ export default function Home() {
                 ))}
               </span>
               <strong style={{ color: TEXT_MAIN }}>4.8/5</strong>
-              <span style={{ color: TEXT_LIGHT }}>{(t as any).hero_trust_rating ?? "de valoración"}</span>
+              <span style={{ color: TEXT_LIGHT }}>{(t as any).hero_social_rating ?? "Valoración media"}</span>
             </span>
             <span className="w-px h-3 rounded-full" style={{ backgroundColor: BORDER }} />
             <span className="flex items-center gap-1.5">
