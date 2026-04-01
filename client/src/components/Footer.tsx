@@ -1,15 +1,17 @@
 /* =============================================================
-   CloudPDF Footer — Deep Navy Pro design — fully i18n-ready
-   Dark navy background, matching the navbar
+   CloudPDF Footer — "Lumina" design
+   Dark indigo-slate footer, matching the gradient CTA above
    ============================================================= */
 
-import { FileText, Facebook, Linkedin, Twitter } from "lucide-react";
+import { FileText } from "lucide-react";
 import { useLanguage, LANGUAGES } from "@/contexts/LanguageContext";
 
-const socialBg = "oklch(0.25 0.04 250)";
-const socialColor = "oklch(0.70 0.02 250)";
-const accentColor = "oklch(0.55 0.22 260)";
-const linkColor = "oklch(0.60 0.02 250)";
+const BG = "oklch(0.12 0.02 264)";
+const BG_LIGHTER = "oklch(0.16 0.02 264)";
+const BORDER = "oklch(0.20 0.02 264)";
+const INDIGO = "oklch(0.60 0.22 264)";
+const TEXT_LINK = "oklch(0.58 0.02 264)";
+const TEXT_MUTED = "oklch(0.42 0.015 264)";
 
 export default function Footer() {
   const { lang, t, switchLang } = useLanguage();
@@ -43,48 +45,35 @@ export default function Footer() {
   return (
     <footer
       className="w-full pt-12 pb-8"
-      style={{ backgroundColor: "oklch(0.18 0.04 250)" }}
+      style={{ backgroundColor: BG }}
     >
       <div className="container">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-8 border-b" style={{ borderColor: "oklch(0.28 0.04 250)" }}>
+        <div
+          className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b"
+          style={{ borderColor: BORDER }}
+        >
           {/* Brand */}
           <div className="md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <svg width="32" height="24" viewBox="0 0 32 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-                <path d="M25.5 12.5C25.5 12.5 26 12 26 11c0-2.8-2.2-5-5-5-.5 0-1 .1-1.5.2C18.3 3.7 15.9 2 13 2 9.4 2 6.5 4.9 6.5 8.5c0 .2 0 .4 0 .6C4.5 9.6 3 11.4 3 13.5 3 16 5 18 7.5 18h16c2.2 0 4-1.8 4-4 0-1.5-.8-2.8-2-3.5z" fill="oklch(0.55 0.22 260)" />
-                <rect x="13" y="6" width="6" height="8" rx="0.8" fill="white" fillOpacity="0.9" />
-                <path d="M16.5 6V6L19 8.5H16.5V6Z" fill="oklch(0.45 0.18 260)" />
-              </svg>
-              <span
-                className="text-white font-bold text-xl tracking-tight"
-                style={{ fontFamily: "'Sora', sans-serif" }}
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{ background: "linear-gradient(135deg, oklch(0.47 0.24 264), oklch(0.42 0.26 290))" }}
               >
-                Cloud<span style={{ color: accentColor }}>PDF</span>
+                <FileText className="w-4 h-4 text-white" />
+              </div>
+              <span
+                className="font-bold text-xl tracking-tight"
+                style={{ fontFamily: "'Sora', sans-serif", color: "white" }}
+              >
+                Cloud<span style={{ color: INDIGO }}>PDF</span>
               </span>
             </div>
-            <p className="text-sm leading-relaxed" style={{ color: linkColor, fontFamily: "'DM Sans', sans-serif" }}>
+            <p
+              className="text-sm leading-relaxed"
+              style={{ color: TEXT_LINK, fontFamily: "'DM Sans', sans-serif" }}
+            >
               {t.footer_desc}
             </p>
-            <div className="flex items-center gap-3 mt-4">
-              {[Facebook, Linkedin, Twitter].map((Icon, idx) => (
-                <a
-                  key={idx}
-                  href="#"
-                  className="w-8 h-8 rounded-md flex items-center justify-center transition-colors duration-200"
-                  style={{ backgroundColor: socialBg, color: socialColor }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = accentColor;
-                    e.currentTarget.style.color = "white";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = socialBg;
-                    e.currentTarget.style.color = socialColor;
-                  }}
-                >
-                  <Icon className="w-4 h-4" />
-                </a>
-              ))}
-            </div>
           </div>
 
           {/* CloudPDF links */}
@@ -95,15 +84,15 @@ export default function Footer() {
             >
               {t.footer_col_pdfpro}
             </h4>
-            <ul className="space-y-2">
+            <ul className="space-y-2.5">
               {pdfproLinks.map((link) => (
                 <li key={link.href}>
                   <a
                     href={link.href}
-                    className="text-sm transition-colors duration-200"
-                    style={{ color: linkColor, fontFamily: "'DM Sans', sans-serif" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = accentColor)}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = linkColor)}
+                    className="text-sm transition-colors duration-150"
+                    style={{ color: TEXT_LINK }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = TEXT_LINK)}
                   >
                     {link.label}
                   </a>
@@ -120,15 +109,15 @@ export default function Footer() {
             >
               {t.footer_col_legal}
             </h4>
-            <ul className="space-y-2">
+            <ul className="space-y-2.5">
               {legalLinks.map((link) => (
                 <li key={link.href}>
                   <a
                     href={link.href}
-                    className="text-sm transition-colors duration-200"
-                    style={{ color: linkColor, fontFamily: "'DM Sans', sans-serif" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = accentColor)}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = linkColor)}
+                    className="text-sm transition-colors duration-150"
+                    style={{ color: TEXT_LINK }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = TEXT_LINK)}
                   >
                     {link.label}
                   </a>
@@ -145,15 +134,15 @@ export default function Footer() {
             >
               {t.footer_col_tools}
             </h4>
-            <ul className="space-y-2">
+            <ul className="space-y-2.5">
               {toolLinks.map((link, i) => (
                 <li key={i}>
                   <a
                     href={link.href}
-                    className="text-sm transition-colors duration-200"
-                    style={{ color: linkColor, fontFamily: "'DM Sans', sans-serif" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = accentColor)}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = linkColor)}
+                    className="text-sm transition-colors duration-150"
+                    style={{ color: TEXT_LINK }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = TEXT_LINK)}
                   >
                     {link.label}
                   </a>
@@ -165,31 +154,26 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-6">
-          <p
-            className="text-xs"
-            style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
-          >
+          <p className="text-xs" style={{ color: TEXT_MUTED }}>
             {t.footer_copyright}
           </p>
-          <div className="flex items-center gap-4">
-            <select
-              className="text-xs rounded-md px-2 py-1 border cursor-pointer"
-              style={{
-                backgroundColor: "oklch(0.22 0.04 250)",
-                color: "oklch(0.70 0.02 250)",
-                borderColor: "oklch(0.30 0.04 250)",
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-              value={lang}
-              onChange={(e) => switchLang(e.target.value as any)}
-            >
-              {LANGUAGES.map((l) => (
-                <option key={l.code} value={l.code}>
-                  {l.flag} {l.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <select
+            className="text-xs rounded-lg px-2.5 py-1.5 border cursor-pointer outline-none"
+            style={{
+              backgroundColor: BG_LIGHTER,
+              color: TEXT_LINK,
+              borderColor: BORDER,
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+            value={lang}
+            onChange={(e) => switchLang(e.target.value as any)}
+          >
+            {LANGUAGES.map((l) => (
+              <option key={l.code} value={l.code}>
+                {l.flag} {l.name}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
     </footer>

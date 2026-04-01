@@ -1,7 +1,8 @@
 /* =============================================================
-   CloudPDF — Design System: "Deep Navy Pro"
-   Philosophy: Editorial dark navbar, clean light content area,
-   electric blue (#2563EB) accent, Sora + DM Sans typography.
+   CloudPDF — Design System: "Lumina"
+   Philosophy: Clean white base, indigo-violet gradient accents,
+   glassmorphism navbar, bold typography, premium SaaS feel.
+   Fonts: Sora (headings) + DM Sans (body)
    ============================================================= */
 
 @import "tailwindcss";
@@ -47,48 +48,50 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Custom brand tokens */
-  --color-navy: oklch(0.18 0.04 250);
-  --color-navy-light: oklch(0.22 0.04 250);
-  --color-blue-electric: oklch(0.55 0.22 260);
-  --color-blue-electric-hover: oklch(0.48 0.22 260);
-  --color-blue-light: oklch(0.96 0.03 250);
+  /* Custom brand tokens — Lumina */
+  --color-indigo: oklch(0.47 0.24 264);
+  --color-indigo-hover: oklch(0.41 0.24 264);
+  --color-violet: oklch(0.42 0.26 290);
+  --color-indigo-50: oklch(0.96 0.03 264);
+  --color-indigo-100: oklch(0.93 0.06 264);
+  --color-surface: oklch(0.985 0.003 264);
+  --color-surface-2: oklch(0.96 0.005 264);
 }
 
 :root {
-  --radius: 0.5rem;
-  --background: oklch(0.98 0.005 250);
-  --foreground: oklch(0.15 0.03 250);
+  --radius: 0.75rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.13 0.015 264);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.15 0.03 250);
+  --card-foreground: oklch(0.13 0.015 264);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.15 0.03 250);
-  --primary: oklch(0.55 0.22 260);
+  --popover-foreground: oklch(0.13 0.015 264);
+  --primary: oklch(0.47 0.24 264);
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.94 0.01 250);
-  --secondary-foreground: oklch(0.25 0.03 250);
-  --muted: oklch(0.94 0.01 250);
-  --muted-foreground: oklch(0.52 0.02 250);
-  --accent: oklch(0.94 0.01 250);
-  --accent-foreground: oklch(0.15 0.03 250);
+  --secondary: oklch(0.96 0.005 264);
+  --secondary-foreground: oklch(0.25 0.02 264);
+  --muted: oklch(0.96 0.005 264);
+  --muted-foreground: oklch(0.52 0.015 264);
+  --accent: oklch(0.93 0.06 264);
+  --accent-foreground: oklch(0.25 0.02 264);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.88 0.01 250);
-  --input: oklch(0.88 0.01 250);
-  --ring: oklch(0.55 0.22 260);
-  --chart-1: oklch(0.55 0.22 260);
-  --chart-2: oklch(0.48 0.22 260);
-  --chart-3: oklch(0.62 0.18 260);
-  --chart-4: oklch(0.70 0.15 260);
-  --chart-5: oklch(0.40 0.22 260);
-  --sidebar: oklch(0.18 0.04 250);
-  --sidebar-foreground: oklch(0.95 0.01 250);
-  --sidebar-primary: oklch(0.55 0.22 260);
+  --border: oklch(0.91 0.008 264);
+  --input: oklch(0.91 0.008 264);
+  --ring: oklch(0.47 0.24 264);
+  --chart-1: oklch(0.47 0.24 264);
+  --chart-2: oklch(0.42 0.26 290);
+  --chart-3: oklch(0.55 0.20 264);
+  --chart-4: oklch(0.65 0.15 264);
+  --chart-5: oklch(0.35 0.24 264);
+  --sidebar: oklch(0.12 0.015 264);
+  --sidebar-foreground: oklch(0.95 0.01 264);
+  --sidebar-primary: oklch(0.47 0.24 264);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.25 0.04 250);
-  --sidebar-accent-foreground: oklch(0.95 0.01 250);
-  --sidebar-border: oklch(0.28 0.04 250);
-  --sidebar-ring: oklch(0.55 0.22 260);
+  --sidebar-accent: oklch(0.20 0.02 264);
+  --sidebar-accent-foreground: oklch(0.95 0.01 264);
+  --sidebar-border: oklch(0.22 0.02 264);
+  --sidebar-ring: oklch(0.47 0.24 264);
 }
 
 @layer base {
@@ -144,117 +147,114 @@
     }
   }
 
-  /* Navy navbar background */
-  .bg-navy {
-    background-color: oklch(0.18 0.04 250);
+  /* Indigo primary */
+  .bg-indigo-brand {
+    background-color: oklch(0.47 0.24 264);
+  }
+  .text-indigo-brand {
+    color: oklch(0.47 0.24 264);
+  }
+  .border-indigo-brand {
+    border-color: oklch(0.47 0.24 264);
   }
 
-  .bg-navy-light {
-    background-color: oklch(0.22 0.04 250);
-  }
-
-  /* Electric blue accent */
-  .bg-blue-electric {
-    background-color: oklch(0.55 0.22 260);
-  }
-
-  .text-blue-electric {
-    color: oklch(0.55 0.22 260);
-  }
-
-  .border-blue-electric {
-    border-color: oklch(0.55 0.22 260);
-  }
-
-  /* Upload dropzone animation */
-  @keyframes dash-animation {
-    to {
-      stroke-dashoffset: -20;
-    }
-  }
-
-  .upload-zone {
-    position: relative;
-    border: 2px dashed oklch(0.55 0.22 260 / 0.4);
-    transition: all 0.2s ease;
-  }
-
-  .upload-zone:hover,
-  .upload-zone.drag-over {
-    border-color: oklch(0.55 0.22 260);
-    background-color: oklch(0.55 0.22 260 / 0.04);
-  }
-
-  /* Gradient radial for hero section */
-  .hero-glow {
-    background: radial-gradient(ellipse at 50% 80%, oklch(0.55 0.22 260 / 0.12) 0%, transparent 70%);
-  }
-
-  /* Feature card hover */
-  .feature-card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .feature-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 32px oklch(0.55 0.22 260 / 0.12);
-  }
-
-  /* Smooth scroll */
-  html {
-    scroll-behavior: smooth;
-  }
-
-  /* Tab active indicator */
-  .tab-active {
-    border-bottom: 2px solid oklch(0.55 0.22 260);
-    color: oklch(0.55 0.22 260);
-  }
-
-  /* Gradient text */
+  /* Gradient text utility */
   .gradient-text {
-    background: linear-gradient(135deg, oklch(0.55 0.22 260), oklch(0.62 0.18 280));
+    background: linear-gradient(135deg, oklch(0.47 0.24 264), oklch(0.42 0.26 290));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  /* Step number circle */
-  .step-circle {
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 50%;
-    background-color: oklch(0.18 0.04 250);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Sora', sans-serif;
-    font-weight: 700;
-    font-size: 1rem;
-    flex-shrink: 0;
+  /* Upload dropzone */
+  .upload-zone {
+    position: relative;
+    border: 2px dashed oklch(0.47 0.24 264 / 0.35);
+    transition: all 0.25s ease;
+    background: oklch(1 0 0);
   }
 
-  /* Pricing card highlight */
-  .pricing-popular {
-    border: 2px solid oklch(0.55 0.22 260);
-    box-shadow: 0 0 0 4px oklch(0.55 0.22 260 / 0.08);
+  .upload-zone:hover,
+  .upload-zone.drag-over {
+    border-color: oklch(0.47 0.24 264 / 0.8);
+    background: oklch(0.97 0.02 264);
+    box-shadow: 0 0 0 6px oklch(0.47 0.24 264 / 0.07);
+  }
+
+  /* Card hover lift */
+  .card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px oklch(0.47 0.24 264 / 0.10);
+    border-color: oklch(0.47 0.24 264 / 0.3) !important;
+  }
+
+  /* Smooth scroll */
+  html {
+    scroll-behavior: smooth;
+    font-size: 105%;
+  }
+
+  /* Gradient button */
+  .btn-gradient {
+    background: linear-gradient(135deg, oklch(0.47 0.24 264), oklch(0.42 0.26 290));
+    color: white;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 15px oklch(0.47 0.24 264 / 0.35);
+  }
+  .btn-gradient:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px oklch(0.47 0.24 264 / 0.50);
+  }
+
+  /* Section alternating bg */
+  .section-white {
+    background-color: oklch(1 0 0);
+  }
+  .section-surface {
+    background-color: oklch(0.985 0.003 264);
   }
 
   /* Fade in animation */
   @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(24px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
-
   .animate-fade-in-up {
     animation: fadeInUp 0.5s ease forwards;
+  }
+
+  /* Floating blob animation */
+  @keyframes blob {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33%       { transform: translate(20px, -20px) scale(1.05); }
+    66%       { transform: translate(-10px, 15px) scale(0.97); }
+  }
+  .animate-blob {
+    animation: blob 10s ease-in-out infinite;
+  }
+  .animation-delay-2000 { animation-delay: 2s; }
+  .animation-delay-4000 { animation-delay: 4s; }
+
+  /* Navbar glass */
+  .navbar-glass {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background-color: oklch(1 0 0 / 0.85);
+    border-bottom: 1px solid oklch(0.91 0.008 264 / 0.8);
+  }
+
+  /* Step connector */
+  .step-line {
+    background: linear-gradient(90deg, oklch(0.47 0.24 264 / 0.3), oklch(0.42 0.26 290 / 0.3));
+  }
+
+  /* Pricing card popular */
+  .pricing-popular {
+    border: 2px solid oklch(0.47 0.24 264);
+    box-shadow: 0 0 0 4px oklch(0.47 0.24 264 / 0.08);
   }
 
   /* Accordion smooth */
