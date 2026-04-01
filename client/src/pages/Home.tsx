@@ -267,8 +267,8 @@ export default function Home() {
             </span>
           </div>
 
-          {/* Upload zone */}
-          <div className="max-w-[520px] mx-auto">
+          {/* Upload zone — wide, rectangular, clean */}
+          <div className="max-w-3xl mx-auto w-full">
             <input
               ref={fileInputRef}
               type="file"
@@ -282,50 +282,42 @@ export default function Home() {
               onDragLeave={() => setIsDraggingOver(false)}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className="cursor-pointer rounded-2xl border-2 border-dashed transition-all duration-300 p-8 flex flex-col items-center gap-5"
+              className="cursor-pointer rounded-2xl border-2 border-dashed transition-all duration-300"
               style={{
-                borderColor: isDraggingOver ? INDIGO : "oklch(0.47 0.24 264 / 0.30)",
+                borderColor: isDraggingOver ? INDIGO : "oklch(0.47 0.24 264 / 0.28)",
                 backgroundColor: isDraggingOver ? "oklch(0.97 0.02 264)" : "white",
                 boxShadow: isDraggingOver
                   ? `0 0 0 5px oklch(0.47 0.24 264 / 0.08), 0 12px 48px oklch(0.47 0.24 264 / 0.12)`
-                  : "0 4px 32px oklch(0.13 0.015 264 / 0.08), 0 1px 4px oklch(0.13 0.015 264 / 0.04)",
+                  : "0 4px 32px oklch(0.13 0.015 264 / 0.07), 0 1px 4px oklch(0.13 0.015 264 / 0.04)",
               }}
             >
-              {/* Animated PDF icon */}
-              <div className="relative">
+              {/* Main row: icon + text + button */}
+              <div className="flex flex-col sm:flex-row items-center gap-6 px-8 py-7">
+                {/* Icon */}
                 <div
-                  className="w-20 h-20 rounded-2xl flex items-center justify-center"
-                  style={{
-                    background: GRAD,
-                    boxShadow: `0 8px 24px oklch(0.47 0.24 264 / 0.30)`,
-                  }}
+                  className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: GRAD, boxShadow: `0 6px 20px oklch(0.47 0.24 264 / 0.28)` }}
                 >
-                  <FileText className="w-10 h-10 text-white" />
+                  <FileText className="w-7 h-7 text-white" />
                 </div>
-                <div
-                  className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full flex items-center justify-center"
-                  style={{ background: "oklch(0.55 0.18 145)", boxShadow: "0 2px 8px oklch(0.55 0.18 145 / 0.40)" }}
-                >
-                  <Upload className="w-3 h-3 text-white" />
-                </div>
-              </div>
 
-              <div className="text-center">
-                <p
-                  className="font-bold text-lg mb-1.5"
-                  style={{ color: TEXT_MAIN, fontFamily: "'Sora', sans-serif" }}
-                >
-                  {t.hero_drag_here}
-                </p>
-                <p className="text-sm mb-4" style={{ color: TEXT_LIGHT }}>
-                  {t.hero_or}
-                </p>
+                {/* Text */}
+                <div className="flex-1 text-center sm:text-left">
+                  <p
+                    className="font-bold text-base mb-0.5"
+                    style={{ color: TEXT_MAIN, fontFamily: "'Sora', sans-serif" }}
+                  >
+                    {t.hero_drag_here}
+                  </p>
+                  <p className="text-sm" style={{ color: TEXT_LIGHT }}>
+                    {t.hero_auto_convert}
+                  </p>
+                </div>
+
+                {/* CTA button */}
                 <button
-                  className="inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 active:scale-95"
-                  style={{
-                    background: GRAD,
-                    boxShadow: `0 4px 16px oklch(0.47 0.24 264 / 0.35)`,
-                  }}
+                  className="flex-shrink-0 inline-flex items-center gap-2 px-7 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+                  style={{ background: GRAD, boxShadow: `0 4px 16px oklch(0.47 0.24 264 / 0.35)` }}
                   onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
                 >
                   <Upload className="w-4 h-4" />
@@ -334,59 +326,40 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* Format chips */}
-              <div className="flex flex-wrap justify-center gap-1.5">
-                {["PDF", "Word", "Excel", "PPT", "JPG", "PNG"].map((fmt) => (
-                  <span
-                    key={fmt}
-                    className="text-xs px-2.5 py-0.5 rounded-full font-medium border"
-                    style={{
-                      backgroundColor: SURFACE,
-                      borderColor: BORDER,
-                      color: TEXT_MUTED,
-                    }}
-                  >
-                    {fmt}
-                  </span>
-                ))}
-              </div>
-
-              {/* Auto-convert notice */}
+              {/* Bottom bar: formats + trust badges */}
               <div
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border"
-                style={{
-                  backgroundColor: "oklch(0.97 0.03 145 / 0.6)",
-                  borderColor: "oklch(0.55 0.18 145 / 0.30)",
-                }}
+                className="flex flex-wrap items-center justify-between gap-3 px-8 py-3 border-t"
+                style={{ borderColor: "oklch(0.47 0.24 264 / 0.10)", backgroundColor: SURFACE }}
               >
-                <div
-                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ background: "oklch(0.55 0.18 145)", boxShadow: "0 2px 8px oklch(0.55 0.18 145 / 0.35)" }}
-                >
-                  <RefreshCw className="w-3.5 h-3.5 text-white" />
+                {/* Format chips */}
+                <div className="flex flex-wrap gap-1.5">
+                  {["PDF", "Word", "Excel", "PPT", "JPG", "PNG"].map((fmt) => (
+                    <span
+                      key={fmt}
+                      className="text-xs px-2 py-0.5 rounded-md font-medium border"
+                      style={{ backgroundColor: "white", borderColor: BORDER, color: TEXT_MUTED }}
+                    >
+                      {fmt}
+                    </span>
+                  ))}
                 </div>
-                <p className="text-xs leading-tight" style={{ color: "oklch(0.32 0.12 145)" }}>
-                  {t.hero_auto_convert}
-                </p>
-              </div>
 
-              {/* Trust badges */}
-              <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-xs" style={{ color: TEXT_LIGHT }}>
-                <span className="flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" style={{ color: "oklch(0.50 0.18 145)" }} />
-                  {t.hero_badge_free}
-                </span>
-                <span className="flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" style={{ color: "oklch(0.50 0.18 145)" }} />
-                  {t.hero_badge_no_card}
-                </span>
-                <span className="flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" style={{ color: "oklch(0.50 0.18 145)" }} />
-                  {t.hero_badge_instant}
-                </span>
+                {/* Trust micro-badges */}
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs" style={{ color: TEXT_LIGHT }}>
+                  <span className="flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" style={{ color: "oklch(0.50 0.18 145)" }} />
+                    {t.hero_badge_free}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" style={{ color: "oklch(0.50 0.18 145)" }} />
+                    {t.hero_badge_no_card}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Shield className="w-3 h-3" style={{ color: "oklch(0.50 0.18 145)" }} />
+                    {t.hero_max_size_detail}
+                  </span>
+                </div>
               </div>
-
-              <p className="text-xs" style={{ color: TEXT_LIGHT }}>{t.hero_max_size_detail}</p>
             </div>
           </div>
 
