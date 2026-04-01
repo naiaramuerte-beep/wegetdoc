@@ -326,39 +326,20 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* Bottom bar: formats + trust badges */}
+              {/* Bottom bar: formats only */}
               <div
-                className="flex flex-wrap items-center justify-center gap-3 px-8 py-3 border-t"
+                className="flex flex-wrap items-center justify-center gap-1.5 px-8 py-3 border-t"
                 style={{ borderColor: "oklch(0.47 0.24 264 / 0.10)", backgroundColor: SURFACE }}
               >
-                {/* Format chips */}
-                <div className="flex flex-wrap gap-1.5">
-                  {["PDF", "Word", "Excel", "PPT", "JPG", "PNG"].map((fmt) => (
-                    <span
-                      key={fmt}
-                      className="text-xs px-2 py-0.5 rounded-md font-medium border"
-                      style={{ backgroundColor: "white", borderColor: BORDER, color: TEXT_MUTED }}
-                    >
-                      {fmt}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Trust micro-badges */}
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs" style={{ color: TEXT_LIGHT }}>
-                  <span className="flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" style={{ color: "oklch(0.50 0.18 145)" }} />
-                    {t.hero_badge_free}
+                {["PDF", "Word", "Excel", "PPT", "JPG", "PNG"].map((fmt) => (
+                  <span
+                    key={fmt}
+                    className="text-xs px-2 py-0.5 rounded-md font-medium border"
+                    style={{ backgroundColor: "white", borderColor: BORDER, color: TEXT_MUTED }}
+                  >
+                    {fmt}
                   </span>
-                  <span className="flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" style={{ color: "oklch(0.50 0.18 145)" }} />
-                    {t.hero_badge_no_card}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Shield className="w-3 h-3" style={{ color: "oklch(0.50 0.18 145)" }} />
-                    {t.hero_max_size_detail}
-                  </span>
-                </div>
+                ))}
               </div>
             </div>
           </div>
