@@ -392,7 +392,7 @@ export default function Home() {
               { value: "15+",   label: (t as any).hero_social_tools ?? "Herramientas PDF", icon: Sparkles },
               { value: "2.3M+", label: (t as any).hero_social_users  ?? "Usuarios activos", icon: Users },
               { value: "4.8★",  label: (t as any).hero_social_rating ?? "Valoración media", icon: Star },
-              { value: "0",     label: (t as any).hero_social_install ?? "Instalación necesaria", icon: Download },
+              { value: "100%",  label: (t as any).hero_social_install ?? "Gratuito", icon: Sparkles },
             ].map((stat, i) => (
               <div key={i} className="flex flex-col items-center gap-1 px-6 py-2 text-center">
                 <stat.icon className="w-5 h-5 mb-1" style={{ color: INDIGO, opacity: 0.7 }} />
