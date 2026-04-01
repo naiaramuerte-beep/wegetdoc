@@ -1,7 +1,7 @@
 /* =============================================================
-   CloudPDF Home Page — "Lumina" Design
-   Light theme, indigo-violet gradient accents, modern SaaS feel
-   Upload-first hero, tool grid, benefits, steps, FAQ, CTA
+   PDFPro Home Page — Professional & Trustworthy Design
+   Light theme, indigo-violet accents, upload-first hero,
+   social proof, testimonials, security section, tools, FAQ
    ============================================================= */
 
 import { useState, useRef, useCallback } from "react";
@@ -11,20 +11,14 @@ import {
   FileText, PenTool, Share2, MessageSquare, Type, Image, Lock,
   ChevronDown, ChevronUp, ArrowRight, Upload, Download, Edit3,
   Layers, Shield, Zap, Monitor, CheckCircle2, RefreshCw, Sparkles,
-  Star,
+  Star, Trash2, Clock, Globe, Users, FileLock2, Check, Merge,
+  Scissors, RotateCcw, Minimize2, FileImage, FileSpreadsheet,
+  Presentation, FileCode,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { usePdfFile } from "@/contexts/PdfFileContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-
-// Feature images (CDN)
-const FEATURE_IMAGES = [
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/feature-convert-Y6dwg9Ks6AU4LrQ4QETGwk.webp",
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/feature-edit-XgUdhi72HBbaZEcMtbCduV.webp",
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/feature-sign-mNewCdtWeXAwH4MKY3HS7g.webp",
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663421653173/HUwJ6fxw58gKVZz5QkmFWk/feature-collaborate-Xc5uwDNsachsgLjEBvw7Qp.webp",
-];
 
 const ACCEPTED_MIME_TYPES = new Set([
   'application/pdf',
@@ -44,24 +38,78 @@ const ACCEPTED_EXTENSIONS = new Set([
   '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.html', '.txt',
 ]);
 
-// Design tokens
-const INDIGO = "oklch(0.47 0.24 264)";
-const VIOLET = "oklch(0.42 0.26 290)";
-const TEXT_MAIN = "oklch(0.13 0.015 264)";
+// ─── Design tokens ───────────────────────────────────────────
+const INDIGO     = "oklch(0.47 0.24 264)";
+const VIOLET     = "oklch(0.42 0.26 290)";
+const TEXT_MAIN  = "oklch(0.13 0.015 264)";
 const TEXT_MUTED = "oklch(0.48 0.015 264)";
 const TEXT_LIGHT = "oklch(0.62 0.015 264)";
-const BORDER = "oklch(0.91 0.008 264)";
-const SURFACE = "oklch(0.985 0.003 264)";
+const BORDER     = "oklch(0.91 0.008 264)";
+const SURFACE    = "oklch(0.985 0.003 264)";
 
-// Tool icon colors — one per category
-const TOOL_COLORS: Record<string, { bg: string; icon: string }> = {
-  editAndSign: { bg: "oklch(0.96 0.03 264)", icon: INDIGO },
-  convertFromPdf: { bg: "oklch(0.96 0.06 290)", icon: VIOLET },
-  convertToPdf: { bg: "oklch(0.96 0.04 175)", icon: "oklch(0.45 0.18 175)" },
-};
+const GRAD = `linear-gradient(135deg, ${INDIGO}, ${VIOLET})`;
+
+// ─── Tool definitions ─────────────────────────────────────────
+const TOOLS_EDIT = [
+  { icon: Type,           label_key: "tool_edit_text",  tool: "text",         color: "oklch(0.96 0.03 264)", iconColor: INDIGO },
+  { icon: PenTool,        label_key: "tool_add_sign",   tool: "sign",         color: "oklch(0.96 0.03 264)", iconColor: INDIGO },
+  { icon: MessageSquare,  label_key: "tool_annotate",   tool: "notes",        color: "oklch(0.96 0.03 264)", iconColor: INDIGO },
+  { icon: Image,          label_key: "tool_images",     tool: "image",        color: "oklch(0.96 0.03 264)", iconColor: INDIGO },
+  { icon: Lock,           label_key: "tool_protect",    tool: "protect",      color: "oklch(0.96 0.03 264)", iconColor: INDIGO },
+  { icon: Merge,          label_key: "tool_merge",      tool: "merge",        color: "oklch(0.96 0.03 264)", iconColor: INDIGO },
+  { icon: Scissors,       label_key: "tool_split",      tool: "split",        color: "oklch(0.96 0.03 264)", iconColor: INDIGO },
+  { icon: RotateCcw,      label_key: "tool_rotate",     tool: "rotate",       color: "oklch(0.96 0.03 264)", iconColor: INDIGO },
+  { icon: Minimize2,      label_key: "tool_compress",   tool: "compress",     color: "oklch(0.96 0.03 264)", iconColor: INDIGO },
+];
+const TOOLS_FROM_PDF = [
+  { icon: FileText,        label_key: "tool_pdf_word",  tool: "convert-word",  color: "oklch(0.96 0.04 220)", iconColor: "oklch(0.40 0.22 220)" },
+  { icon: FileSpreadsheet, label_key: "tool_pdf_excel", tool: "convert-excel", color: "oklch(0.96 0.04 220)", iconColor: "oklch(0.40 0.22 220)" },
+  { icon: Presentation,    label_key: "tool_pdf_ppt",   tool: "convert-ppt",   color: "oklch(0.96 0.04 220)", iconColor: "oklch(0.40 0.22 220)" },
+  { icon: FileImage,       label_key: "tool_pdf_jpg",   tool: "convert-jpg",   color: "oklch(0.96 0.04 220)", iconColor: "oklch(0.40 0.22 220)" },
+  { icon: FileImage,       label_key: "tool_pdf_png",   tool: "convert-png",   color: "oklch(0.96 0.04 220)", iconColor: "oklch(0.40 0.22 220)" },
+  { icon: FileCode,        label_key: "tool_pdf_html",  tool: "convert-html",  color: "oklch(0.96 0.04 220)", iconColor: "oklch(0.40 0.22 220)" },
+];
+const TOOLS_TO_PDF = [
+  { icon: FileText,        label_key: "tool_word_pdf",  tool: "word-to-pdf",  color: "oklch(0.96 0.05 145)", iconColor: "oklch(0.42 0.18 145)" },
+  { icon: FileSpreadsheet, label_key: "tool_excel_pdf", tool: "excel-to-pdf", color: "oklch(0.96 0.05 145)", iconColor: "oklch(0.42 0.18 145)" },
+  { icon: Presentation,    label_key: "tool_ppt_pdf",   tool: "ppt-to-pdf",   color: "oklch(0.96 0.05 145)", iconColor: "oklch(0.42 0.18 145)" },
+  { icon: FileImage,       label_key: "tool_jpg_pdf",   tool: "jpg-to-pdf",   color: "oklch(0.96 0.05 145)", iconColor: "oklch(0.42 0.18 145)" },
+  { icon: FileImage,       label_key: "tool_png_pdf",   tool: "png-to-pdf",   color: "oklch(0.96 0.05 145)", iconColor: "oklch(0.42 0.18 145)" },
+  { icon: FileCode,        label_key: "tool_html_pdf",  tool: "html-to-pdf",  color: "oklch(0.96 0.05 145)", iconColor: "oklch(0.42 0.18 145)" },
+];
+
+const FILE_FREE_TOOLS = ["jpg-to-pdf", "png-to-pdf", "word-to-pdf", "excel-to-pdf", "ppt-to-pdf", "html-to-pdf"];
+
+// ─── Testimonials ─────────────────────────────────────────────
+const TESTIMONIALS = [
+  {
+    name: "María García",
+    role: "Diseñadora freelance",
+    avatar: "MG",
+    avatarColor: "oklch(0.55 0.18 264)",
+    text: "Llevo meses usando esta herramienta y no puedo creer lo fácil que es. Firmar contratos y editar PDFs nunca fue tan rápido. ¡Totalmente recomendada!",
+    rating: 5,
+  },
+  {
+    name: "Carlos Rodríguez",
+    role: "Responsable de RRHH",
+    avatar: "CR",
+    avatarColor: "oklch(0.48 0.18 145)",
+    text: "Procesamos cientos de documentos a la semana. Esta app nos ahorra tiempo y dinero — sin instalaciones, sin complicaciones. Funciona a la primera.",
+    rating: 5,
+  },
+  {
+    name: "Ana Martínez",
+    role: "Estudiante de Derecho",
+    avatar: "AM",
+    avatarColor: "oklch(0.52 0.20 30)",
+    text: "Perfecta para convertir apuntes a PDF y añadir notas. La interfaz es muy intuitiva y los resultados son impecables. Mucho mejor que otras alternativas.",
+    rating: 5,
+  },
+];
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState("editAndSign");
+  const [activeTab, setActiveTab] = useState<"edit" | "fromPdf" | "toPdf">("edit");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -69,37 +117,11 @@ export default function Home() {
   const { lang, t } = useLanguage();
   const [, navigate] = useLocation();
 
-  // ─── Tool definitions ────────────────────────────────────────
-  const editAndSignTools = [
-    { icon: Type, label: t.tool_edit_text, tool: "text" },
-    { icon: PenTool, label: t.tool_add_sign, tool: "sign" },
-    { icon: MessageSquare, label: t.tool_annotate, tool: "notes" },
-    { icon: Image, label: t.tool_images, tool: "image" },
-    { icon: Lock, label: t.tool_protect, tool: "protect" },
-    { icon: Share2, label: t.tool_share, tool: "share" },
-  ];
-  const convertFromPdfTools = [
-    { icon: FileText, label: t.tool_pdf_word, tool: "convert-word" },
-    { icon: FileText, label: t.tool_pdf_excel, tool: "convert-excel" },
-    { icon: FileText, label: t.tool_pdf_ppt, tool: "convert-ppt" },
-    { icon: Image, label: t.tool_pdf_jpg, tool: "convert-jpg" },
-    { icon: Image, label: t.tool_pdf_png, tool: "convert-png" },
-    { icon: FileText, label: t.tool_pdf_html, tool: "convert-html" },
-  ];
-  const convertToPdfTools = [
-    { icon: FileText, label: t.tool_word_pdf, tool: "word-to-pdf" },
-    { icon: FileText, label: t.tool_excel_pdf, tool: "excel-to-pdf" },
-    { icon: FileText, label: t.tool_ppt_pdf, tool: "ppt-to-pdf" },
-    { icon: Image, label: t.tool_jpg_pdf, tool: "jpg-to-pdf" },
-    { icon: Image, label: t.tool_png_pdf, tool: "png-to-pdf" },
-    { icon: Layers, label: t.tool_merge, tool: "merge" },
-  ];
-
-  const allToolsCategories = [
-    { id: "editAndSign", label: t.tools_tab_edit, tools: editAndSignTools },
-    { id: "convertFromPdf", label: t.tools_tab_from_pdf, tools: convertFromPdfTools },
-    { id: "convertToPdf", label: t.tools_tab_to_pdf, tools: convertToPdfTools },
-  ];
+  const toolsMap = { edit: TOOLS_EDIT, fromPdf: TOOLS_FROM_PDF, toPdf: TOOLS_TO_PDF };
+  const activeTools = toolsMap[activeTab].map((tool) => ({
+    ...tool,
+    label: (t as any)[tool.label_key] ?? tool.label_key,
+  }));
 
   const faqs = [
     { question: t.faq_q1, answer: t.faq_a1 },
@@ -110,23 +132,6 @@ export default function Home() {
     { question: t.faq_q6, answer: t.faq_a6 },
     { question: t.faq_q7, answer: t.faq_a7 },
   ];
-
-  const benefits = [
-    { icon: Zap,      title: t.benefit1_title, desc: t.benefit1_desc, color: "oklch(0.96 0.06 80)",  iconColor: "oklch(0.55 0.20 80)"  },
-    { icon: Shield,   title: t.benefit2_title, desc: t.benefit2_desc, color: "oklch(0.96 0.05 160)", iconColor: "oklch(0.48 0.18 160)" },
-    { icon: Edit3,    title: t.benefit3_title, desc: t.benefit3_desc, color: "oklch(0.96 0.03 264)", iconColor: INDIGO },
-    { icon: Monitor,  title: t.benefit4_title, desc: t.benefit4_desc, color: "oklch(0.96 0.06 290)", iconColor: VIOLET },
-  ];
-
-  const features = [
-    { title: t.feature1_title, subtitle: t.feature1_subtitle, description: t.feature1_desc, image: FEATURE_IMAGES[0] },
-    { title: t.feature2_title, subtitle: t.feature2_subtitle, description: t.feature2_desc, image: FEATURE_IMAGES[1] },
-    { title: t.feature3_title, subtitle: t.feature3_subtitle, description: t.feature3_desc, image: FEATURE_IMAGES[2] },
-    { title: t.feature4_title, subtitle: t.feature4_subtitle, description: t.feature4_desc, image: FEATURE_IMAGES[3] },
-  ];
-
-  const activeCategory = allToolsCategories.find((c) => c.id === activeTab)!;
-  const activeCategoryColor = TOOL_COLORS[activeTab];
 
   const openEditor = useCallback((file: File, tool?: string) => {
     const ext = '.' + file.name.split('.').pop()?.toLowerCase();
@@ -155,8 +160,6 @@ export default function Home() {
     if (f) openEditor(f);
   };
 
-  const FILE_FREE_TOOLS = ["jpg-to-pdf", "png-to-pdf", "word-to-pdf", "excel-to-pdf", "ppt-to-pdf"];
-
   const scrollToEditor = (tool?: string) => {
     if (tool) {
       setPendingTool(tool);
@@ -175,52 +178,55 @@ export default function Home() {
       <Navbar />
 
       {/* ══════════════════════════════════════════════════════════
-          HERO — Light with gradient decorations
+          HERO
       ══════════════════════════════════════════════════════════ */}
       <section className="relative overflow-hidden bg-white">
-        {/* Decorative gradient blobs */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute inset-0 pointer-events-none">
           <div
-            className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-30 animate-blob"
-            style={{ background: "radial-gradient(circle, oklch(0.75 0.12 264) 0%, transparent 70%)" }}
+            className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full opacity-[0.07]"
+            style={{ background: `radial-gradient(circle, ${INDIGO} 0%, transparent 70%)` }}
           />
           <div
-            className="absolute -top-16 right-0 w-80 h-80 rounded-full opacity-20 animate-blob animation-delay-2000"
-            style={{ background: "radial-gradient(circle, oklch(0.70 0.14 290) 0%, transparent 70%)" }}
+            className="absolute -top-20 right-0 w-[400px] h-[400px] rounded-full opacity-[0.05]"
+            style={{ background: `radial-gradient(circle, ${VIOLET} 0%, transparent 70%)` }}
           />
+          {/* Grid pattern */}
           <div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full opacity-10 animate-blob animation-delay-4000"
-            style={{ background: "radial-gradient(ellipse, oklch(0.65 0.15 264) 0%, transparent 60%)" }}
+            className="absolute inset-0 opacity-[0.025]"
+            style={{
+              backgroundImage: `linear-gradient(oklch(0.47 0.24 264) 1px, transparent 1px), linear-gradient(90deg, oklch(0.47 0.24 264) 1px, transparent 1px)`,
+              backgroundSize: "40px 40px",
+            }}
           />
         </div>
 
-        <div className="container relative z-10 pt-10 pb-0 md:pt-16 md:pb-0">
-
+        <div className="container relative z-10 pt-12 pb-0 md:pt-20">
           {/* Badge */}
-          <div className="flex justify-center mb-5">
+          <div className="flex justify-center mb-6">
             <div
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold border"
               style={{
-                backgroundColor: "oklch(0.96 0.03 264)",
-                borderColor: "oklch(0.47 0.24 264 / 0.25)",
+                backgroundColor: "oklch(0.97 0.02 264)",
+                borderColor: "oklch(0.47 0.24 264 / 0.20)",
                 color: INDIGO,
               }}
             >
               <Sparkles className="w-3 h-3" />
-              {(t as any).hero_cloud_badge ?? "100% Cloud — No installation required"}
+              {(t as any).hero_cloud_badge ?? "100% en la nube — Sin instalación"}
             </div>
           </div>
 
           {/* Headline */}
-          <div className="text-center max-w-3xl mx-auto mb-8">
+          <div className="text-center max-w-3xl mx-auto mb-4">
             <h1
-              className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-4"
-              style={{ fontFamily: "'Sora', sans-serif", color: TEXT_MAIN, letterSpacing: "-0.02em" }}
+              className="text-4xl md:text-5xl lg:text-[3.6rem] font-extrabold leading-[1.12] mb-5 tracking-tight"
+              style={{ fontFamily: "'Sora', sans-serif", color: TEXT_MAIN }}
             >
               {t.hero_title_1}{" "}
               <span
                 style={{
-                  background: `linear-gradient(135deg, ${INDIGO}, ${VIOLET})`,
+                  background: GRAD,
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
@@ -231,14 +237,38 @@ export default function Home() {
             </h1>
             <p
               className="text-base md:text-lg max-w-xl mx-auto leading-relaxed"
-              style={{ color: TEXT_MUTED, fontFamily: "'DM Sans', sans-serif" }}
+              style={{ color: TEXT_MUTED }}
             >
               {t.hero_subtitle}
             </p>
           </div>
 
-          {/* ── Upload Card ── */}
-          <div className="max-w-lg mx-auto">
+          {/* Social proof row */}
+          <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 mb-8 text-xs" style={{ color: TEXT_MUTED }}>
+            <span className="flex items-center gap-1.5">
+              <span className="flex">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-3.5 h-3.5 fill-current" style={{ color: "oklch(0.70 0.18 85)" }} />
+                ))}
+              </span>
+              <strong style={{ color: TEXT_MAIN }}>4.8/5</strong>
+              <span style={{ color: TEXT_LIGHT }}>de valoración</span>
+            </span>
+            <span className="w-px h-3 rounded-full" style={{ backgroundColor: BORDER }} />
+            <span className="flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5" style={{ color: INDIGO }} />
+              <strong style={{ color: TEXT_MAIN }}>2.3M+</strong>
+              <span style={{ color: TEXT_LIGHT }}>usuarios activos</span>
+            </span>
+            <span className="w-px h-3 rounded-full" style={{ backgroundColor: BORDER }} />
+            <span className="flex items-center gap-1.5">
+              <Shield className="w-3.5 h-3.5" style={{ color: INDIGO }} />
+              <span style={{ color: TEXT_MUTED }}>SSL Encrypted</span>
+            </span>
+          </div>
+
+          {/* Upload zone */}
+          <div className="max-w-[520px] mx-auto">
             <input
               ref={fileInputRef}
               type="file"
@@ -252,87 +282,104 @@ export default function Home() {
               onDragLeave={() => setIsDraggingOver(false)}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`cursor-pointer rounded-2xl flex flex-col items-center justify-center gap-4 py-8 md:py-10 px-6 transition-all duration-300 upload-zone ${isDraggingOver ? "drag-over" : ""}`}
+              className="cursor-pointer rounded-2xl border-2 border-dashed transition-all duration-300 p-8 flex flex-col items-center gap-5"
               style={{
-                border: `2px dashed ${isDraggingOver ? INDIGO : "oklch(0.47 0.24 264 / 0.35)"}`,
+                borderColor: isDraggingOver ? INDIGO : "oklch(0.47 0.24 264 / 0.30)",
                 backgroundColor: isDraggingOver ? "oklch(0.97 0.02 264)" : "white",
                 boxShadow: isDraggingOver
-                  ? `0 0 0 6px oklch(0.47 0.24 264 / 0.08), 0 8px 40px oklch(0.47 0.24 264 / 0.15)`
-                  : "0 4px 24px oklch(0.13 0.015 264 / 0.07), 0 1px 3px oklch(0.13 0.015 264 / 0.05)",
+                  ? `0 0 0 5px oklch(0.47 0.24 264 / 0.08), 0 12px 48px oklch(0.47 0.24 264 / 0.12)`
+                  : "0 4px 32px oklch(0.13 0.015 264 / 0.08), 0 1px 4px oklch(0.13 0.015 264 / 0.04)",
               }}
             >
-              {/* Animated icon */}
-              <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                style={{
-                  background: `linear-gradient(135deg, oklch(0.96 0.03 264), oklch(0.93 0.06 290))`,
-                  border: `1px solid oklch(0.47 0.24 264 / 0.15)`,
-                  animation: "pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-                }}
-              >
-                <FileText className="w-8 h-8" style={{ color: INDIGO }} />
+              {/* Animated PDF icon */}
+              <div className="relative">
+                <div
+                  className="w-20 h-20 rounded-2xl flex items-center justify-center"
+                  style={{
+                    background: GRAD,
+                    boxShadow: `0 8px 24px oklch(0.47 0.24 264 / 0.30)`,
+                  }}
+                >
+                  <FileText className="w-10 h-10 text-white" />
+                </div>
+                <div
+                  className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full flex items-center justify-center"
+                  style={{ background: "oklch(0.55 0.18 145)", boxShadow: "0 2px 8px oklch(0.55 0.18 145 / 0.40)" }}
+                >
+                  <Upload className="w-3 h-3 text-white" />
+                </div>
               </div>
 
               <div className="text-center">
                 <p
-                  className="font-bold text-lg mb-1"
+                  className="font-bold text-lg mb-1.5"
                   style={{ color: TEXT_MAIN, fontFamily: "'Sora', sans-serif" }}
                 >
                   {t.hero_drag_here}
                 </p>
-                <p className="text-sm" style={{ color: TEXT_LIGHT }}>{t.hero_or}</p>
+                <p className="text-sm mb-4" style={{ color: TEXT_LIGHT }}>
+                  {t.hero_or}
+                </p>
+                <button
+                  className="inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 active:scale-95"
+                  style={{
+                    background: GRAD,
+                    boxShadow: `0 4px 16px oklch(0.47 0.24 264 / 0.35)`,
+                  }}
+                  onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                >
+                  <Upload className="w-4 h-4" />
+                  {t.hero_upload_btn}
+                  <ArrowRight className="w-4 h-4" />
+                </button>
               </div>
 
-              {/* Main CTA */}
-              <button
-                className="flex items-center gap-2 px-7 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 btn-gradient"
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
-              >
-                <Upload className="w-4 h-4" />
-                {t.hero_upload_btn}
-                <ArrowRight className="w-4 h-4" />
-              </button>
-
-              {/* Auto-convert note */}
-              <p className="flex items-center justify-center gap-1.5 text-xs" style={{ color: TEXT_LIGHT }}>
-                <RefreshCw className="w-3 h-3 shrink-0" style={{ color: INDIGO }} />
-                {t.hero_auto_convert}
-              </p>
-
-              {/* Trust badges */}
-              <div className="flex flex-wrap justify-center gap-2">
-                {[
-                  { text: t.hero_badge_free, color: "oklch(0.45 0.18 160)", bg: "oklch(0.96 0.05 160 / 0.6)" },
-                  { text: t.hero_badge_no_card, color: "oklch(0.48 0.20 80)", bg: "oklch(0.96 0.06 80 / 0.6)" },
-                ].map((badge, i) => (
+              {/* Format chips */}
+              <div className="flex flex-wrap justify-center gap-1.5">
+                {["PDF", "Word", "Excel", "PPT", "JPG", "PNG"].map((fmt) => (
                   <span
-                    key={i}
-                    className="flex items-center gap-1 text-xs px-3 py-1 rounded-full font-medium border"
+                    key={fmt}
+                    className="text-xs px-2.5 py-0.5 rounded-full font-medium border"
                     style={{
-                      color: badge.color,
-                      backgroundColor: badge.bg,
-                      borderColor: `${badge.color}30`,
+                      backgroundColor: SURFACE,
+                      borderColor: BORDER,
+                      color: TEXT_MUTED,
                     }}
                   >
-                    <CheckCircle2 className="w-3 h-3" />
-                    {badge.text}
+                    {fmt}
                   </span>
                 ))}
+              </div>
+
+              {/* Trust badges */}
+              <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-xs" style={{ color: TEXT_LIGHT }}>
+                <span className="flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" style={{ color: "oklch(0.50 0.18 145)" }} />
+                  {t.hero_badge_free}
+                </span>
+                <span className="flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" style={{ color: "oklch(0.50 0.18 145)" }} />
+                  {t.hero_badge_no_card}
+                </span>
+                <span className="flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" style={{ color: "oklch(0.50 0.18 145)" }} />
+                  {t.hero_badge_instant}
+                </span>
               </div>
 
               <p className="text-xs" style={{ color: TEXT_LIGHT }}>{t.hero_max_size_detail}</p>
             </div>
           </div>
 
-          {/* Trust row below card */}
+          {/* Below upload trust row */}
           <div
-            className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 mt-6 pb-12 text-xs"
+            className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 mt-5 pb-14 text-xs"
             style={{ color: TEXT_LIGHT }}
           >
             {[
-              { icon: Shield, text: (t as any).hero_trust_secure ?? "SSL Encrypted" },
-              { icon: Monitor, text: (t as any).hero_trust_browser ?? "Works in any browser" },
-              { icon: CheckCircle2, text: t.hero_badge_instant },
+              { icon: Globe,    text: (t as any).hero_trust_browser ?? "Funciona en cualquier navegador" },
+              { icon: Trash2,   text: "Archivos eliminados automáticamente" },
+              { icon: Clock,    text: "Procesado en segundos" },
             ].map((item, i) => (
               <span key={i} className="flex items-center gap-1.5">
                 <item.icon className="w-3.5 h-3.5" style={{ color: INDIGO }} />
@@ -346,23 +393,22 @@ export default function Home() {
       {/* ══════════════════════════════════════════════════════════
           STATS BAR
       ══════════════════════════════════════════════════════════ */}
-      <section
-        className="py-8 border-y"
-        style={{ backgroundColor: SURFACE, borderColor: BORDER }}
-      >
+      <section className="py-10 border-y" style={{ backgroundColor: SURFACE, borderColor: BORDER }}>
         <div className="container">
-          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-20">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0 divide-y-2 md:divide-y-0 md:divide-x" style={{ "--tw-divide-opacity": 1, borderColor: BORDER } as React.CSSProperties}>
             {[
-              { value: "15+", label: (t as any).hero_social_tools ?? "PDF tools available" },
-              { value: "100%", label: (t as any).hero_social_browser ?? "Browser-based" },
-              { value: "0", label: (t as any).hero_social_install ?? "Installation required" },
+              { value: "15+",   label: (t as any).hero_social_tools ?? "Herramientas PDF", icon: Sparkles },
+              { value: "2.3M+", label: (t as any).hero_social_users  ?? "Usuarios activos", icon: Users },
+              { value: "4.8★",  label: (t as any).hero_social_rating ?? "Valoración media", icon: Star },
+              { value: "0",     label: (t as any).hero_social_install ?? "Instalación necesaria", icon: Download },
             ].map((stat, i) => (
-              <div key={i} className="text-center">
+              <div key={i} className="flex flex-col items-center gap-1 px-6 py-2 text-center">
+                <stat.icon className="w-5 h-5 mb-1" style={{ color: INDIGO, opacity: 0.7 }} />
                 <div
-                  className="text-3xl font-extrabold leading-none mb-1"
+                  className="text-2xl md:text-3xl font-extrabold leading-none"
                   style={{
                     fontFamily: "'Sora', sans-serif",
-                    background: `linear-gradient(135deg, ${INDIGO}, ${VIOLET})`,
+                    background: GRAD,
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                     backgroundClip: "text",
@@ -370,7 +416,7 @@ export default function Home() {
                 >
                   {stat.value}
                 </div>
-                <div className="text-xs font-medium" style={{ color: TEXT_MUTED }}>
+                <div className="text-xs font-medium mt-0.5" style={{ color: TEXT_MUTED }}>
                   {stat.label}
                 </div>
               </div>
@@ -391,7 +437,7 @@ export default function Home() {
             >
               {t.tools_title}
             </h2>
-            <p className="text-base" style={{ color: TEXT_MUTED }}>
+            <p className="text-base max-w-lg mx-auto" style={{ color: TEXT_MUTED }}>
               {t.tools_subtitle}
             </p>
           </div>
@@ -399,19 +445,23 @@ export default function Home() {
           {/* Category tabs */}
           <div className="flex justify-center mb-8">
             <div
-              className="flex rounded-xl p-1 gap-1 border"
+              className="flex rounded-2xl p-1 gap-1 border"
               style={{ backgroundColor: SURFACE, borderColor: BORDER }}
             >
-              {allToolsCategories.map((cat) => (
+              {[
+                { id: "edit" as const,    label: t.tools_tab_edit,     color: INDIGO },
+                { id: "fromPdf" as const, label: t.tools_tab_from_pdf, color: "oklch(0.40 0.22 220)" },
+                { id: "toPdf" as const,   label: t.tools_tab_to_pdf,   color: "oklch(0.42 0.18 145)" },
+              ].map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setActiveTab(cat.id)}
-                  className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                  className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
                   style={{
                     backgroundColor: activeTab === cat.id ? "white" : "transparent",
-                    color: activeTab === cat.id ? TEXT_MAIN : TEXT_MUTED,
+                    color: activeTab === cat.id ? cat.color : TEXT_MUTED,
                     boxShadow: activeTab === cat.id
-                      ? "0 1px 4px oklch(0.13 0.015 264 / 0.08), 0 0 0 1px oklch(0.91 0.008 264)"
+                      ? "0 1px 6px oklch(0.13 0.015 264 / 0.10), 0 0 0 1px oklch(0.91 0.008 264)"
                       : "none",
                     fontWeight: activeTab === cat.id ? "600" : "400",
                   }}
@@ -422,23 +472,23 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Tool cards grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-10">
-            {activeCategory.tools.map((tool, i) => (
+          {/* Tool grid */}
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mb-10">
+            {activeTools.map((tool, i) => (
               <button
                 key={i}
-                className="flex flex-col items-center gap-3 p-4 rounded-xl text-center border card-hover transition-all duration-200"
+                className="group flex flex-col items-center gap-3 p-4 rounded-xl border text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
                 style={{
                   backgroundColor: "white",
                   borderColor: BORDER,
                 }}
-                onClick={() => scrollToEditor((tool as { tool: string }).tool)}
+                onClick={() => scrollToEditor(tool.tool)}
               >
                 <div
-                  className="w-11 h-11 rounded-xl flex items-center justify-center"
-                  style={{ backgroundColor: activeCategoryColor.bg }}
+                  className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 group-hover:scale-110"
+                  style={{ backgroundColor: tool.color }}
                 >
-                  <tool.icon className="w-5 h-5" style={{ color: activeCategoryColor.icon }} />
+                  <tool.icon className="w-6 h-6" style={{ color: tool.iconColor }} />
                 </div>
                 <span className="text-xs font-medium leading-tight" style={{ color: TEXT_MAIN }}>
                   {tool.label}
@@ -449,7 +499,8 @@ export default function Home() {
 
           <div className="text-center">
             <button
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl text-white font-semibold text-sm btn-gradient"
+              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl text-white font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+              style={{ background: GRAD, boxShadow: `0 4px 16px oklch(0.47 0.24 264 / 0.30)` }}
               onClick={() => scrollToEditor()}
             >
               <Upload className="w-4 h-4" />
@@ -460,9 +511,81 @@ export default function Home() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════
-          BENEFITS
+          HOW IT WORKS
       ══════════════════════════════════════════════════════════ */}
-      <section className="py-16 md:py-20" style={{ backgroundColor: SURFACE }}>
+      <section id="how-it-works" className="py-16 md:py-20" style={{ backgroundColor: SURFACE }}>
+        <div className="container">
+          <div className="text-center mb-12">
+            <h2
+              className="text-3xl md:text-4xl font-bold mb-3"
+              style={{ fontFamily: "'Sora', sans-serif", color: TEXT_MAIN }}
+            >
+              {t.how_title}
+            </h2>
+            <p className="text-base" style={{ color: TEXT_MUTED }}>{t.how_subtitle}</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            {[
+              { step: "01", icon: Upload,   title: t.how_step1_title, desc: t.how_step1_desc, grad: GRAD },
+              { step: "02", icon: Edit3,    title: t.how_step2_title, desc: t.how_step2_desc, grad: "linear-gradient(135deg, oklch(0.42 0.18 145), oklch(0.48 0.20 165))" },
+              { step: "03", icon: Download, title: t.how_step3_title, desc: t.how_step3_desc, grad: "linear-gradient(135deg, oklch(0.55 0.20 80), oklch(0.50 0.18 100))" },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="relative flex flex-col gap-5 p-7 rounded-2xl bg-white border hover:shadow-md transition-shadow duration-300"
+                style={{ borderColor: BORDER }}
+              >
+                {/* Step number background */}
+                <div
+                  className="absolute top-5 right-5 text-6xl font-black leading-none select-none"
+                  style={{
+                    fontFamily: "'Sora', sans-serif",
+                    color: "oklch(0.13 0.015 264 / 0.04)",
+                  }}
+                >
+                  {item.step}
+                </div>
+
+                <div
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: item.grad, boxShadow: `0 6px 20px oklch(0.47 0.24 264 / 0.25)` }}
+                >
+                  <item.icon className="w-7 h-7 text-white" />
+                </div>
+
+                <div>
+                  <h3
+                    className="font-bold text-base mb-2"
+                    style={{ fontFamily: "'Sora', sans-serif", color: TEXT_MAIN }}
+                  >
+                    {item.title}
+                  </h3>
+                  <p className="text-sm leading-relaxed" style={{ color: TEXT_MUTED }}>
+                    {item.desc}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex justify-center mt-10">
+            <button
+              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl text-white font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5"
+              style={{ background: GRAD, boxShadow: `0 4px 16px oklch(0.47 0.24 264 / 0.30)` }}
+              onClick={() => scrollToEditor()}
+            >
+              <Upload className="w-4 h-4" />
+              {t.how_cta}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          BENEFITS — 4 cards
+      ══════════════════════════════════════════════════════════ */}
+      <section className="py-16 md:py-20 bg-white">
         <div className="container">
           <div className="text-center mb-12">
             <h2
@@ -474,10 +597,43 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {benefits.map((b, i) => (
+            {[
+              {
+                icon: Zap,
+                title: t.benefit1_title,
+                desc: t.benefit1_desc,
+                color: "oklch(0.96 0.06 80)",
+                iconColor: "oklch(0.55 0.20 80)",
+                points: ["Procesado al instante", "Sin esperas ni colas", "Resultados en segundos"],
+              },
+              {
+                icon: Shield,
+                title: t.benefit2_title,
+                desc: t.benefit2_desc,
+                color: "oklch(0.96 0.05 145)",
+                iconColor: "oklch(0.42 0.18 145)",
+                points: ["Cifrado SSL 256-bit", "Archivos eliminados en 1h", "Sin acceso de terceros"],
+              },
+              {
+                icon: Edit3,
+                title: t.benefit3_title,
+                desc: t.benefit3_desc,
+                color: "oklch(0.96 0.03 264)",
+                iconColor: INDIGO,
+                points: ["15+ herramientas", "Sin registrarse", "Ilimitado en plan Pro"],
+              },
+              {
+                icon: Monitor,
+                title: t.benefit4_title,
+                desc: t.benefit4_desc,
+                color: "oklch(0.96 0.06 290)",
+                iconColor: VIOLET,
+                points: ["Funciona en cualquier navegador", "Windows, Mac, Linux", "Móvil y tablet"],
+              },
+            ].map((b, i) => (
               <div
                 key={i}
-                className="flex flex-col gap-4 p-6 rounded-2xl border bg-white card-hover"
+                className="flex flex-col gap-4 p-6 rounded-2xl border bg-white hover:shadow-md transition-all duration-300 hover:-translate-y-0.5"
                 style={{ borderColor: BORDER }}
               >
                 <div
@@ -493,9 +649,17 @@ export default function Home() {
                   >
                     {b.title}
                   </h3>
-                  <p className="text-sm leading-relaxed" style={{ color: TEXT_MUTED }}>
+                  <p className="text-sm leading-relaxed mb-3" style={{ color: TEXT_MUTED }}>
                     {b.desc}
                   </p>
+                  <ul className="space-y-1.5">
+                    {b.points.map((point, j) => (
+                      <li key={j} className="flex items-center gap-2 text-xs" style={{ color: TEXT_MUTED }}>
+                        <Check className="w-3.5 h-3.5 flex-shrink-0" style={{ color: b.iconColor }} />
+                        {point}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </div>
             ))}
@@ -504,159 +668,142 @@ export default function Home() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════
-          HOW IT WORKS — 3 steps with connector
+          TESTIMONIALS
       ══════════════════════════════════════════════════════════ */}
-      <section id="how-it-works" className="py-16 md:py-20 bg-white">
+      <section className="py-16 md:py-20" style={{ backgroundColor: SURFACE }}>
         <div className="container">
-          <div className="mb-12">
-            <h2
-              className="text-3xl md:text-4xl font-bold mb-3"
-              style={{ fontFamily: "'Sora', sans-serif", color: TEXT_MAIN }}
-            >
-              {t.how_title}
-            </h2>
-            <p className="text-base" style={{ color: TEXT_MUTED }}>
-              {t.how_subtitle}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 relative">
-            {/* Connector lines (desktop only) */}
-            <div
-              className="hidden md:block absolute top-8 left-[calc(16.6%+24px)] right-[calc(16.6%+24px)] h-0.5 step-line"
-              aria-hidden="true"
-            />
-
-            {[
-              { step: "1", icon: Upload, title: t.how_step1_title, desc: t.how_step1_desc },
-              { step: "2", icon: Edit3, title: t.how_step2_title, desc: t.how_step2_desc },
-              { step: "3", icon: Download, title: t.how_step3_title, desc: t.how_step3_desc },
-            ].map((item, i) => (
-              <div
-                key={i}
-                className="flex flex-col gap-5 p-6 rounded-2xl border bg-white relative"
-                style={{
-                  borderColor: BORDER,
-                  boxShadow: "0 2px 12px oklch(0.13 0.015 264 / 0.04)",
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  {/* Step number */}
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0 z-10"
-                    style={{
-                      background: `linear-gradient(135deg, ${INDIGO}, ${VIOLET})`,
-                      fontFamily: "'Sora', sans-serif",
-                      boxShadow: `0 4px 12px oklch(0.47 0.24 264 / 0.30)`,
-                    }}
-                  >
-                    {item.step}
-                  </div>
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ backgroundColor: "oklch(0.96 0.03 264)" }}
-                  >
-                    <item.icon className="w-5 h-5" style={{ color: INDIGO }} />
-                  </div>
-                </div>
-                <div>
-                  <h3
-                    className="font-bold text-lg mb-2"
-                    style={{ fontFamily: "'Sora', sans-serif", color: TEXT_MAIN }}
-                  >
-                    {item.title}
-                  </h3>
-                  <p className="text-sm leading-relaxed" style={{ color: TEXT_MUTED }}>
-                    {item.desc}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <button
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl text-white font-semibold text-sm btn-gradient"
-              onClick={() => scrollToEditor()}
-            >
-              <Upload className="w-4 h-4" />
-              {t.how_cta}
-            </button>
-
-            <div
-              className="flex items-center gap-2 px-4 py-3 rounded-xl border text-sm"
-              style={{
-                backgroundColor: "oklch(0.96 0.03 264)",
-                borderColor: "oklch(0.47 0.24 264 / 0.2)",
-                color: TEXT_MUTED,
-              }}
-            >
-              <Monitor className="w-4 h-4 flex-shrink-0" style={{ color: INDIGO }} />
-              <span style={{ color: TEXT_MUTED }}>{t.cloud_notice}</span>
+          <div className="text-center mb-10">
+            <div className="flex justify-center items-center gap-1 mb-3">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-5 h-5 fill-current" style={{ color: "oklch(0.70 0.18 85)" }} />
+              ))}
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          FEATURE SHOWCASE
-      ══════════════════════════════════════════════════════════ */}
-      <section className="py-16 md:py-24" style={{ backgroundColor: SURFACE }}>
-        <div className="container">
-          <div className="mb-12">
             <h2
-              className="text-3xl md:text-4xl font-bold mb-3"
+              className="text-3xl md:text-4xl font-bold mb-2"
               style={{ fontFamily: "'Sora', sans-serif", color: TEXT_MAIN }}
             >
-              {t.features_why_title}
+              Lo que dicen nuestros usuarios
             </h2>
             <p className="text-base" style={{ color: TEXT_MUTED }}>
-              {t.features_why_subtitle}
+              Más de 2.3 millones de personas ya confían en nosotros
             </p>
           </div>
 
-          <div className="space-y-0">
-            {features.map((feature, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {TESTIMONIALS.map((t_user, i) => (
               <div
                 key={i}
-                className={`flex flex-col ${i % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"} gap-8 md:gap-12 items-center py-10 border-b`}
+                className="flex flex-col gap-4 p-6 rounded-2xl bg-white border hover:shadow-md transition-all duration-300"
                 style={{ borderColor: BORDER }}
               >
-                <div className="flex-1">
-                  <div
-                    className="inline-block text-xs font-bold px-3 py-1 rounded-full mb-3"
-                    style={{
-                      background: `linear-gradient(135deg, ${INDIGO}, ${VIOLET})`,
-                      color: "white",
-                    }}
-                  >
-                    {feature.title}
-                  </div>
-                  <h3
-                    className="text-xl font-bold mb-3"
-                    style={{ fontFamily: "'Sora', sans-serif", color: TEXT_MAIN }}
-                  >
-                    {feature.subtitle}
-                  </h3>
-                  <p className="text-sm leading-relaxed" style={{ color: TEXT_MUTED }}>
-                    {feature.description}
-                  </p>
+                {/* Stars */}
+                <div className="flex items-center gap-0.5">
+                  {[...Array(t_user.rating)].map((_, j) => (
+                    <Star key={j} className="w-4 h-4 fill-current" style={{ color: "oklch(0.70 0.18 85)" }} />
+                  ))}
                 </div>
-                <div
-                  className="flex-shrink-0 w-full md:w-72 h-48 rounded-2xl overflow-hidden border"
-                  style={{
-                    borderColor: BORDER,
-                    boxShadow: "0 8px 32px oklch(0.13 0.015 264 / 0.08)",
-                  }}
-                >
-                  <img
-                    src={feature.image}
-                    alt={feature.title}
-                    className="w-full h-full object-cover"
-                  />
+
+                {/* Quote */}
+                <p className="text-sm leading-relaxed flex-1" style={{ color: TEXT_MUTED }}>
+                  "{t_user.text}"
+                </p>
+
+                {/* Author */}
+                <div className="flex items-center gap-3 pt-2 border-t" style={{ borderColor: BORDER }}>
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                    style={{ background: t_user.avatarColor }}
+                  >
+                    {t_user.avatar}
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold" style={{ color: TEXT_MAIN }}>
+                      {t_user.name}
+                    </div>
+                    <div className="text-xs" style={{ color: TEXT_LIGHT }}>
+                      {t_user.role}
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          SECURITY & PRIVACY TRUST SECTION
+      ══════════════════════════════════════════════════════════ */}
+      <section className="py-16 md:py-20 bg-white">
+        <div className="container max-w-4xl mx-auto">
+          <div className="rounded-2xl border overflow-hidden" style={{ borderColor: BORDER }}>
+            {/* Header */}
+            <div
+              className="px-8 py-6 flex items-center gap-4 border-b"
+              style={{ backgroundColor: "oklch(0.97 0.015 264)", borderColor: BORDER }}
+            >
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: GRAD }}
+              >
+                <FileLock2 className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2
+                  className="text-xl font-bold"
+                  style={{ fontFamily: "'Sora', sans-serif", color: TEXT_MAIN }}
+                >
+                  Tus archivos están seguros
+                </h2>
+                <p className="text-sm" style={{ color: TEXT_MUTED }}>
+                  Privacidad y seguridad como prioridad absoluta
+                </p>
+              </div>
+            </div>
+
+            {/* Trust points grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x" style={{ borderColor: BORDER }}>
+              {[
+                {
+                  icon: Shield,
+                  title: "Cifrado SSL 256-bit",
+                  desc: "Toda la transferencia de datos está protegida con cifrado de grado bancario.",
+                  color: "oklch(0.42 0.18 145)",
+                },
+                {
+                  icon: Trash2,
+                  title: "Borrado automático",
+                  desc: "Tus archivos se eliminan automáticamente de nuestros servidores en 1 hora.",
+                  color: "oklch(0.55 0.20 80)",
+                },
+                {
+                  icon: Globe,
+                  title: "Privacidad total",
+                  desc: "No vendemos ni compartimos tus datos. No necesitas crear una cuenta para usarlo.",
+                  color: INDIGO,
+                },
+              ].map((item, i) => (
+                <div key={i} className="flex gap-4 items-start p-6">
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+                    style={{ backgroundColor: `${item.color}18` }}
+                  >
+                    <item.icon className="w-5 h-5" style={{ color: item.color }} />
+                  </div>
+                  <div>
+                    <h3
+                      className="font-semibold text-sm mb-1"
+                      style={{ fontFamily: "'Sora', sans-serif", color: TEXT_MAIN }}
+                    >
+                      {item.title}
+                    </h3>
+                    <p className="text-xs leading-relaxed" style={{ color: TEXT_MUTED }}>
+                      {item.desc}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -664,7 +811,7 @@ export default function Home() {
       {/* ══════════════════════════════════════════════════════════
           FAQ
       ══════════════════════════════════════════════════════════ */}
-      <section id="faq" className="py-16 md:py-24 bg-white">
+      <section id="faq" className="py-16 md:py-20" style={{ backgroundColor: SURFACE }}>
         <div className="container max-w-2xl mx-auto">
           <div className="text-center mb-12">
             <h2
@@ -679,11 +826,11 @@ export default function Home() {
             {faqs.map((faq, i) => (
               <div
                 key={i}
-                className="rounded-xl overflow-hidden border transition-all duration-200"
+                className="rounded-2xl overflow-hidden border transition-all duration-200"
                 style={{
-                  borderColor: openFaq === i ? "oklch(0.47 0.24 264 / 0.35)" : BORDER,
+                  borderColor: openFaq === i ? "oklch(0.47 0.24 264 / 0.30)" : BORDER,
                   backgroundColor: "white",
-                  boxShadow: openFaq === i ? "0 4px 20px oklch(0.47 0.24 264 / 0.07)" : "none",
+                  boxShadow: openFaq === i ? "0 4px 20px oklch(0.47 0.24 264 / 0.06)" : "none",
                 }}
               >
                 <button
@@ -709,10 +856,7 @@ export default function Home() {
                   </div>
                 </button>
                 {openFaq === i && (
-                  <div
-                    className="px-5 pb-4 text-sm leading-relaxed"
-                    style={{ color: TEXT_MUTED }}
-                  >
+                  <div className="px-5 pb-4 text-sm leading-relaxed" style={{ color: TEXT_MUTED }}>
                     {faq.answer}
                   </div>
                 )}
@@ -723,73 +867,84 @@ export default function Home() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════
-          FINAL CTA — gradient banner
+          FINAL CTA
       ══════════════════════════════════════════════════════════ */}
-      <section className="relative py-16 md:py-20 overflow-hidden">
-        {/* Gradient background */}
+      <section className="relative py-16 md:py-24 overflow-hidden">
         <div
           className="absolute inset-0"
           style={{
-            background: `linear-gradient(135deg, oklch(0.38 0.24 264) 0%, oklch(0.35 0.26 290) 50%, oklch(0.30 0.22 300) 100%)`,
+            background: `linear-gradient(135deg, oklch(0.40 0.24 264) 0%, oklch(0.36 0.26 290) 60%, oklch(0.32 0.22 305) 100%)`,
           }}
         />
-        {/* Decorative blobs */}
+        {/* Decorations */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div
-            className="absolute -top-20 -right-20 w-80 h-80 rounded-full opacity-20"
+            className="absolute -top-24 -right-24 w-96 h-96 rounded-full opacity-[0.12]"
             style={{ background: "radial-gradient(circle, white 0%, transparent 70%)" }}
           />
           <div
-            className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full opacity-10"
+            className="absolute -bottom-16 -left-16 w-72 h-72 rounded-full opacity-[0.07]"
             style={{ background: "radial-gradient(circle, white 0%, transparent 70%)" }}
+          />
+          {/* Grid pattern on CTA */}
+          <div
+            className="absolute inset-0 opacity-[0.06]"
+            style={{
+              backgroundImage: `linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)`,
+              backgroundSize: "40px 40px",
+            }}
           />
         </div>
 
         <div className="container relative z-10 text-center">
-          {/* Stars rating */}
-          <div className="flex justify-center items-center gap-1 mb-4">
+          {/* Stars */}
+          <div className="flex justify-center items-center gap-1 mb-5">
             {[...Array(5)].map((_, i) => (
               <Star key={i} className="w-5 h-5 fill-current" style={{ color: "oklch(0.80 0.18 85)" }} />
             ))}
+            <span className="ml-2 text-sm font-medium" style={{ color: "oklch(0.85 0.05 264)" }}>
+              4.8/5 · 2.3M usuarios
+            </span>
           </div>
 
           <h2
-            className="text-3xl md:text-4xl font-bold text-white mb-4"
+            className="text-3xl md:text-5xl font-extrabold text-white mb-4 tracking-tight"
             style={{ fontFamily: "'Sora', sans-serif" }}
           >
             {t.cta_title}
           </h2>
           <p
-            className="text-base mb-8 max-w-xl mx-auto"
-            style={{ color: "oklch(0.85 0.04 264)" }}
+            className="text-base md:text-lg mb-10 max-w-lg mx-auto leading-relaxed"
+            style={{ color: "oklch(0.83 0.05 264)" }}
           >
             {t.cta_subtitle}
           </p>
 
-          <button
-            className="inline-flex items-center gap-2 px-10 py-4 rounded-xl font-bold text-sm transition-all duration-200"
-            style={{
-              backgroundColor: "white",
-              color: INDIGO,
-              boxShadow: "0 8px 32px oklch(0 0 0 / 0.20)",
-              fontFamily: "'DM Sans', sans-serif",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = "0 14px 40px oklch(0 0 0 / 0.28)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "0 8px 32px oklch(0 0 0 / 0.20)";
-            }}
-            onClick={() => scrollToEditor()}
-          >
-            <Upload className="w-5 h-5" />
-            {t.cta_btn}
-            <ArrowRight className="w-5 h-5" />
-          </button>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button
+              className="inline-flex items-center gap-2.5 px-10 py-4 rounded-xl font-bold text-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl active:scale-95"
+              style={{
+                backgroundColor: "white",
+                color: INDIGO,
+                boxShadow: "0 8px 32px oklch(0 0 0 / 0.22)",
+              }}
+              onClick={() => scrollToEditor()}
+            >
+              <Upload className="w-5 h-5" />
+              {t.cta_btn}
+              <ArrowRight className="w-5 h-5" />
+            </button>
 
-          <p className="text-xs mt-4" style={{ color: "oklch(0.70 0.04 264)" }}>
+            <div
+              className="flex items-center gap-2 text-sm rounded-xl px-5 py-3"
+              style={{ color: "oklch(0.78 0.05 264)" }}
+            >
+              <CheckCircle2 className="w-4 h-4" style={{ color: "oklch(0.75 0.16 145)" }} />
+              Sin tarjeta de crédito · Sin instalación
+            </div>
+          </div>
+
+          <p className="text-xs mt-6" style={{ color: "oklch(0.65 0.05 264)" }}>
             {t.hero_max_size_detail}
           </p>
         </div>
