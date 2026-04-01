@@ -11,7 +11,7 @@ import {
   FileText, PenTool, Share2, MessageSquare, Type, Image, Lock,
   ChevronDown, ChevronUp, ArrowRight, Upload, Download, Edit3,
   Layers, Shield, Zap, Monitor, CheckCircle2, RefreshCw, Sparkles,
-  Star, Trash2, Clock, Globe, Users, FileLock2, Check, Merge,
+  Star, Trash2, Clock, Globe, Cloud, Users, FileLock2, Check, Merge,
   Scissors, RotateCcw, Minimize2, FileImage, FileSpreadsheet,
   Presentation, FileCode,
 } from "lucide-react";
@@ -326,7 +326,7 @@ export default function Home() {
                 { value: "15+",   label: (t as any).hero_social_tools ?? "Herramientas PDF", icon: Sparkles },
                 { value: docsCount.toLocaleString(), label: (t as any).hero_social_pdfs ?? "Documentos procesados hoy", icon: FileText },
                 { value: "4.8★",  label: (t as any).hero_social_rating ?? "Valoración media", icon: Star },
-                { value: "100%",  label: (t as any).hero_social_install ?? "Sin instalación", icon: Globe },
+                { value: "☁️",  label: (t as any).hero_social_install ?? "Sin instalación", icon: Cloud },
               ].map((stat, i) => (
                 <div
                   key={i}
