@@ -53,12 +53,26 @@ const TRACKING_CLOUDPDF = `<!-- Google Consent Mode v2 — MUST run before gtag 
 
 const trackingScripts = brandName === "FastDoc" ? "" : TRACKING_CLOUDPDF;
 
+const isFastDoc = brandName === "FastDoc";
+const pageTitle = isFastDoc
+  ? `Online PDF Editor – Edit, Sign & Convert PDF | ${brandName}`
+  : `Free Online PDF Editor – Edit, Sign & Convert PDF | ${brandName}`;
+const pageDescription = isFastDoc
+  ? "Edit PDF files online. Add text, signatures, images and annotations. Convert PDF to Word, JPG, Excel. Works on any device."
+  : "Edit PDF files online for free. Add text, signatures, images and annotations. Convert PDF to Word, JPG, Excel. No installation needed. Works on any device.";
+const pageKeywords = isFastDoc
+  ? "edit PDF online, PDF editor, PDF to Word, sign PDF online, convert PDF, merge PDF, compress PDF"
+  : "edit PDF online, free PDF editor, PDF to Word, sign PDF online, convert PDF, merge PDF, compress PDF";
+
 function replaceBrandPlaceholders(html: string): string {
   return html
     .replaceAll("%%BRAND_NAME%%", brandName)
     .replaceAll("%%BRAND_DOMAIN%%", brandDomain)
     .replaceAll("%%FAVICON_LINKS%%", faviconLinks)
-    .replaceAll("%%TRACKING_SCRIPTS%%", trackingScripts);
+    .replaceAll("%%TRACKING_SCRIPTS%%", trackingScripts)
+    .replaceAll("%%PAGE_TITLE%%", pageTitle)
+    .replaceAll("%%PAGE_DESCRIPTION%%", pageDescription)
+    .replaceAll("%%PAGE_KEYWORDS%%", pageKeywords);
 }
 
 export async function setupVite(app: Express, server: Server) {
