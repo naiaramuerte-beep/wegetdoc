@@ -221,8 +221,14 @@ async function startServer() {
     res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(self)");
     // Strict Transport Security (HSTS) — force HTTPS for 1 year
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
-    // Only keep frame-ancestors to prevent clickjacking (no restrictive CSP — incompatible with Google Ads)
-    res.setHeader("Content-Security-Policy", "frame-ancestors 'self'");
+    // Content Security Policy
+    res.setHeader("Content-Security-Policy", [
+      "frame-ancestors 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://cdn.paddle.com",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "frame-src 'self' https://*.paddle.com",
+    ].join("; "));
     next();
   });
   // Google OAuth direct routes: /api/auth/google and /api/auth/google/callback
