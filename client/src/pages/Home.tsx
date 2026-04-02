@@ -202,7 +202,7 @@ export default function Home() {
             >
               {isFastDoc ? (
                 <>
-                  Edita tus PDFs{" "}
+                  {t.fastdoc_hero_title_1}{" "}
                   <span
                     style={{
                       background: "linear-gradient(135deg, #E8590C, #F97316)",
@@ -211,7 +211,7 @@ export default function Home() {
                       backgroundClip: "text",
                     }}
                   >
-                    en segundos
+                    {t.fastdoc_hero_title_2}
                   </span>
                 </>
               ) : (
@@ -234,7 +234,7 @@ export default function Home() {
               className="text-base md:text-lg max-w-xl mx-auto leading-relaxed"
               style={{ color: TEXT_MUTED }}
             >
-              {isFastDoc ? "Sin registro. Desde el navegador." : t.hero_subtitle}
+              {isFastDoc ? t.fastdoc_hero_subtitle : t.hero_subtitle}
             </p>
           </div>
 
