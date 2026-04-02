@@ -5,7 +5,7 @@
    ============================================================= */
 
 import { useState, useEffect } from "react";
-import { logoParts, colors } from "@/lib/brand";
+import { logoParts, colors, isFastDoc } from "@/lib/brand";
 import { Link, useLocation } from "wouter";
 import {
   Menu, X, LogOut, LayoutDashboard, Crown,
@@ -43,13 +43,19 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const navLinks = [
+  const allNavLinks = [
     { href: `/${lang}/#how-it-works`, label: t.nav_how_it_works },
     { href: `/${lang}/pricing`, label: t.nav_pricing },
     { href: `/${lang}/blog`, label: "Blog" },
     { href: `/${lang}/#faq`, label: t.nav_faq },
     { href: "#contact", label: t.nav_contact, onClick: () => setContactOpen(true) },
   ];
+
+  const navLinks = isFastDoc
+    ? allNavLinks.filter((link) =>
+        [t.nav_how_it_works, t.nav_pricing, t.nav_faq].includes(link.label)
+      )
+    : allNavLinks;
 
   const handleLogout = async () => {
     await logout();

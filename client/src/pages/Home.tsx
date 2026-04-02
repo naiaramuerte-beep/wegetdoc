@@ -19,7 +19,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { usePdfFile } from "@/contexts/PdfFileContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { colors } from "@/lib/brand";
+import { colors, isFastDoc } from "@/lib/brand";
 
 const ACCEPTED_MIME_TYPES = new Set([
   'application/pdf',
@@ -200,27 +200,34 @@ export default function Home() {
               className="text-4xl md:text-5xl lg:text-[3.6rem] font-extrabold leading-[1.12] mb-5 tracking-tight"
               style={{ fontFamily: "'Sora', sans-serif", color: TEXT_MAIN }}
             >
-              {t.hero_title_1}{" "}
-              <span
-                style={{
-                  background: GRAD,
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-              >
-                {t.hero_title_2}
-              </span>
+              {isFastDoc ? (
+                "Edita tus PDFs en segundos"
+              ) : (
+                <>
+                  {t.hero_title_1}{" "}
+                  <span
+                    style={{
+                      background: GRAD,
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                    }}
+                  >
+                    {t.hero_title_2}
+                  </span>
+                </>
+              )}
             </h1>
             <p
               className="text-base md:text-lg max-w-xl mx-auto leading-relaxed"
               style={{ color: TEXT_MUTED }}
             >
-              {t.hero_subtitle}
+              {isFastDoc ? "Sin registro. Desde el navegador." : t.hero_subtitle}
             </p>
           </div>
 
           {/* Social proof row */}
+          {!isFastDoc && (
           <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 mb-8 text-xs" style={{ color: TEXT_MUTED }}>
             <span className="flex items-center gap-1.5">
               <span className="flex">
@@ -238,6 +245,7 @@ export default function Home() {
               <span style={{ color: TEXT_LIGHT }}>{(t as any).hero_social_users ?? "usuarios activos"}</span>
             </span>
           </div>
+          )}
 
           {/* Upload zone — wide, rectangular, clean */}
           <div className="max-w-3xl mx-auto w-full">
@@ -318,6 +326,7 @@ export default function Home() {
           </div>
 
           {/* Stats — dentro del hero, debajo de la upload zone */}
+          {!isFastDoc && (
           <div className="max-w-3xl mx-auto w-full mt-8 pb-12">
             <div
               className="grid grid-cols-2 md:grid-cols-4 rounded-2xl border"
@@ -354,6 +363,7 @@ export default function Home() {
               ))}
             </div>
           </div>
+          )}
         </div>
       </section>
 
@@ -517,6 +527,7 @@ export default function Home() {
       {/* ══════════════════════════════════════════════════════════
           BENEFITS — 4 cards
       ══════════════════════════════════════════════════════════ */}
+      {!isFastDoc && (
       <section className="py-16 md:py-20 bg-white">
         <div className="container">
           <div className="text-center mb-12">
@@ -598,10 +609,12 @@ export default function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ══════════════════════════════════════════════════════════
           TESTIMONIALS
       ══════════════════════════════════════════════════════════ */}
+      {!isFastDoc && (
       <section className="py-16 md:py-20" style={{ backgroundColor: SURFACE }}>
         <div className="container">
           <div className="text-center mb-10">
@@ -662,6 +675,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ══════════════════════════════════════════════════════════
           SECURITY & PRIVACY TRUST SECTION
@@ -743,6 +757,7 @@ export default function Home() {
       {/* ══════════════════════════════════════════════════════════
           FAQ
       ══════════════════════════════════════════════════════════ */}
+      {!isFastDoc && (
       <section id="faq" className="py-16 md:py-20" style={{ backgroundColor: SURFACE }}>
         <div className="container max-w-2xl mx-auto">
           <div className="text-center mb-12">
@@ -797,6 +812,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ══════════════════════════════════════════════════════════
           FINAL CTA
@@ -830,6 +846,7 @@ export default function Home() {
 
         <div className="container relative z-10 text-center">
           {/* Stars */}
+          {!isFastDoc && (
           <div className="flex justify-center items-center gap-1 mb-5">
             {[...Array(5)].map((_, i) => (
               <Star key={i} className="w-5 h-5 fill-current" style={{ color: "oklch(0.80 0.18 85)" }} />
@@ -838,6 +855,7 @@ export default function Home() {
               4.8/5 · 2.3M usuarios
             </span>
           </div>
+          )}
 
           <h2
             className="text-3xl md:text-5xl font-extrabold text-white mb-4 tracking-tight"

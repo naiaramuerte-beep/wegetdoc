@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { FileText } from "lucide-react";
 import { useLanguage, LANGUAGES } from "@/contexts/LanguageContext";
-import { logoParts, colors } from "@/lib/brand";
+import { logoParts, colors, isFastDoc, brandName } from "@/lib/brand";
 import ContactModal from "./ContactModal";
 
 const BG = "oklch(0.12 0.02 264)";
@@ -53,6 +53,45 @@ export default function Footer() {
       style={{ backgroundColor: BG }}
     >
       <div className="container">
+        {isFastDoc ? (
+          /* ── FastDoc minimal footer ── */
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 py-4">
+            <p className="text-xs" style={{ color: TEXT_MUTED }}>
+              &copy; 2025 {brandName}
+            </p>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setContactOpen(true)}
+                className="text-xs transition-colors duration-150 cursor-pointer"
+                style={{ color: TEXT_LINK, background: "none", border: "none" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = TEXT_LINK)}
+              >
+                {t.nav_contact}
+              </button>
+              <a
+                href={`/${lang}/privacy`}
+                className="text-xs transition-colors duration-150"
+                style={{ color: TEXT_LINK }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = TEXT_LINK)}
+              >
+                {t.footer_privacy}
+              </a>
+              <a
+                href={`/${lang}/terms`}
+                className="text-xs transition-colors duration-150"
+                style={{ color: TEXT_LINK }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = TEXT_LINK)}
+              >
+                {t.footer_terms}
+              </a>
+            </div>
+          </div>
+        ) : (
+          /* ── CloudPDF full footer ── */
+          <>
         <div
           className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b"
           style={{ borderColor: BORDER }}
@@ -190,6 +229,8 @@ export default function Footer() {
             ))}
           </select>
         </div>
+          </>
+        )}
       </div>
     </footer>
     <ContactModal open={contactOpen} onClose={() => setContactOpen(false)} />

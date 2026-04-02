@@ -24,6 +24,7 @@ import LegalPage from "./pages/LegalPage";
 import EditorPage from "./pages/EditorPage";
 import CancelSubscription from "./pages/CancelSubscription";
 import CookieBanner from "./components/CookieBanner";
+import { isFastDoc } from "./lib/brand";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 
@@ -85,16 +86,16 @@ function Router() {
       ))}
 
       {/* Blog routes — language-prefixed */}
-      {LANGUAGES.map(({ code }) => (
+      {!isFastDoc && LANGUAGES.map(({ code }) => (
         <Route key={`${code}-blog`} path={`/${code}/blog`} component={Blog} />
       ))}
-      {LANGUAGES.map(({ code }) => (
+      {!isFastDoc && LANGUAGES.map(({ code }) => (
         <Route key={`${code}-blog-post`} path={`/${code}/blog/:slug`} component={BlogPost} />
       ))}
 
       {/* Blog legacy routes */}
-      <Route path="/blog" component={() => <Redirect to="/es/blog" />} />
-      <Route path="/blog/:slug" component={({ params }) => <Redirect to={`/es/blog/${params.slug}`} />} />
+      {!isFastDoc && <Route path="/blog" component={() => <Redirect to="/es/blog" />} />}
+      {!isFastDoc && <Route path="/blog/:slug" component={({ params }) => <Redirect to={`/es/blog/${params.slug}`} />} />}
 
       {/* Legacy routes without lang prefix — redirect to /es/ */}
       <Route path="/editor" component={() => <Redirect to="/es/editor" />} />

@@ -38,6 +38,7 @@ export const brandDomain = brand.domain;
 export const logoParts = brand.logoParts;
 export const brandKey = brand.brandKey;
 export const colors = brand.colors;
+export const isFastDoc = brand.brandKey === "FastDoc";
 
 // Set data-brand attribute on <html> so CSS can target it
 if (typeof document !== "undefined") {

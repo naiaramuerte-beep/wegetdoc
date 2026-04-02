@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { brandName } from "@/lib/brand";
+import { brandName, isFastDoc } from "@/lib/brand";
 import { toast } from "sonner";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -106,8 +106,8 @@ export default function Admin() {
     { id: "messages", label: "Mensajes", icon: <MessageSquare size={16} /> },
     { id: "legal", label: "Páginas legales", icon: <BookOpen size={16} /> },
     { id: "settings", label: "Ajustes", icon: <Settings size={16} /> },
-    { id: "blog", label: "Blog", icon: <Rss size={16} /> },
-    { id: "trustpilot", label: "Trustpilot", icon: <Star size={16} /> },
+    ...(!isFastDoc ? [{ id: "blog" as AdminTab, label: "Blog", icon: <Rss size={16} /> }] : []),
+    ...(!isFastDoc ? [{ id: "trustpilot" as AdminTab, label: "Trustpilot", icon: <Star size={16} /> }] : []),
   ];
 
   const formatEur = (n: number) =>
@@ -841,8 +841,8 @@ export default function Admin() {
               </div>
             </div>
           )}
-          {tab === "blog" && <BlogAdmin />}
-          {tab === "trustpilot" && <TrustpilotAdmin />}
+          {!isFastDoc && tab === "blog" && <BlogAdmin />}
+          {!isFastDoc && tab === "trustpilot" && <TrustpilotAdmin />}
         </main>
       </div>
     </div>

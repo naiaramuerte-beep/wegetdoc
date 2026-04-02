@@ -3,7 +3,7 @@
    Rutas: /es/ /en/ /fr/ /de/ /pt/ /it/ /nl/ /pl/ /ru/ /zh/
    ============================================================= */
 
-import { brandName } from "./brand";
+import { brandName, isFastDoc } from "./brand";
 
 export type LangCode = "es" | "en" | "fr" | "de" | "pt" | "it" | "nl" | "pl" | "ru" | "zh";
 
@@ -522,12 +522,41 @@ export type TranslationKeys = {
 
 type Translations = Record<LangCode, TranslationKeys>;
 
+// Patterns to strip from FastDoc translations (all languages)
+const FASTDOC_STRIP: [RegExp, string][] = [
+  // "gratis" / "free" / "gratuito" / "gratuit" / "kostenlos" / "gratuito" / "gratis" / "бесплатн" / "免费" / "bezpłatn"
+  [/\s*—?\s*(?:sin instalar nada|no installation needed|sans installer|ohne Installation|sem instalação|senza installazione|zonder installatie|bez instalacji|без установки|无需安装)/gi, ""],
+  [/,?\s*sin instalar (?:ningún |ninguna )?(?:software|app)[.,]?/gi, ""],
+  [/,?\s*no software (?:needed|to install|required|download)[.,]?/gi, ""],
+  [/,?\s*(?:sans|ohne|sem|senza|zonder|bez|без) (?:logiciel|Software|software|installazione|installatie|instalacji|установки)[.,]?/gi, ""],
+  [/\bgratis\b/gi, ""],
+  [/\bgratuit(?:o|e|s|a|ement)?\b/gi, ""],
+  [/\bfree\b/gi, ""],
+  [/\bkostenlos(?:e[snmr]?)?\b/gi, ""],
+  [/\bbezpłatn[yaieou]*\b/gi, ""],
+  [/\bбесплатн[оаыйе]*\b/gi, ""],
+  [/\b免费\b/g, ""],
+  // Clean up leftover artifacts
+  [/\s*—\s*$/g, ""],
+  [/\s+\./g, "."],
+  [/\s{2,}/g, " "],
+];
+
 function applyBrand(t: TranslationKeys): TranslationKeys {
   const result = { ...t };
   for (const key of Object.keys(result) as (keyof TranslationKeys)[]) {
-    if (typeof result[key] === "string" && result[key].includes("CloudPDF")) {
-      (result as any)[key] = result[key].replaceAll("CloudPDF", brandName);
+    let val = result[key];
+    if (typeof val !== "string") continue;
+    if (val.includes("CloudPDF")) {
+      val = val.replaceAll("CloudPDF", brandName);
     }
+    if (isFastDoc) {
+      for (const [pattern, replacement] of FASTDOC_STRIP) {
+        val = val.replace(pattern, replacement);
+      }
+      val = val.trim();
+    }
+    (result as any)[key] = val;
   }
   return result;
 }
