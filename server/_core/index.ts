@@ -225,11 +225,11 @@ async function startServer() {
     // Content Security Policy — comprehensive with frame-ancestors
     res.setHeader("Content-Security-Policy", [
       "default-src 'self'",
-      "script-src 'self' 'sha256-k8uGMGTuFJwr6QatJlm0mvafWGxfD6d/sfOnYhlPHRc=' 'sha256-gKuu88qDHbph/6RMqDpEXR89DuZ1cDwPWXuwX3aIfd8=' https://www.googletagmanager.com https://cdn.paddle.com https://*.google-analytics.com https://*.googleadservices.com https://*.googlesyndication.com",
+      "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.paddle.com https://*.google-analytics.com https://*.googleadservices.com https://*.googlesyndication.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob: https://d2xsxph8kpxj0f.cloudfront.net https://pub-9115567915bb439c891a63ec2454650a.r2.dev https://www.google-analytics.com https://www.googletagmanager.com https://*.googleadservices.com https://*.googlesyndication.com https://cdn.paddle.com https://lh3.googleusercontent.com",
-      "connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googleadservices.com https://api.paddle.com https://*.paddle.com https://accounts.google.com https://oauth2.googleapis.com https://www.googleapis.com https://d2xsxph8kpxj0f.cloudfront.net https://pub-9115567915bb439c891a63ec2454650a.r2.dev",
+      "connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googleadservices.com https://*.googlesyndication.com https://api.paddle.com https://*.paddle.com https://accounts.google.com https://oauth2.googleapis.com https://www.googleapis.com https://d2xsxph8kpxj0f.cloudfront.net https://pub-9115567915bb439c891a63ec2454650a.r2.dev",
       "frame-src 'self' https://cdn.paddle.com https://*.paddle.com https://accounts.google.com",
       "frame-ancestors 'self'",
       "media-src 'self' blob:",
