@@ -4,7 +4,7 @@
  * - Derecha: formulario de Paddle renderizado inline dentro del modal
  */
 import { useState, useEffect, useCallback, useRef } from "react";
-import { logoParts } from "@/lib/brand";
+import { logoParts, colors } from "@/lib/brand";
 import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -325,12 +325,12 @@ function PaddleCheckoutForm({
           {/* CloudPDF Logo */}
           <div className="flex items-center gap-1 mb-5">
             <svg width="28" height="20" viewBox="0 0 32 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-              <path d="M25.5 12.5C25.5 12.5 26 12 26 11c0-2.8-2.2-5-5-5-.5 0-1 .1-1.5.2C18.3 3.7 15.9 2 13 2 9.4 2 6.5 4.9 6.5 8.5c0 .2 0 .4 0 .6C4.5 9.6 3 11.4 3 13.5 3 16 5 18 7.5 18h16c2.2 0 4-1.8 4-4 0-1.5-.8-2.8-2-3.5z" fill="oklch(0.55 0.22 260)" />
+              <path d="M25.5 12.5C25.5 12.5 26 12 26 11c0-2.8-2.2-5-5-5-.5 0-1 .1-1.5.2C18.3 3.7 15.9 2 13 2 9.4 2 6.5 4.9 6.5 8.5c0 .2 0 .4 0 .6C4.5 9.6 3 11.4 3 13.5 3 16 5 18 7.5 18h16c2.2 0 4-1.8 4-4 0-1.5-.8-2.8-2-3.5z" fill={colors.light} />
               <rect x="13" y="6" width="6" height="8" rx="0.8" fill="white" fillOpacity="0.9" />
-              <path d="M16.5 6V6L19 8.5H16.5V6Z" fill="oklch(0.45 0.18 260)" />
+              <path d="M16.5 6V6L19 8.5H16.5V6Z" fill={colors.primaryHover} />
             </svg>
             <span className="font-medium text-lg text-slate-500">{logoParts[0]}</span>
-            <span className="font-extrabold text-lg" style={{ color: "oklch(0.55 0.22 260)" }}>{logoParts[1]}</span>
+            <span className="font-extrabold text-lg" style={{ color: colors.light }}>{logoParts[1]}</span>
           </div>
 
           {/* PDF thumbnail */}

@@ -5,7 +5,7 @@
    ============================================================= */
 
 import { useState, useEffect } from "react";
-import { logoParts } from "@/lib/brand";
+import { logoParts, colors } from "@/lib/brand";
 import { Link, useLocation } from "wouter";
 import {
   Menu, X, LogOut, LayoutDashboard, Crown,
@@ -17,8 +17,8 @@ import AuthModal from "./AuthModal";
 import { LANGUAGES } from "@/lib/i18n";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-const INDIGO = "oklch(0.47 0.24 264)";
-const INDIGO_HOVER_BG = "oklch(0.96 0.03 264)";
+const INDIGO = colors.primary;
+const INDIGO_HOVER_BG = colors.lightBg;
 const TEXT_MAIN = "oklch(0.13 0.015 264)";
 const TEXT_MUTED = "oklch(0.48 0.015 264)";
 const BORDER = "oklch(0.91 0.008 264)";
@@ -83,7 +83,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
             {/* Cloud + PDF icon */}
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: "linear-gradient(135deg, oklch(0.47 0.24 264), oklch(0.42 0.26 290))" }}
+              style={{ background: colors.gradient }}
             >
               <FileText className="w-4 h-4 text-white" />
             </div>
@@ -92,7 +92,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
               <span
                 className="font-extrabold text-lg"
                 style={{
-                  background: "linear-gradient(135deg, oklch(0.47 0.24 264), oklch(0.42 0.26 290))",
+                  background: colors.gradient,
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
@@ -213,7 +213,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                 >
                   <div
                     className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold"
-                    style={{ background: "linear-gradient(135deg, oklch(0.47 0.24 264), oklch(0.42 0.26 290))" }}
+                    style={{ background: colors.gradient }}
                   >
                     {user?.name?.charAt(0)?.toUpperCase() ?? user?.email?.charAt(0)?.toUpperCase() ?? "U"}
                   </div>

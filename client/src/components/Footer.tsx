@@ -6,13 +6,13 @@
 import { useState } from "react";
 import { FileText } from "lucide-react";
 import { useLanguage, LANGUAGES } from "@/contexts/LanguageContext";
-import { logoParts } from "@/lib/brand";
+import { logoParts, colors } from "@/lib/brand";
 import ContactModal from "./ContactModal";
 
 const BG = "oklch(0.12 0.02 264)";
 const BG_LIGHTER = "oklch(0.16 0.02 264)";
 const BORDER = "oklch(0.20 0.02 264)";
-const INDIGO = "oklch(0.60 0.22 264)";
+const INDIGO = colors.light;
 const TEXT_LINK = "oklch(0.58 0.02 264)";
 const TEXT_MUTED = "oklch(0.42 0.015 264)";
 
@@ -62,7 +62,7 @@ export default function Footer() {
             <div className="flex items-center gap-2 mb-4">
               <div
                 className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: "linear-gradient(135deg, oklch(0.47 0.24 264), oklch(0.42 0.26 290))" }}
+                style={{ background: colors.gradient }}
               >
                 <FileText className="w-4 h-4 text-white" />
               </div>

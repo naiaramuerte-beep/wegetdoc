@@ -19,6 +19,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { usePdfFile } from "@/contexts/PdfFileContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { colors } from "@/lib/brand";
 
 const ACCEPTED_MIME_TYPES = new Set([
   'application/pdf',
@@ -39,8 +40,8 @@ const ACCEPTED_EXTENSIONS = new Set([
 ]);
 
 // ─── Design tokens ───────────────────────────────────────────
-const INDIGO     = "oklch(0.47 0.24 264)";
-const VIOLET     = "oklch(0.42 0.26 290)";
+const INDIGO     = colors.primary;
+const VIOLET     = colors.secondary;
 const TEXT_MAIN  = "oklch(0.13 0.015 264)";
 const TEXT_MUTED = "oklch(0.48 0.015 264)";
 const TEXT_LIGHT = "oklch(0.62 0.015 264)";

@@ -263,3 +263,79 @@
     transition: max-height 0.3s ease;
   }
 }
+
+/* ─── FastDoc brand overrides ─── */
+[data-brand="FastDoc"] {
+  --color-indigo: oklch(0.55 0.22 38);
+  --color-indigo-hover: oklch(0.48 0.22 38);
+  --color-violet: oklch(0.58 0.20 55);
+  --color-indigo-50: oklch(0.96 0.03 38);
+  --color-indigo-100: oklch(0.93 0.06 38);
+  --color-surface: oklch(0.985 0.003 38);
+  --color-surface-2: oklch(0.96 0.005 38);
+  --primary: oklch(0.55 0.22 38);
+  --ring: oklch(0.55 0.22 38);
+  --chart-1: oklch(0.55 0.22 38);
+  --chart-2: oklch(0.58 0.20 55);
+  --foreground: oklch(0.13 0.015 38);
+  --card-foreground: oklch(0.13 0.015 38);
+  --popover-foreground: oklch(0.13 0.015 38);
+  --secondary: oklch(0.96 0.005 38);
+  --secondary-foreground: oklch(0.25 0.02 38);
+  --muted: oklch(0.96 0.005 38);
+  --muted-foreground: oklch(0.52 0.015 38);
+  --accent: oklch(0.93 0.06 38);
+  --accent-foreground: oklch(0.25 0.02 38);
+  --border: oklch(0.91 0.008 38);
+  --input: oklch(0.91 0.008 38);
+  --sidebar-primary: oklch(0.55 0.22 38);
+  --sidebar-ring: oklch(0.55 0.22 38);
+}
+
+@layer utilities {
+  [data-brand="FastDoc"] .bg-indigo-brand {
+    background-color: oklch(0.55 0.22 38);
+  }
+  [data-brand="FastDoc"] .text-indigo-brand {
+    color: oklch(0.55 0.22 38);
+  }
+  [data-brand="FastDoc"] .border-indigo-brand {
+    border-color: oklch(0.55 0.22 38);
+  }
+  [data-brand="FastDoc"] .gradient-text {
+    background: linear-gradient(135deg, oklch(0.55 0.22 38), oklch(0.58 0.20 55));
+  }
+  [data-brand="FastDoc"] .upload-zone {
+    border-color: oklch(0.55 0.22 38 / 0.35);
+  }
+  [data-brand="FastDoc"] .upload-zone:hover,
+  [data-brand="FastDoc"] .upload-zone.drag-over {
+    border-color: oklch(0.55 0.22 38 / 0.8);
+    background: oklch(0.97 0.02 38);
+    box-shadow: 0 0 0 6px oklch(0.55 0.22 38 / 0.07);
+  }
+  [data-brand="FastDoc"] .card-hover:hover {
+    box-shadow: 0 12px 32px oklch(0.55 0.22 38 / 0.10);
+    border-color: oklch(0.55 0.22 38 / 0.3) !important;
+  }
+  [data-brand="FastDoc"] .btn-gradient {
+    background: linear-gradient(135deg, oklch(0.55 0.22 38), oklch(0.58 0.20 55));
+    box-shadow: 0 4px 15px oklch(0.55 0.22 38 / 0.35);
+  }
+  [data-brand="FastDoc"] .btn-gradient:hover {
+    box-shadow: 0 8px 25px oklch(0.55 0.22 38 / 0.50);
+  }
+  [data-brand="FastDoc"] .step-line {
+    background: linear-gradient(90deg, oklch(0.55 0.22 38 / 0.3), oklch(0.58 0.20 55 / 0.3));
+  }
+  [data-brand="FastDoc"] .pricing-popular {
+    border-color: oklch(0.55 0.22 38);
+    box-shadow: 0 0 0 4px oklch(0.55 0.22 38 / 0.08);
+  }
+  [data-brand="FastDoc"] .navbar-glass {
+    border-bottom-color: oklch(0.91 0.008 38 / 0.8);
+  }
+  [data-brand="FastDoc"] .section-surface {
+    background-color: oklch(0.985 0.003 38);
+  }
+}

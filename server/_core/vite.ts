@@ -7,8 +7,20 @@ import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
 import { brandName, brandDomain } from "../brand";
 
+const FAVICON_CLOUDPDF = `<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png" />
+    <link rel="icon" type="image/png" sizes="256x256" href="/favicon-256.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />`;
+
+const FAVICON_FASTDOC = `<link rel="icon" type="image/svg+xml" href="/favicon-fastdoc.svg" />`;
+
+const faviconLinks = brandName === "FastDoc" ? FAVICON_FASTDOC : FAVICON_CLOUDPDF;
+
 function replaceBrandPlaceholders(html: string): string {
-  return html.replaceAll("%%BRAND_NAME%%", brandName).replaceAll("%%BRAND_DOMAIN%%", brandDomain);
+  return html
+    .replaceAll("%%BRAND_NAME%%", brandName)
+    .replaceAll("%%BRAND_DOMAIN%%", brandDomain)
+    .replaceAll("%%FAVICON_LINKS%%", faviconLinks);
 }
 
 export async function setupVite(app: Express, server: Server) {
