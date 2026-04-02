@@ -223,20 +223,24 @@ async function startServer() {
     // Strict Transport Security (HSTS) — force HTTPS for 1 year
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
     // Content Security Policy — comprehensive with frame-ancestors
+    // CSP — allow all Google services (Ads, Analytics, Tag Manager, OAuth) + Paddle + R2 storage
+    const google = "https://*.google.com https://*.google-analytics.com https://*.googletagmanager.com https://*.googleadservices.com https://*.googlesyndication.com https://*.doubleclick.net https://*.googleapis.com https://*.gstatic.com https://*.googleusercontent.com";
+    const paddle = "https://*.paddle.com https://cdn.paddle.com https://sandbox-cdn.paddle.com";
+    const storage = "https://d2xsxph8kpxj0f.cloudfront.net https://pub-9115567915bb439c891a63ec2454650a.r2.dev";
     res.setHeader("Content-Security-Policy", [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.paddle.com https://*.google-analytics.com https://*.googleadservices.com https://*.googlesyndication.com https://*.doubleclick.net",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: blob: https://d2xsxph8kpxj0f.cloudfront.net https://pub-9115567915bb439c891a63ec2454650a.r2.dev https://www.google-analytics.com https://www.googletagmanager.com https://*.googleadservices.com https://*.googlesyndication.com https://*.doubleclick.net https://www.google.com https://cdn.paddle.com https://lh3.googleusercontent.com",
-      "connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googleadservices.com https://*.googlesyndication.com https://*.doubleclick.net https://www.google.com https://api.paddle.com https://*.paddle.com https://accounts.google.com https://oauth2.googleapis.com https://www.googleapis.com https://d2xsxph8kpxj0f.cloudfront.net https://pub-9115567915bb439c891a63ec2454650a.r2.dev",
-      "frame-src 'self' https://cdn.paddle.com https://*.paddle.com https://accounts.google.com https://*.doubleclick.net",
+      `script-src 'self' 'unsafe-inline' ${google} ${paddle}`,
+      `style-src 'self' 'unsafe-inline' ${google} ${paddle}`,
+      `font-src 'self' ${google}`,
+      `img-src 'self' data: blob: ${google} ${paddle} ${storage}`,
+      `connect-src 'self' ${google} ${paddle} ${storage}`,
+      `frame-src 'self' ${google} ${paddle}`,
       "frame-ancestors 'self'",
       "media-src 'self' blob:",
       "worker-src 'self' blob:",
       "object-src 'none'",
       "base-uri 'self'",
-      "form-action 'self' https://accounts.google.com https://*.paddle.com",
+      `form-action 'self' ${google} ${paddle}`,
     ].join("; "));
     next();
   });
