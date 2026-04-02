@@ -4,6 +4,7 @@
    When accessed directly (no file loaded), shows upload zone.
    ============================================================= */
 import { useEffect, useState, useRef, useCallback } from "react";
+import { logoParts } from "@/lib/brand";
 import { useLocation } from "wouter";
 import PdfEditor from "@/components/PdfEditor";
 import { usePdfFile } from "@/contexts/PdfFileContext";
@@ -43,8 +44,8 @@ const LogoSvg = () => (
 
 const LogoText = () => (
   <span style={{ fontFamily: "'Sora', sans-serif" }}>
-    <span className="font-medium text-lg" style={{ color: "rgba(255,255,255,0.85)" }}>Cloud</span>
-    <span className="font-extrabold text-lg" style={{ color: "oklch(0.55 0.22 260)" }}>PDF</span>
+    <span className="font-medium text-lg" style={{ color: "rgba(255,255,255,0.85)" }}>{logoParts[0]}</span>
+    <span className="font-extrabold text-lg" style={{ color: "oklch(0.55 0.22 260)" }}>{logoParts[1]}</span>
   </span>
 );
 

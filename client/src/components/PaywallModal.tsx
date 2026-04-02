@@ -4,6 +4,7 @@
  * - Derecha: formulario de Paddle renderizado inline dentro del modal
  */
 import { useState, useEffect, useCallback, useRef } from "react";
+import { logoParts } from "@/lib/brand";
 import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -328,8 +329,8 @@ function PaddleCheckoutForm({
               <rect x="13" y="6" width="6" height="8" rx="0.8" fill="white" fillOpacity="0.9" />
               <path d="M16.5 6V6L19 8.5H16.5V6Z" fill="oklch(0.45 0.18 260)" />
             </svg>
-            <span className="font-medium text-lg text-slate-500">Cloud</span>
-            <span className="font-extrabold text-lg" style={{ color: "oklch(0.55 0.22 260)" }}>PDF</span>
+            <span className="font-medium text-lg text-slate-500">{logoParts[0]}</span>
+            <span className="font-extrabold text-lg" style={{ color: "oklch(0.55 0.22 260)" }}>{logoParts[1]}</span>
           </div>
 
           {/* PDF thumbnail */}

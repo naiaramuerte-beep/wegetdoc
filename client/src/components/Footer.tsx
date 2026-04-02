@@ -6,6 +6,7 @@
 import { useState } from "react";
 import { FileText } from "lucide-react";
 import { useLanguage, LANGUAGES } from "@/contexts/LanguageContext";
+import { logoParts } from "@/lib/brand";
 import ContactModal from "./ContactModal";
 
 const BG = "oklch(0.12 0.02 264)";
@@ -69,7 +70,7 @@ export default function Footer() {
                 className="font-bold text-xl tracking-tight"
                 style={{ fontFamily: "'Sora', sans-serif", color: "white" }}
               >
-                Cloud<span style={{ color: INDIGO }}>PDF</span>
+                {logoParts[0]}<span style={{ color: INDIGO }}>{logoParts[1]}</span>
               </span>
             </div>
             <p

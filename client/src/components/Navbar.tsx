@@ -5,6 +5,7 @@
    ============================================================= */
 
 import { useState, useEffect } from "react";
+import { logoParts } from "@/lib/brand";
 import { Link, useLocation } from "wouter";
 import {
   Menu, X, LogOut, LayoutDashboard, Crown,
@@ -87,7 +88,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
               <FileText className="w-4 h-4 text-white" />
             </div>
             <span style={{ fontFamily: "'Sora', sans-serif" }}>
-              <span className="font-semibold text-lg" style={{ color: TEXT_MAIN }}>Cloud</span>
+              <span className="font-semibold text-lg" style={{ color: TEXT_MAIN }}>{logoParts[0]}</span>
               <span
                 className="font-extrabold text-lg"
                 style={{
@@ -97,7 +98,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                   backgroundClip: "text",
                 }}
               >
-                PDF
+                {logoParts[1]}
               </span>
             </span>
           </Link>
