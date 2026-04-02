@@ -49,14 +49,14 @@ export default function Footer() {
   return (
     <>
     <footer
-      className="w-full pt-12 pb-8"
+      className={`w-full ${isFastDoc ? "pt-0 pb-6" : "pt-12 pb-8"}`}
       style={{ backgroundColor: BG }}
     >
       <div className="container">
         {isFastDoc ? (
           /* ── FastDoc minimal footer ── */
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 py-4">
-            <p className="text-xs" style={{ color: TEXT_MUTED }}>
+            <p className="text-xs" style={{ color: "#9CA3AF" }}>
               &copy; 2025 {brandName}
             </p>
             <div className="flex items-center gap-4">
@@ -64,7 +64,7 @@ export default function Footer() {
                 onClick={() => setContactOpen(true)}
                 className="text-xs transition-colors duration-150 cursor-pointer"
                 style={{ color: TEXT_LINK, background: "none", border: "none" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#E8590C")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = TEXT_LINK)}
               >
                 {t.nav_contact}
@@ -73,16 +73,25 @@ export default function Footer() {
                 href={`/${lang}/privacy`}
                 className="text-xs transition-colors duration-150"
                 style={{ color: TEXT_LINK }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#E8590C")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = TEXT_LINK)}
               >
                 {t.footer_privacy}
               </a>
               <a
+                href={`/${lang}/cookies`}
+                className="text-xs transition-colors duration-150"
+                style={{ color: TEXT_LINK }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#E8590C")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = TEXT_LINK)}
+              >
+                {t.footer_cookies}
+              </a>
+              <a
                 href={`/${lang}/terms`}
                 className="text-xs transition-colors duration-150"
                 style={{ color: TEXT_LINK }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#E8590C")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = TEXT_LINK)}
               >
                 {t.footer_terms}

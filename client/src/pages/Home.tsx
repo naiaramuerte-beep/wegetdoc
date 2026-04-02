@@ -879,7 +879,7 @@ export default function Home() {
           </h2>
           <p
             className="text-base md:text-lg mb-10 max-w-lg mx-auto leading-relaxed"
-            style={{ color: "oklch(0.83 0.05 264)" }}
+            style={{ color: isFastDoc ? "rgba(255,255,255,0.92)" : "oklch(0.83 0.05 264)", fontWeight: isFastDoc ? 500 : undefined }}
           >
             {t.cta_subtitle}
           </p>
@@ -889,7 +889,7 @@ export default function Home() {
               className="inline-flex items-center gap-2.5 px-10 py-4 rounded-xl font-bold text-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl active:scale-95"
               style={{
                 backgroundColor: "white",
-                color: INDIGO,
+                color: isFastDoc ? "#C2410C" : INDIGO,
                 boxShadow: "0 8px 32px oklch(0 0 0 / 0.22)",
               }}
               onClick={() => scrollToEditor()}
@@ -900,10 +900,10 @@ export default function Home() {
             </button>
 
             <div
-              className="flex items-center gap-2 text-sm rounded-xl px-5 py-3"
-              style={{ color: "oklch(0.78 0.05 264)" }}
+              className="flex items-center gap-2 text-sm font-medium rounded-xl px-5 py-3"
+              style={{ color: isFastDoc ? "rgba(255,255,255,0.85)" : "oklch(0.78 0.05 264)" }}
             >
-              <Globe className="w-4 h-4" style={{ color: "oklch(0.75 0.16 145)" }} />
+              <Globe className="w-4 h-4" style={{ color: isFastDoc ? "rgba(255,255,255,0.7)" : "oklch(0.75 0.16 145)" }} />
               {(t as any).cta_no_card ?? "100% Online · Sin instalación"}
             </div>
           </div>
