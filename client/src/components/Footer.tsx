@@ -3,8 +3,10 @@
    Dark indigo-slate footer, matching the gradient CTA above
    ============================================================= */
 
+import { useState } from "react";
 import { FileText } from "lucide-react";
 import { useLanguage, LANGUAGES } from "@/contexts/LanguageContext";
+import ContactModal from "./ContactModal";
 
 const BG = "oklch(0.12 0.02 264)";
 const BG_LIGHTER = "oklch(0.16 0.02 264)";
@@ -15,13 +17,14 @@ const TEXT_MUTED = "oklch(0.42 0.015 264)";
 
 export default function Footer() {
   const { lang, t, switchLang } = useLanguage();
+  const [contactOpen, setContactOpen] = useState(false);
 
-  const pdfproLinks = [
+  const pdfproLinks: { href: string; label: string; onClick?: () => void }[] = [
     { href: `/${lang}/pricing`, label: t.nav_pricing },
     { href: `/${lang}/blog`, label: "Blog" },
     { href: `/${lang}#how-it-works`, label: t.footer_how },
     { href: `/${lang}#faq`, label: t.footer_faq },
-    { href: "#contact", label: t.nav_contact },
+    { href: "#contact", label: t.nav_contact, onClick: () => setContactOpen(true) },
   ];
 
   const legalLinks = [
@@ -43,6 +46,7 @@ export default function Footer() {
   ];
 
   return (
+    <>
     <footer
       className="w-full pt-12 pb-8"
       style={{ backgroundColor: BG }}
@@ -86,10 +90,11 @@ export default function Footer() {
             </h4>
             <ul className="space-y-2.5">
               {pdfproLinks.map((link) => (
-                <li key={link.href}>
+                <li key={link.label}>
                   <a
                     href={link.href}
-                    className="text-sm transition-colors duration-150"
+                    onClick={link.onClick ? (e) => { e.preventDefault(); link.onClick!(); } : undefined}
+                    className="text-sm transition-colors duration-150 cursor-pointer"
                     style={{ color: TEXT_LINK }}
                     onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
                     onMouseLeave={(e) => (e.currentTarget.style.color = TEXT_LINK)}
@@ -177,5 +182,7 @@ export default function Footer() {
         </div>
       </div>
     </footer>
+    <ContactModal open={contactOpen} onClose={() => setContactOpen(false)} />
+  </>
   );
 }
