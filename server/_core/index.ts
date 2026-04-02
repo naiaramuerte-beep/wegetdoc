@@ -224,7 +224,8 @@ async function startServer() {
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
     // Content Security Policy — comprehensive with frame-ancestors
     // CSP — allow all Google services (Ads, Analytics, Tag Manager, OAuth) + Paddle + R2 storage
-    const google = "https://*.google.com https://*.google-analytics.com https://*.googletagmanager.com https://*.googleadservices.com https://*.googlesyndication.com https://*.doubleclick.net https://*.googleapis.com https://*.gstatic.com https://*.googleusercontent.com";
+    // All Google domains including country TLDs (.es, .fr, .de, etc.)
+    const google = "https://*.google.com https://*.google.es https://*.google.fr https://*.google.de https://*.google.it https://*.google.pt https://*.google.nl https://*.google.pl https://*.google.ru https://*.google.co.uk https://*.google.com.br https://*.google-analytics.com https://*.googletagmanager.com https://*.googleadservices.com https://*.googlesyndication.com https://*.doubleclick.net https://*.googleapis.com https://*.gstatic.com https://*.googleusercontent.com";
     const paddle = "https://*.paddle.com https://cdn.paddle.com https://sandbox-cdn.paddle.com";
     const storage = "https://d2xsxph8kpxj0f.cloudfront.net https://pub-9115567915bb439c891a63ec2454650a.r2.dev";
     res.setHeader("Content-Security-Policy", [
