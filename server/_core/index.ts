@@ -5,7 +5,6 @@ import net from "net";
 import { Paddle, EventName } from "@paddle/paddle-node-sdk";
 import multer from "multer";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerOAuthRoutes } from "./oauth";
 import { registerGoogleOAuthRoutes } from "./googleOauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
@@ -226,8 +225,6 @@ async function startServer() {
     res.setHeader("Content-Security-Policy", "frame-ancestors 'self'");
     next();
   });
-  // OAuth callback under /api/oauth/callback
-  registerOAuthRoutes(app);
   // Google OAuth direct routes: /api/auth/google and /api/auth/google/callback
   registerGoogleOAuthRoutes(app);
 
