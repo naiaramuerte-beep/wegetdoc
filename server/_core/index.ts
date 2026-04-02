@@ -222,27 +222,8 @@ async function startServer() {
     res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(self)");
     // Strict Transport Security (HSTS) — force HTTPS for 1 year
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
-    // Content Security Policy — comprehensive with frame-ancestors
-    // CSP — allow all Google services (Ads, Analytics, Tag Manager, OAuth) + Paddle + R2 storage
-    // All Google domains including country TLDs (.es, .fr, .de, etc.)
-    const google = "https://*.google.com https://*.google.es https://*.google.fr https://*.google.de https://*.google.it https://*.google.pt https://*.google.nl https://*.google.pl https://*.google.ru https://*.google.co.uk https://*.google.com.br https://*.google-analytics.com https://*.googletagmanager.com https://*.googleadservices.com https://*.googlesyndication.com https://*.doubleclick.net https://*.googleapis.com https://*.gstatic.com https://*.googleusercontent.com";
-    const paddle = "https://*.paddle.com https://cdn.paddle.com https://sandbox-cdn.paddle.com";
-    const storage = "https://d2xsxph8kpxj0f.cloudfront.net https://pub-9115567915bb439c891a63ec2454650a.r2.dev";
-    res.setHeader("Content-Security-Policy", [
-      "default-src 'self'",
-      `script-src 'self' 'unsafe-inline' ${google} ${paddle}`,
-      `style-src 'self' 'unsafe-inline' ${google} ${paddle}`,
-      `font-src 'self' ${google}`,
-      `img-src 'self' data: blob: ${google} ${paddle} ${storage}`,
-      `connect-src 'self' ${google} ${paddle} ${storage}`,
-      `frame-src 'self' ${google} ${paddle}`,
-      "frame-ancestors 'self'",
-      "media-src 'self' blob:",
-      "worker-src 'self' blob:",
-      "object-src 'none'",
-      "base-uri 'self'",
-      `form-action 'self' ${google} ${paddle}`,
-    ].join("; "));
+    // Only keep frame-ancestors to prevent clickjacking (no restrictive CSP — incompatible with Google Ads)
+    res.setHeader("Content-Security-Policy", "frame-ancestors 'self'");
     next();
   });
   // OAuth callback under /api/oauth/callback
