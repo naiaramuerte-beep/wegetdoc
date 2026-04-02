@@ -130,7 +130,7 @@ function App() {
             <TooltipProvider>
               <Toaster position="top-right" />
               <Router />
-              <CookieBanner />
+              {!isFastDoc && <CookieBanner />}
             </TooltipProvider>
           </PdfFileProvider>
         </LanguageProvider>

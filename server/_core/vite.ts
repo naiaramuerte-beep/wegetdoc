@@ -16,11 +16,49 @@ const FAVICON_FASTDOC = `<link rel="icon" type="image/svg+xml" href="/favicon-fa
 
 const faviconLinks = brandName === "FastDoc" ? FAVICON_FASTDOC : FAVICON_CLOUDPDF;
 
+const TRACKING_CLOUDPDF = `<!-- Google Consent Mode v2 — MUST run before gtag config -->
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('consent', 'default', {
+        'ad_storage': 'denied',
+        'ad_user_data': 'denied',
+        'ad_personalization': 'denied',
+        'analytics_storage': 'denied'
+      });
+      gtag('set', 'url_passthrough', true);
+      (function() {
+        try {
+          var consent = localStorage.getItem('cloudpdf_cookie_consent');
+          if (consent === 'all') {
+            gtag('consent', 'update', {
+              'ad_storage': 'granted',
+              'ad_user_data': 'granted',
+              'ad_personalization': 'granted',
+              'analytics_storage': 'granted'
+            });
+          }
+        } catch(e) {}
+      })();
+    </script>
+    <!-- Google tag (gtag.js) — Analytics G-XBHZ3TMG7K + Ads AW-18038662610 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18038662610"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'AW-18038662610');
+      gtag('config', 'G-XBHZ3TMG7K');
+    </script>`;
+
+const trackingScripts = brandName === "FastDoc" ? "" : TRACKING_CLOUDPDF;
+
 function replaceBrandPlaceholders(html: string): string {
   return html
     .replaceAll("%%BRAND_NAME%%", brandName)
     .replaceAll("%%BRAND_DOMAIN%%", brandDomain)
-    .replaceAll("%%FAVICON_LINKS%%", faviconLinks);
+    .replaceAll("%%FAVICON_LINKS%%", faviconLinks)
+    .replaceAll("%%TRACKING_SCRIPTS%%", trackingScripts);
 }
 
 export async function setupVite(app: Express, server: Server) {
