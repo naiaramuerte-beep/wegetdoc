@@ -73,11 +73,20 @@ export default function Footer() {
               </span>
             </div>
             <p
-              className="text-sm leading-relaxed"
+              className="text-sm leading-relaxed mb-3"
               style={{ color: TEXT_LINK, fontFamily: "'DM Sans', sans-serif" }}
             >
               {t.footer_desc}
             </p>
+            <a
+              href="mailto:soporte@cloud-pdf.net"
+              className="inline-flex items-center gap-1.5 text-sm font-medium transition-colors duration-150"
+              style={{ color: INDIGO }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = INDIGO)}
+            >
+              ✉ soporte@cloud-pdf.net
+            </a>
           </div>
 
           {/* CloudPDF links */}
