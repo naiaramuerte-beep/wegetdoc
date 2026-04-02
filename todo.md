@@ -346,7 +346,7 @@
 - [ ] Términos actualizados con sección de suscripción y cargos recurrentes
 - [x] Email de confirmación de cancelación de suscripción con fecha de acceso y enlace de reactivación
 
-## Google OAuth propio (sin Manus)
+## Google OAuth propio
 - [x] Configurar GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET como secrets
 - [x] Implementar endpoint /api/auth/google en el servidor
 - [x] Implementar callback /api/auth/google/callback para Google OAuth propio
@@ -532,7 +532,7 @@
 ## Cambio herramienta por defecto
 - [x] Cambiar herramienta preseleccionada del editor de "puntero" a "editar texto"
 
-## Registro/Login email propio (sin Manus OAuth)
+## Registro/Login email propio
 - [x] Backend: endpoints register y login por email+contraseña (sin tocar Google OAuth)
 - [x] Frontend: formulario email+contraseña en PaywallModal (sin tocar flujo Google ni descarga)
 - [x] Sesión: crear cookie JWT tras registro/login exitoso
@@ -650,9 +650,9 @@
 - [x] Añadir info del precio trial (0,00€ total due today, secure payment)
 - [x] Fix overflow del checkout de Paddle (se come el borde derecho)
 
-## Bug - Panel de usuario redirige a Manus
-- [x] Fix: al hacer clic en panel/cuenta de usuario redirige a Manus en vez de quedarse en pdfup.io
-- [x] Cambiar redirect de getLoginUrl() (Manus OAuth) a /{lang}?login=true en Dashboard, main.tsx, Pricing, DashboardLayout
+## Bug - Panel de usuario redirige mal
+- [x] Fix: al hacer clic en panel/cuenta de usuario redirige fuera en vez de quedarse en pdfup.io
+- [x] Cambiar redirect de getLoginUrl() a /{lang}?login=true en Dashboard, main.tsx, Pricing, DashboardLayout
 - [x] Auto-abrir AuthModal en Navbar cuando URL tiene ?login=true
 
 ## Bug - Imagen convertida a PDF se pierde tras OAuth redirect
@@ -682,12 +682,10 @@
 - [x] Eliminar archivos AUDIT_PRE_LAUNCH.md y AUDIT_REPORT.md
 - [x] Limpiar referencias en todo.md
 
-## Investigación Google Ads - manuscdn.com
-- [x] Descubierto: manuscdn.com (CDN de Manus) es la causa raíz del rechazo de Google Ads
-- [x] Script inyectado por Manus: files.manuscdn.com/manus-space-dispatcher/spaceEditor-DPV-_I11.js
-- [x] Confirmado por múltiples usuarios en Reddit (r/ManusOfficial)
-- [x] Este script NO está en nuestro código — es inyectado por la plataforma Manus al publicar
-- [ ] Contactar soporte Manus para pedir desactivación del script spaceEditor en producción
+## Investigación Google Ads - scripts externos
+- [x] Descubierto: CDN externo era la causa raíz del rechazo de Google Ads
+- [x] Script externo inyectado por la plataforma de hosting anterior
+- [x] Eliminado completamente al migrar a hosting propio
 
 ## Bugs editor PDF - Traducciones y cursor (30/03)
 - [x] Bug: cursor de mover solo aparece en el borde azul, debería aparecer en toda la caja del elemento
@@ -772,14 +770,13 @@
   - confirmPaddleCheckout ahora resuelve subscriptionId vía transactions.get()
 - [ ] Verificar que la cancelación se refleja en el dashboard de Paddle
 
-## Limpieza de restos de Manus (31/03)
-- [x] Eliminar fallback a Manus Forge en server/storage.ts
+## Limpieza de restos plataforma anterior (31/03)
+- [x] Eliminar fallback a Forge en server/storage.ts
 - [x] Reemplazar notifyOwner() por console.log en webhooks Paddle
 - [x] Eliminar módulos muertos: llm.ts, imageGeneration.ts, voiceTranscription.ts, map.ts, dataApi.ts
-- [x] Eliminar ManusDialog.tsx (no se usa)
-- [x] Eliminar client/public/__manus__/debug-collector.js
-- [x] Limpiar vite.config.ts: quitar plugins y allowedHosts de Manus
-- [x] Quitar vite-plugin-manus-runtime de package.json
+- [x] Eliminar componentes y scripts legacy no usados
+- [x] Limpiar vite.config.ts: quitar plugins y allowedHosts legacy
+- [x] Limpiar dependencias en package.json
 - [x] Limpiar useAuth.ts: renombrar localStorage key
 - [x] Limpiar env.ts: quitar forgeApiUrl y forgeApiKey
 - [x] Actualizar robots.txt a cloud-pdf.net
@@ -878,9 +875,9 @@
 - [x] Cursor adecuado (grab/grabbing) al usar herramienta Mover + hover highlight en anotaciones
 - [x] Verificar que el drag funciona correctamente con todas las anotaciones (no cambia a herramienta texto al hacer clic)
 
-## Eliminar referencias a Manus (31/03)
-- [x] Buscar todas las referencias a "Manus" en el código fuente del cliente
-- [x] Buscar referencias a "Manus" en el código del servidor
+## Eliminar referencias a plataforma anterior (31/03)
+- [x] Buscar todas las referencias en el código fuente del cliente
+- [x] Buscar referencias en el código del servidor
 - [x] Eliminar o reemplazar todas las referencias visibles en el código
 - [x] Verificar que no queden referencias en HTML, meta tags, footer, etc.
-- [x] Única referencia restante: import de manusTypes.ts en sdk.ts (archivo _core del framework, no visible al usuario)
+- [x] Eliminado OAuth legacy, tipos y rutas del SDK (02/04)
