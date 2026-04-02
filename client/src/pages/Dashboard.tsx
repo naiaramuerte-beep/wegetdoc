@@ -22,6 +22,7 @@ import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
 import { useLocation } from "wouter";
 import { usePdfFile } from "@/contexts/PdfFileContext";
+import { brandName } from "@/lib/brand";
 
 type Tab = "account" | "documents" | "team" | "billing";
 
@@ -982,7 +983,7 @@ function BillingTab() {
           transaction_id: txnId,
           value: 0,
           currency: "EUR",
-          items: [{ item_id: "cloudpdf_trial", item_name: "CloudPDF Trial Subscription", price: 0, quantity: 1 }],
+          items: [{ item_id: "cloudpdf_trial", item_name: `${brandName} Trial Subscription`, price: 0, quantity: 1 }],
                 });
                 console.log("[Dashboard] Conversion tracking fired", { txnId });
               }

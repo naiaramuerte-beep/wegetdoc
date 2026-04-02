@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { brandName } from "@/lib/brand";
 import { toast } from "sonner";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -125,7 +126,7 @@ export default function Admin() {
           </button>
           <div>
             <h1 className="text-xl font-bold text-white">Panel de Administración</h1>
-            <p className="text-xs text-gray-400">CloudPDF — {user.email}</p>
+            <p className="text-xs text-gray-400">{brandName} — {user.email}</p>
           </div>
         </div>
         <button
@@ -816,7 +817,7 @@ export default function Admin() {
                 ) : (
                   <div className="space-y-3">
                     {[
-                      { key: "site_name", label: "Nombre del sitio", placeholder: "CloudPDF" },
+                      { key: "site_name", label: "Nombre del sitio", placeholder: brandName },
                       { key: "support_email", label: "Email de soporte", placeholder: "soporte@cloud-pdf.net" },
                       { key: "trial_price_eur", label: "Precio prueba 7 días (€)", placeholder: "0.99" },
                       { key: "monthly_price_eur", label: "Precio mensual (€)", placeholder: "9.99" },

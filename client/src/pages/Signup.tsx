@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { FileText, Eye, EyeOff, Check } from "lucide-react";
 import { toast } from "sonner";
+import { brandName } from "@/lib/brand";
 
 const benefits = [
   "Edición de PDF sin límites",
@@ -64,7 +65,7 @@ export default function Signup() {
               className="text-sm mb-8"
               style={{ color: "oklch(0.65 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
             >
-              Únete a millones de usuarios que confían en CloudPDF para gestionar sus documentos.
+              Únete a millones de usuarios que confían en {brandName} para gestionar sus documentos.
             </p>
 
             <ul className="space-y-3">
@@ -115,7 +116,7 @@ export default function Signup() {
             className="text-sm mb-6"
             style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
           >
-            Crea tu cuenta de CloudPDF
+            Crea tu cuenta de {brandName}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useLocation, useParams } from "wouter";
 import DOMPurify from "dompurify";
 import { trpc } from "@/lib/trpc";
+import { brandName } from "@/lib/brand";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Clock, ArrowLeft, ArrowRight, Calendar, Tag } from "lucide-react";
@@ -26,7 +27,7 @@ export default function BlogPost() {
     const description = post.metaDescription || post.excerpt;
     const url = `https://cloud-pdf.net/blog/${post.slug}`;
 
-    document.title = `${title} | CloudPDF Blog`;
+    document.title = `${title} | ${brandName} Blog`;
 
     const setMeta = (name: string, content: string, prop = false) => {
       const attr = prop ? "property" : "name";
@@ -44,7 +45,7 @@ export default function BlogPost() {
     setMeta("og:description", description, true);
     setMeta("og:type", "article", true);
     setMeta("og:url", url, true);
-    setMeta("og:site_name", "CloudPDF", true);
+    setMeta("og:site_name", brandName, true);
     setMeta("article:published_time", new Date(post.publishedAt).toISOString(), true);
     setMeta("article:modified_time", new Date(post.updatedAt).toISOString(), true);
     if (post.tags) setMeta("article:tag", post.tags, true);
@@ -63,12 +64,12 @@ export default function BlogPost() {
       "dateModified": new Date(post.updatedAt).toISOString(),
       "author": {
         "@type": "Organization",
-        "name": "CloudPDF",
+        "name": brandName,
         "url": "https://cloud-pdf.net"
       },
       "publisher": {
         "@type": "Organization",
-        "name": "CloudPDF",
+        "name": brandName,
         "url": "https://cloud-pdf.net",
         "logo": {
           "@type": "ImageObject",
@@ -95,7 +96,7 @@ export default function BlogPost() {
     scriptEl.textContent = JSON.stringify(jsonLd);
 
     return () => {
-      document.title = "CloudPDF — Online PDF Editor";
+      document.title = `${brandName} — Online PDF Editor`;
       scriptEl?.remove();
     };
   }, [post]);
@@ -209,7 +210,7 @@ export default function BlogPost() {
             >
               <h3 className="text-xl font-bold text-white mb-2">¿Listo para editar tu PDF?</h3>
               <p className="text-slate-300 mb-5 text-sm">
-                Prueba CloudPDF — sin registro, sin instalación, directamente en tu navegador.
+                Prueba {brandName} — sin registro, sin instalación, directamente en tu navegador.
               </p>
               <button
                 onClick={() => navigate("/")}

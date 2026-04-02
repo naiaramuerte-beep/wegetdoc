@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { brandName } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -485,7 +486,7 @@ export default function BlogAdmin() {
                   id="metaTitle"
                   value={form.metaTitle}
                   onChange={(e) => setForm((f) => ({ ...f, metaTitle: e.target.value }))}
-                  placeholder="Cómo editar PDF online | CloudPDF"
+                  placeholder={`Cómo editar PDF online | ${brandName}`}
                   className="mt-1 text-sm"
                   maxLength={70}
                 />
@@ -499,7 +500,7 @@ export default function BlogAdmin() {
                   id="metaDescription"
                   value={form.metaDescription}
                   onChange={(e) => setForm((f) => ({ ...f, metaDescription: e.target.value }))}
-                  placeholder="Aprende a editar cualquier PDF online sin instalar nada. Guía paso a paso con CloudPDF.online..."
+                  placeholder={`Aprende a editar cualquier PDF online sin instalar nada. Guía paso a paso con ${brandName}...`}
                   className="mt-1 text-sm resize-none"
                   rows={3}
                   maxLength={170}

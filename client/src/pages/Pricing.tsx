@@ -12,6 +12,7 @@ import Footer from "@/components/Footer";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { brandName } from "@/lib/brand";
 
 export default function Pricing() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -314,7 +315,7 @@ export default function Pricing() {
                        transaction_id: txnId,
                        value: 0,
                        currency: "EUR",
-                       items: [{ item_id: "cloudpdf_trial", item_name: "CloudPDF Trial Subscription", price: 0, quantity: 1 }],
+                       items: [{ item_id: "cloudpdf_trial", item_name: `${brandName} Trial Subscription`, price: 0, quantity: 1 }],
                      });
                      console.log("[Pricing] Conversion tracking fired", { txnId });
                    }

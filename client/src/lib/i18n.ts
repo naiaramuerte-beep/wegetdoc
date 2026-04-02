@@ -3,6 +3,8 @@
    Rutas: /es/ /en/ /fr/ /de/ /pt/ /it/ /nl/ /pl/ /ru/ /zh/
    ============================================================= */
 
+import { brandName } from "./brand";
+
 export type LangCode = "es" | "en" | "fr" | "de" | "pt" | "it" | "nl" | "pl" | "ru" | "zh";
 
 export interface LangMeta {
@@ -520,8 +522,18 @@ export type TranslationKeys = {
 
 type Translations = Record<LangCode, TranslationKeys>;
 
+function applyBrand(t: TranslationKeys): TranslationKeys {
+  const result = { ...t };
+  for (const key of Object.keys(result) as (keyof TranslationKeys)[]) {
+    if (typeof result[key] === "string" && result[key].includes("CloudPDF")) {
+      (result as any)[key] = result[key].replaceAll("CloudPDF", brandName);
+    }
+  }
+  return result;
+}
+
 export const translations: Translations = {
-  es: {
+  es: applyBrand({
     nav_how_it_works: "Cómo funciona",
     nav_pricing: "Precios",
     nav_faq: "FAQ",
@@ -1011,9 +1023,9 @@ export const translations: Translations = {
     cookie_banner_necessary: "Cookies necesarias (siempre activas)",
     cookie_banner_analytics: "Cookies de analítica",
     cookie_banner_more_info: "Más información en nuestra",
-  },
+  }),
 
-  en: {
+  en: applyBrand({
     nav_how_it_works: "How it works",
     nav_pricing: "Pricing",
     nav_faq: "FAQ",
@@ -1503,9 +1515,9 @@ export const translations: Translations = {
     cookie_banner_necessary: "Necessary cookies (always active)",
     cookie_banner_analytics: "Analytics cookies",
     cookie_banner_more_info: "More info in our",
-  },
+  }),
 
-  fr: {
+  fr: applyBrand({
     nav_how_it_works: "Comment ça marche",
     nav_pricing: "Tarifs",
     nav_faq: "FAQ",
@@ -1996,9 +2008,9 @@ export const translations: Translations = {
     cookie_banner_necessary: "Cookies nécessaires (toujours actifs)",
     cookie_banner_analytics: "Cookies analytiques",
     cookie_banner_more_info: "Plus d'informations dans notre",
-  },
+  }),
 
-  de: {
+  de: applyBrand({
     nav_how_it_works: "So funktioniert's",
     nav_pricing: "Preise",
     nav_faq: "FAQ",
@@ -2489,9 +2501,9 @@ export const translations: Translations = {
     cookie_banner_necessary: "Notwendige Cookies (immer aktiv)",
     cookie_banner_analytics: "Analyse-Cookies",
     cookie_banner_more_info: "Mehr Informationen in unserer",
-  },
+  }),
 
-  pt: {
+  pt: applyBrand({
     nav_how_it_works: "Como funciona",
     nav_pricing: "Preços",
     nav_faq: "FAQ",
@@ -2982,9 +2994,9 @@ export const translations: Translations = {
     cookie_banner_necessary: "Cookies necessários (sempre ativos)",
     cookie_banner_analytics: "Cookies de análise",
     cookie_banner_more_info: "Mais informações na nossa",
-  },
+  }),
 
-  it: {
+  it: applyBrand({
     nav_how_it_works: "Come funziona",
     nav_pricing: "Prezzi",
     nav_faq: "FAQ",
@@ -3475,9 +3487,9 @@ export const translations: Translations = {
     cookie_banner_necessary: "Cookie necessari (sempre attivi)",
     cookie_banner_analytics: "Cookie analitici",
     cookie_banner_more_info: "Maggiori informazioni nella nostra",
-  },
+  }),
 
-  nl: {
+  nl: applyBrand({
     nav_how_it_works: "Hoe het werkt",
     nav_pricing: "Prijzen",
     nav_faq: "FAQ",
@@ -3968,9 +3980,9 @@ export const translations: Translations = {
     cookie_banner_necessary: "Noodzakelijke cookies (altijd actief)",
     cookie_banner_analytics: "Analytische cookies",
     cookie_banner_more_info: "Meer informatie in ons",
-  },
+  }),
 
-  pl: {
+  pl: applyBrand({
     nav_how_it_works: "Jak to działa",
     nav_pricing: "Cennik",
     nav_faq: "FAQ",
@@ -4461,9 +4473,9 @@ export const translations: Translations = {
     cookie_banner_necessary: "Niezbędne pliki cookie (zawsze aktywne)",
     cookie_banner_analytics: "Analityczne pliki cookie",
     cookie_banner_more_info: "Więcej informacji w naszej",
-  },
+  }),
 
-  ru: {
+  ru: applyBrand({
     nav_how_it_works: "Как это работает",
     nav_pricing: "Цены",
     nav_faq: "FAQ",
@@ -4954,9 +4966,9 @@ export const translations: Translations = {
     cookie_banner_necessary: "Необходимые cookie (всегда активны)",
     cookie_banner_analytics: "Аналитические cookie",
     cookie_banner_more_info: "Подробнее в нашей",
-  },
+  }),
 
-  zh: {
+  zh: applyBrand({
     nav_how_it_works: "如何使用",
     nav_pricing: "价格",
     nav_faq: "常见问题",
@@ -5446,7 +5458,7 @@ export const translations: Translations = {
     cookie_banner_necessary: "必要Cookie（始终活跃）",
     cookie_banner_analytics: "分析Cookie",
     cookie_banner_more_info: "更多信息请参阅我们的",
-  },
+  }),
 };
 
 /** Detect language from URL path prefix, e.g. /en/... → "en" */

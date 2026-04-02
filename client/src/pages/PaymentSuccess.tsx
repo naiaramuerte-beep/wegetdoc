@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { CheckCircle, ArrowRight, FolderOpen, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { brandName } from "@/lib/brand";
 
 export default function PaymentSuccess() {
   const utils = trpc.useUtils();
@@ -41,7 +42,7 @@ export default function PaymentSuccess() {
           items: [
             {
               item_id: "cloudpdf_trial",
-              item_name: "CloudPDF Trial Subscription",
+              item_name: `${brandName} Trial Subscription`,
               price: 0,
               quantity: 1,
             },

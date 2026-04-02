@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { FileText, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
+import { brandName } from "@/lib/brand";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -55,7 +56,7 @@ export default function Login() {
           className="text-sm mb-6"
           style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
         >
-          Accede a tu cuenta de CloudPDF
+          Accede a tu cuenta de {brandName}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
