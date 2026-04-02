@@ -201,7 +201,19 @@ export default function Home() {
               style={{ fontFamily: "'Sora', sans-serif", color: TEXT_MAIN }}
             >
               {isFastDoc ? (
-                "Edita tus PDFs en segundos"
+                <>
+                  Edita tus PDFs{" "}
+                  <span
+                    style={{
+                      background: "linear-gradient(135deg, #E8590C, #F97316)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                    }}
+                  >
+                    en segundos
+                  </span>
+                </>
               ) : (
                 <>
                   {t.hero_title_1}{" "}
@@ -821,7 +833,9 @@ export default function Home() {
         <div
           className="absolute inset-0"
           style={{
-            background: `linear-gradient(135deg, oklch(0.40 0.24 264) 0%, oklch(0.36 0.26 290) 60%, oklch(0.32 0.22 305) 100%)`,
+            background: isFastDoc
+              ? `linear-gradient(135deg, #E8590C 0%, #F97316 60%, #FB923C 100%)`
+              : `linear-gradient(135deg, oklch(0.40 0.24 264) 0%, oklch(0.36 0.26 290) 60%, oklch(0.32 0.22 305) 100%)`,
           }}
         />
         {/* Decorations */}

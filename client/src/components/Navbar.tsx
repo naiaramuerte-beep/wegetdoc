@@ -82,7 +82,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
         }`}
         style={{ borderColor: BORDER }}
       >
-        <div className="container flex items-center justify-between h-14 md:h-16">
+        <div className={`container flex items-center h-14 md:h-16 ${isFastDoc ? "md:grid md:grid-cols-[auto_1fr_auto]" : "justify-between"}`}>
 
           {/* ── Logo ── */}
           <Link href={`/${lang}`} className="flex items-center gap-2 group shrink-0">
@@ -110,7 +110,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
           </Link>
 
           {/* ── Desktop Nav ── */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className={`hidden md:flex items-center gap-1 ${isFastDoc ? "justify-center" : ""}`}>
             {navLinks.map((link) =>
               link.onClick ? (
                 <button
