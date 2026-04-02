@@ -79,13 +79,13 @@ export default function Footer() {
               {t.footer_desc}
             </p>
             <a
-              href="mailto:soporte@cloud-pdf.net"
+              href="mailto:support@cloud-pdf.net"
               className="inline-flex items-center gap-1.5 text-sm font-medium transition-colors duration-150"
               style={{ color: INDIGO }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
               onMouseLeave={(e) => (e.currentTarget.style.color = INDIGO)}
             >
-              ✉ soporte@cloud-pdf.net
+              ✉ support@cloud-pdf.net
             </a>
           </div>
 
