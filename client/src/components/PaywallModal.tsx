@@ -332,14 +332,9 @@ function PaddleCheckoutForm({
 
       {/* ── Price info bar ── */}
       <div className="px-6 py-3 border-b border-slate-100 bg-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0">
-              <Check className="w-4 h-4 text-green-500" />
-            </div>
-            <p className="text-sm font-medium text-slate-600">{(t as any).paywall_offer_label ?? "Your PDF for just"}</p>
-          </div>
-          <p className="text-xl font-bold text-green-600">0,90 &euro;</p>
+        <div className="flex items-center justify-center gap-2">
+          <Check className="w-4 h-4 text-green-500 shrink-0" />
+          <p className="text-sm font-medium text-slate-600">{t.paywall_offer_label} <span className="text-lg font-bold text-green-600">0,90 &euro;</span></p>
         </div>
       </div>
 
