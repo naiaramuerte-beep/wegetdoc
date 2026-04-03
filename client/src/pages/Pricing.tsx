@@ -307,13 +307,13 @@ export default function Pricing() {
                    if (typeof window.gtag === "function") {
                      window.gtag("event", "conversion", {
                        send_to: "AW-18038662610",
-                       value: 0,
+                       value: 49.90,
                        currency: "EUR",
                        transaction_id: txnId,
                      });
                      window.gtag("event", "purchase", {
                        transaction_id: txnId,
-                       value: 0,
+                       value: 49.90,
                        currency: "EUR",
                        items: [{ item_id: "cloudpdf_trial", item_name: `${brandName} Trial Subscription`, price: 0, quantity: 1 }],
                      });

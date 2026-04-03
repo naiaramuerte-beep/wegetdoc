@@ -26,7 +26,7 @@ export default function PaymentSuccess() {
       if (typeof window.gtag === "function") {
         window.gtag("event", "conversion", {
           send_to: "AW-18038662610",
-          value: 0,
+          value: 49.90,
           currency: "EUR",
           transaction_id: transactionId,
         });
@@ -37,7 +37,7 @@ export default function PaymentSuccess() {
       if (typeof window.gtag === "function") {
         window.gtag("event", "purchase", {
           transaction_id: transactionId,
-          value: 0,
+          value: 49.90,
           currency: "EUR",
           items: [
             {
