@@ -127,12 +127,22 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
-
-  // fall through to index.html if the file doesn't exist
   const indexPath = path.resolve(distPath, "index.html");
+  // Cache the processed index.html so we don't read+replace on every request
+  let processedIndex: string | null = null;
+  function getProcessedIndex(): string {
+    if (!processedIndex) {
+      const raw = fs.readFileSync(indexPath, "utf-8");
+      processedIndex = replaceBrandPlaceholders(raw);
+    }
+    return processedIndex;
+  }
+
+  // Serve static assets but SKIP index.html (we process it with brand placeholders)
+  app.use(express.static(distPath, { index: false }));
+
+  // All routes → processed index.html (SPA fallback)
   app.use("*", (_req, res) => {
-    const html = fs.readFileSync(indexPath, "utf-8");
-    res.status(200).set({ "Content-Type": "text/html" }).end(replaceBrandPlaceholders(html));
+    res.status(200).set({ "Content-Type": "text/html" }).end(getProcessedIndex());
   });
 }
