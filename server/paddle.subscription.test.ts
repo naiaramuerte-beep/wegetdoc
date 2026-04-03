@@ -158,10 +158,6 @@ describe("subscription.status", () => {
     vi.mocked(getActiveSubscription).mockResolvedValue({
       id: 1,
       userId: 42,
-      stripeCustomerId: null,
-      stripeSubscriptionId: null,
-      stripePriceId: null,
-      stripeSessionId: null,
       paddleCustomerId: "ctm_123",
       paddleSubscriptionId: "sub_123",
       paddleTransactionId: "txn_123",
@@ -274,10 +270,6 @@ describe("subscription.cancel", () => {
     vi.mocked(getActiveSubscription).mockResolvedValue({
       id: 1,
       userId: 42,
-      stripeCustomerId: null,
-      stripeSubscriptionId: null,
-      stripePriceId: null,
-      stripeSessionId: null,
       paddleCustomerId: null,
       paddleSubscriptionId: null,
       paddleTransactionId: null,
@@ -310,10 +302,6 @@ describe("subscription.cancel", () => {
     vi.mocked(getActiveSubscription).mockResolvedValue({
       id: 1,
       userId: 42,
-      stripeCustomerId: null,
-      stripeSubscriptionId: null,
-      stripePriceId: null,
-      stripeSessionId: null,
       paddleCustomerId: "ctm_paddle_456",
       paddleSubscriptionId: "sub_paddle_123",
       paddleTransactionId: "txn_paddle_789",

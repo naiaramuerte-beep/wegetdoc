@@ -34,12 +34,6 @@ export type InsertUser = typeof users.$inferInsert;
 export const subscriptions = mysqlTable("subscriptions", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
-  // Legacy columns kept to avoid migration — unused by application code
-  stripeCustomerId: varchar("stripeCustomerId", { length: 128 }),
-  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 128 }),
-  stripePriceId: varchar("stripePriceId", { length: 128 }),
-  stripeSessionId: varchar("stripeSessionId", { length: 256 }),
-  // Paddle fields
   paddleCustomerId: varchar("paddleCustomerId", { length: 128 }),
   paddleSubscriptionId: varchar("paddleSubscriptionId", { length: 128 }),
   paddleTransactionId: varchar("paddleTransactionId", { length: 128 }),
