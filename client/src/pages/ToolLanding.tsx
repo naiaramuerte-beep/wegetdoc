@@ -82,45 +82,40 @@ export default function ToolLanding({ tool }: { tool: ToolDef }) {
       <input ref={fileRef} type="file" accept={accept} className="hidden" onChange={handleFile} />
 
       {/* ════════════════════════════════════════════════════════════
-          HERO — full-width gradient background, big icon, CTA
+          HERO — white background like Home page
       ════════════════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden">
-        {/* Background gradient */}
-        <div className="absolute inset-0" style={{ background: `linear-gradient(160deg, oklch(0.15 0.03 ${tool.accentHue}) 0%, oklch(0.10 0.02 ${tool.accentHue}) 100%)` }} />
+      <section className="relative overflow-hidden bg-white">
         {/* Decorative grid */}
-        <div className="absolute inset-0 opacity-[0.06]" style={{
-          backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+        <div className="absolute inset-0 opacity-[0.03]" style={{
+          backgroundImage: `linear-gradient(${colors.primary} 1px, transparent 1px), linear-gradient(90deg, ${colors.primary} 1px, transparent 1px)`,
           backgroundSize: "48px 48px",
         }} />
-        {/* Decorative blobs */}
-        <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full opacity-[0.08]" style={{ background: `radial-gradient(circle, ${colors.primary}, transparent 70%)` }} />
-        <div className="absolute -bottom-20 -left-20 w-[300px] h-[300px] rounded-full opacity-[0.06]" style={{ background: `radial-gradient(circle, ${colors.secondary}, transparent 70%)` }} />
 
-        <div className="container relative z-10 pt-16 pb-20 md:pt-24 md:pb-28 px-4">
+        <div className="container relative z-10 pt-12 pb-16 md:pt-20 md:pb-24 px-4">
           <div className="max-w-4xl mx-auto text-center">
             {/* Tool icon badge */}
             <div className="inline-flex items-center justify-center mb-6">
               <div
-                className="w-20 h-20 md:w-24 md:h-24 rounded-2xl flex items-center justify-center"
+                className="w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center"
                 style={{
                   background: colors.gradient,
-                  boxShadow: `0 12px 40px oklch(0.3 0.15 ${tool.accentHue} / 0.4)`,
+                  boxShadow: `0 8px 24px ${colors.lightBg}`,
                 }}
               >
-                <ToolIcon className="w-10 h-10 md:w-12 md:h-12 text-white" />
+                <ToolIcon className="w-8 h-8 md:w-10 md:h-10 text-white" />
               </div>
             </div>
 
             {/* Title */}
             <h1
-              className="text-4xl md:text-5xl lg:text-[3.8rem] font-extrabold leading-[1.1] mb-5 tracking-tight text-white"
-              style={{ fontFamily: "'Sora', sans-serif" }}
+              className="text-4xl md:text-5xl lg:text-[3.8rem] font-extrabold leading-[1.1] mb-5 tracking-tight"
+              style={{ fontFamily: "'Sora', sans-serif", color: "#111" }}
             >
               {tr("h1")}
             </h1>
 
             {/* Subtitle */}
-            <p className="text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed" style={{ color: "rgba(255,255,255,0.75)" }}>
+            <p className="text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed" style={{ color: "#555" }}>
               {tr("subtitle")}
             </p>
 
@@ -130,29 +125,28 @@ export default function ToolLanding({ tool }: { tool: ToolDef }) {
               onDragLeave={() => setIsDragging(false)}
               onDrop={handleDrop}
               onClick={() => fileRef.current?.click()}
-              className="cursor-pointer mx-auto max-w-lg rounded-2xl p-8 md:p-10 transition-all duration-300"
+              className="cursor-pointer mx-auto max-w-lg rounded-2xl p-8 md:p-10 transition-all duration-300 bg-white"
               style={{
-                backgroundColor: isDragging ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.08)",
-                border: isDragging ? "2px solid rgba(255,255,255,0.5)" : "2px dashed rgba(255,255,255,0.25)",
-                backdropFilter: "blur(8px)",
+                border: isDragging ? `2px solid ${colors.primary}` : `2px dashed ${colors.lightBg}`,
+                boxShadow: isDragging ? `0 0 0 4px ${colors.lightBg}` : "0 2px 12px rgba(0,0,0,0.06)",
                 transform: isDragging ? "scale(1.02)" : "scale(1)",
               }}
             >
               <div className="flex flex-col items-center gap-4">
                 <div
-                  className="w-16 h-16 rounded-xl flex items-center justify-center transition-transform"
-                  style={{ background: colors.gradient, boxShadow: `0 8px 24px oklch(0.3 0.15 ${tool.accentHue} / 0.5)` }}
+                  className="w-14 h-14 rounded-xl flex items-center justify-center"
+                  style={{ background: colors.gradient }}
                 >
                   <Upload className="w-7 h-7 text-white" />
                 </div>
                 <button
-                  className="px-10 py-4 rounded-xl text-white font-bold text-base md:text-lg transition-all hover:-translate-y-1 hover:shadow-2xl active:scale-95"
-                  style={{ background: colors.gradient, boxShadow: `0 6px 20px oklch(0.3 0.15 ${tool.accentHue} / 0.4)` }}
+                  className="px-10 py-4 rounded-xl text-white font-bold text-base md:text-lg transition-all hover:-translate-y-1 hover:shadow-xl active:scale-95"
+                  style={{ background: colors.gradient, boxShadow: `0 4px 15px ${colors.lightBg}` }}
                 >
                   {tr("cta") || "Upload PDF"}
                   <ArrowRight className="w-5 h-5 inline ml-2" />
                 </button>
-                <p className="text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
+                <p className="text-sm" style={{ color: "#999" }}>
                   {tr("drag") || "or drag & drop your file here"}
                 </p>
               </div>
@@ -166,7 +160,7 @@ export default function ToolLanding({ tool }: { tool: ToolDef }) {
                 { icon: Globe, text: "Any browser" },
                 { icon: Lock, text: "Secure & private" },
               ].map((badge, i) => (
-                <div key={i} className="flex items-center gap-1.5 text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
+                <div key={i} className="flex items-center gap-1.5 text-xs" style={{ color: "#999" }}>
                   <badge.icon className="w-3.5 h-3.5" />
                   <span>{badge.text}</span>
                 </div>
@@ -286,23 +280,17 @@ export default function ToolLanding({ tool }: { tool: ToolDef }) {
       {/* ════════════════════════════════════════════════════════════
           BOTTOM CTA — gradient background
       ════════════════════════════════════════════════════════════ */}
-      <section className="relative py-20 md:py-24 overflow-hidden">
-        <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, oklch(0.15 0.03 ${tool.accentHue}) 0%, oklch(0.10 0.02 ${tool.accentHue}) 100%)` }} />
-        <div className="absolute inset-0 opacity-[0.05]" style={{
-          backgroundImage: `radial-gradient(rgba(255,255,255,0.3) 1px, transparent 1px)`,
-          backgroundSize: "32px 32px",
+      <section className="relative py-16 md:py-24 overflow-hidden">
+        <div className="absolute inset-0" style={{ background: colors.gradient }} />
+        <div className="absolute inset-0 opacity-[0.06]" style={{
+          backgroundImage: "linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
         }} />
         <div className="container relative z-10 max-w-3xl mx-auto px-4 text-center">
-          <div
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6"
-            style={{ background: colors.gradient, boxShadow: `0 8px 24px oklch(0.3 0.15 ${tool.accentHue} / 0.4)` }}
-          >
-            <ToolIcon className="w-8 h-8 text-white" />
-          </div>
           <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-4" style={{ fontFamily: "'Sora', sans-serif" }}>
             {tr("bottom_cta_title") || tr("h1")}
           </h2>
-          <p className="text-base mb-8 max-w-lg mx-auto" style={{ color: "rgba(255,255,255,0.65)" }}>
+          <p className="text-base mb-8 max-w-lg mx-auto" style={{ color: "rgba(255,255,255,0.8)" }}>
             {tr("subtitle")}
           </p>
           <button
@@ -311,7 +299,7 @@ export default function ToolLanding({ tool }: { tool: ToolDef }) {
             style={{
               backgroundColor: "white",
               color: colors.primary,
-              boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.22)",
             }}
           >
             <Upload className="w-5 h-5" />
