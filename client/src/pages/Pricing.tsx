@@ -480,6 +480,13 @@ function PaddleInlineCheckout({
   const [ready, setReady] = useState(false);
   const initialized = useRef(false);
   const opened = useRef(false);
+  const geoRef = useRef<{ country: string; postalCode: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/geo").then(r => r.json()).then(data => {
+      if (data?.country && data?.postalCode) geoRef.current = { country: data.country, postalCode: data.postalCode };
+    }).catch(() => {});
+  }, []);
 
   const handleComplete = useCallback((eventData: any) => {
     onComplete(eventData);
@@ -527,9 +534,13 @@ function PaddleInlineCheckout({
       }
 
       if (!opened.current) {
+        const pricingCustomer: any = { email: user?.email || undefined };
+        if (geoRef.current) {
+          pricingCustomer.address = { countryCode: geoRef.current.country, postalCode: geoRef.current.postalCode };
+        }
         P.Checkout.open({
           items: [{ priceId: paddleConfig.priceId, quantity: 1 }],
-          customer: { email: user?.email || undefined },
+          customer: pricingCustomer,
           customData: {
             user_id: user?.id?.toString() || "",
             user_email: user?.email || "",

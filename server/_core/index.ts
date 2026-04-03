@@ -227,6 +227,14 @@ async function startServer() {
     ].join("; "));
     next();
   });
+  // Geo endpoint — reads Cloudflare headers for country/postal code
+  app.get("/api/geo", (req, res) => {
+    const country = (req.headers["cf-ipcountry"] as string) || "";
+    const postalCode = (req.headers["cf-ippostal-code"] as string) || "";
+    const city = (req.headers["cf-ipcity"] as string) || "";
+    res.json({ country: country.toUpperCase(), postalCode, city });
+  });
+
   // Google OAuth direct routes: /api/auth/google and /api/auth/google/callback
   registerGoogleOAuthRoutes(app);
 

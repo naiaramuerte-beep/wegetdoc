@@ -54,6 +54,16 @@ function PaddleCheckoutForm({
   const confirmPaddleCheckout = trpc.subscription.confirmPaddleCheckout.useMutation();
   const paddleConfigQ = trpc.subscription.paddleConfig.useQuery();
   const utils = trpc.useUtils();
+  const geoRef = useRef<{ country: string; postalCode: string } | null>(null);
+
+  // Fetch geo data on mount to pre-fill Paddle checkout
+  useEffect(() => {
+    fetch("/api/geo").then(r => r.json()).then(data => {
+      if (data?.country && data?.postalCode) {
+        geoRef.current = { country: data.country, postalCode: data.postalCode };
+      }
+    }).catch(() => {});
+  }, []);
 
   // Upload PDF via REST multipart (avoids tRPC base64 size limits)
   const uploadPdfViaRest = async (data: { base64: string; name: string; size: number }): Promise<void> => {
@@ -249,11 +259,19 @@ function PaddleCheckoutForm({
         setTimeout(() => {
           const items = [{ priceId, quantity: 1 }];
 
+          const customerData: any = {
+            email: user?.email || undefined,
+          };
+          if (geoRef.current) {
+            customerData.address = {
+              countryCode: geoRef.current.country,
+              postalCode: geoRef.current.postalCode,
+            };
+          }
+
           P.Checkout.open({
             items,
-            customer: {
-              email: user?.email || undefined,
-            },
+            customer: customerData,
             customData: {
               user_id: user?.id?.toString() || "",
               user_email: user?.email || "",
