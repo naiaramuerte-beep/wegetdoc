@@ -22,6 +22,7 @@ import PaywallModal from "./PaywallModal";
 import { encryptPDF } from "@pdfsmaller/pdf-encrypt-lite";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePdfFile } from "@/contexts/PdfFileContext";
+import { colors } from "@/lib/brand";
 // Polyfill Uint8Array.prototype.toHex (TC39 proposal) — needed by pdfjs-dist v5+
 // Some browsers (Chromium < 140, Firefox, Safari) don't support it yet.
 if (typeof (Uint8Array.prototype as any)["toHex"] !== "function") {
@@ -429,7 +430,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       // Generate thumbnails
       setPdfLoadProgress(60);
       const thumbs: string[] = [];
-      const thumbCount = Math.min(doc.numPages, 20);
+      const thumbCount = doc.numPages;
       for (let i = 1; i <= thumbCount; i++) {
         const page = await doc.getPage(i);
         const vp = page.getViewport({ scale: 0.4 });
@@ -1762,6 +1763,42 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       toast.success(t.editor_toast_rotated ?? "Page rotated", { id: "rotate" });
     } catch {
       toast.error(t.editor_toast_rotate_error ?? "Error rotating", { id: "rotate" });
+    }
+  };
+
+    // ── Add blank page after current ────────────────────────────
+  const addBlankPage = async () => {
+    if (!pdfBytes) return;
+    try {
+      const doc = await PDFDocument.load(pdfBytes.slice());
+      const lastPage = doc.getPage(currentPage - 1);
+      const { width, height } = lastPage.getSize();
+      doc.insertPage(currentPage, [width, height]);
+      const out = await doc.save();
+      const newBytes = new Uint8Array(out).slice();
+      setPdfBytes(newBytes);
+      const newDoc = await pdfjsLib.getDocument({ data: newBytes.slice() }).promise;
+      setPdfDoc(newDoc);
+      setTotalPages(doc.getPageCount());
+      const newPageNum = currentPage + 1;
+      setCurrentPage(newPageNum);
+      // Generate thumbnail for the new blank page
+      const newPage = await newDoc.getPage(newPageNum);
+      const vp = newPage.getViewport({ scale: 0.4 });
+      const c = document.createElement("canvas");
+      c.width = vp.width; c.height = vp.height;
+      const ctx = c.getContext("2d")!;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, vp.width, vp.height);
+      await newPage.render({ canvas: c, viewport: vp } as any).promise;
+      setThumbnails(prev => {
+        const updated = [...prev];
+        updated.splice(currentPage, 0, c.toDataURL());
+        return updated;
+      });
+      toast.success((t as any).editor_toast_page_added ??"Page added");
+    } catch {
+      toast.error("Error adding page");
     }
   };
 
@@ -3267,32 +3304,67 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             {/* ── BODY: thumbnails + viewer + tool panel ── */}
       <div className="flex flex-1 overflow-hidden relative">
         {/* LEFT: Page thumbnails — hidden on mobile */}
-        <div className="hidden md:flex w-[150px] border-r overflow-y-auto flex-col gap-3 py-3 px-2" style={{ backgroundColor: "oklch(0.96 0.005 250)", borderColor: "oklch(0.90 0.01 250)" }}>
+        <div className="hidden md:flex w-[150px] border-r overflow-y-auto flex-col gap-2 py-3 px-2" style={{ backgroundColor: "oklch(0.96 0.005 250)", borderColor: "oklch(0.90 0.01 250)" }}>
           {/* Page count */}
-          <div className="flex items-center justify-between px-1">
-            <span className="text-xs font-semibold" style={{ color: "oklch(0.40 0.02 250)" }}>{totalPages}</span>
+          <div className="flex items-center justify-between px-1 mb-1">
+            <span className="text-[10px] font-semibold" style={{ color: "oklch(0.40 0.02 250)" }}>{totalPages} {totalPages === 1 ? "page" : "pages"}</span>
           </div>
-          {thumbnails.map((thumb, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentPage(i + 1)}
-              className="flex flex-col items-center gap-1.5 transition-all"
-              style={{ outline: "none" }}
-            >
-              <div
-                className="w-full rounded overflow-hidden"
-                style={{
-                  border: currentPage === i + 1 ? "2px solid oklch(0.55 0.22 260)" : "2px solid oklch(0.85 0.02 250)",
-                  boxShadow: currentPage === i + 1 ? "0 0 0 1px oklch(0.55 0.22 260 / 0.3)" : "0 1px 3px oklch(0 0 0 / 0.12)",
-                }}
+          {thumbnails.map((thumb, i) => {
+            const isActive = currentPage === i + 1;
+            return (
+            <div key={i} className="relative group">
+              <button
+                onClick={() => setCurrentPage(i + 1)}
+                className="w-full flex flex-col items-center gap-1 transition-all"
+                style={{ outline: "none" }}
               >
-                <img src={thumb} alt={`Página ${i + 1}`} className="w-full block" />
-              </div>
-              <span className="text-xs" style={{ color: currentPage === i + 1 ? "oklch(0.55 0.22 260)" : "oklch(0.55 0.02 250)", fontSize: 11 }}>
-                Page {i + 1}
-              </span>
-            </button>
-          ))}
+                <div
+                  className="w-full rounded overflow-hidden transition-all"
+                  style={{
+                    border: isActive ? `2.5px solid ${colors.primary}` : "2px solid oklch(0.85 0.02 250)",
+                    boxShadow: isActive ? `0 0 0 2px ${colors.lightBg}` : "0 1px 3px oklch(0 0 0 / 0.08)",
+                  }}
+                >
+                  <img src={thumb} alt={`${i + 1}`} className="w-full block" draggable={false} />
+                </div>
+                <span className="text-[10px] font-medium" style={{ color: isActive ? colors.primary : "oklch(0.50 0.02 250)" }}>
+                  {i + 1}
+                </span>
+              </button>
+              {/* Action buttons — visible on selected page */}
+              {isActive && (
+                <div className="absolute top-1 right-1 flex flex-col gap-0.5">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); addBlankPage(); }}
+                    className="w-5 h-5 rounded flex items-center justify-center transition-colors"
+                    style={{ backgroundColor: "oklch(1 0 0 / 0.85)", boxShadow: "0 1px 3px oklch(0 0 0 / 0.2)" }}
+                    title={(t as any).editor_toast_page_added ??"Add page"}
+                  >
+                    <Plus className="w-3 h-3" style={{ color: "oklch(0.35 0.02 250)" }} />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); rotatePage(); }}
+                    className="w-5 h-5 rounded flex items-center justify-center transition-colors"
+                    style={{ backgroundColor: "oklch(1 0 0 / 0.85)", boxShadow: "0 1px 3px oklch(0 0 0 / 0.2)" }}
+                    title={t.editor_rotate ?? "Rotate"}
+                  >
+                    <RotateCw className="w-3 h-3" style={{ color: "oklch(0.35 0.02 250)" }} />
+                  </button>
+                  {totalPages > 1 && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deletePage(); }}
+                      className="w-5 h-5 rounded flex items-center justify-center transition-colors"
+                      style={{ backgroundColor: "oklch(1 0 0 / 0.85)", boxShadow: "0 1px 3px oklch(0 0 0 / 0.2)" }}
+                      title={t.editor_delete_page ?? "Delete page"}
+                    >
+                      <Trash2 className="w-3 h-3" style={{ color: "oklch(0.55 0.18 15)" }} />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+            );
+          })}
         </div>
 
         {/* CENTER: PDF viewer */}
