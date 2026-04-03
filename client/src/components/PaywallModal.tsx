@@ -104,9 +104,13 @@ function PaddleCheckoutForm({
     setIsLoading(true);
     setProgressStep("checkout");
     try {
-      const transactionId = eventData?.transaction_id || eventData?.data?.transaction_id || "";
+      // Paddle.js v2 checkout.completed passes event.data with the transaction object
+      // The transaction ID can be at: eventData.id, eventData.transaction_id, or nested
+      console.log("[PaywallModal] checkout.completed eventData:", JSON.stringify(eventData, null, 2));
+      const transactionId = eventData?.id || eventData?.transaction_id || eventData?.data?.transaction_id || eventData?.data?.id || "";
       const subscriptionId = eventData?.subscription_id || eventData?.data?.subscription_id || "";
       const customerId = eventData?.customer_id || eventData?.data?.customer_id || "";
+      console.log("[PaywallModal] Extracted IDs:", { transactionId, subscriptionId, customerId });
 
       // 1. Confirm subscription in our DB
       await confirmPaddleCheckout.mutateAsync({

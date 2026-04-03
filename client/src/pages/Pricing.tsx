@@ -302,7 +302,8 @@ export default function Pricing() {
                 paddleConfig={paddleConfigQ.data}
                 user={user}
               onComplete={(data: any) => {
-                   const txnId = data.transaction_id || data.subscription_id || "";
+                   console.log("[Pricing] checkout.completed data:", JSON.stringify(data, null, 2));
+                   const txnId = data.id || data.transaction_id || data.subscription_id || "";
                    // Google Ads conversion tracking
                    if (typeof window.gtag === "function") {
                      window.gtag("event", "conversion", {
@@ -320,7 +321,7 @@ export default function Pricing() {
                      console.log("[Pricing] Conversion tracking fired", { txnId });
                    }
                    confirmPaddleCheckout.mutate({
-                     transactionId: data.transaction_id || "",
+                     transactionId: data.id || data.transaction_id || "",
                      subscriptionId: data.subscription_id || "",
                      customerId: data.customer_id || "",
                    });

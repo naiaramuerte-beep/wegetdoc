@@ -984,25 +984,25 @@ function BillingTab() {
             paddleConfig={paddleConfigQ.data}
             user={user}
             onComplete={(data: any) => {
-              const txnId = data.transaction_id || data.subscription_id || "";
-              // Google Ads conversion tracking
+              console.log("[Dashboard] checkout.completed data:", JSON.stringify(data, null, 2));
+              const txnId = data.id || data.transaction_id || data.subscription_id || "";
               if (typeof window.gtag === "function") {
                 window.gtag("event", "conversion", {
                   send_to: "AW-18038662610",
-          value: 49.90,
-          currency: "EUR",
-          transaction_id: txnId,
-        });
-        window.gtag("event", "purchase", {
-          transaction_id: txnId,
-          value: 49.90,
-          currency: "EUR",
-          items: [{ item_id: "cloudpdf_trial", item_name: `${brandName} Trial Subscription`, price: 0, quantity: 1 }],
+                  value: 49.90,
+                  currency: "EUR",
+                  transaction_id: txnId,
+                });
+                window.gtag("event", "purchase", {
+                  transaction_id: txnId,
+                  value: 49.90,
+                  currency: "EUR",
+                  items: [{ item_id: "cloudpdf_trial", item_name: `${brandName} Trial Subscription`, price: 0, quantity: 1 }],
                 });
                 console.log("[Dashboard] Conversion tracking fired", { txnId });
               }
               confirmPaddleCheckout.mutate({
-                transactionId: data.transaction_id || "",
+                transactionId: data.id || data.transaction_id || "",
                 subscriptionId: data.subscription_id || "",
                 customerId: data.customer_id || "",
               });
