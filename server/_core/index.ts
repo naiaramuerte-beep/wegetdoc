@@ -172,11 +172,6 @@ async function startServer() {
     res.json({ received: true });
   });
 
-  // Legacy Stripe webhook — keep for backwards compatibility during migration
-  app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), (_req, res) => {
-    console.log("[Stripe Webhook] Legacy endpoint hit — Stripe is no longer active");
-    res.json({ received: true });
-  });
 
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));

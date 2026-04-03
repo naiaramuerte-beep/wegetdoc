@@ -1,6 +1,6 @@
 /* =============================================================
    CloudPDF Admin Panel — Dashboard completo
-   MRR, ARR, estadísticas de facturación, usuarios, Stripe, legal
+   MRR, ARR, estadísticas de facturación, usuarios, pagos, legal
    ============================================================= */
 import { useState } from "react";
 import { useLocation } from "wouter";
@@ -397,7 +397,7 @@ export default function Admin() {
                 <table className="w-full text-sm min-w-[1300px]">
                   <thead>
                     <tr style={{ backgroundColor: "#0a0d14" }}>
-                      {["ID", "Nombre", "Email", "Rol", "Suscripción", "Plan", "Stripe ID", "Vence", "Registro", "Último acceso", "Acciones"].map((h) => (
+                      {["ID", "Nombre", "Email", "Rol", "Suscripción", "Plan", "ID Pago", "Vence", "Registro", "Último acceso", "Acciones"].map((h) => (
                         <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-400 whitespace-nowrap">
                           {h}
                         </th>
@@ -463,20 +463,8 @@ export default function Admin() {
                         <td className="px-4 py-3 text-gray-400 text-xs">
                           {u.subPlan ?? "\u2014"}
                         </td>
-                        <td className="px-4 py-3 text-xs">
-                          {u.stripeCustomerId ? (
-                            <a
-                              href={`https://dashboard.stripe.com/customers/${u.stripeCustomerId}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-400 hover:text-blue-300 hover:underline font-mono"
-                              title={u.stripeCustomerId}
-                            >
-                              {u.stripeCustomerId.slice(0, 14)}...
-                            </a>
-                          ) : (
-                            <span className="text-gray-500">\u2014</span>
-                          )}
+                        <td className="px-4 py-3 text-xs text-gray-500 font-mono">
+                          {u.paddleCustomerId ??"\u2014"}
                         </td>
                         <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">
                           {u.currentPeriodEnd ? new Date(u.currentPeriodEnd).toLocaleDateString("es-ES") : "\u2014"}
@@ -538,7 +526,7 @@ export default function Admin() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr style={{ backgroundColor: "#0a0d14" }}>
-                      {["Nombre", "Email", "Plan", "Fecha baja", "País", "Stripe ID"].map((h) => (
+                      {["Nombre", "Email", "Plan", "Fecha baja", "País", "ID Pago"].map((h) => (
                         <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-400">
                           {h}
                         </th>
@@ -583,7 +571,7 @@ export default function Admin() {
                         </td>
                         <td className="px-4 py-3 text-gray-400">{u.country ?? "—"}</td>
                         <td className="px-4 py-3 text-gray-500 text-xs font-mono">
-                          {u.stripeCustomerId ?? "—"}
+                          {u.paddleCustomerId ??"—"}
                         </td>
                       </tr>
                     ))}

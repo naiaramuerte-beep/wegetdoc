@@ -39,7 +39,7 @@ export default function Dashboard() {
    const [activeTab, setActiveTab] = useState<Tab>(getInitialTab);
   const utils = trpc.useUtils();
 
-  // Show success toast if redirected from Stripe Checkout
+  // Show success toast if redirected after payment
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("payment") === "success") {

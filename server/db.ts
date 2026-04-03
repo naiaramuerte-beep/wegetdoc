@@ -102,8 +102,7 @@ export async function getAllUsers(search?: string) {
     // Subscription info
     subStatus: subscriptions.status,
     subPlan: subscriptions.plan,
-    stripeCustomerId: subscriptions.stripeCustomerId,
-    stripeSubscriptionId: subscriptions.stripeSubscriptionId,
+    paddleCustomerId: subscriptions.paddleCustomerId,
     currentPeriodEnd: subscriptions.currentPeriodEnd,
     cancelAtPeriodEnd: subscriptions.cancelAtPeriodEnd,
   };
@@ -140,10 +139,6 @@ export async function userHasActiveSubscription(userId: number): Promise<boolean
 
 export async function upsertSubscription(data: {
   userId: number;
-  stripeCustomerId?: string;
-  stripeSubscriptionId?: string;
-  stripePriceId?: string;
-  stripeSessionId?: string;
   paddleCustomerId?: string;
   paddleSubscriptionId?: string;
   paddleTransactionId?: string;
@@ -185,7 +180,7 @@ export async function getAllSubscribedUsers() {
     subStatus: subscriptions.status,
     plan: subscriptions.plan,
     currentPeriodEnd: subscriptions.currentPeriodEnd,
-    stripeCustomerId: subscriptions.stripeCustomerId,
+    paddleCustomerId: subscriptions.paddleCustomerId,
   }).from(users)
     .innerJoin(subscriptions, eq(users.id, subscriptions.userId))
     .orderBy(desc(users.createdAt));
@@ -597,7 +592,7 @@ export async function getCanceledSubscriptions() {
     subStatus: subscriptions.status,
     plan: subscriptions.plan,
     canceledAt: subscriptions.updatedAt,
-    stripeCustomerId: subscriptions.stripeCustomerId,
+    paddleCustomerId: subscriptions.paddleCustomerId,
   }).from(users)
     .innerJoin(subscriptions, eq(users.id, subscriptions.userId))
     .where(eq(subscriptions.status, "canceled"))

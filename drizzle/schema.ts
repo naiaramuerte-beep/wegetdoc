@@ -29,12 +29,12 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 /**
- * Subscriptions table — tracks Paddle (and legacy Stripe) subscriptions per user.
+ * Subscriptions table — tracks Paddle subscriptions per user.
  */
 export const subscriptions = mysqlTable("subscriptions", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
-  // Legacy Stripe fields (kept for historical data)
+  // Legacy columns kept to avoid migration — unused by application code
   stripeCustomerId: varchar("stripeCustomerId", { length: 128 }),
   stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 128 }),
   stripePriceId: varchar("stripePriceId", { length: 128 }),
@@ -137,7 +137,7 @@ export type ContactMessage = typeof contactMessages.$inferSelect;
 export type InsertContactMessage = typeof contactMessages.$inferInsert;
 
 /**
- * Site settings — key/value store for admin-configurable settings (Stripe keys, etc.)
+ * Site settings — key/value store for admin-configurable settings
  */
 export const siteSettings = mysqlTable("site_settings", {
   id: int("id").autoincrement().primaryKey(),
