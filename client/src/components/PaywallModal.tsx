@@ -268,13 +268,11 @@ function PaddleCheckoutForm({
 
           const customerData: any = {
             email: user?.email || undefined,
+            address: {
+              countryCode: geoRef.current?.country || "ES",
+              postalCode: geoRef.current?.postalCode || "28001",
+            },
           };
-          if (geoRef.current) {
-            customerData.address = {
-              countryCode: geoRef.current.country,
-              postalCode: geoRef.current.postalCode,
-            };
-          }
 
           P.Checkout.open({
             items,
