@@ -27,6 +27,7 @@ import CookieBanner from "./components/CookieBanner";
 import { isFastDoc } from "./lib/brand";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
+import ToolLanding, { TOOL_LANDINGS } from "./pages/ToolLanding";
 
 // Redirect root "/" to language-prefixed URL based on browser language
 function RootRedirect() {
@@ -96,6 +97,18 @@ function Router() {
       {/* Blog legacy routes */}
       {!isFastDoc && <Route path="/blog" component={() => <Redirect to="/es/blog" />} />}
       {!isFastDoc && <Route path="/blog/:slug" component={({ params }) => <Redirect to={`/es/blog/${params.slug}`} />} />}
+
+      {/* Tool landing pages — language-prefixed */}
+      {LANGUAGES.map(({ code }) =>
+        TOOL_LANDINGS.map(tool => (
+          <Route key={`${code}-${tool.slug}`} path={`/${code}/${tool.slug}/online`} component={() => <ToolLanding tool={tool} />} />
+        ))
+      )}
+
+      {/* Tool landing redirects without lang prefix */}
+      {TOOL_LANDINGS.map(tool => (
+        <Route key={`redirect-${tool.slug}`} path={`/${tool.slug}/online`} component={() => <Redirect to={`/en/${tool.slug}/online`} />} />
+      ))}
 
       {/* Legacy routes without lang prefix — redirect to /es/ */}
       <Route path="/editor" component={() => <Redirect to="/es/editor" />} />
