@@ -278,6 +278,7 @@ function PaddleCheckoutForm({
 
           P.Checkout.open({
             items,
+            discountId: "dsc_01kn9r3e3et9pdv30atyv82h4x",
             customer: customerData,
             customData: {
               user_id: user?.id?.toString() || "",
@@ -287,7 +288,7 @@ function PaddleCheckoutForm({
             settings: {
               locale: "en",
               allowLogout: false,
-              showAddDiscounts: true,
+              showAddDiscounts: false,
             },
           });
 
