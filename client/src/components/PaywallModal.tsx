@@ -454,8 +454,8 @@ function PaddleCheckoutForm({
                   bottom: 0,
                   left: 0,
                   right: 0,
-                  height: 120,
-                  background: "linear-gradient(to bottom, transparent 0%, white 15%, white 100%)",
+                  height: 70,
+                  background: "white",
                   pointerEvents: "none",
                   zIndex: 10,
                 }}
