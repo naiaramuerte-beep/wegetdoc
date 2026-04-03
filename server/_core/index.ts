@@ -231,6 +231,8 @@ async function startServer() {
   const geoCache = new Map<string, { data: { country: string; postalCode: string; city: string }; expires: number }>();
 
   app.get("/api/geo", async (req, res) => {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
     const country = (req.headers["cf-ipcountry"] as string) || "";
     let postalCode = (req.headers["cf-ippostal-code"] as string) || "";
     let city = (req.headers["cf-ipcity"] as string) || "";
