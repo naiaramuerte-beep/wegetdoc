@@ -214,16 +214,16 @@ async function startServer() {
     // Referrer policy
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     // Permissions policy — disable unnecessary browser features
-    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(self)");
+    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(self \"https://*.paddle.com\")");
     // Strict Transport Security (HSTS) — force HTTPS for 1 year
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
     // Content Security Policy
     res.setHeader("Content-Security-Policy", [
       "frame-ancestors 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://cdn.paddle.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://cdn.paddle.com https://pay.google.com",
       "object-src 'none'",
       "base-uri 'self'",
-      "frame-src 'self' https://*.paddle.com",
+      "frame-src 'self' https://*.paddle.com https://pay.google.com https://*.google.com",
     ].join("; "));
     next();
   });
