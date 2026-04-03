@@ -677,7 +677,7 @@ function DashboardPaddleInline({
   user,
   onComplete,
 }: {
-  paddleConfig?: { clientToken: string; priceId: string } | null;
+  paddleConfig?: { clientToken: string; priceId: string; sandbox?: boolean } | null;
   user?: { id: number; email: string | null; name?: string | null } | null;
   onComplete: (data: any) => void;
 }) {
@@ -702,6 +702,9 @@ function DashboardPaddleInline({
     if (!P) return;
     try {
       if (!initialized.current) {
+        if (paddleConfig.sandbox && P.Environment) {
+          P.Environment.set("sandbox");
+        }
         P.Initialize({
           token: paddleConfig.clientToken,
           checkout: {
