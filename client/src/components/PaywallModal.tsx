@@ -446,7 +446,7 @@ function PaddleCheckoutForm({
                 transition: "opacity 0.3s ease",
               }}
             />
-            {/* Cover Paddle footer (Sold by, Terms, Privacy, price breakdown) */}
+            {/* Cover Paddle footer — hides price breakdown text and legal links below the pay button */}
             {paddleReady && (
               <div
                 style={{
@@ -454,8 +454,8 @@ function PaddleCheckoutForm({
                   bottom: 0,
                   left: 0,
                   right: 0,
-                  height: 60,
-                  background: "linear-gradient(to bottom, transparent 0%, white 30%)",
+                  height: 120,
+                  background: "linear-gradient(to bottom, transparent 0%, white 15%, white 100%)",
                   pointerEvents: "none",
                   zIndex: 10,
                 }}
