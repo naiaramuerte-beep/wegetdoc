@@ -21,6 +21,7 @@ export default function PaymentSuccess() {
       // Get transaction_id from URL params (Paddle transaction ID or fallback)
       const params = new URLSearchParams(window.location.search);
       const transactionId = params.get("txn") || params.get("transaction_id") || params.get("session_id") || `pmt_${Date.now()}`;
+      console.log("[PaymentSuccess] URL params:", window.location.search, "→ transactionId:", transactionId);
 
       // Google Ads conversion tracking
       if (typeof window.gtag === "function") {

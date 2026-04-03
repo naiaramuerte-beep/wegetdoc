@@ -3989,7 +3989,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           toast.loading("Preparando descarga...", { id: "post-pay-dl" });
           const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
           const lang = langMatch ? langMatch[1] : "es";
-          const txnParam = transactionId ? `?txn=${encodeURIComponent(transactionId)}` : "";
+          const txnParam = transactionId ? `?txn=${encodeURIComponent(transactionId)}` : `?txn=pmt_${Date.now()}`;
           try {
             // Check if there's a pending tool download (compress, protect, convert, etc.)
             if (pendingToolDownloadRef.current) {
