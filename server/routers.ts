@@ -1,4 +1,4 @@
-import { Paddle } from "@paddle/paddle-node-sdk";
+import { Paddle, Environment } from "@paddle/paddle-node-sdk";
 import { z } from "zod";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -58,8 +58,9 @@ import {
 import { storagePut } from "./storage";
 import { sendPaymentConfirmationEmail, sendCancellationEmail } from "./email";
 
-// Paddle SDK instance (server-side)
-const getPaddle = () => new Paddle(process.env.PADDLE_API_KEY || "");
+// Paddle SDK instance (server-side) — auto-detect sandbox vs production from API key
+const paddleEnv = (process.env.PADDLE_API_KEY || "").startsWith("pdl_live_") ? Environment.production : Environment.sandbox;
+const getPaddle = () => new Paddle(process.env.PADDLE_API_KEY || "", { environment: paddleEnv });
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") {

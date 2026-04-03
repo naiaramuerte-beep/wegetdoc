@@ -2,7 +2,7 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
-import { Paddle, EventName } from "@paddle/paddle-node-sdk";
+import { Paddle, EventName, Environment } from "@paddle/paddle-node-sdk";
 import multer from "multer";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerGoogleOAuthRoutes } from "./googleOauth";
@@ -39,7 +39,8 @@ async function startServer() {
   const server = createServer(app);
 
   // ── Paddle Webhook (MUST be before express.json) ───────────────────────────────────────────
-  const paddle = new Paddle(process.env.PADDLE_API_KEY || "");
+  const webhookPaddleEnv = (process.env.PADDLE_API_KEY || "").startsWith("pdl_live_") ? Environment.production : Environment.sandbox;
+  const paddle = new Paddle(process.env.PADDLE_API_KEY || "", { environment: webhookPaddleEnv });
 
   app.post("/api/paddle/webhook", express.raw({ type: "application/json" }), async (req, res) => {
     const signature = (req.headers["paddle-signature"] as string) || "";
