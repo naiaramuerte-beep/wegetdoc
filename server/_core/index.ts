@@ -227,11 +227,41 @@ async function startServer() {
     ].join("; "));
     next();
   });
-  // Geo endpoint — reads Cloudflare headers for country/postal code
-  app.get("/api/geo", (req, res) => {
+  // Geo endpoint — reads Cloudflare headers, falls back to ipapi.co
+  const geoCache = new Map<string, { data: { country: string; postalCode: string; city: string }; expires: number }>();
+
+  app.get("/api/geo", async (req, res) => {
     const country = (req.headers["cf-ipcountry"] as string) || "";
-    const postalCode = (req.headers["cf-ippostal-code"] as string) || "";
-    const city = (req.headers["cf-ipcity"] as string) || "";
+    let postalCode = (req.headers["cf-ippostal-code"] as string) || "";
+    let city = (req.headers["cf-ipcity"] as string) || "";
+
+    if (!postalCode) {
+      const ip = (req.headers["cf-connecting-ip"] as string)
+        || (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim()
+        || "";
+      if (ip && ip !== "127.0.0.1" && ip !== "::1") {
+        const cached = geoCache.get(ip);
+        if (cached && cached.expires > Date.now()) {
+          res.json(cached.data);
+          return;
+        }
+        try {
+          const resp = await fetch(`https://ipapi.co/${ip}/json/`);
+          if (resp.ok) {
+            const geo = await resp.json();
+            postalCode = geo.postal || "";
+            if (!city) city = geo.city || "";
+            const result = { country: (country || geo.country_code || "").toUpperCase(), postalCode, city };
+            geoCache.set(ip, { data: result, expires: Date.now() + 3600_000 });
+            res.json(result);
+            return;
+          }
+        } catch (e) {
+          console.warn("[geo] ipapi.co fallback failed:", e);
+        }
+      }
+    }
+
     res.json({ country: country.toUpperCase(), postalCode, city });
   });
 
