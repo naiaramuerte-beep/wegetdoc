@@ -43,6 +43,7 @@ function PaddleCheckoutForm({
   buildPdfForUpload?: () => Promise<{ base64: string; name: string; size: number } | null>;
 }) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [progressStep, setProgressStep] = useState<"idle" | "checkout" | "saving" | "done">("idle");
   const [paddleReady, setPaddleReady] = useState(false);
@@ -332,16 +333,13 @@ function PaddleCheckoutForm({
       {/* ── Price info bar ── */}
       <div className="px-6 py-3 border-b border-slate-100 bg-white">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0">
-              <Shield className="w-4 h-4 text-orange-500" />
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0">
+              <Check className="w-4 h-4 text-green-500" />
             </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-700">Total due today</p>
-              <p className="text-xs text-slate-400">100% secure payment · Cancel anytime</p>
-            </div>
+            <p className="text-sm font-medium text-slate-600">{(t as any).paywall_offer_label ?? "Your PDF for just"}</p>
           </div>
-          <p className="text-xl font-bold text-green-600">0,00 &euro;</p>
+          <p className="text-xl font-bold text-green-600">0,90 &euro;</p>
         </div>
       </div>
 
@@ -443,15 +441,32 @@ function PaddleCheckoutForm({
             </div>
           )}
           {/* Paddle inline checkout renders here */}
-          <div
-            className="paddle-checkout-container flex-1"
-            style={{
-              minHeight: 450,
-              padding: "0 8px",
-              opacity: paddleReady ? 1 : 0,
-              transition: "opacity 0.3s ease",
-            }}
-          />
+          <div className="relative flex-1">
+            <div
+              className="paddle-checkout-container"
+              style={{
+                minHeight: 450,
+                padding: "0 8px",
+                opacity: paddleReady ? 1 : 0,
+                transition: "opacity 0.3s ease",
+              }}
+            />
+            {/* Cover Paddle footer (Sold by, Terms, Privacy, price breakdown) */}
+            {paddleReady && (
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: 60,
+                  background: "linear-gradient(to bottom, transparent 0%, white 30%)",
+                  pointerEvents: "none",
+                  zIndex: 10,
+                }}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>

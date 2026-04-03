@@ -244,6 +244,7 @@ export type TranslationKeys = {
   paywall_sign_up_seconds: string;
   paywall_continue_google: string;
   paywall_continue_email: string;
+  paywall_offer_label: string;
   paywall_enter_email: string;
   paywall_email_link: string;
   paywall_back: string;
@@ -701,6 +702,7 @@ export const translations: Translations = {
     paywall_sign_up_seconds: "Regístrate en segundos y elige un plan para continuar",
     paywall_continue_google: "Continuar con Google",
     paywall_continue_email: "Continuar con Email",
+    paywall_offer_label: "Tu PDF por solo",
     paywall_enter_email: "Introduce tu email",
     paywall_email_link: "Te enviaremos un enlace para iniciar sesión",
     paywall_back: "← Volver",
@@ -1397,6 +1399,7 @@ export const translations: Translations = {
     paywall_sign_up_seconds: "Sign up in seconds and choose a plan to continue",
     paywall_continue_google: "Continue with Google",
     paywall_continue_email: "Continue with Email",
+    paywall_offer_label: "Your PDF for just",
     paywall_enter_email: "Enter your email",
     paywall_email_link: "We'll send you a link to sign in",
     paywall_back: "← Back",
@@ -2093,6 +2096,7 @@ export const translations: Translations = {
     paywall_sign_up_seconds: "Inscrivez-vous en quelques secondes et choisissez un plan",
     paywall_continue_google: "Continuer avec Google",
     paywall_continue_email: "Continuer avec Email",
+    paywall_offer_label: "Votre PDF pour seulement",
     paywall_enter_email: "Entrez votre email",
     paywall_email_link: "Nous vous enverrons un lien de connexion",
     paywall_back: "← Retour",
@@ -2589,6 +2593,7 @@ export const translations: Translations = {
     paywall_sign_up_seconds: "Registrieren Sie sich in Sekunden und wählen Sie einen Plan",
     paywall_continue_google: "Mit Google fortfahren",
     paywall_continue_email: "Mit E-Mail fortfahren",
+    paywall_offer_label: "Ihr PDF für nur",
     paywall_enter_email: "E-Mail eingeben",
     paywall_email_link: "Wir senden Ihnen einen Anmeldelink",
     paywall_back: "← Zurück",
@@ -3085,6 +3090,7 @@ export const translations: Translations = {
     paywall_sign_up_seconds: "Cadastre-se em segundos e escolha um plano",
     paywall_continue_google: "Continuar com Google",
     paywall_continue_email: "Continuar com Email",
+    paywall_offer_label: "Seu PDF por apenas",
     paywall_enter_email: "Digite seu email",
     paywall_email_link: "Enviaremos um link para entrar",
     paywall_back: "← Voltar",
@@ -3581,6 +3587,7 @@ export const translations: Translations = {
     paywall_sign_up_seconds: "Registrati in pochi secondi e scegli un piano",
     paywall_continue_google: "Continua con Google",
     paywall_continue_email: "Continua con Email",
+    paywall_offer_label: "Il tuo PDF per solo",
     paywall_enter_email: "Inserisci la tua email",
     paywall_email_link: "Ti invieremo un link per accedere",
     paywall_back: "← Indietro",
@@ -4077,6 +4084,7 @@ export const translations: Translations = {
     paywall_sign_up_seconds: "Meld u in seconden aan en kies een plan",
     paywall_continue_google: "Doorgaan met Google",
     paywall_continue_email: "Doorgaan met Email",
+    paywall_offer_label: "Uw PDF voor slechts",
     paywall_enter_email: "Voer uw e-mail in",
     paywall_email_link: "We sturen u een inloglink",
     paywall_back: "← Terug",
@@ -4573,6 +4581,7 @@ export const translations: Translations = {
     paywall_sign_up_seconds: "Zarejestruj się w kilka sekund i wybierz plan",
     paywall_continue_google: "Kontynuuj z Google",
     paywall_continue_email: "Kontynuuj z Email",
+    paywall_offer_label: "Twój PDF za jedyne",
     paywall_enter_email: "Wprowadź swój email",
     paywall_email_link: "Wyślemy Ci link do logowania",
     paywall_back: "← Powrót",
@@ -5069,6 +5078,7 @@ export const translations: Translations = {
     paywall_sign_up_seconds: "Зарегистрируйтесь за несколько секунд и выберите план",
     paywall_continue_google: "Продолжить с Google",
     paywall_continue_email: "Продолжить с Email",
+    paywall_offer_label: "Ваш PDF всего за",
     paywall_enter_email: "Введите ваш email",
     paywall_email_link: "Мы отправим вам ссылку для входа",
     paywall_back: "← Назад",
@@ -5565,6 +5575,7 @@ export const translations: Translations = {
     paywall_sign_up_seconds: "几秒钟内注册并选择计划以继续",
     paywall_continue_google: "使用Google继续",
     paywall_continue_email: "使用邮筱继续",
+    paywall_offer_label: "您的PDF仅需",
     paywall_enter_email: "输入您的邮筱",
     paywall_email_link: "我们将发送登录链接给您",
     paywall_back: "← 返回",
