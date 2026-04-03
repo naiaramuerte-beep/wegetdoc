@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { CheckCircle, ArrowRight, FolderOpen, Loader2 } from "lucide-react";
+import { CheckCircle, ArrowRight, Upload, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { brandName } from "@/lib/brand";
@@ -62,7 +62,7 @@ export default function PaymentSuccess() {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
-          navigate(`/${lang}/dashboard?tab=documents&payment=success`);
+          navigate(`/${lang}`);
           return 0;
         }
         return prev - 1;
@@ -75,7 +75,7 @@ export default function PaymentSuccess() {
   const handleGoNow = () => {
     const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
     const lang = langMatch ? langMatch[1] : "es";
-    navigate(`/${lang}/dashboard?tab=documents&payment=success`);
+    navigate(`/${lang}`);
   };
 
   return (
@@ -114,7 +114,7 @@ export default function PaymentSuccess() {
       >
         <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" style={{ color: "oklch(0.55 0.22 260)" }} />
         <span className="text-sm font-medium" style={{ color: "oklch(0.35 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}>
-          Redirigiendo a tus documentos en <strong>{countdown}</strong>s...
+          Redirigiendo en <strong>{countdown}</strong>s...
         </span>
       </div>
 
@@ -128,8 +128,8 @@ export default function PaymentSuccess() {
             fontFamily: "'DM Sans', sans-serif",
           }}
         >
-          <FolderOpen className="w-4 h-4" />
-          Ir a mis documentos ahora
+          <Upload className="w-4 h-4" />
+          Editar otro PDF
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>
