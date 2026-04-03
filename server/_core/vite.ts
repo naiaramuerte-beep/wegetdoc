@@ -65,7 +65,7 @@ const pageKeywords = isFastDoc
   : "edit PDF online, free PDF editor, PDF to Word, sign PDF online, convert PDF, merge PDF, compress PDF";
 
 function replaceBrandPlaceholders(html: string): string {
-  return html
+  let result = html
     .replaceAll("%%BRAND_NAME%%", brandName)
     .replaceAll("%%BRAND_DOMAIN%%", brandDomain)
     .replaceAll("%%FAVICON_LINKS%%", faviconLinks)
@@ -73,6 +73,9 @@ function replaceBrandPlaceholders(html: string): string {
     .replaceAll("%%PAGE_TITLE%%", pageTitle)
     .replaceAll("%%PAGE_DESCRIPTION%%", pageDescription)
     .replaceAll("%%PAGE_KEYWORDS%%", pageKeywords);
+  // Safety net: remove any remaining %%PLACEHOLDER%% that we missed
+  result = result.replace(/%%[A-Z_]+%%/g, "");
+  return result;
 }
 
 export async function setupVite(app: Express, server: Server) {
