@@ -521,6 +521,22 @@ export default function PaywallModal({
       }
       // Refresh auth state — cookie is set by the server
       await refresh();
+      // Auto-save the document to the user's account (so it appears in "My Documents" even if they cancel payment)
+      const docToSave = (effectivePdfData && "base64" in effectivePdfData ? effectivePdfData : null) ?? (buildPdfForUpload ? await buildPdfForUpload() : null);
+      if (docToSave && "base64" in docToSave) {
+        try {
+          const binaryStr = atob(docToSave.base64);
+          const bytes = new Uint8Array(binaryStr.length);
+          for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+          const blob = new Blob([bytes], { type: "application/pdf" });
+          const fd = new FormData();
+          fd.append("file", blob, docToSave.name);
+          fd.append("name", docToSave.name);
+          await fetch("/api/documents/auto-save", { method: "POST", credentials: "include", body: fd });
+        } catch (e) {
+          console.warn("[PaywallModal] Auto-save after registration failed:", e);
+        }
+      }
       // Auth state is now updated, step will auto-switch to "plans"
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Error";
