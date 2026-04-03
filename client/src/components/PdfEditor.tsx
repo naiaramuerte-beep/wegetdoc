@@ -432,13 +432,18 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const thumbs: string[] = [];
       const thumbCount = doc.numPages;
       for (let i = 1; i <= thumbCount; i++) {
-        const page = await doc.getPage(i);
-        const vp = page.getViewport({ scale: 0.4 });
-        const c = document.createElement("canvas");
-        c.width = vp.width; c.height = vp.height;
-        const ctx = c.getContext("2d")!;
-        await page.render({ canvas: c, viewport: vp } as any).promise;
-        thumbs.push(c.toDataURL());
+        try {
+          const page = await doc.getPage(i);
+          const vp = page.getViewport({ scale: 0.4 });
+          const c = document.createElement("canvas");
+          c.width = vp.width; c.height = vp.height;
+          const ctx = c.getContext("2d")!;
+          await page.render({ canvas: c, viewport: vp } as any).promise;
+          thumbs.push(c.toDataURL());
+        } catch (err) {
+          console.warn(`[Thumbnail] Failed to render page ${i}:`, err);
+          thumbs.push(""); // fallback — will show placeholder icon
+        }
         setPdfLoadProgress(60 + Math.round((i / thumbCount) * 30));
       }
       setThumbnails(thumbs);
@@ -3309,7 +3314,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           <div className="flex items-center justify-between px-1 mb-1">
             <span className="text-[10px] font-semibold" style={{ color: "oklch(0.40 0.02 250)" }}>{totalPages} {totalPages === 1 ? "page" : "pages"}</span>
           </div>
-          {thumbnails.map((thumb, i) => {
+          {(thumbnails.length > 0 ? thumbnails : Array.from({ length: totalPages }, () => "")).map((thumb, i) => {
             const isActive = currentPage === i + 1;
             return (
             <div key={i} className="relative group">
@@ -3325,7 +3330,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     boxShadow: isActive ? `0 0 0 2px ${colors.lightBg}` : "0 1px 3px oklch(0 0 0 / 0.08)",
                   }}
                 >
-                  <img src={thumb} alt={`${i + 1}`} className="w-full block" draggable={false} />
+                  {thumb ? (
+                    <img src={thumb} alt={`${i + 1}`} className="w-full block" draggable={false} />
+                  ) : (
+                    <div className="w-full bg-white flex items-center justify-center" style={{ aspectRatio: "210/297" }}>
+                      <FileText className="w-6 h-6" style={{ color: "oklch(0.80 0.02 250)" }} />
+                    </div>
+                  )}
                 </div>
                 <span className="text-[10px] font-medium" style={{ color: isActive ? colors.primary : "oklch(0.50 0.02 250)" }}>
                   {i + 1}
