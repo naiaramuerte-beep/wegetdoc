@@ -446,21 +446,6 @@ function PaddleCheckoutForm({
                 transition: "opacity 0.3s ease",
               }}
             />
-            {/* Cover Paddle footer — hides price breakdown text and legal links below the pay button */}
-            {paddleReady && (
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: 70,
-                  background: "white",
-                  pointerEvents: "none",
-                  zIndex: 10,
-                }}
-              />
-            )}
           </div>
         </div>
       </div>
