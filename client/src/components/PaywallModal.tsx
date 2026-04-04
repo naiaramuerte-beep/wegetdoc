@@ -55,13 +55,24 @@ function PaddleCheckoutForm({
   const confirmPaddleCheckout = trpc.subscription.confirmPaddleCheckout.useMutation();
   const paddleConfigQ = trpc.subscription.paddleConfig.useQuery();
   const utils = trpc.useUtils();
-  const geoRef = useRef<{ country: string; postalCode: string } | null>(null);
+  const [geoData, setGeoData] = useState<{ country: string; postalCode: string } | null>(null);
 
-  // Fetch geo data on mount to pre-fill Paddle checkout
+  // Default postal codes per country — used when geo lookup doesn't return one
+  const defaultPostals: Record<string, string> = {
+    US: "10001", GB: "SW1A 1AA", DE: "10115", FR: "75001", ES: "28001", IT: "00100",
+    PT: "1000-001", NL: "1011", PL: "00-001", RU: "101000", CN: "100000", JP: "100-0001",
+    BR: "01000-000", MX: "06600", AR: "C1000", CL: "8320000", CO: "110111", PE: "15001",
+    IN: "110001", AU: "2000", CA: "M5H 2N2", KR: "04524", SE: "11120", NO: "0150",
+    DK: "1000", FI: "00100", AT: "1010", CH: "8001", BE: "1000", IE: "D01",
+  };
+
+  // Fetch geo data on mount — awaited before opening checkout
   useEffect(() => {
     fetch("/api/geo").then(r => r.json()).then(data => {
-      if (data?.country && data?.postalCode) {
-        geoRef.current = { country: data.country, postalCode: data.postalCode };
+      const country = data?.country || "";
+      const postalCode = data?.postalCode || defaultPostals[country] || "";
+      if (country) {
+        setGeoData({ country, postalCode });
       }
     }).catch(() => {});
   }, []);
@@ -182,9 +193,19 @@ function PaddleCheckoutForm({
     }
   }, [pdfData, buildPdfForUpload, onSuccess, confirmPaddleCheckout, utils]);
 
-  // Initialize Paddle.js with INLINE mode and open checkout IMMEDIATELY (no checkbox)
+  // Wait for geo data before opening checkout (max 2s, then open anyway)
+  const [geoTimeout, setGeoTimeout] = useState(false);
+  useEffect(() => {
+    if (geoData) return; // already have geo
+    const timer = setTimeout(() => setGeoTimeout(true), 2000);
+    return () => clearTimeout(timer);
+  }, [geoData]);
+
+  // Initialize Paddle.js with INLINE mode and open checkout
   useEffect(() => {
     if (checkoutOpen || !paddleConfigQ.data?.clientToken || !paddleConfigQ.data?.priceId) return;
+    // Wait for geo data OR timeout before opening
+    if (!geoData && !geoTimeout) return;
 
     const Paddle = (window as any).Paddle;
     if (!Paddle) {
@@ -270,10 +291,10 @@ function PaddleCheckoutForm({
           const customerData: any = {
             email: user?.email || undefined,
           };
-          if (geoRef.current?.country && geoRef.current?.postalCode) {
+          if (geoData?.country) {
             customerData.address = {
-              countryCode: geoRef.current.country,
-              postalCode: geoRef.current.postalCode,
+              countryCode: geoData.country,
+              postalCode: geoData.postalCode || defaultPostals[geoData.country] || "00000",
             };
           }
 
@@ -302,7 +323,7 @@ function PaddleCheckoutForm({
         toast.error("Error opening payment form. Please try again.");
       }
     }
-  }, [checkoutOpen, paddleConfigQ.data, user, handleCheckoutComplete]);
+  }, [checkoutOpen, paddleConfigQ.data, user, handleCheckoutComplete, geoData, geoTimeout]);
 
   // Close Paddle checkout when component unmounts
   useEffect(() => {
