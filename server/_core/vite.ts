@@ -49,6 +49,14 @@ const TRACKING_CLOUDPDF = `<!-- Google Consent Mode v2 — MUST run before gtag 
       gtag('js', new Date());
       gtag('config', 'AW-18038662610');
       gtag('config', 'G-XBHZ3TMG7K');
+    </script>
+    <!-- Microsoft Clarity -->
+    <script type="text/javascript">
+      (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+      })(window, document, "clarity", "script", "w6bf2915sz");
     </script>`;
 
 const trackingScripts = brandName === "FastDoc" ? "" : TRACKING_CLOUDPDF;

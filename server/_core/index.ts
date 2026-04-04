@@ -220,7 +220,7 @@ async function startServer() {
     // Content Security Policy
     res.setHeader("Content-Security-Policy", [
       "frame-ancestors 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://cdn.paddle.com https://pay.google.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://cdn.paddle.com https://pay.google.com https://www.clarity.ms",
       "object-src 'none'",
       "base-uri 'self'",
       "frame-src 'self' https://*.paddle.com https://pay.google.com https://*.google.com",
