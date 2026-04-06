@@ -88,58 +88,35 @@ function EditorUploadZone({ lang }: { lang: string }) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "oklch(0.98 0.005 250)" }}>
+    <div className="min-h-screen flex flex-col bg-white">
       <Navbar />
 
-      {/* Hero with upload zone */}
-      <section className="relative overflow-hidden flex-1" style={{ backgroundColor: navy }}>
-        {/* Background texture */}
-        <div className="absolute inset-0 pointer-events-none" style={{
-          backgroundImage: `radial-gradient(circle at 20% 50%, oklch(0.55 0.22 260 / 0.12) 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, oklch(0.55 0.22 260 / 0.08) 0%, transparent 40%),
-            radial-gradient(circle at 60% 80%, oklch(0.35 0.10 260 / 0.10) 0%, transparent 40%)`,
-        }} />
-        {/* Grid pattern */}
-        <div className="absolute inset-0 pointer-events-none opacity-5" style={{
-          backgroundImage: `linear-gradient(oklch(0.8 0.05 260) 1px, transparent 1px),
-            linear-gradient(90deg, oklch(0.8 0.05 260) 1px, transparent 1px)`,
-          backgroundSize: "60px 60px",
+      {/* Hero with upload zone — white background matching home */}
+      <section className="relative overflow-hidden flex-1 bg-white">
+        {/* Subtle grid */}
+        <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{
+          backgroundImage: `linear-gradient(${colors.primary} 1px, transparent 1px), linear-gradient(90deg, ${colors.primary} 1px, transparent 1px)`,
+          backgroundSize: "48px 48px",
         }} />
 
-        <div className="container relative z-10 py-10 md:py-20">
-          {/* Trust badges */}
-          <div className="hidden md:flex flex-wrap justify-center gap-3 mb-8">
-            {[
-              { icon: Shield, text: (t as any).hero_trust_secure ?? "Secure & encrypted", iconColor: "#00B67A", textColor: "#00B67A" },
-              { icon: Monitor, text: (t as any).hero_trust_browser ?? "Works in any browser", iconColor: "oklch(0.75 0.10 260)", textColor: "oklch(0.85 0.01 250)" },
-              { icon: CheckCircle2, text: t.hero_badge_instant, iconColor: "oklch(0.75 0.15 145)", textColor: "oklch(0.85 0.01 250)" },
-            ].map((badge, i) => (
-              <div key={i} className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium"
-                style={{ backgroundColor: "oklch(1 0 0 / 0.07)", border: "1px solid oklch(1 0 0 / 0.12)", color: badge.textColor, fontFamily: "'DM Sans', sans-serif" }}>
-                {badge.icon && <badge.icon className="w-4 h-4" style={{ color: badge.iconColor }} />}
-                {badge.text}
-              </div>
-            ))}
-          </div>
-
+        <div className="container relative z-10 py-12 md:py-24">
           {/* Headline */}
-          <div className="text-center max-w-4xl mx-auto mb-6 md:mb-10">
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-3 md:mb-5"
-              style={{ fontFamily: "'Sora', sans-serif", color: "white" }}>
+          <div className="text-center max-w-3xl mx-auto mb-8 md:mb-12">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-4"
+              style={{ fontFamily: "'Sora', sans-serif", color: "#111" }}>
               {t.hero_title_1}{" "}
               <span style={{
-                background: `linear-gradient(135deg, ${blue}, ${blueLight})`,
+                background: colors.gradient,
                 WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
               }}>{t.hero_title_2}</span>
             </h1>
-            <p className="text-sm md:text-xl max-w-2xl mx-auto"
-              style={{ color: "oklch(0.80 0.03 250)", fontFamily: "'DM Sans', sans-serif" }}>
+            <p className="text-base md:text-lg max-w-xl mx-auto" style={{ color: "#666" }}>
               {t.hero_subtitle}
             </p>
           </div>
 
           {/* Upload zone */}
-          <div className="max-w-xl mx-auto">
+          <div className="max-w-lg mx-auto">
             <input ref={fileInputRef} type="file"
               accept="application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.html,.txt"
               className="hidden" onChange={handleFileInput} />
@@ -149,55 +126,31 @@ function EditorUploadZone({ lang }: { lang: string }) {
               onDragLeave={() => setIsDraggingOver(false)}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className="cursor-pointer rounded-2xl flex flex-col items-center justify-center gap-3 md:gap-5 py-6 md:py-10 px-6 md:px-8 transition-all duration-300"
+              className="cursor-pointer rounded-2xl flex flex-col items-center justify-center gap-4 py-10 px-8 transition-all duration-300 bg-white"
               style={{
-                border: `2px dashed ${isDraggingOver ? blue : "oklch(0.55 0.22 260 / 0.50)"}`,
-                backgroundColor: isDraggingOver ? "oklch(0.55 0.22 260 / 0.12)" : "oklch(1 0 0 / 0.05)",
-                boxShadow: isDraggingOver ? `0 0 40px oklch(0.55 0.22 260 / 0.30)` : `0 0 0px transparent`,
+                border: isDraggingOver ? `2px solid ${colors.primary}` : `2px dashed ${colors.lightBg}`,
+                boxShadow: isDraggingOver ? `0 0 0 4px ${colors.lightBg}` : "0 2px 12px rgba(0,0,0,0.06)",
               }}
             >
-              {/* Animated icon */}
-              <div className="w-14 h-14 md:w-20 md:h-20 rounded-2xl flex items-center justify-center"
-                style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.15)", border: "1px solid oklch(0.55 0.22 260 / 0.30)", animation: "pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite" }}>
-                <FileText className="w-7 h-7 md:w-10 md:h-10" style={{ color: blue }} />
+              <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{ background: colors.gradient }}>
+                <Upload className="w-7 h-7 text-white" />
               </div>
 
               <div className="text-center">
-                <p className="font-bold text-base md:text-xl mb-1" style={{ color: "white", fontFamily: "'Sora', sans-serif" }}>
+                <p className="font-bold text-lg mb-1" style={{ color: "#111", fontFamily: "'Sora', sans-serif" }}>
                   {t.hero_drag_here}
                 </p>
-                <p className="text-sm" style={{ color: "oklch(0.65 0.03 250)" }}>{t.hero_or}</p>
+                <p className="text-sm" style={{ color: "#999" }}>{t.hero_or}</p>
               </div>
 
-              {/* CTA button */}
-              <button className="flex items-center gap-2 px-6 py-3 md:px-8 md:py-4 rounded-xl font-bold text-white text-sm md:text-base transition-all duration-200 shadow-lg"
-                style={{ background: `linear-gradient(135deg, ${blue}, ${blueLight})`, boxShadow: `0 8px 24px oklch(0.55 0.22 260 / 0.40)` }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 12px 32px oklch(0.55 0.22 260 / 0.55)`; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = `0 8px 24px oklch(0.55 0.22 260 / 0.40)`; }}
-              >
+              <button className="flex items-center gap-2 px-8 py-4 rounded-xl font-bold text-white text-base transition-all hover:-translate-y-1 hover:shadow-xl active:scale-95"
+                style={{ background: colors.gradient, boxShadow: `0 4px 15px ${colors.lightBg}` }}>
                 <Upload className="w-5 h-5" />
                 {t.hero_upload_btn}
                 <ArrowRight className="w-5 h-5" />
               </button>
 
-              {/* Auto-conversion info */}
-              <p className="flex items-center justify-center gap-1.5 text-xs" style={{ color: "oklch(0.65 0.03 250)" }}>
-                <RefreshCw className="w-3 h-3 shrink-0" style={{ color: "oklch(0.70 0.15 260)" }} />
-                {t.hero_auto_convert}
-              </p>
-
-              {/* Feature badges */}
-              <div className="flex flex-wrap justify-center gap-2">
-                {[t.hero_badge_free, t.hero_badge_no_card].map((badge, i) => (
-                  <span key={i} className="flex items-center gap-1 text-xs px-3 py-1 rounded-full font-medium"
-                    style={{ backgroundColor: "oklch(1 0 0 / 0.08)", color: "oklch(0.75 0.08 260)", border: "1px solid oklch(1 0 0 / 0.10)" }}>
-                    <CheckCircle2 className="w-3 h-3" style={{ color: "oklch(0.75 0.15 145)" }} />
-                    {badge}
-                  </span>
-                ))}
-              </div>
-
-              <p className="text-xs" style={{ color: "oklch(0.50 0.02 250)" }}>{t.hero_max_size_detail}</p>
+              <p className="text-xs" style={{ color: "#aaa" }}>{t.hero_max_size_detail}</p>
             </div>
           </div>
         </div>
