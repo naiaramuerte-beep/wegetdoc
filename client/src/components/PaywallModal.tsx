@@ -351,13 +351,6 @@ function PaddleCheckoutForm({
         <p className="text-base font-semibold text-slate-800">Your document is ready!</p>
       </div>
 
-      {/* ── Price info bar ── */}
-      <div className="px-6 py-3 border-b border-slate-100 bg-white">
-        <div className="flex items-center justify-center gap-2">
-          <Check className="w-4 h-4 text-green-500 shrink-0" />
-          <p className="text-sm font-medium text-slate-600">{t.paywall_offer_label} <span className="text-lg font-bold text-green-600">0,90 &euro;</span></p>
-        </div>
-      </div>
 
       <div className="flex flex-col md:flex-row min-h-0">
         {/* ── Left column: Logo + PDF Preview ── */}
@@ -447,6 +440,19 @@ function PaddleCheckoutForm({
 
         {/* ── Right column: Paddle Inline Checkout ── */}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          {/* Price banner — visible above checkout */}
+          <div className="mx-4 mt-4 mb-2 rounded-xl overflow-hidden" style={{ background: "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)", border: "1px solid #bbf7d0" }}>
+            <div className="flex items-center justify-center gap-3 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "#dcfce7" }}>
+                  <Check className="w-4 h-4" style={{ color: "#16a34a" }} />
+                </div>
+                <span className="text-sm font-medium" style={{ color: "#374151" }}>{t.paywall_offer_label}</span>
+              </div>
+              <span className="text-2xl font-extrabold" style={{ color: "#16a34a" }}>0,90 &euro;</span>
+            </div>
+          </div>
+
           {/* Loading state while Paddle loads */}
           {!paddleReady && (
             <div className="flex items-center justify-center p-8">
