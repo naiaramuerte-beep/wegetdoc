@@ -1,4 +1,5 @@
 import "dotenv/config";
+console.log("SESSION_SECRET presente:", !!process.env.SESSION_SECRET, "longitud:", process.env.SESSION_SECRET?.length ?? 0);
 import express from "express";
 import { createServer } from "http";
 import net from "net";
