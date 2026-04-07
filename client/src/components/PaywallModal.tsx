@@ -37,12 +37,13 @@ function PaymentForm({ onSuccess }: { onSuccess: () => void }) {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
+  const [accepted, setAccepted] = useState(false);
 
   const { t, lang } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!stripe || !elements) return;
+    if (!stripe || !elements || !accepted) return;
     setSubmitting(true);
     try {
       const { error } = await stripe.confirmSetup({
@@ -64,10 +65,24 @@ function PaymentForm({ onSuccess }: { onSuccess: () => void }) {
   return (
     <form onSubmit={handleSubmit}>
       <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" } }} />
+      <label className="flex items-start gap-2 mt-4 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={accepted}
+          onChange={(e) => setAccepted(e.target.checked)}
+          className="mt-0.5 w-4 h-4 rounded border-slate-300 accent-[#1B5E20] flex-shrink-0"
+        />
+        <span className="text-xs text-slate-500 leading-relaxed">
+          By checking this box, you agree to a 7-day trial (0,50&nbsp;€) and a subsequent monthly subscription of 19,99&nbsp;€. You authorize recurring charges and can cancel at any time. You have 14 calendar days to request a refund, subject to our{" "}
+          <a href={`/${lang}/terms`} target="_blank" className="underline hover:text-slate-700">Terms of Service</a>{" "}
+          and{" "}
+          <a href={`/${lang}/privacy`} target="_blank" className="underline hover:text-slate-700">Privacy Policy</a>.
+        </span>
+      </label>
       <button
         type="submit"
-        disabled={!stripe || submitting}
-        className="w-full mt-4 py-3 rounded-xl bg-[#1B5E20] text-white font-semibold text-sm hover:bg-[#14532d] transition-colors disabled:opacity-50"
+        disabled={!stripe || submitting || !accepted}
+        className="w-full mt-3 py-3 rounded-xl bg-[#1B5E20] text-white font-semibold text-sm hover:bg-[#14532d] transition-colors disabled:opacity-50"
       >
         {submitting ? (
           <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> {t.paywall_processing}</span>
@@ -75,15 +90,6 @@ function PaymentForm({ onSuccess }: { onSuccess: () => void }) {
           t.paywall_pay_download
         )}
       </button>
-      <p className="text-center text-xs text-slate-500 mt-3">
-        0,50€ hoy, luego 49,90€/mes. Cancela cuando quieras.
-      </p>
-      <p className="text-center text-xs text-slate-400 mt-2">
-        Al pagar aceptas los{" "}
-        <a href={`/${lang}/terms`} target="_blank" className="underline hover:text-slate-600">Términos de Servicio</a>{" "}
-        y la{" "}
-        <a href={`/${lang}/privacy`} target="_blank" className="underline hover:text-slate-600">Política de Privacidad</a>
-      </p>
     </form>
   );
 }
@@ -316,9 +322,6 @@ function StripeCheckoutForm({
             <span className="text-sm font-medium text-slate-600">{t.paywall_offer_label} </span>
             <span className="text-xl font-bold text-slate-900">0,50 &euro;</span>
           </div>
-          <p className="text-center text-xs text-slate-400 mb-2">
-            0,50€ hoy, luego 49,90€/mes. Cancela cuando quieras.
-          </p>
 
           {/* Stripe Payment Element */}
           {stripePromise && clientSecret ? (
