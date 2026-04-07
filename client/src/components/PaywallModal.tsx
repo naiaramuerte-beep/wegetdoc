@@ -1,11 +1,10 @@
 /*
- * PaywallModal — Stripe Embedded Checkout
- * - Left: preview del PDF (minimal)
- * - Right: Stripe Embedded Checkout form rendered inline
+ * PaywallModal — Stripe Payment with PDF preview
+ * Two-column layout: PDF preview (left) + payment form (right)
  */
 import { useState, useEffect, useCallback } from "react";
-import { logoParts, colors } from "@/lib/brand";
-import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock } from "lucide-react";
+import { colors } from "@/lib/brand";
+import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -14,7 +13,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
-// PDF data can be base64 (from editor) or tempKey (from S3 temp upload after login redirect)
 type PdfPayload =
   | { base64: string; name: string; size: number }
   | { tempKey: string; name: string };
@@ -26,11 +24,35 @@ interface PaywallModalProps {
   pdfData?: { base64: string; name: string; size: number };
   onPaymentSuccess?: (transactionId?: string) => void;
   thumbnailUrl?: string;
-  /** Called when pdfData is missing — builds the annotated PDF on demand */
   buildPdfForUpload?: () => Promise<{ base64: string; name: string; size: number } | null>;
 }
 
 type Step = "auth-choice" | "email-form" | "plans";
+
+// ── Card brand icons (inline SVGs) ──────────────────────────────────────
+function CardBrands() {
+  return (
+    <div className="flex items-center gap-1.5">
+      {/* Visa */}
+      <svg width="32" height="20" viewBox="0 0 32 20" fill="none" className="opacity-60">
+        <rect width="32" height="20" rx="3" fill="#1A1F71"/>
+        <path d="M13.2 13.5h-2l1.2-7.5h2l-1.2 7.5zm7-7.3l-1.8 5.1-.2-1-.7-3.5s-.1-.6-.8-.6h-2.5l-.1.2s.8.2 1.7.7l1.4 5.4h2.1l3.2-7.5h-2.1l-.2 1.2zm4.8 7.3h1.9l-1.7-7.5h-1.6c-.5 0-.9.3-1.1.8l-2.9 6.7h2.1l.4-1.1h2.5l.4 1.1zm-2.2-2.7l1-2.9.6 2.9h-1.6zM11.5 6l-2 5.2L9.3 10c-.3-1.2-1.4-2.5-2.5-3.2l1.8 6.7h2.1L13.6 6h-2.1z" fill="white"/>
+      </svg>
+      {/* Mastercard */}
+      <svg width="32" height="20" viewBox="0 0 32 20" fill="none" className="opacity-60">
+        <rect width="32" height="20" rx="3" fill="#252525"/>
+        <circle cx="12.5" cy="10" r="5.5" fill="#EB001B"/>
+        <circle cx="19.5" cy="10" r="5.5" fill="#F79E1B"/>
+        <path d="M16 5.8a5.48 5.48 0 012 4.2 5.48 5.48 0 01-2 4.2 5.48 5.48 0 01-2-4.2c0-1.7.7-3.2 2-4.2z" fill="#FF5F00"/>
+      </svg>
+      {/* Amex */}
+      <svg width="32" height="20" viewBox="0 0 32 20" fill="none" className="opacity-60">
+        <rect width="32" height="20" rx="3" fill="#006FCF"/>
+        <path d="M5 8l1.5-3h1.8l.8 2 .8-2h1.8L13 8v5H5V8zm14.5-3h5L26 7l1.5-2h0l-2 2.5L27 10l-1.5-2L24 10h-5V5h.5z" fill="white" opacity=".9"/>
+      </svg>
+    </div>
+  );
+}
 
 // ── Inner payment form (must be inside <Elements>) ──────────────────────
 function PaymentForm({ onSuccess }: { onSuccess: () => void }) {
@@ -38,7 +60,6 @@ function PaymentForm({ onSuccess }: { onSuccess: () => void }) {
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
   const [accepted, setAccepted] = useState(false);
-
   const { t, lang } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,10 +67,7 @@ function PaymentForm({ onSuccess }: { onSuccess: () => void }) {
     if (!stripe || !elements || !accepted) return;
     setSubmitting(true);
     try {
-      const { error } = await stripe.confirmSetup({
-        elements,
-        redirect: "if_required",
-      });
+      const { error } = await stripe.confirmSetup({ elements, redirect: "if_required" });
       if (error) {
         toast.error(error.message ?? "Payment failed");
       } else {
@@ -63,38 +81,62 @@ function PaymentForm({ onSuccess }: { onSuccess: () => void }) {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" } }} />
-      <label className="flex items-start gap-2 mt-4 cursor-pointer">
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Card fields */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Payment method</span>
+          <CardBrands />
+        </div>
+        <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" } }} />
+      </div>
+
+      {/* Checkbox */}
+      <label className="flex items-start gap-2.5 cursor-pointer">
         <input
           type="checkbox"
           checked={accepted}
           onChange={(e) => setAccepted(e.target.checked)}
           className="mt-0.5 w-4 h-4 rounded border-slate-300 accent-[#1B5E20] flex-shrink-0"
         />
-        <span className="text-xs text-slate-500 leading-relaxed">
+        <span className="text-[11px] text-slate-400 leading-relaxed">
           By checking this box, you agree to a 7-day trial (0,50&nbsp;€) and a subsequent monthly subscription of 19,99&nbsp;€. You authorize recurring charges and can cancel at any time. You have 14 calendar days to request a refund, subject to our{" "}
-          <a href={`/${lang}/terms`} target="_blank" className="underline hover:text-slate-700">Terms of Service</a>{" "}
+          <a href={`/${lang}/terms`} target="_blank" className="underline hover:text-slate-600">Terms of Service</a>{" "}
           and{" "}
-          <a href={`/${lang}/privacy`} target="_blank" className="underline hover:text-slate-700">Privacy Policy</a>.
+          <a href={`/${lang}/privacy`} target="_blank" className="underline hover:text-slate-600">Privacy Policy</a>.
         </span>
       </label>
+
+      {/* Submit button */}
       <button
         type="submit"
         disabled={!stripe || submitting || !accepted}
-        className="w-full mt-3 py-3 rounded-xl bg-[#1B5E20] text-white font-semibold text-sm hover:bg-[#14532d] transition-colors disabled:opacity-50"
+        className="w-full py-3.5 rounded-xl text-white font-bold text-sm transition-all duration-200 disabled:opacity-40"
+        style={{ backgroundColor: "#1B5E20" }}
       >
         {submitting ? (
-          <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> {t.paywall_processing}</span>
+          <span className="flex items-center justify-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            {t.paywall_processing}
+          </span>
         ) : (
-          t.paywall_pay_download
+          <span className="flex items-center justify-center gap-2">
+            <Lock className="w-4 h-4" />
+            Pay and subscribe
+          </span>
         )}
       </button>
+
+      {/* Disclaimer */}
+      <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
+        <Shield className="w-3 h-3" />
+        <span>Cancel anytime. No hidden fees.</span>
+      </div>
     </form>
   );
 }
 
-// ── Stripe checkout form wrapper ────────────────────────────────────────
+// ── Stripe checkout form with PDF preview ──────────────────────────────
 function StripeCheckoutForm({
   onSuccess,
   pdfData,
@@ -116,16 +158,13 @@ function StripeCheckoutForm({
   const createCheckoutSession = trpc.subscription.createCheckoutSession.useMutation();
   const confirmSetup = trpc.subscription.confirmSetup.useMutation();
   const utils = trpc.useUtils();
-  const [paymentReady, setPaymentReady] = useState(false);
 
-  // Load Stripe.js with publishable key
   useEffect(() => {
     if (stripeConfigQ.data?.publishableKey) {
       setStripePromise(loadStripe(stripeConfigQ.data.publishableKey));
     }
   }, [stripeConfigQ.data?.publishableKey]);
 
-  // Create subscription and get SetupIntent clientSecret
   useEffect(() => {
     if (!stripeConfigQ.data?.publishableKey || clientSecret) return;
     createCheckoutSession.mutateAsync().then((res) => {
@@ -136,7 +175,6 @@ function StripeCheckoutForm({
     });
   }, [stripeConfigQ.data?.publishableKey]);
 
-  // Upload PDF via REST multipart
   const uploadPdfViaRest = async (data: { base64: string; name: string; size: number }): Promise<void> => {
     const binary = atob(data.base64);
     const bytes = new Uint8Array(binary.length);
@@ -145,197 +183,144 @@ function StripeCheckoutForm({
     const formData = new FormData();
     formData.append("file", blob, data.name);
     formData.append("name", data.name);
-    const resp = await fetch("/api/documents/upload", {
-      method: "POST",
-      credentials: "include",
-      body: formData,
-    });
-    if (!resp.ok) {
-      const text = await resp.text().catch(() => "");
-      throw new Error(`Upload failed: ${resp.status} ${text}`);
-    }
+    const resp = await fetch("/api/documents/upload", { method: "POST", credentials: "include", body: formData });
+    if (!resp.ok) throw new Error(`Upload failed: ${resp.status}`);
   };
 
-  // Claim a temp PDF from S3
   const claimTempPdf = async (tempKey: string, name: string): Promise<void> => {
     const resp = await fetch("/api/documents/claim-temp", {
-      method: "POST",
-      credentials: "include",
+      method: "POST", credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tempKey, name }),
     });
-    if (!resp.ok) {
-      const text = await resp.text().catch(() => "");
-      throw new Error(`Claim failed: ${resp.status} ${text}`);
-    }
+    if (!resp.ok) throw new Error(`Claim failed: ${resp.status}`);
   };
 
-  // Handle post-checkout completion
   const handleComplete = useCallback(async () => {
     setIsProcessing(true);
     setProgressStep("checkout");
     try {
-      // Activate subscription immediately (don't wait for webhook)
       await confirmSetup.mutateAsync();
       await utils.subscription.status.invalidate();
       setProgressStep("saving");
 
-      // Upload PDF
       if (pdfData && "tempKey" in pdfData) {
-        try {
-          await claimTempPdf(pdfData.tempKey, pdfData.name);
-          await utils.documents.list.invalidate();
-        } catch (claimErr) {
-          console.error("[PaywallModal] claimTempPdf failed:", claimErr);
-        }
+        try { await claimTempPdf(pdfData.tempKey, pdfData.name); await utils.documents.list.invalidate(); } catch {}
       } else {
         let resolvedPdfData = pdfData as { base64: string; name: string; size: number } | undefined;
         if (!resolvedPdfData && buildPdfForUpload) {
-          try {
-            resolvedPdfData = (await buildPdfForUpload()) ?? undefined;
-          } catch (buildErr) {
-            console.error("[PaywallModal] buildPdfForUpload failed:", buildErr);
-          }
+          try { resolvedPdfData = (await buildPdfForUpload()) ?? undefined; } catch {}
         }
         if (resolvedPdfData) {
-          try {
-            await uploadPdfViaRest(resolvedPdfData);
-            await utils.documents.list.invalidate();
-          } catch (uploadErr) {
-            console.error("PDF upload failed:", uploadErr);
-          }
+          try { await uploadPdfViaRest(resolvedPdfData); await utils.documents.list.invalidate(); } catch {}
         }
       }
 
       setProgressStep("done");
-      toast.success("Document saved! Processing...");
       onSuccess();
     } catch (err: unknown) {
       setProgressStep("idle");
-      const message = err instanceof Error ? err.message : "Error processing payment";
-      toast.error(message);
+      toast.error(err instanceof Error ? err.message : "Error processing payment");
     } finally {
       setIsProcessing(false);
     }
   }, [pdfData, buildPdfForUpload, onSuccess, utils]);
 
   return (
-    <div className="flex flex-col min-h-0">
-      {/* ── Header: "Your document is ready!" ── */}
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
-        <div className="w-7 h-7 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-          <Check className="w-4 h-4 text-white" />
-        </div>
-        <p className="text-base font-semibold text-slate-800">Your document is ready!</p>
-      </div>
-
-      <div className="flex flex-col md:flex-row min-h-0">
-        {/* ── Left column: Logo + PDF Preview ── */}
-        <div className="hidden md:flex flex-col items-center bg-slate-50 border-r border-slate-100 p-5" style={{ minWidth: 220, maxWidth: 260 }}>
-          {/* WeGetDoc Logo */}
-          <div className="flex items-center gap-1 mb-5">
-            <svg width="28" height="20" viewBox="0 0 32 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-              <path d="M25.5 12.5C25.5 12.5 26 12 26 11c0-2.8-2.2-5-5-5-.5 0-1 .1-1.5.2C18.3 3.7 15.9 2 13 2 9.4 2 6.5 4.9 6.5 8.5c0 .2 0 .4 0 .6C4.5 9.6 3 11.4 3 13.5 3 16 5 18 7.5 18h16c2.2 0 4-1.8 4-4 0-1.5-.8-2.8-2-3.5z" fill={colors.light} />
-              <rect x="13" y="6" width="6" height="8" rx="0.8" fill="white" fillOpacity="0.9" />
-              <path d="M16.5 6V6L19 8.5H16.5V6Z" fill={colors.primaryHover} />
-            </svg>
-            <span className="font-medium text-lg text-slate-500">{logoParts[0]}</span>
-            <span className="font-extrabold text-lg" style={{ color: colors.light }}>{logoParts[1]}</span>
-          </div>
-
-          {/* PDF thumbnail */}
-          <div
-            className="w-full rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden flex items-center justify-center"
-            style={{ aspectRatio: "0.707", maxHeight: 200 }}
-          >
-            {thumbnailUrl ? (
-              <img
-                src={thumbnailUrl}
-                alt="Document preview"
-                className="w-full h-full object-contain"
-              />
-            ) : (
-              <div className="w-full h-full p-3 flex flex-col gap-2">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-6 h-7 bg-red-100 rounded flex items-center justify-center flex-shrink-0">
-                    <span className="text-red-500 text-[8px] font-bold">PDF</span>
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <div className="h-1.5 bg-slate-200 rounded w-full" />
-                    <div className="h-1.5 bg-slate-200 rounded w-3/4" />
-                  </div>
+    <div className="flex flex-col md:flex-row min-h-0">
+      {/* ── Left: PDF Preview ── */}
+      <div className="hidden md:flex flex-col items-center justify-center bg-[#f4f5f7] p-8" style={{ minWidth: 260, maxWidth: 280 }}>
+        {/* PDF thumbnail */}
+        <div
+          className="w-full rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden flex items-center justify-center mb-3"
+          style={{ aspectRatio: "0.707", maxHeight: 220 }}
+        >
+          {thumbnailUrl ? (
+            <img src={thumbnailUrl} alt="Document preview" className="w-full h-full object-contain" />
+          ) : (
+            <div className="w-full h-full p-4 flex flex-col gap-2">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-7 h-8 bg-red-50 rounded flex items-center justify-center flex-shrink-0">
+                  <span className="text-red-500 text-[9px] font-bold">PDF</span>
                 </div>
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-1.5 bg-slate-100 rounded" style={{ width: `${70 + (i % 3) * 10}%` }} />
-                ))}
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-1.5 bg-slate-100 rounded w-full" />
+                  <div className="h-1.5 bg-slate-100 rounded w-3/4" />
+                </div>
               </div>
-            )}
-          </div>
-          <p className="text-xs text-slate-400 mt-2 text-center leading-tight truncate w-full">
-            {pdfData?.name ?? "documento.pdf"}
-          </p>
-
-          {/* Progress steps — visible during payment processing */}
-          {isProcessing && (
-            <div className="mt-4 w-full rounded-xl border border-slate-100 bg-white p-3">
-              {([
-                { key: "checkout",     label: "Processing payment..." },
-                { key: "saving",       label: "Saving document..." },
-                { key: "done",         label: "All done!" },
-              ] as const).map((step) => {
-                const stepOrder = ["checkout", "saving", "done"] as const;
-                const currentIdx = stepOrder.indexOf(progressStep as typeof stepOrder[number]);
-                const stepIdx = stepOrder.indexOf(step.key);
-                const isDone    = stepIdx < currentIdx;
-                const isActive  = stepIdx === currentIdx;
-                return (
-                  <div key={step.key} className="flex items-center gap-2 py-1">
-                    <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
-                      {isDone ? (
-                        <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
-                          <Check className="w-2.5 h-2.5 text-white" />
-                        </div>
-                      ) : isActive ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-[#1B5E20]" />
-                      ) : (
-                        <div className="w-4 h-4 rounded-full border-2 border-slate-200" />
-                      )}
-                    </div>
-                    <span className={`text-xs font-medium transition-colors ${
-                      isDone    ? "text-green-600" :
-                      isActive  ? "text-[#1B5E20]" :
-                      "text-slate-300"
-                    }`}>
-                      {step.label}
-                    </span>
-                  </div>
-                );
-              })}
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} className="h-1.5 bg-slate-50 rounded" style={{ width: `${65 + (i % 3) * 12}%` }} />
+              ))}
             </div>
           )}
         </div>
+        <p className="text-xs text-slate-500 text-center leading-tight truncate w-full font-medium">
+          {pdfData?.name ?? "document.pdf"}
+        </p>
 
-        {/* ── Right column: Stripe Payment ── */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          {/* Price banner */}
-          <div className="mx-4 mt-4 mb-2 rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-center">
-            <span className="text-sm font-medium text-slate-600">{t.paywall_offer_label} </span>
-            <span className="text-xl font-bold text-slate-900">0,50 &euro;</span>
+        {/* Processing steps */}
+        {isProcessing && (
+          <div className="mt-5 w-full space-y-2">
+            {([
+              { key: "checkout", label: "Processing payment..." },
+              { key: "saving",   label: "Saving document..." },
+              { key: "done",     label: "All done!" },
+            ] as const).map((step) => {
+              const order = ["checkout", "saving", "done"] as const;
+              const curr = order.indexOf(progressStep as typeof order[number]);
+              const idx = order.indexOf(step.key);
+              return (
+                <div key={step.key} className="flex items-center gap-2">
+                  {idx < curr ? (
+                    <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center"><Check className="w-2.5 h-2.5 text-white" /></div>
+                  ) : idx === curr ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-[#1B5E20]" />
+                  ) : (
+                    <div className="w-4 h-4 rounded-full border-2 border-slate-200" />
+                  )}
+                  <span className={`text-xs font-medium ${idx < curr ? "text-green-600" : idx === curr ? "text-[#1B5E20]" : "text-slate-300"}`}>
+                    {step.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── Right: Payment form ── */}
+      <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
+          <div className="w-7 h-7 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+            <Check className="w-4 h-4 text-white" />
+          </div>
+          <p className="text-sm font-semibold text-slate-800">Your document is ready!</p>
+        </div>
+
+        <div className="px-6 py-5 space-y-5">
+          {/* Title */}
+          <h3 className="text-lg font-bold text-slate-900">
+            Start your subscription to access your document
+          </h3>
+
+          {/* Pricing breakdown */}
+          <div className="rounded-xl bg-[#f8faf8] border border-slate-100 p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-600">Total due today</span>
+              <span className="text-2xl font-bold text-slate-900">0,50&nbsp;€</span>
+            </div>
+            <p className="text-xs text-slate-400 mt-1">7-day trial, then 19,99&nbsp;€/month</p>
           </div>
 
-          {/* Stripe Payment Element */}
+          {/* Stripe form */}
           {stripePromise && clientSecret ? (
-            <div className="relative flex-1 p-4">
-              <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: "stripe" } }}>
-                <PaymentForm onSuccess={handleComplete} />
-              </Elements>
-            </div>
+            <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: "stripe", variables: { colorPrimary: "#1B5E20", borderRadius: "10px" } } }}>
+              <PaymentForm onSuccess={handleComplete} />
+            </Elements>
           ) : (
-            <div className="flex items-center justify-center p-8">
-              <div className="flex flex-col items-center gap-3">
-                <Loader2 className="w-8 h-8 animate-spin text-[#1B5E20]" />
-                <p className="text-sm text-slate-500">Loading payment form...</p>
-              </div>
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="w-7 h-7 animate-spin text-[#1B5E20]" />
             </div>
           )}
         </div>
@@ -374,12 +359,8 @@ export default function PaywallModal({
   const effectivePdfData = pdfData ?? pendingEditedPdf ?? undefined;
 
   const handleGoogleLogin = async () => {
-    if (pendingFile) {
-      try { await savePdfToSession(pendingFile); } catch {}
-    }
-    if (pdfData) {
-      try { await saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size); } catch {}
-    }
+    if (pendingFile) { try { await savePdfToSession(pendingFile); } catch {} }
+    if (pdfData) { try { await saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size); } catch {} }
     setPendingPaywall(true);
     sessionStorage.setItem("cloudpdf_pending_action", "download");
     const returnPath = window.location.pathname + window.location.search;
@@ -387,27 +368,14 @@ export default function PaywallModal({
   };
 
   const handleEmailSubmit = async () => {
-    if (!emailInput.trim() || !emailInput.includes("@")) {
-      toast.error(t.paywall_enter_email);
-      return;
-    }
-    if (!passwordInput || passwordInput.length < 6) {
-      toast.error(t.paywall_password_min);
-      return;
-    }
+    if (!emailInput.trim() || !emailInput.includes("@")) { toast.error(t.paywall_enter_email); return; }
+    if (!passwordInput || passwordInput.length < 6) { toast.error(t.paywall_password_min); return; }
     setEmailLoading(true);
     try {
       if (emailMode === "register") {
-        await registerMutation.mutateAsync({
-          email: emailInput.trim(),
-          password: passwordInput,
-          name: nameInput.trim() || undefined,
-        });
+        await registerMutation.mutateAsync({ email: emailInput.trim(), password: passwordInput, name: nameInput.trim() || undefined });
       } else {
-        await loginMutation.mutateAsync({
-          email: emailInput.trim(),
-          password: passwordInput,
-        });
+        await loginMutation.mutateAsync({ email: emailInput.trim(), password: passwordInput });
       }
       await refresh();
       const docToSave = (effectivePdfData && "base64" in effectivePdfData ? effectivePdfData : null) ?? (buildPdfForUpload ? await buildPdfForUpload() : null);
@@ -421,13 +389,10 @@ export default function PaywallModal({
           fd.append("file", blob, docToSave.name);
           fd.append("name", docToSave.name);
           await fetch("/api/documents/auto-save", { method: "POST", credentials: "include", body: fd });
-        } catch (e) {
-          console.warn("[PaywallModal] Auto-save after registration failed:", e);
-        }
+        } catch {}
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Error";
-      toast.error(message);
+      toast.error(err instanceof Error ? err.message : "Error");
     } finally {
       setEmailLoading(false);
     }
@@ -442,19 +407,19 @@ export default function PaywallModal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: "rgba(0,0,0,0.55)", backdropFilter: "blur(3px)" }}
+      style={{ backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
         className="relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden"
-        style={{ maxWidth: currentStep === "plans" ? 820 : 520, maxHeight: "92vh", overflowY: "auto" }}
+        style={{ maxWidth: currentStep === "plans" ? 760 : 480, maxHeight: "92vh", overflowY: "auto" }}
       >
         {/* Close */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 transition-colors"
+          className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center bg-white/80 hover:bg-slate-100 transition-colors border border-slate-200"
         >
-          <X className="w-4 h-4 text-gray-500" />
+          <X className="w-4 h-4 text-slate-500" />
         </button>
 
         {/* ── Auth Choice ── */}
@@ -464,18 +429,11 @@ export default function PaywallModal({
               <div className="w-14 h-14 rounded-2xl bg-[#1B5E20] flex items-center justify-center mx-auto mb-4">
                 <CreditCard className="w-7 h-7 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                {t.paywall_create_account}
-              </h2>
-              <p className="text-sm text-gray-500">
-                {t.paywall_sign_up_seconds}
-              </p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">{t.paywall_create_account}</h2>
+              <p className="text-sm text-gray-500">{t.paywall_sign_up_seconds}</p>
             </div>
             <div className="space-y-3 max-w-sm mx-auto">
-              <button
-                onClick={handleGoogleLogin}
-                className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl border-2 border-gray-200 font-semibold text-sm text-gray-700 bg-white hover:border-gray-400 transition-all"
-              >
+              <button onClick={handleGoogleLogin} className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl border-2 border-gray-200 font-semibold text-sm text-gray-700 bg-white hover:border-gray-400 transition-all">
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                   <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
                   <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
@@ -489,10 +447,7 @@ export default function PaywallModal({
                 <span className="text-xs text-gray-400">{t.paywall_or}</span>
                 <div className="flex-1 h-px bg-gray-200" />
               </div>
-              <button
-                onClick={() => setStep("email-form")}
-                className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl border-2 border-gray-200 font-semibold text-sm text-gray-700 bg-white hover:border-gray-400 transition-all"
-              >
+              <button onClick={() => setStep("email-form")} className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl border-2 border-gray-200 font-semibold text-sm text-gray-700 bg-white hover:border-gray-400 transition-all">
                 <Mail className="w-4 h-4" />
                 {t.paywall_continue_email}
               </button>
@@ -506,86 +461,40 @@ export default function PaywallModal({
           </div>
         )}
 
-        {/* ── Email Form (register/login) ── */}
+        {/* ── Email Form ── */}
         {currentStep === "email-form" && (
           <div className="p-8">
             <div className="text-center mb-6">
               <div className="w-14 h-14 rounded-2xl bg-[#1B5E20] flex items-center justify-center mx-auto mb-4">
                 <Lock className="w-7 h-7 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                {emailMode === "register" ? t.paywall_register : t.paywall_login}
-              </h2>
-              <p className="text-sm text-gray-500">
-                {emailMode === "register" ? t.paywall_sign_up_seconds : t.paywall_enter_email}
-              </p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">{emailMode === "register" ? t.paywall_register : t.paywall_login}</h2>
+              <p className="text-sm text-gray-500">{emailMode === "register" ? t.paywall_sign_up_seconds : t.paywall_enter_email}</p>
             </div>
             <div className="max-w-sm mx-auto space-y-3">
               {emailMode === "register" && (
-                <input
-                  type="text"
-                  value={nameInput}
-                  onChange={(e) => setNameInput(e.target.value)}
-                  placeholder={t.paywall_name}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B5E20]"
-                />
+                <input type="text" value={nameInput} onChange={(e) => setNameInput(e.target.value)} placeholder={t.paywall_name} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B5E20]" />
               )}
-              <input
-                type="email"
-                value={emailInput}
-                onChange={(e) => setEmailInput(e.target.value)}
-                placeholder="you@email.com"
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B5E20]"
-              />
+              <input type="email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} placeholder="you@email.com" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B5E20]" />
               <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={passwordInput}
-                  onChange={(e) => setPasswordInput(e.target.value)}
-                  placeholder={t.paywall_password}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B5E20]"
-                  onKeyDown={(e) => e.key === "Enter" && handleEmailSubmit()}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
+                <input type={showPassword ? "text" : "password"} value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} placeholder={t.paywall_password} className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B5E20]" onKeyDown={(e) => e.key === "Enter" && handleEmailSubmit()} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              {emailMode === "register" && (
-                <p className="text-xs text-gray-400">{t.paywall_password_min}</p>
-              )}
-              <button
-                onClick={handleEmailSubmit}
-                disabled={emailLoading}
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#1B5E20] text-white font-bold text-sm hover:bg-[#14532d] transition-colors disabled:opacity-60"
-              >
-                {emailLoading ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> {emailMode === "register" ? t.paywall_registering : t.paywall_logging_in}</>
-                ) : (
-                  <><ArrowRight className="w-4 h-4" /> {emailMode === "register" ? t.paywall_register : t.paywall_login}</>
-                )}
+              {emailMode === "register" && <p className="text-xs text-gray-400">{t.paywall_password_min}</p>}
+              <button onClick={handleEmailSubmit} disabled={emailLoading} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#1B5E20] text-white font-bold text-sm hover:bg-[#14532d] transition-colors disabled:opacity-60">
+                {emailLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> {emailMode === "register" ? t.paywall_registering : t.paywall_logging_in}</> : <><ArrowRight className="w-4 h-4" /> {emailMode === "register" ? t.paywall_register : t.paywall_login}</>}
               </button>
               <div className="text-center text-sm text-gray-500 pt-1">
-                {emailMode === "register" ? (
-                  <>{t.paywall_have_account}{" "}<button onClick={() => setEmailMode("login")} className="text-[#1B5E20] font-semibold hover:underline">{t.paywall_login}</button></>
-                ) : (
-                  <>{t.paywall_no_account}{" "}<button onClick={() => setEmailMode("register")} className="text-[#1B5E20] font-semibold hover:underline">{t.paywall_register}</button></>
-                )}
+                {emailMode === "register" ? <>{t.paywall_have_account}{" "}<button onClick={() => setEmailMode("login")} className="text-[#1B5E20] font-semibold hover:underline">{t.paywall_login}</button></> : <>{t.paywall_no_account}{" "}<button onClick={() => setEmailMode("register")} className="text-[#1B5E20] font-semibold hover:underline">{t.paywall_register}</button></>}
               </div>
-              <button
-                onClick={() => setStep("auth-choice")}
-                className="w-full text-sm text-gray-400 hover:text-gray-700 py-2 transition-colors"
-              >
-                {t.paywall_back}
-              </button>
+              <button onClick={() => setStep("auth-choice")} className="w-full text-sm text-gray-400 hover:text-gray-700 py-2 transition-colors">{t.paywall_back}</button>
             </div>
           </div>
         )}
 
-        {/* ── Plans: payment step ── */}
+        {/* ── Payment step ── */}
         {currentStep === "plans" && (
           <StripeCheckoutForm
             onSuccess={handlePaymentSuccess}
