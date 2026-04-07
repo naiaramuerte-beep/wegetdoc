@@ -258,7 +258,7 @@ export default function Home() {
                   <span className="flex items-center gap-1.5">
                     <span className="flex">
                       {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-3.5 h-3.5 fill-current" style={{ color: "#1B5E20" }} />
+                        <Star key={i} className="w-3.5 h-3.5 fill-current" style={{ color: "#facc15" }} />
                       ))}
                     </span>
                     <strong style={{ color: TEXT_MAIN }}>4.8/5</strong>
@@ -579,7 +579,7 @@ export default function Home() {
                   {/* Stars */}
                   <div className="flex items-center gap-0.5">
                     {[...Array(5)].map((_, j) => (
-                      <Star key={j} className="w-4 h-4 fill-current" style={{ color: "#1B5E20" }} />
+                      <Star key={j} className="w-4 h-4 fill-current" style={{ color: "#facc15" }} />
                     ))}
                   </div>
 
