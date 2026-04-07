@@ -105,7 +105,7 @@ export async function getAllUsers(search?: string) {
     // Subscription info
     subStatus: subscriptions.status,
     subPlan: subscriptions.plan,
-    paddleCustomerId: subscriptions.paddleCustomerId,
+    stripeCustomerId: subscriptions.stripeCustomerId,
     currentPeriodEnd: subscriptions.currentPeriodEnd,
     cancelAtPeriodEnd: subscriptions.cancelAtPeriodEnd,
   };
@@ -142,9 +142,6 @@ export async function userHasActiveSubscription(userId: number): Promise<boolean
 
 export async function upsertSubscription(data: {
   userId: number;
-  paddleCustomerId?: string;
-  paddleSubscriptionId?: string;
-  paddleTransactionId?: string;
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   stripeSessionId?: string;
@@ -204,7 +201,6 @@ export async function getAllSubscribedUsers() {
     subStatus: subscriptions.status,
     plan: subscriptions.plan,
     currentPeriodEnd: subscriptions.currentPeriodEnd,
-    paddleCustomerId: subscriptions.paddleCustomerId,
     stripeCustomerId: subscriptions.stripeCustomerId,
   }).from(users)
     .innerJoin(subscriptions, eq(users.id, subscriptions.userId))
@@ -617,7 +613,6 @@ export async function getCanceledSubscriptions() {
     subStatus: subscriptions.status,
     plan: subscriptions.plan,
     canceledAt: subscriptions.updatedAt,
-    paddleCustomerId: subscriptions.paddleCustomerId,
     stripeCustomerId: subscriptions.stripeCustomerId,
   }).from(users)
     .innerJoin(subscriptions, eq(users.id, subscriptions.userId))
