@@ -2008,7 +2008,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const blob = new Blob([pdfOut.buffer.slice(pdfOut.byteOffset, pdfOut.byteOffset + pdfOut.byteLength) as ArrayBuffer], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url;
-    a.download = downloadName ?? file?.name ?? "document.pdf";
+    a.download = downloadName ?? displayName ?? file?.name ?? "document.pdf";
     a.click(); URL.revokeObjectURL(url);
   };
 
@@ -2039,7 +2039,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const pdfOut = await buildAnnotatedPdf();
     if (pdfOut) {
       const base64 = uint8ToBase64(pdfOut);
-      const docName = file?.name ?? "document.pdf";
+      const docName = displayName || file?.name || "document.pdf";
       setPdfDataForPaywall({ base64, name: docName, size: pdfOut.byteLength });
     }
 
@@ -2068,7 +2068,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
 
     const base64 = uint8ToBase64(pdfOut);
-    const docName = file?.name ?? "document.pdf";
+    const docName = displayName || file?.name || "document.pdf";
     const docSize = pdfOut.byteLength;
 
     // Step 2: If NOT authenticated → show paywall modal (auth-choice step)
