@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { usePdfFile } from "@/contexts/PdfFileContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { loadStripe } from "@stripe/stripe-js";
-import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
+import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
 // PDF data can be base64 (from editor) or tempKey (from S3 temp upload after login redirect)
 type PdfPayload =
@@ -32,7 +32,55 @@ interface PaywallModalProps {
 
 type Step = "auth-choice" | "email-form" | "plans";
 
-// ── Stripe Embedded Checkout form ────────────────────────────────────────
+// ── Inner payment form (must be inside <Elements>) ──────────────────────
+function PaymentForm({ onSuccess }: { onSuccess: () => void }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+    setSubmitting(true);
+    try {
+      const { error } = await stripe.confirmSetup({
+        elements,
+        redirect: "if_required",
+      });
+      if (error) {
+        toast.error(error.message ?? "Payment failed");
+      } else {
+        onSuccess();
+      }
+    } catch (err: any) {
+      toast.error(err.message ?? "Payment failed");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" } }} />
+      <button
+        type="submit"
+        disabled={!stripe || submitting}
+        className="w-full mt-4 py-3 rounded-xl bg-[#1B5E20] text-white font-semibold text-sm hover:bg-[#0D3311] transition-colors disabled:opacity-50"
+      >
+        {submitting ? (
+          <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Processing...</span>
+        ) : (
+          "Start 7-day trial"
+        )}
+      </button>
+      <p className="text-center text-xs text-slate-400 mt-3">
+        7-day free trial, then 49.90 EUR/month. Cancel anytime.
+      </p>
+    </form>
+  );
+}
+
+// ── Stripe checkout form wrapper ────────────────────────────────────────
 function StripeCheckoutForm({
   onSuccess,
   pdfData,
@@ -53,6 +101,7 @@ function StripeCheckoutForm({
   const stripeConfigQ = trpc.subscription.stripeConfig.useQuery();
   const createCheckoutSession = trpc.subscription.createCheckoutSession.useMutation();
   const utils = trpc.useUtils();
+  const [paymentReady, setPaymentReady] = useState(false);
 
   // Load Stripe.js with publishable key
   useEffect(() => {
@@ -61,7 +110,7 @@ function StripeCheckoutForm({
     }
   }, [stripeConfigQ.data?.publishableKey]);
 
-  // Create checkout session
+  // Create subscription and get SetupIntent clientSecret
   useEffect(() => {
     if (!stripeConfigQ.data?.publishableKey || clientSecret) return;
     createCheckoutSession.mutateAsync().then((res) => {
@@ -264,18 +313,12 @@ function StripeCheckoutForm({
             </div>
           </div>
 
-          {/* Stripe Embedded Checkout */}
+          {/* Stripe Payment Element */}
           {stripePromise && clientSecret ? (
-            <div className="relative flex-1 p-2" style={{ minHeight: 450 }}>
-              <EmbeddedCheckoutProvider
-                stripe={stripePromise}
-                options={{
-                  clientSecret,
-                  onComplete: handleComplete,
-                }}
-              >
-                <EmbeddedCheckout />
-              </EmbeddedCheckoutProvider>
+            <div className="relative flex-1 p-4">
+              <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: "stripe" } }}>
+                <PaymentForm onSuccess={handleComplete} />
+              </Elements>
             </div>
           ) : (
             <div className="flex items-center justify-center p-8">

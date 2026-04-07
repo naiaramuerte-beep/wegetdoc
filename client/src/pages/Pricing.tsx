@@ -14,7 +14,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { brandName } from "@/lib/brand";
 import { loadStripe } from "@stripe/stripe-js";
-import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
+import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
 export default function Pricing() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -431,6 +431,52 @@ export default function Pricing() {
   );
 }
 
+// ── Inner payment form (must be inside <Elements>) ──────────────
+function PricingPaymentForm({ onSuccess }: { onSuccess: () => void }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+    setSubmitting(true);
+    try {
+      const { error } = await stripe.confirmSetup({ elements, redirect: "if_required" });
+      if (error) {
+        toast.error(error.message ?? "Payment failed");
+      } else {
+        onSuccess();
+      }
+    } catch (err: any) {
+      toast.error(err.message ?? "Payment failed");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" } }} />
+      <button
+        type="submit"
+        disabled={!stripe || submitting}
+        className="w-full mt-4 py-3 rounded-xl text-white font-semibold text-sm transition-colors disabled:opacity-50"
+        style={{ backgroundColor: "#1B5E20" }}
+      >
+        {submitting ? (
+          <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Processing...</span>
+        ) : (
+          "Start 7-day trial"
+        )}
+      </button>
+      <p className="text-center text-xs mt-3" style={{ color: "#4A6B4A" }}>
+        7-day free trial, then 49.90 EUR/month. Cancel anytime.
+      </p>
+    </form>
+  );
+}
+
 // ── Stripe Inline Checkout component ─────────────────────────────
 function StripeInlineCheckout() {
   const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
@@ -473,16 +519,10 @@ function StripeInlineCheckout() {
   }
 
   return (
-    <div className="p-4" style={{ minHeight: 450 }}>
-      <EmbeddedCheckoutProvider
-        stripe={stripePromise}
-        options={{
-          clientSecret,
-          onComplete: handleComplete,
-        }}
-      >
-        <EmbeddedCheckout />
-      </EmbeddedCheckoutProvider>
+    <div className="p-6">
+      <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: "stripe" } }}>
+        <PricingPaymentForm onSuccess={handleComplete} />
+      </Elements>
     </div>
   );
 }

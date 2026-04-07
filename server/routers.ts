@@ -237,7 +237,7 @@ export const appRouter = router({
       };
     }),
 
-    // Create Stripe Embedded Checkout Session
+    // Create Stripe subscription with trial — returns clientSecret for PaymentElement
     createCheckoutSession: protectedProcedure.mutation(async ({ ctx }) => {
       const { getStripe } = await import("./_core/stripe");
       const { ENV } = await import("./_core/env");
@@ -247,40 +247,49 @@ export const appRouter = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stripe price not configured" });
       }
 
-      const session = await stripe.checkout.sessions.create({
-        ui_mode: "embedded_page",
-        mode: "subscription",
-        customer_email: ctx.user.email ?? undefined,
-        line_items: [
-          {
-            price: ENV.stripePriceId,
-            quantity: 1,
-          },
-        ],
-        subscription_data: {
-          trial_period_days: 7,
-          trial_settings: {
-            end_behavior: { missing_payment_method: "cancel" },
-          },
+      // Find or create Stripe customer
+      const existingCustomers = await stripe.customers.list({ email: ctx.user.email ?? undefined, limit: 1 });
+      let customer = existingCustomers.data[0];
+      if (!customer) {
+        customer = await stripe.customers.create({
+          email: ctx.user.email ?? undefined,
+          name: ctx.user.name ?? undefined,
           metadata: { userId: ctx.user.id.toString() },
+        });
+      }
+
+      // Create subscription with trial — requires payment method upfront via SetupIntent
+      const subscription = await stripe.subscriptions.create({
+        customer: customer.id,
+        items: [{ price: ENV.stripePriceId }],
+        trial_period_days: 7,
+        payment_behavior: "default_incomplete",
+        payment_settings: {
+          save_default_payment_method: "on_subscription",
         },
         metadata: { userId: ctx.user.id.toString() },
-        return_url: "https://wegetdoc.com/payment/success?session_id={CHECKOUT_SESSION_ID}",
+        expand: ["pending_setup_intent"],
       });
-      return { clientSecret: session.client_secret };
-    }),
 
-    // Check session status after completion
-    sessionStatus: publicProcedure
-      .input(z.object({ sessionId: z.string() }))
-      .query(async ({ input }) => {
-        const { getStripe } = await import("./_core/stripe");
-        const session = await getStripe().checkout.sessions.retrieve(input.sessionId);
-        return {
-          status: session.status,
-          paymentStatus: session.payment_status,
-        };
-      }),
+      const setupIntent = subscription.pending_setup_intent as any;
+      if (!setupIntent?.client_secret) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create setup intent" });
+      }
+
+      // Save subscription to DB immediately (incomplete until payment method confirmed)
+      const { upsertSubscription } = await import("./db");
+      await upsertSubscription({
+        userId: ctx.user.id,
+        stripeCustomerId: customer.id,
+        stripeSubscriptionId: subscription.id,
+        plan: "trial",
+        status: "incomplete",
+        currentPeriodStart: new Date(subscription.current_period_start * 1000),
+        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+      });
+
+      return { clientSecret: setupIntent.client_secret, subscriptionId: subscription.id };
+    }),
   }),
 
   // ─── Documents ─────────────────────────────────────────────────

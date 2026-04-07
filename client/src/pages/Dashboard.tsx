@@ -24,7 +24,7 @@ import { useLocation } from "wouter";
 import { usePdfFile } from "@/contexts/PdfFileContext";
 import { brandName } from "@/lib/brand";
 import { loadStripe } from "@stripe/stripe-js";
-import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
+import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
 type Tab = "account" | "documents" | "team" | "billing";
 
@@ -663,6 +663,51 @@ function TeamTab() {
   );
 }
 
+// ─── Dashboard Payment Form (inside Elements) ──────────────────
+function DashboardPaymentForm({ onSuccess }: { onSuccess: () => void }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+    setSubmitting(true);
+    try {
+      const { error } = await stripe.confirmSetup({ elements, redirect: "if_required" });
+      if (error) {
+        toast.error(error.message ?? "Payment failed");
+      } else {
+        onSuccess();
+      }
+    } catch (err: any) {
+      toast.error(err.message ?? "Payment failed");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" } }} />
+      <button
+        type="submit"
+        disabled={!stripe || submitting}
+        className="w-full mt-4 py-3 rounded-xl bg-green-700 text-white font-semibold text-sm hover:bg-green-800 transition-colors disabled:opacity-50"
+      >
+        {submitting ? (
+          <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Processing...</span>
+        ) : (
+          "Start 7-day trial"
+        )}
+      </button>
+      <p className="text-center text-xs text-slate-400 mt-3">
+        7-day free trial, then 49.90 EUR/month. Cancel anytime.
+      </p>
+    </form>
+  );
+}
+
 // ─── Stripe Inline Checkout (Dashboard) ──────────────────────
 function DashboardStripeInline({ onComplete }: { onComplete: () => void }) {
   const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
@@ -696,13 +741,10 @@ function DashboardStripeInline({ onComplete }: { onComplete: () => void }) {
   }
 
   return (
-    <div className="p-4" style={{ minHeight: 450 }}>
-      <EmbeddedCheckoutProvider
-        stripe={stripePromise}
-        options={{ clientSecret, onComplete }}
-      >
-        <EmbeddedCheckout />
-      </EmbeddedCheckoutProvider>
+    <div className="p-6">
+      <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: "stripe" } }}>
+        <DashboardPaymentForm onSuccess={onComplete} />
+      </Elements>
     </div>
   );
 }
