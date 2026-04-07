@@ -1880,9 +1880,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         const g2 = parseInt(c.slice(3, 5), 16) / 255;
         const b2 = parseInt(c.slice(5, 7), 16) / 255;
         if (ann.text === "rect") {
-          page.drawRectangle({ x: ann.x, y: pdfY, width: ann.width, height: ann.height, borderColor: rgb(r2, g2, b2), borderWidth: 2, color: rgb(r2, g2, b2), opacity: 0.15 });
+          page.drawRectangle({ x: ann.x, y: pdfY, width: ann.width, height: ann.height, borderColor: rgb(r2, g2, b2), borderWidth: 2 });
+        } else if (ann.text === "rect-filled") {
+          page.drawRectangle({ x: ann.x, y: pdfY, width: ann.width, height: ann.height, borderColor: rgb(r2, g2, b2), borderWidth: 2, color: rgb(r2, g2, b2), opacity: 1 });
         } else if (ann.text === "circle") {
-          page.drawEllipse({ x: ann.x + ann.width / 2, y: pdfY + ann.height / 2, xScale: ann.width / 2, yScale: ann.height / 2, borderColor: rgb(r2, g2, b2), borderWidth: 2, color: rgb(r2, g2, b2), opacity: 0.15 });
+          page.drawEllipse({ x: ann.x + ann.width / 2, y: pdfY + ann.height / 2, xScale: ann.width / 2, yScale: ann.height / 2, borderColor: rgb(r2, g2, b2), borderWidth: 2 });
+        } else if (ann.text === "circle-filled") {
+          page.drawEllipse({ x: ann.x + ann.width / 2, y: pdfY + ann.height / 2, xScale: ann.width / 2, yScale: ann.height / 2, borderColor: rgb(r2, g2, b2), borderWidth: 2, color: rgb(r2, g2, b2), opacity: 1 });
         } else {
           page.drawLine({ start: { x: ann.x, y: pdfY }, end: { x: ann.x + ann.width, y: pdfY + ann.height }, thickness: 2, color: rgb(r2, g2, b2) });
         }
@@ -3643,8 +3647,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         width: "100%", height: "100%",
                         border: `2px solid ${ann.color ?? "#2563EB"}`,
                         backgroundColor: (ann.text === "rect-filled" || ann.text === "circle-filled")
-                          ? `${ann.color ?? "#2563EB"}` 
-                          : (ann.text === "line" ? "transparent" : `${ann.color ?? "#2563EB"}22`),
+                          ? `${ann.color ?? "#2563EB"}`
+                          : "transparent",
                         borderRadius: (ann.text === "circle" || ann.text === "circle-filled") ? "50%" : 0,
                         // Line: thin horizontal bar
                         ...(ann.text === "line" ? { height: 2, marginTop: "50%" } : {}),
