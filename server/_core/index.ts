@@ -37,6 +37,12 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
+  // ── Apple Pay domain verification ──────────────────────────────────────────
+  app.get("/.well-known/apple-developer-merchantid-domain-association", (_req, res) => {
+    const path = require("path");
+    res.sendFile(path.resolve(__dirname, "../../client/public/.well-known/apple-developer-merchantid-domain-association"));
+  });
+
   // ── Stripe Webhook (MUST be before express.json — needs raw body) ──────────
   app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
     const { getStripe } = await import("./stripe");
