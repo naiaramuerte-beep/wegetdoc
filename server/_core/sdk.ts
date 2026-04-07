@@ -118,7 +118,8 @@ class SDKServer {
       lastSignedIn: signedInAt,
     });
 
-    return user;
+    // Re-read user after upsert to get updated role (e.g. admin promotion)
+    return (await db.getUserByOpenId(sessionUserId)) ?? user;
   }
 }
 
