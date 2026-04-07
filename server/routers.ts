@@ -278,14 +278,16 @@ export const appRouter = router({
 
       // Save subscription to DB immediately (incomplete until payment method confirmed)
       const { upsertSubscription } = await import("./db");
+      const now = new Date();
+      const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
       await upsertSubscription({
         userId: ctx.user.id,
         stripeCustomerId: customer.id,
         stripeSubscriptionId: subscription.id,
         plan: "trial",
         status: "incomplete",
-        currentPeriodStart: new Date(subscription.current_period_start * 1000),
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        currentPeriodStart: now,
+        currentPeriodEnd: trialEnd,
       });
 
       return { clientSecret: setupIntent.client_secret, subscriptionId: subscription.id };
