@@ -165,229 +165,197 @@ export default function Home() {
     }
   };
 
+  // Resolved tool labels for the grid
+  const editTools = TOOLS_EDIT.map((tool) => ({
+    ...tool,
+    label: (t as any)[tool.label_key] ?? tool.label_key,
+  }));
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Navbar />
 
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.html,.txt"
+        className="hidden"
+        onChange={handleFileInput}
+      />
+
       {/* ══════════════════════════════════════════════════════════
-          HERO
+          HERO — Two columns
       ══════════════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden bg-white">
-        {/* Background decoration */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div
-            className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full opacity-[0.07]"
-            style={{ background: `radial-gradient(circle, ${INDIGO} 0%, transparent 70%)` }}
-          />
-          <div
-            className="absolute -top-20 right-0 w-[400px] h-[400px] rounded-full opacity-[0.05]"
-            style={{ background: `radial-gradient(circle, ${VIOLET} 0%, transparent 70%)` }}
-          />
-          {/* Grid pattern */}
-          <div
-            className="absolute inset-0 opacity-[0.025]"
-            style={{
-              backgroundImage: `linear-gradient(#1B5E20 1px, transparent 1px), linear-gradient(90deg, #1B5E20 1px, transparent 1px)`,
-              backgroundSize: "40px 40px",
-            }}
-          />
-        </div>
+      <section className="bg-white">
+        <div className="container pt-10 pb-0 md:pt-16">
+          <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
+            {/* Left column (55%) */}
+            <div className="w-full lg:w-[55%] flex flex-col">
+              <h1
+                className="text-4xl md:text-5xl lg:text-[3.6rem] font-extrabold leading-[1.12] mb-5 tracking-tight"
+                style={{ color: TEXT_MAIN }}
+              >
+                {isFastDoc ? (
+                  <>
+                    {t.fastdoc_hero_title_1}{" "}
+                    <span style={{ color: colors.primary }}>
+                      {t.fastdoc_hero_title_2}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    {t.hero_title_1.replace("PDF", "").trim()}{" "}
+                    <span className="relative inline-block">
+                      <span style={{ color: INDIGO }}>PDF</span>
+                      <span
+                        className="absolute bottom-1 left-0 w-full h-[0.18em] rounded-full -z-10"
+                        style={{ backgroundColor: "#bbf7d0" }}
+                      />
+                    </span>{" "}
+                    <span style={{ color: INDIGO }}>
+                      {t.hero_title_2}
+                    </span>
+                  </>
+                )}
+              </h1>
+              <p
+                className="text-base md:text-lg leading-relaxed mb-6 max-w-xl"
+                style={{ color: TEXT_MUTED }}
+              >
+                {isFastDoc ? t.fastdoc_hero_subtitle : t.hero_subtitle}
+              </p>
 
-        <div className="container relative z-10 pt-8 pb-0 md:pt-12">
-          {/* Headline */}
-          <div className="text-center max-w-3xl mx-auto mb-4">
-            <h1
-              className="text-4xl md:text-5xl lg:text-[3.6rem] font-extrabold leading-[1.12] mb-5 tracking-tight"
-              style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: TEXT_MAIN }}
-            >
-              {isFastDoc ? (
-                <>
-                  {t.fastdoc_hero_title_1}{" "}
-                  <span
-                    style={{
-                      background: "linear-gradient(135deg, #E8590C, #F97316)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      backgroundClip: "text",
-                    }}
-                  >
-                    {t.fastdoc_hero_title_2}
-                  </span>
-                </>
-              ) : (
-                <>
-                  {t.hero_title_1}{" "}
-                  <span
-                    style={{
-                      background: GRAD,
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      backgroundClip: "text",
-                    }}
-                  >
-                    {t.hero_title_2}
-                  </span>
-                </>
-              )}
-            </h1>
-            <p
-              className="text-base md:text-lg max-w-xl mx-auto leading-relaxed"
-              style={{ color: TEXT_MUTED }}
-            >
-              {isFastDoc ? t.fastdoc_hero_subtitle : t.hero_subtitle}
-            </p>
-          </div>
-
-          {/* Social proof row */}
-          {!isFastDoc && (
-          <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 mb-8 text-xs" style={{ color: TEXT_MUTED }}>
-            <span className="flex items-center gap-1.5">
-              <span className="flex">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-3.5 h-3.5 fill-current" style={{ color: "#1B5E20" }} />
-                ))}
-              </span>
-              <strong style={{ color: TEXT_MAIN }}>4.8/5</strong>
-              <span style={{ color: TEXT_LIGHT }}>{(t as any).hero_social_rating ?? "Valoración media"}</span>
-            </span>
-            <span className="w-px h-3 rounded-full" style={{ backgroundColor: BORDER }} />
-            <span className="flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5" style={{ color: INDIGO }} />
-              <strong style={{ color: TEXT_MAIN }}>2.3M+</strong>
-              <span style={{ color: TEXT_LIGHT }}>{(t as any).hero_social_users ?? "usuarios activos"}</span>
-            </span>
-          </div>
-          )}
-
-          {/* Upload zone — wide, rectangular, clean */}
-          <div className="max-w-3xl mx-auto w-full">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.html,.txt"
-              className="hidden"
-              onChange={handleFileInput}
-            />
-
-            <div
-              onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
-              onDragLeave={() => setIsDraggingOver(false)}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className="cursor-pointer rounded-2xl border-2 border-dashed transition-all duration-300"
-              style={{
-                borderColor: isDraggingOver ? INDIGO : "rgba(0, 0, 0, 0.20)",
-                backgroundColor: isDraggingOver ? "#f8fafc" : "white",
-                boxShadow: isDraggingOver
-                  ? `0 0 0 5px rgba(0, 0, 0, 0.06), 0 12px 48px rgba(0, 0, 0, 0.10)`
-                  : "0 4px 32px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.03)",
-              }}
-            >
-              {/* Main content: icon → text → button, centrado vertical */}
-              <div className="flex flex-col items-center gap-5 px-8 py-10">
-                {/* Icon */}
-                <div
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                  style={{ background: GRAD, boxShadow: `0 8px 24px rgba(0, 0, 0, 0.20)` }}
-                >
-                  <FileText className="w-8 h-8 text-white" />
-                </div>
-
-                {/* Text */}
-                <div className="text-center">
-                  <p
-                    className="font-bold text-lg mb-1"
-                    style={{ color: TEXT_MAIN, fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
-                  >
-                    {t.hero_drag_here}
-                  </p>
-                  <p className="text-sm" style={{ color: TEXT_LIGHT }}>
-                    {t.hero_auto_convert}
-                  </p>
-                </div>
-
-                {/* CTA button */}
+              {/* CTA button */}
+              <div className="mb-4">
                 <button
-                  className="inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
-                  style={{ background: GRAD, boxShadow: `0 4px 16px rgba(0, 0, 0, 0.25)` }}
-                  onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                  className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+                  style={{ backgroundColor: INDIGO, boxShadow: `0 4px 16px rgba(0, 0, 0, 0.18)` }}
+                  onClick={() => fileInputRef.current?.click()}
                 >
                   <Upload className="w-4 h-4" />
                   {t.hero_upload_btn}
-                  <ArrowRight className="w-4 h-4" />
                 </button>
-                <p className="text-xs" style={{ color: TEXT_LIGHT }}>{t.hero_max_size}</p>
               </div>
 
-              {/* Bottom bar: formats only */}
-              <div
-                className="flex flex-wrap items-center justify-center gap-1.5 px-8 py-3 border-t"
-                style={{ borderColor: "rgba(0, 0, 0, 0.08)", backgroundColor: SURFACE }}
-              >
+              {/* Format badges */}
+              <div className="flex flex-wrap items-center gap-1.5 mb-5">
                 {["PDF", "Word", "Excel", "PPT", "JPG", "PNG"].map((fmt) => (
                   <span
                     key={fmt}
-                    className="text-xs px-2 py-0.5 rounded-md font-medium border"
+                    className="text-xs px-2.5 py-0.5 rounded-md font-medium border"
                     style={{ backgroundColor: "white", borderColor: BORDER, color: TEXT_MUTED }}
                   >
                     {fmt}
                   </span>
                 ))}
+                <span className="text-xs ml-1" style={{ color: TEXT_LIGHT }}>{t.hero_max_size}</span>
+              </div>
+
+              {/* Social proof inline */}
+              {!isFastDoc && (
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs" style={{ color: TEXT_MUTED }}>
+                  <span className="flex items-center gap-1.5">
+                    <span className="flex">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="w-3.5 h-3.5 fill-current" style={{ color: "#1B5E20" }} />
+                      ))}
+                    </span>
+                    <strong style={{ color: TEXT_MAIN }}>4.8/5</strong>
+                    <span style={{ color: TEXT_LIGHT }}>{(t as any).hero_social_rating ?? "Valoracion media"}</span>
+                  </span>
+                  <span className="w-px h-3 rounded-full" style={{ backgroundColor: BORDER }} />
+                  <span className="flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5" style={{ color: INDIGO }} />
+                    <strong style={{ color: TEXT_MAIN }}>2.3M+</strong>
+                    <span style={{ color: TEXT_LIGHT }}>{(t as any).hero_social_users ?? "usuarios activos"}</span>
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Right column (45%) — Upload drop zone */}
+            <div className="w-full lg:w-[45%]">
+              <div
+                onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+                onDragLeave={() => setIsDraggingOver(false)}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className="cursor-pointer rounded-2xl border-2 border-dashed transition-all duration-300"
+                style={{
+                  borderColor: isDraggingOver ? INDIGO : "rgba(0, 0, 0, 0.20)",
+                  backgroundColor: isDraggingOver ? "#f8fafc" : "white",
+                  boxShadow: isDraggingOver
+                    ? `0 0 0 5px rgba(0, 0, 0, 0.06), 0 12px 48px rgba(0, 0, 0, 0.10)`
+                    : "0 4px 32px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.03)",
+                }}
+              >
+                <div className="flex flex-col items-center gap-4 px-6 py-10">
+                  <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                    style={{ backgroundColor: INDIGO }}
+                  >
+                    <FileText className="w-7 h-7 text-white" />
+                  </div>
+                  <div className="text-center">
+                    <p className="font-bold text-base mb-1" style={{ color: TEXT_MAIN }}>
+                      {t.hero_drag_here}
+                    </p>
+                    <p className="text-sm" style={{ color: TEXT_LIGHT }}>
+                      {t.hero_auto_convert}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-
-          {/* Stats — dentro del hero, debajo de la upload zone */}
-          {!isFastDoc && (
-          <div className="max-w-3xl mx-auto w-full mt-8 pb-12">
-            <div
-              className="grid grid-cols-2 md:grid-cols-4 rounded-2xl border"
-              style={{ borderColor: "#e2e8f0", backgroundColor: "#ffffff", borderRadius: "1rem" }}
-            >
-              {[
-                { value: "15+",   label: (t as any).hero_social_tools ?? "Herramientas PDF", icon: Sparkles },
-                { value: docsCount.toLocaleString(), label: (t as any).hero_social_pdfs ?? "Documentos procesados hoy", icon: FileText },
-                { value: "4.8★",  label: (t as any).hero_social_rating ?? "Valoración media", icon: Star },
-                { value: "100%",  label: (t as any).hero_social_install ?? "Sin instalación", icon: Cloud },
-              ].map((stat, i) => (
-                <div
-                  key={i}
-                  className="flex flex-col items-center gap-0.5 px-4 py-4 text-center border-r last:border-r-0"
-                  style={{ borderColor: "#e2e8f0" }}
-                >
-                  <stat.icon className="w-4 h-4 mb-0.5" style={{ color: INDIGO, opacity: 0.45 }} />
-                  <div
-                    className="text-xl md:text-2xl font-extrabold leading-none"
-                    style={{
-                      fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif",
-                      background: GRAD,
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      backgroundClip: "text",
-                    }}
-                  >
-                    {stat.value}
-                  </div>
-                  <div className="text-xs font-medium mt-0.5" style={{ color: TEXT_MUTED }}>
-                    {stat.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          )}
         </div>
       </section>
 
       {/* ══════════════════════════════════════════════════════════
-          TOOLS SECTION
+          STATS — Horizontal bar
+      ══════════════════════════════════════════════════════════ */}
+      {!isFastDoc && (
+        <section style={{ backgroundColor: "#f8fafc" }}>
+          <div className="container py-6">
+            <div className="flex flex-wrap items-center justify-center gap-y-4">
+              {[
+                { value: "15+",   label: (t as any).hero_social_tools ?? "Herramientas PDF", icon: Sparkles },
+                { value: docsCount.toLocaleString(), label: (t as any).hero_social_pdfs ?? "Documentos procesados hoy", icon: FileText },
+                { value: "4.8★",  label: (t as any).hero_social_rating ?? "Valoracion media", icon: Star },
+                { value: "100%",  label: (t as any).hero_social_install ?? "Sin instalacion", icon: Cloud },
+              ].map((stat, i, arr) => (
+                <div key={i} className="flex items-center">
+                  <div className="flex items-center gap-3 px-6">
+                    <stat.icon className="w-4 h-4 flex-shrink-0" style={{ color: INDIGO, opacity: 0.6 }} />
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xl font-extrabold" style={{ color: TEXT_MAIN }}>
+                        {stat.value}
+                      </span>
+                      <span className="text-xs font-medium" style={{ color: TEXT_MUTED }}>
+                        {stat.label}
+                      </span>
+                    </div>
+                  </div>
+                  {i < arr.length - 1 && (
+                    <div className="hidden md:block w-px h-8" style={{ backgroundColor: BORDER }} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════
+          TOOLS — 3-column grid, no tabs
       ══════════════════════════════════════════════════════════ */}
       <section id="tools" className="py-16 md:py-20 bg-white">
         <div className="container">
           <div className="text-center mb-10">
             <h2
               className="text-3xl md:text-4xl font-bold mb-3"
-              style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: TEXT_MAIN }}
+              style={{ color: TEXT_MAIN }}
             >
               {t.tools_title}
             </h2>
@@ -396,55 +364,22 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Category tabs */}
-          <div className="flex justify-center mb-8">
-            <div
-              className="flex rounded-2xl p-1 gap-1 border"
-              style={{ backgroundColor: SURFACE, borderColor: BORDER }}
-            >
-              {[
-                { id: "edit" as const,    label: t.tools_tab_edit,     color: INDIGO },
-                { id: "fromPdf" as const, label: t.tools_tab_from_pdf, color: "#1B5E20" },
-                { id: "toPdf" as const,   label: t.tools_tab_to_pdf,   color: "#16a34a" },
-              ].map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveTab(cat.id)}
-                  className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
-                  style={{
-                    backgroundColor: activeTab === cat.id ? "white" : "transparent",
-                    color: activeTab === cat.id ? cat.color : TEXT_MUTED,
-                    boxShadow: activeTab === cat.id
-                      ? "0 1px 6px rgba(0, 0, 0, 0.08), 0 0 0 1px #e2e8f0"
-                      : "none",
-                    fontWeight: activeTab === cat.id ? "600" : "400",
-                  }}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Tool grid */}
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 mb-10">
-            {activeTools.map((tool, i) => (
+          {/* 3-column grid of TOOLS_EDIT */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-3xl mx-auto mb-8">
+            {editTools.map((tool, i) => (
               <button
                 key={i}
-                className="group flex flex-col items-center gap-3 p-4 rounded-xl border text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-                style={{
-                  backgroundColor: "white",
-                  borderColor: BORDER,
-                }}
+                className="flex items-center gap-3 p-4 rounded-xl border text-left transition-all duration-200 hover:shadow-md"
+                style={{ backgroundColor: "white", borderColor: BORDER }}
                 onClick={() => scrollToEditor(tool.tool)}
               >
                 <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 group-hover:scale-110"
+                  className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
                   style={{ backgroundColor: tool.color }}
                 >
-                  <tool.icon className="w-6 h-6" style={{ color: tool.iconColor }} />
+                  <tool.icon className="w-5 h-5" style={{ color: tool.iconColor }} />
                 </div>
-                <span className="text-xs font-medium leading-tight" style={{ color: TEXT_MAIN }}>
+                <span className="text-sm font-medium" style={{ color: TEXT_MAIN }}>
                   {tool.label}
                 </span>
               </button>
@@ -452,73 +387,69 @@ export default function Home() {
           </div>
 
           <div className="text-center">
-            <button
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl text-white font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
-              style={{ background: GRAD, boxShadow: `0 4px 16px rgba(0, 0, 0, 0.22)` }}
-              onClick={() => scrollToEditor()}
+            <a
+              href={`/${lang}/tools`}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold transition-colors duration-200"
+              style={{ color: INDIGO }}
             >
-              <Upload className="w-4 h-4" />
-              {t.tools_cta}
-            </button>
+              {(t as any).tools_view_all ?? "Ver todas las herramientas"}
+              <ArrowRight className="w-4 h-4" />
+            </a>
           </div>
         </div>
       </section>
 
       {/* ══════════════════════════════════════════════════════════
-          HOW IT WORKS
+          HOW IT WORKS — Horizontal 3 steps
       ══════════════════════════════════════════════════════════ */}
-      <section id="how-it-works" className="py-16 md:py-20" style={{ backgroundColor: SURFACE }}>
+      <section id="how-it-works" className="py-16 md:py-20 bg-white">
         <div className="container">
           <div className="text-center mb-12">
             <h2
               className="text-3xl md:text-4xl font-bold mb-3"
-              style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: TEXT_MAIN }}
+              style={{ color: TEXT_MAIN }}
             >
               {t.how_title}
             </h2>
             <p className="text-base" style={{ color: TEXT_MUTED }}>{t.how_subtitle}</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          <div className="flex flex-col md:flex-row items-start justify-center gap-4 max-w-4xl mx-auto">
             {[
-              { step: "01", icon: Upload,   title: t.how_step1_title, desc: t.how_step1_desc, grad: GRAD },
-              { step: "02", icon: Edit3,    title: t.how_step2_title, desc: t.how_step2_desc, grad: "linear-gradient(135deg, #16a34a, #1B5E20)" },
-              { step: "03", icon: Download, title: t.how_step3_title, desc: t.how_step3_desc, grad: "linear-gradient(135deg, #1B5E20, #166534)" },
-            ].map((item, i) => (
-              <div
-                key={i}
-                className="relative flex flex-col gap-5 p-7 rounded-2xl bg-white border hover:shadow-md transition-shadow duration-300"
-                style={{ borderColor: BORDER }}
-              >
-                {/* Step number background */}
-                <div
-                  className="absolute top-5 right-5 text-6xl font-black leading-none select-none"
-                  style={{
-                    fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif",
-                    color: "rgba(0, 0, 0, 0.03)",
-                  }}
-                >
-                  {item.step}
-                </div>
-
-                <div
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: item.grad, boxShadow: `0 6px 20px rgba(0, 0, 0, 0.18)` }}
-                >
-                  <item.icon className="w-7 h-7 text-white" />
-                </div>
-
-                <div>
-                  <h3
-                    className="font-bold text-base mb-2"
-                    style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: TEXT_MAIN }}
+              { step: 1, icon: Upload,   title: t.how_step1_title, desc: t.how_step1_desc },
+              { step: 2, icon: Edit3,    title: t.how_step2_title, desc: t.how_step2_desc },
+              { step: 3, icon: Download, title: t.how_step3_title, desc: t.how_step3_desc },
+            ].map((item, i, arr) => (
+              <div key={i} className="flex items-start flex-1">
+                {/* Step content */}
+                <div className="flex flex-col items-center text-center flex-1">
+                  {/* Step number circle */}
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold mb-3"
+                    style={{ backgroundColor: INDIGO }}
                   >
+                    {item.step}
+                  </div>
+                  {/* Icon */}
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center mb-3"
+                    style={{ backgroundColor: "#f1f5f9" }}
+                  >
+                    <item.icon className="w-6 h-6" style={{ color: INDIGO }} />
+                  </div>
+                  <h3 className="font-bold text-base mb-2" style={{ color: TEXT_MAIN }}>
                     {item.title}
                   </h3>
                   <p className="text-sm leading-relaxed" style={{ color: TEXT_MUTED }}>
                     {item.desc}
                   </p>
                 </div>
+                {/* Arrow connector */}
+                {i < arr.length - 1 && (
+                  <div className="hidden md:flex items-center pt-8 px-2">
+                    <ArrowRight className="w-5 h-5" style={{ color: TEXT_LIGHT }} />
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -526,7 +457,7 @@ export default function Home() {
           <div className="flex justify-center mt-10">
             <button
               className="inline-flex items-center gap-2 px-8 py-3 rounded-xl text-white font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5"
-              style={{ background: GRAD, boxShadow: `0 4px 16px rgba(0, 0, 0, 0.22)` }}
+              style={{ backgroundColor: INDIGO, boxShadow: `0 4px 16px rgba(0, 0, 0, 0.18)` }}
               onClick={() => scrollToEditor()}
             >
               <Upload className="w-4 h-4" />
@@ -537,377 +468,287 @@ export default function Home() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════
-          BENEFITS — 4 cards
+          BENEFITS — 2x2 grid
       ══════════════════════════════════════════════════════════ */}
       {!isFastDoc && (
-      <section className="py-16 md:py-20 bg-white">
-        <div className="container">
-          <div className="text-center mb-12">
-            <h2
-              className="text-3xl md:text-4xl font-bold"
-              style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: TEXT_MAIN }}
-            >
-              {t.benefits_title}
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {[
-              {
-                icon: Zap,
-                title: t.benefit1_title,
-                desc: t.benefit1_desc,
-                color: "#f1f5f9",
-                iconColor: "#1B5E20",
-                points: [(t as any).benefit1_point1, (t as any).benefit1_point2, (t as any).benefit1_point3],
-              },
-              {
-                icon: Shield,
-                title: t.benefit2_title,
-                desc: t.benefit2_desc,
-                color: "#f8fafc",
-                iconColor: "#16a34a",
-                points: [(t as any).benefit2_point1, (t as any).benefit2_point2, (t as any).benefit2_point3],
-              },
-              {
-                icon: Edit3,
-                title: t.benefit3_title,
-                desc: t.benefit3_desc,
-                color: "#f1f5f9",
-                iconColor: INDIGO,
-                points: [(t as any).benefit3_point1, (t as any).benefit3_point2, (t as any).benefit3_point3],
-              },
-              {
-                icon: Monitor,
-                title: t.benefit4_title,
-                desc: t.benefit4_desc,
-                color: "#f1f5f9",
-                iconColor: VIOLET,
-                points: [(t as any).benefit4_point1, (t as any).benefit4_point2, (t as any).benefit4_point3],
-              },
-            ].map((b, i) => (
-              <div
-                key={i}
-                className="flex flex-col gap-4 p-6 rounded-2xl border bg-white hover:shadow-md transition-all duration-300 hover:-translate-y-0.5"
-                style={{ borderColor: BORDER }}
+        <section className="py-16 md:py-20" style={{ backgroundColor: "#f8fafc" }}>
+          <div className="container">
+            <div className="text-center mb-12">
+              <h2
+                className="text-3xl md:text-4xl font-bold"
+                style={{ color: TEXT_MAIN }}
               >
+                {t.benefits_title}
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              {[
+                {
+                  icon: Zap,
+                  title: t.benefit1_title,
+                  desc: t.benefit1_desc,
+                  color: "#f1f5f9",
+                  iconColor: "#1B5E20",
+                  points: [(t as any).benefit1_point1, (t as any).benefit1_point2, (t as any).benefit1_point3],
+                },
+                {
+                  icon: Shield,
+                  title: t.benefit2_title,
+                  desc: t.benefit2_desc,
+                  color: "#f8fafc",
+                  iconColor: "#16a34a",
+                  points: [(t as any).benefit2_point1, (t as any).benefit2_point2, (t as any).benefit2_point3],
+                },
+                {
+                  icon: Edit3,
+                  title: t.benefit3_title,
+                  desc: t.benefit3_desc,
+                  color: "#f1f5f9",
+                  iconColor: INDIGO,
+                  points: [(t as any).benefit3_point1, (t as any).benefit3_point2, (t as any).benefit3_point3],
+                },
+                {
+                  icon: Monitor,
+                  title: t.benefit4_title,
+                  desc: t.benefit4_desc,
+                  color: "#f1f5f9",
+                  iconColor: VIOLET,
+                  points: [(t as any).benefit4_point1, (t as any).benefit4_point2, (t as any).benefit4_point3],
+                },
+              ].map((b, i) => (
                 <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center"
-                  style={{ backgroundColor: b.color }}
+                  key={i}
+                  className="flex flex-col gap-4 p-8 rounded-2xl bg-white border"
+                  style={{ borderColor: BORDER }}
                 >
-                  <b.icon className="w-6 h-6" style={{ color: b.iconColor }} />
-                </div>
-                <div>
-                  <h3
-                    className="font-bold text-base mb-2"
-                    style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: TEXT_MAIN }}
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: b.color }}
                   >
-                    {b.title}
-                  </h3>
-                  <p className="text-sm leading-relaxed mb-3" style={{ color: TEXT_MUTED }}>
-                    {b.desc}
-                  </p>
-                  <ul className="space-y-1.5">
-                    {b.points.map((point, j) => (
-                      <li key={j} className="flex items-center gap-2 text-xs" style={{ color: TEXT_MUTED }}>
-                        <Check className="w-3.5 h-3.5 flex-shrink-0" style={{ color: b.iconColor }} />
-                        {point}
-                      </li>
-                    ))}
-                  </ul>
+                    <b.icon className="w-6 h-6" style={{ color: b.iconColor }} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base mb-2" style={{ color: TEXT_MAIN }}>
+                      {b.title}
+                    </h3>
+                    <p className="text-sm leading-relaxed mb-3" style={{ color: TEXT_MUTED }}>
+                      {b.desc}
+                    </p>
+                    <ul className="space-y-1.5">
+                      {b.points.map((point, j) => (
+                        <li key={j} className="flex items-center gap-2 text-xs" style={{ color: TEXT_MUTED }}>
+                          <Check className="w-3.5 h-3.5 flex-shrink-0" style={{ color: b.iconColor }} />
+                          {point}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
       )}
 
       {/* ══════════════════════════════════════════════════════════
-          TESTIMONIALS
+          TESTIMONIALS — Single row, 3 cards
       ══════════════════════════════════════════════════════════ */}
       {!isFastDoc && (
-      <section className="py-16 md:py-20" style={{ backgroundColor: SURFACE }}>
-        <div className="container">
-          <div className="text-center mb-10">
-            <div className="flex justify-center items-center gap-1 mb-3">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-5 h-5 fill-current" style={{ color: "#1B5E20" }} />
+        <section className="py-16 md:py-20 bg-white">
+          <div className="container">
+            <div className="text-center mb-10">
+              <h2
+                className="text-3xl md:text-4xl font-bold mb-2"
+                style={{ color: TEXT_MAIN }}
+              >
+                {(t as any).testimonials_title}
+              </h2>
+              <p className="text-base" style={{ color: TEXT_MUTED }}>
+                {(t as any).testimonials_subtitle}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {TESTIMONIALS_META.map((tm, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col gap-4 p-6 rounded-2xl"
+                  style={{ backgroundColor: "#f8fafc" }}
+                >
+                  {/* Stars */}
+                  <div className="flex items-center gap-0.5">
+                    {[...Array(5)].map((_, j) => (
+                      <Star key={j} className="w-4 h-4 fill-current" style={{ color: "#1B5E20" }} />
+                    ))}
+                  </div>
+
+                  {/* Quote */}
+                  <p className="text-sm leading-relaxed flex-1" style={{ color: TEXT_MUTED }}>
+                    "{(t as any)[tm.textKey]}"
+                  </p>
+
+                  {/* Author */}
+                  <div className="flex items-center gap-3 pt-2">
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                      style={{ background: tm.avatarColor }}
+                    >
+                      {tm.avatar}
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold" style={{ color: TEXT_MAIN }}>
+                        {tm.name}
+                      </div>
+                      <div className="text-xs" style={{ color: TEXT_LIGHT }}>
+                        {(t as any)[tm.roleKey]}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
-            <h2
-              className="text-3xl md:text-4xl font-bold mb-2"
-              style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: TEXT_MAIN }}
-            >
-              {(t as any).testimonials_title}
+          </div>
+        </section>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════
+          SECURITY — Horizontal badges
+      ══════════════════════════════════════════════════════════ */}
+      <section style={{ backgroundColor: "#f8fafc" }}>
+        <div className="container py-12">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl md:text-3xl font-bold" style={{ color: TEXT_MAIN }}>
+              {(t as any).security_title}
             </h2>
-            <p className="text-base" style={{ color: TEXT_MUTED }}>
-              {(t as any).testimonials_subtitle}
+            <p className="text-sm mt-1" style={{ color: TEXT_MUTED }}>
+              {(t as any).security_subtitle}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {TESTIMONIALS_META.map((tm, i) => (
-              <div
-                key={i}
-                className="flex flex-col gap-4 p-6 rounded-2xl bg-white border hover:shadow-md transition-all duration-300"
-                style={{ borderColor: BORDER }}
-              >
-                {/* Stars */}
-                <div className="flex items-center gap-0.5">
-                  {[...Array(5)].map((_, j) => (
-                    <Star key={j} className="w-4 h-4 fill-current" style={{ color: "#1B5E20" }} />
-                  ))}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            {[
+              {
+                icon: Shield,
+                title: (t as any).security_ssl_title,
+                desc: (t as any).security_ssl_desc,
+                color: "#16a34a",
+              },
+              {
+                icon: Trash2,
+                title: (t as any).security_delete_title,
+                desc: (t as any).security_delete_desc,
+                color: "#1B5E20",
+              },
+              {
+                icon: Globe,
+                title: (t as any).security_privacy_title,
+                desc: (t as any).security_privacy_desc,
+                color: INDIGO,
+              },
+            ].map((item, i) => (
+              <div key={i} className="flex items-start gap-4">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: `${item.color}18` }}
+                >
+                  <item.icon className="w-5 h-5" style={{ color: item.color }} />
                 </div>
-
-                {/* Quote */}
-                <p className="text-sm leading-relaxed flex-1" style={{ color: TEXT_MUTED }}>
-                  "{(t as any)[tm.textKey]}"
-                </p>
-
-                {/* Author */}
-                <div className="flex items-center gap-3 pt-2 border-t" style={{ borderColor: BORDER }}>
-                  <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                    style={{ background: tm.avatarColor }}
-                  >
-                    {tm.avatar}
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold" style={{ color: TEXT_MAIN }}>
-                      {tm.name}
-                    </div>
-                    <div className="text-xs" style={{ color: TEXT_LIGHT }}>
-                      {(t as any)[tm.roleKey]}
-                    </div>
-                  </div>
+                <div>
+                  <h3 className="font-semibold text-sm mb-1" style={{ color: TEXT_MAIN }}>
+                    {item.title}
+                  </h3>
+                  <p className="text-xs leading-relaxed" style={{ color: TEXT_MUTED }}>
+                    {item.desc}
+                  </p>
                 </div>
               </div>
             ))}
           </div>
         </div>
       </section>
-      )}
 
       {/* ══════════════════════════════════════════════════════════
-          SECURITY & PRIVACY TRUST SECTION
+          FAQ — Clean accordion
       ══════════════════════════════════════════════════════════ */}
-      <section className="py-16 md:py-20 bg-white">
-        <div className="container max-w-4xl mx-auto">
-          <div className="rounded-2xl border overflow-hidden" style={{ borderColor: BORDER }}>
-            {/* Header */}
-            <div
-              className="px-8 py-6 flex items-center gap-4 border-b"
-              style={{ backgroundColor: "#f8fafc", borderColor: BORDER }}
-            >
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: GRAD }}
+      {!isFastDoc && (
+        <section id="faq" className="py-16 md:py-20 bg-white">
+          <div className="container max-w-2xl mx-auto">
+            <div className="text-center mb-12">
+              <h2
+                className="text-3xl md:text-4xl font-bold"
+                style={{ color: TEXT_MAIN }}
               >
-                <FileLock2 className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h2
-                  className="text-xl font-bold"
-                  style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: TEXT_MAIN }}
-                >
-                  {(t as any).security_title}
-                </h2>
-                <p className="text-sm" style={{ color: TEXT_MUTED }}>
-                  {(t as any).security_subtitle}
-                </p>
-              </div>
+                {t.faq_title}
+              </h2>
             </div>
 
-            {/* Trust points grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x" style={{ borderColor: BORDER }}>
-              {[
-                {
-                  icon: Shield,
-                  title: (t as any).security_ssl_title,
-                  desc: (t as any).security_ssl_desc,
-                  color: "#16a34a",
-                },
-                {
-                  icon: Trash2,
-                  title: (t as any).security_delete_title,
-                  desc: (t as any).security_delete_desc,
-                  color: "#1B5E20",
-                },
-                {
-                  icon: Globe,
-                  title: (t as any).security_privacy_title,
-                  desc: (t as any).security_privacy_desc,
-                  color: INDIGO,
-                },
-              ].map((item, i) => (
-                <div key={i} className="flex gap-4 items-start p-6">
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
-                    style={{ backgroundColor: `${item.color}18` }}
+            <div>
+              {faqs.map((faq, i) => (
+                <div
+                  key={i}
+                  className="border-b"
+                  style={{ borderColor: BORDER }}
+                >
+                  <button
+                    className="w-full flex items-center justify-between py-4 text-left gap-4"
+                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
                   >
-                    <item.icon className="w-5 h-5" style={{ color: item.color }} />
-                  </div>
-                  <div>
-                    <h3
-                      className="font-semibold text-sm mb-1"
-                      style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: TEXT_MAIN }}
-                    >
-                      {item.title}
-                    </h3>
-                    <p className="text-xs leading-relaxed" style={{ color: TEXT_MUTED }}>
-                      {item.desc}
-                    </p>
-                  </div>
+                    <span className="font-semibold text-sm" style={{ color: TEXT_MAIN }}>
+                      {faq.question}
+                    </span>
+                    {openFaq === i
+                      ? <ChevronUp className="w-4 h-4 flex-shrink-0" style={{ color: INDIGO }} />
+                      : <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: TEXT_LIGHT }} />
+                    }
+                  </button>
+                  {openFaq === i && (
+                    <div className="pb-4 text-sm leading-relaxed" style={{ color: TEXT_MUTED }}>
+                      {faq.answer}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          FAQ
-      ══════════════════════════════════════════════════════════ */}
-      {!isFastDoc && (
-      <section id="faq" className="py-16 md:py-20" style={{ backgroundColor: SURFACE }}>
-        <div className="container max-w-2xl mx-auto">
-          <div className="text-center mb-12">
-            <h2
-              className="text-3xl md:text-4xl font-bold"
-              style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: TEXT_MAIN }}
-            >
-              {t.faq_title}
-            </h2>
-          </div>
-
-          <div className="space-y-3">
-            {faqs.map((faq, i) => (
-              <div
-                key={i}
-                className="rounded-2xl overflow-hidden border transition-all duration-200"
-                style={{
-                  borderColor: openFaq === i ? "rgba(0, 0, 0, 0.22)" : BORDER,
-                  backgroundColor: "white",
-                  boxShadow: openFaq === i ? "0 4px 20px rgba(0, 0, 0, 0.05)" : "none",
-                }}
-              >
-                <button
-                  className="w-full flex items-center justify-between px-5 py-4 text-left gap-4"
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                >
-                  <span
-                    className="font-semibold text-sm"
-                    style={{ color: TEXT_MAIN, fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
-                  >
-                    {faq.question}
-                  </span>
-                  <div
-                    className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-all"
-                    style={{
-                      backgroundColor: openFaq === i ? "#f1f5f9" : SURFACE,
-                    }}
-                  >
-                    {openFaq === i
-                      ? <ChevronUp className="w-4 h-4" style={{ color: INDIGO }} />
-                      : <ChevronDown className="w-4 h-4" style={{ color: TEXT_LIGHT }} />
-                    }
-                  </div>
-                </button>
-                {openFaq === i && (
-                  <div className="px-5 pb-4 text-sm leading-relaxed" style={{ color: TEXT_MUTED }}>
-                    {faq.answer}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
       )}
 
       {/* ══════════════════════════════════════════════════════════
-          FINAL CTA
+          FINAL CTA — Simple green background
       ══════════════════════════════════════════════════════════ */}
-      <section className="relative py-16 md:py-24 overflow-hidden">
-        <div
-          className="absolute inset-0"
-          style={{
-            background: isFastDoc
-              ? `linear-gradient(135deg, #E8590C 0%, #F97316 60%, #FB923C 100%)`
-              : `linear-gradient(135deg, #14532d 0%, #1B5E20 60%, #166534 100%)`,
-          }}
-        />
-        {/* Decorations */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div
-            className="absolute -top-24 -right-24 w-96 h-96 rounded-full opacity-[0.12]"
-            style={{ background: "radial-gradient(circle, white 0%, transparent 70%)" }}
-          />
-          <div
-            className="absolute -bottom-16 -left-16 w-72 h-72 rounded-full opacity-[0.07]"
-            style={{ background: "radial-gradient(circle, white 0%, transparent 70%)" }}
-          />
-          {/* Grid pattern on CTA */}
-          <div
-            className="absolute inset-0 opacity-[0.06]"
-            style={{
-              backgroundImage: `linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)`,
-              backgroundSize: "40px 40px",
-            }}
-          />
-        </div>
-
-        <div className="container relative z-10 text-center">
-          {/* Stars */}
-          {!isFastDoc && (
-          <div className="flex justify-center items-center gap-1 mb-5">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} className="w-5 h-5 fill-current" style={{ color: "#22c55e" }} />
-            ))}
-            <span className="ml-2 text-sm font-medium" style={{ color: "#e2e8f0" }}>
-              4.8/5 · 2.3M usuarios
-            </span>
-          </div>
-          )}
-
+      <section
+        className="py-16 md:py-24"
+        style={{
+          backgroundColor: isFastDoc ? "#E8590C" : INDIGO,
+        }}
+      >
+        <div className="container text-center">
           <h2
             className="text-3xl md:text-5xl font-extrabold text-white mb-4 tracking-tight"
-            style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
           >
             {t.cta_title}
           </h2>
           <p
             className="text-base md:text-lg mb-10 max-w-lg mx-auto leading-relaxed"
-            style={{ color: isFastDoc ? "rgba(255,255,255,0.92)" : "#e2e8f0", fontWeight: isFastDoc ? 500 : undefined }}
+            style={{ color: "rgba(255, 255, 255, 0.85)" }}
           >
             {t.cta_subtitle}
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button
-              className="inline-flex items-center gap-2.5 px-10 py-4 rounded-xl font-bold text-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl active:scale-95"
-              style={{
-                backgroundColor: "white",
-                color: isFastDoc ? "#C2410C" : INDIGO,
-                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.22)",
-              }}
-              onClick={() => scrollToEditor()}
-            >
-              <Upload className="w-5 h-5" />
-              {t.cta_btn}
-              <ArrowRight className="w-5 h-5" />
-            </button>
-
-            <div
-              className="flex items-center gap-2 text-sm font-medium rounded-xl px-5 py-3"
-              style={{ color: isFastDoc ? "rgba(255,255,255,0.85)" : "#cbd5e1" }}
-            >
-              <Globe className="w-4 h-4" style={{ color: isFastDoc ? "rgba(255,255,255,0.7)" : "#4CAF50" }} />
-              {(t as any).cta_no_card ?? "100% Online · Sin instalación"}
-            </div>
-          </div>
-
+          <button
+            className="inline-flex items-center gap-2.5 px-10 py-4 rounded-xl font-bold text-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl active:scale-95"
+            style={{
+              backgroundColor: "white",
+              color: isFastDoc ? "#C2410C" : INDIGO,
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.22)",
+            }}
+            onClick={() => scrollToEditor()}
+          >
+            <Upload className="w-5 h-5" />
+            {t.cta_btn}
+            <ArrowRight className="w-5 h-5" />
+          </button>
         </div>
       </section>
 
