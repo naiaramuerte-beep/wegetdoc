@@ -109,7 +109,7 @@ export default function ToolLanding({ tool }: { tool: ToolDef }) {
             {/* Title */}
             <h1
               className="text-4xl md:text-5xl lg:text-[3.8rem] font-extrabold leading-[1.1] mb-5 tracking-tight"
-              style={{ fontFamily: "'Sora', sans-serif", color: "#111" }}
+              style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#111" }}
             >
               {tr("h1")}
             </h1>
@@ -178,7 +178,7 @@ export default function ToolLanding({ tool }: { tool: ToolDef }) {
           <p className="text-center text-xs font-bold tracking-[0.2em] uppercase mb-3" style={{ color: colors.primary }}>
             {tr("how_title") || "How it works"}
           </p>
-          <h2 className="text-3xl md:text-4xl font-extrabold text-center mb-16" style={{ fontFamily: "'Sora', sans-serif", color: "#111" }}>
+          <h2 className="text-3xl md:text-4xl font-extrabold text-center mb-16" style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#111" }}>
             3 {lang === "es" ? "pasos sencillos" : "simple steps"}
           </h2>
 
@@ -211,7 +211,7 @@ export default function ToolLanding({ tool }: { tool: ToolDef }) {
                       {step.num}
                     </div>
                   </div>
-                  <h3 className="font-bold text-lg mb-2" style={{ color: "#111", fontFamily: "'Sora', sans-serif" }}>{step.title}</h3>
+                  <h3 className="font-bold text-lg mb-2" style={{ color: "#111", fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}>{step.title}</h3>
                   <p className="text-sm leading-relaxed max-w-[250px] mx-auto" style={{ color: "#666" }}>{step.desc}</p>
                 </div>
               ))}
@@ -229,7 +229,7 @@ export default function ToolLanding({ tool }: { tool: ToolDef }) {
             <p className="text-center text-xs font-bold tracking-[0.2em] uppercase mb-3" style={{ color: colors.primary }}>
               {tr("features_title") || "Features"}
             </p>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-center mb-14" style={{ fontFamily: "'Sora', sans-serif", color: "#111" }}>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-center mb-14" style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#111" }}>
               {lang === "es" ? "Todo lo que necesitas" : "Everything you need"}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -264,7 +264,7 @@ export default function ToolLanding({ tool }: { tool: ToolDef }) {
             <div className="flex items-center gap-2">
               <div className="flex">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 fill-current" style={{ color: "oklch(0.75 0.18 85)" }} />
+                  <Star key={i} className="w-4 h-4 fill-current" style={{ color: "#D4A017" }} />
                 ))}
               </div>
               <span className="text-sm font-semibold" style={{ color: "#333" }}>4.8/5</span>
@@ -287,7 +287,7 @@ export default function ToolLanding({ tool }: { tool: ToolDef }) {
           backgroundSize: "40px 40px",
         }} />
         <div className="container relative z-10 max-w-3xl mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-4" style={{ fontFamily: "'Sora', sans-serif" }}>
+          <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-4" style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}>
             {tr("bottom_cta_title") || tr("h1")}
           </h2>
           <p className="text-base mb-8 max-w-lg mx-auto" style={{ color: "rgba(255,255,255,0.8)" }}>

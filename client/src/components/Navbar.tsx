@@ -1,6 +1,6 @@
 /* =============================================================
-   CloudPDF Navbar — "Lumina" design
-   Clean white glass navbar, indigo-violet accents
+   WeGetDoc Navbar — "Verdant Gold" design
+   Clean white glass navbar, green-gold accents
    Responsive: mobile hamburger (<md), desktop nav (md+)
    ============================================================= */
 
@@ -19,9 +19,9 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 const INDIGO = colors.primary;
 const INDIGO_HOVER_BG = colors.lightBg;
-const TEXT_MAIN = "oklch(0.13 0.015 264)";
-const TEXT_MUTED = "oklch(0.48 0.015 264)";
-const BORDER = "oklch(0.91 0.008 264)";
+const TEXT_MAIN = "#1A2E1A";
+const TEXT_MUTED = "#4A6B4A";
+const BORDER = "#C8E6C9";
 
 export default function Navbar({ compact }: { compact?: boolean } = {}) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -93,7 +93,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
             >
               <FileText className="w-4 h-4 text-white" />
             </div>
-            <span style={{ fontFamily: "'Sora', sans-serif" }}>
+            <span style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}>
               <span className="font-semibold text-lg" style={{ color: TEXT_MAIN }}>{logoParts[0]}</span>
               <span
                 className="font-extrabold text-lg"
@@ -177,7 +177,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                   <div className="fixed inset-0 z-40" onClick={() => setLangMenuOpen(false)} />
                   <div
                     className="absolute right-0 top-full mt-2 w-44 rounded-xl shadow-lg border overflow-hidden z-50 max-h-64 overflow-y-auto"
-                    style={{ backgroundColor: "white", borderColor: BORDER, boxShadow: "0 8px 30px oklch(0.13 0.015 264 / 0.10)" }}
+                    style={{ backgroundColor: "white", borderColor: BORDER, boxShadow: "0 8px 30px rgba(26, 46, 26, 0.10)" }}
                   >
                     {LANGUAGES.map((l) => (
                       <button
@@ -186,10 +186,10 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                         className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors"
                         style={{
                           color: l.code === lang ? INDIGO : TEXT_MUTED,
-                          backgroundColor: l.code === lang ? "oklch(0.96 0.03 264)" : "transparent",
+                          backgroundColor: l.code === lang ? "#E8F5E9" : "transparent",
                           fontWeight: l.code === lang ? "600" : "400",
                         }}
-                        onMouseEnter={(e) => { if (l.code !== lang) e.currentTarget.style.backgroundColor = "oklch(0.98 0.005 264)"; }}
+                        onMouseEnter={(e) => { if (l.code !== lang) e.currentTarget.style.backgroundColor = "#F5F9F5"; }}
                         onMouseLeave={(e) => { if (l.code !== lang) e.currentTarget.style.backgroundColor = "transparent"; }}
                       >
                         <span>{l.flag}</span>
@@ -209,7 +209,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                   className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-xl border transition-all duration-150"
                   style={{ borderColor: BORDER, color: TEXT_MAIN }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "oklch(0.47 0.24 264 / 0.4)";
+                    e.currentTarget.style.borderColor = "rgba(27, 94, 32, 0.4)";
                     e.currentTarget.style.backgroundColor = INDIGO_HOVER_BG;
                   }}
                   onMouseLeave={(e) => {
@@ -234,9 +234,9 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                     <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
                     <div
                       className="absolute right-0 top-full mt-2 w-52 rounded-xl shadow-lg border overflow-hidden z-50"
-                      style={{ backgroundColor: "white", borderColor: BORDER, boxShadow: "0 8px 30px oklch(0.13 0.015 264 / 0.10)" }}
+                      style={{ backgroundColor: "white", borderColor: BORDER, boxShadow: "0 8px 30px rgba(26, 46, 26, 0.10)" }}
                     >
-                      <div className="px-4 py-3 border-b" style={{ borderColor: BORDER, backgroundColor: "oklch(0.985 0.003 264)" }}>
+                      <div className="px-4 py-3 border-b" style={{ borderColor: BORDER, backgroundColor: "#FAFCFA" }}>
                         <p className="text-sm font-semibold truncate" style={{ color: TEXT_MAIN }}>{user?.name ?? "Usuario"}</p>
                         <p className="text-xs truncate" style={{ color: TEXT_MUTED }}>{user?.email}</p>
                       </div>
@@ -250,7 +250,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                               onClick={() => setUserMenuOpen(false)}
                               className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors text-left"
                               style={{ color: TEXT_MUTED }}
-                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "oklch(0.985 0.003 264)"; e.currentTarget.style.color = TEXT_MAIN; }}
+                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#FAFCFA"; e.currentTarget.style.color = TEXT_MAIN; }}
                               onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = TEXT_MUTED; }}
                             >
                               <item.icon size={15} />
@@ -263,8 +263,8 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                             <button
                               onClick={() => setUserMenuOpen(false)}
                               className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors text-left"
-                              style={{ color: "oklch(0.55 0.20 40)" }}
-                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "oklch(0.985 0.003 264)"; }}
+                              style={{ color: "#D4A017" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#FAFCFA"; }}
                               onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
                             >
                               <Settings size={15} />
@@ -276,8 +276,8 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                         <button
                           onClick={handleLogout}
                           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors text-left"
-                          style={{ color: "oklch(0.55 0.22 25)" }}
-                          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "oklch(0.985 0.003 264)"; }}
+                          style={{ color: "#C62828" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#FAFCFA"; }}
                           onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
                         >
                           <LogOut size={15} />
@@ -302,7 +302,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                 <button
                   onClick={openSignup}
                   className="px-4 py-2 text-sm font-semibold rounded-lg text-white transition-all duration-150 btn-gradient"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
                 >
                   {t.nav_signup}
                 </button>
@@ -368,8 +368,8 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors border"
                   style={{
                     color: l.code === lang ? INDIGO : TEXT_MUTED,
-                    backgroundColor: l.code === lang ? "oklch(0.96 0.03 264)" : "transparent",
-                    borderColor: l.code === lang ? "oklch(0.47 0.24 264 / 0.3)" : BORDER,
+                    backgroundColor: l.code === lang ? "#E8F5E9" : "transparent",
+                    borderColor: l.code === lang ? "rgba(27, 94, 32, 0.3)" : BORDER,
                   }}
                 >
                   {l.flag} {l.code.toUpperCase()}
@@ -394,7 +394,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                   <button
                     onClick={() => { handleLogout(); setMenuOpen(false); }}
                     className="w-full px-4 py-2.5 text-sm font-medium rounded-xl border text-center"
-                    style={{ color: "oklch(0.55 0.22 25)", borderColor: BORDER }}
+                    style={{ color: "#C62828", borderColor: BORDER }}
                   >
                     {t.nav_logout}
                   </button>

@@ -1,5 +1,5 @@
 /* =============================================================
-   CloudPDF — Página legal dinámica
+   WeGetDoc — Página legal dinámica
    Renderiza contenido Markdown desde la base de datos
    ============================================================= */
 import { trpc } from "@/lib/trpc";
@@ -43,7 +43,7 @@ export default function LegalPage({ slug }: LegalPageProps) {
               </p>
             )}
             <div
-              className="prose prose-slate max-w-none prose-headings:font-semibold prose-a:text-blue-600"
+              className="prose prose-slate max-w-none prose-headings:font-semibold prose-a:text-green-700"
               dangerouslySetInnerHTML={{ __html: markdownToHtml(page.content ?? "") }}
             />
           </article>

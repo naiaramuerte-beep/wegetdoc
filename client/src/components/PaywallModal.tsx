@@ -172,17 +172,6 @@ function PaddleCheckoutForm({
       setProgressStep("done");
       toast.success("Document saved! Processing...");
 
-      // Google Ads conversion tracking
-      if (typeof window.gtag === "function") {
-        window.gtag("event", "conversion", {
-          send_to: "AW-18038662610",
-          value: 49.90,
-          currency: "EUR",
-          transaction_id: transactionId || subscriptionId,
-        });
-        console.log("[PaywallModal] Google Ads conversion fired", { transactionId, subscriptionId });
-      }
-
       onSuccess(transactionId || subscriptionId);
     } catch (err: unknown) {
       setProgressStep("idle");
@@ -355,7 +344,7 @@ function PaddleCheckoutForm({
       <div className="flex flex-col md:flex-row min-h-0">
         {/* ── Left column: Logo + PDF Preview ── */}
         <div className="hidden md:flex flex-col items-center bg-slate-50 border-r border-slate-100 p-5" style={{ minWidth: 220, maxWidth: 260 }}>
-          {/* CloudPDF Logo */}
+          {/* WeGetDoc Logo */}
           <div className="flex items-center gap-1 mb-5">
             <svg width="28" height="20" viewBox="0 0 32 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
               <path d="M25.5 12.5C25.5 12.5 26 12 26 11c0-2.8-2.2-5-5-5-.5 0-1 .1-1.5.2C18.3 3.7 15.9 2 13 2 9.4 2 6.5 4.9 6.5 8.5c0 .2 0 .4 0 .6C4.5 9.6 3 11.4 3 13.5 3 16 5 18 7.5 18h16c2.2 0 4-1.8 4-4 0-1.5-.8-2.8-2-3.5z" fill={colors.light} />
@@ -419,14 +408,14 @@ function PaddleCheckoutForm({
                           <Check className="w-2.5 h-2.5 text-white" />
                         </div>
                       ) : isActive ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-[#1a3c6e]" />
+                        <Loader2 className="w-4 h-4 animate-spin text-[#1B5E20]" />
                       ) : (
                         <div className="w-4 h-4 rounded-full border-2 border-slate-200" />
                       )}
                     </div>
                     <span className={`text-xs font-medium transition-colors ${
                       isDone    ? "text-green-600" :
-                      isActive  ? "text-[#1a3c6e]" :
+                      isActive  ? "text-[#1B5E20]" :
                       "text-slate-300"
                     }`}>
                       {step.label}
@@ -457,7 +446,7 @@ function PaddleCheckoutForm({
           {!paddleReady && (
             <div className="flex items-center justify-center p-8">
               <div className="flex flex-col items-center gap-3">
-                <Loader2 className="w-8 h-8 animate-spin text-[#1a3c6e]" />
+                <Loader2 className="w-8 h-8 animate-spin text-[#1B5E20]" />
                 <p className="text-sm text-slate-500">Loading payment form...</p>
               </div>
             </div>
@@ -522,7 +511,7 @@ export default function PaywallModal({
     setPendingPaywall(true);
     // Also set the pending action flag so the auto-resume useEffect has a reliable signal
     sessionStorage.setItem("cloudpdf_pending_action", "download");
-    // Use direct Google OAuth (shows "CloudPDF" on Google consent screen)
+    // Use direct Google OAuth (shows "WeGetDoc" on Google consent screen)
     const returnPath = window.location.pathname + window.location.search;
     window.location.href = `/api/auth/google?origin=${encodeURIComponent(window.location.origin)}&returnPath=${encodeURIComponent(returnPath)}`;
   };
@@ -604,7 +593,7 @@ export default function PaywallModal({
         {currentStep === "auth-choice" && (
           <div className="p-8">
             <div className="text-center mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-[#1a3c6e] flex items-center justify-center mx-auto mb-4">
+              <div className="w-14 h-14 rounded-2xl bg-[#1B5E20] flex items-center justify-center mx-auto mb-4">
                 <CreditCard className="w-7 h-7 text-white" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -653,7 +642,7 @@ export default function PaywallModal({
         {currentStep === "email-form" && (
           <div className="p-8">
             <div className="text-center mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-[#1a3c6e] flex items-center justify-center mx-auto mb-4">
+              <div className="w-14 h-14 rounded-2xl bg-[#1B5E20] flex items-center justify-center mx-auto mb-4">
                 <Lock className="w-7 h-7 text-white" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -670,7 +659,7 @@ export default function PaywallModal({
                   value={nameInput}
                   onChange={(e) => setNameInput(e.target.value)}
                   placeholder={t.paywall_name}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B5E20]"
                 />
               )}
               <input
@@ -678,7 +667,7 @@ export default function PaywallModal({
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 placeholder="you@email.com"
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B5E20]"
               />
               <div className="relative">
                 <input
@@ -686,7 +675,7 @@ export default function PaywallModal({
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
                   placeholder={t.paywall_password}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B5E20]"
                   onKeyDown={(e) => e.key === "Enter" && handleEmailSubmit()}
                 />
                 <button
@@ -703,7 +692,7 @@ export default function PaywallModal({
               <button
                 onClick={handleEmailSubmit}
                 disabled={emailLoading}
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#1a3c6e] text-white font-bold text-sm hover:bg-[#15305a] transition-colors disabled:opacity-60"
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#1B5E20] text-white font-bold text-sm hover:bg-[#0D3311] transition-colors disabled:opacity-60"
               >
                 {emailLoading ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> {emailMode === "register" ? t.paywall_registering : t.paywall_logging_in}</>
@@ -713,9 +702,9 @@ export default function PaywallModal({
               </button>
               <div className="text-center text-sm text-gray-500 pt-1">
                 {emailMode === "register" ? (
-                  <>{t.paywall_have_account}{" "}<button onClick={() => setEmailMode("login")} className="text-[#1a3c6e] font-semibold hover:underline">{t.paywall_login}</button></>
+                  <>{t.paywall_have_account}{" "}<button onClick={() => setEmailMode("login")} className="text-[#1B5E20] font-semibold hover:underline">{t.paywall_login}</button></>
                 ) : (
-                  <>{t.paywall_no_account}{" "}<button onClick={() => setEmailMode("register")} className="text-[#1a3c6e] font-semibold hover:underline">{t.paywall_register}</button></>
+                  <>{t.paywall_no_account}{" "}<button onClick={() => setEmailMode("register")} className="text-[#1B5E20] font-semibold hover:underline">{t.paywall_register}</button></>
                 )}
               </div>
               <button

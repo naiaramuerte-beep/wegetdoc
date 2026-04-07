@@ -1,5 +1,5 @@
 /* =============================================================
-   CloudPDF Pricing Page — Deep Navy Pro design
+   WeGetDoc Pricing Page — Verdant Gold design
    Two plans: Trial + Monthly, with feature comparison table
    Paddle inline checkout embebido (no overlay)
    ============================================================= */
@@ -86,7 +86,7 @@ export default function Pricing() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "oklch(0.98 0.005 250)" }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#F5F9F5" }}>
       <Navbar />
 
       {/* ── HERO ─────────────────────────────────────────── */}
@@ -94,13 +94,13 @@ export default function Pricing() {
         <div className="container max-w-3xl mx-auto">
           <h1
             className="text-4xl md:text-5xl font-extrabold mb-4"
-            style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
+            style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#1A2E1A" }}
           >
             {t.pricing_title}
           </h1>
           <p
             className="text-base"
-            style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+            style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
           >
             {t.pricing_subtitle}
           </p>
@@ -116,9 +116,9 @@ export default function Pricing() {
             <div
               className="relative rounded-2xl p-8 flex flex-col"
               style={{
-                backgroundColor: "oklch(1 0 0)",
-                border: "2px solid oklch(0.55 0.22 260)",
-                boxShadow: "0 0 0 4px oklch(0.55 0.22 260 / 0.08)",
+                backgroundColor: "#FFFFFF",
+                border: "2px solid #1B5E20",
+                boxShadow: "0 0 0 4px rgba(27, 94, 32, 0.08)",
               }}
             >
               {/* Most popular badge */}
@@ -126,8 +126,8 @@ export default function Pricing() {
                 <span
                   className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold text-white"
                   style={{
-                    backgroundColor: "oklch(0.55 0.22 260)",
-                    fontFamily: "'DM Sans', sans-serif",
+                    backgroundColor: "#1B5E20",
+                    fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
                   }}
                 >
                   <Zap className="w-3 h-3" />
@@ -138,13 +138,13 @@ export default function Pricing() {
               <div className="flex items-center gap-2 mb-2">
                 <div
                   className="w-8 h-8 rounded-lg flex items-center justify-center"
-                  style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.1)" }}
+                  style={{ backgroundColor: "rgba(27, 94, 32, 0.1)" }}
                 >
-                  <Zap className="w-4 h-4" style={{ color: "oklch(0.55 0.22 260)" }} />
+                  <Zap className="w-4 h-4" style={{ color: "#1B5E20" }} />
                 </div>
                 <h2
                   className="text-xl font-bold"
-                  style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
+                  style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#1A2E1A" }}
                 >
                   {t.pricing_trial_name}
                 </h2>
@@ -153,13 +153,13 @@ export default function Pricing() {
               <div className="mb-4">
                 <span
                   className="text-4xl font-extrabold"
-                  style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
+                  style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#1A2E1A" }}
                 >
                   {t.pricing_trial_price}
                 </span>
                 <span
                   className="text-sm ml-1"
-                  style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
                 >
                   / {t.pricing_trial_period}
                 </span>
@@ -167,7 +167,7 @@ export default function Pricing() {
 
               <p
                 className="text-sm leading-relaxed mb-6 flex-1"
-                style={{ color: "oklch(0.45 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+                style={{ color: "#3D5A3D", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
               >
                 {t.pricing_trial_desc}
               </p>
@@ -175,14 +175,14 @@ export default function Pricing() {
               <button
                 className="w-full py-3 rounded-xl font-semibold text-sm text-white transition-all duration-200"
                 style={{
-                  backgroundColor: showCheckout ? "oklch(0.55 0.22 260)" : "oklch(0.18 0.04 250)",
-                  fontFamily: "'DM Sans', sans-serif",
+                  backgroundColor: showCheckout ? "#1B5E20" : "#0D3311",
+                  fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
                 }}
                 onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)")
+                  (e.currentTarget.style.backgroundColor = "#1B5E20")
                 }
                 onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = showCheckout ? "oklch(0.55 0.22 260)" : "oklch(0.18 0.04 250)")
+                  (e.currentTarget.style.backgroundColor = showCheckout ? "#1B5E20" : "#0D3311")
                 }
                 onClick={handleSubscribe}
               >
@@ -194,21 +194,21 @@ export default function Pricing() {
             <div
               className="rounded-2xl p-8 flex flex-col"
               style={{
-                backgroundColor: "oklch(1 0 0)",
-                border: "1px solid oklch(0.88 0.01 250)",
-                boxShadow: "0 2px 12px oklch(0.18 0.04 250 / 0.06)",
+                backgroundColor: "#FFFFFF",
+                border: "1px solid #C8E6C9",
+                boxShadow: "0 2px 12px rgba(13, 51, 17, 0.06)",
               }}
             >
               <div className="flex items-center gap-2 mb-2">
                 <div
                   className="w-8 h-8 rounded-lg flex items-center justify-center"
-                  style={{ backgroundColor: "oklch(0.18 0.04 250 / 0.08)" }}
+                  style={{ backgroundColor: "rgba(13, 51, 17, 0.08)" }}
                 >
-                  <Crown className="w-4 h-4" style={{ color: "oklch(0.18 0.04 250)" }} />
+                  <Crown className="w-4 h-4" style={{ color: "#0D3311" }} />
                 </div>
                 <h2
                   className="text-xl font-bold"
-                  style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
+                  style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#1A2E1A" }}
                 >
                   {t.pricing_monthly_name}
                 </h2>
@@ -217,13 +217,13 @@ export default function Pricing() {
               <div className="mb-4">
                 <span
                   className="text-4xl font-extrabold"
-                  style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
+                  style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#1A2E1A" }}
                 >
                   {t.pricing_monthly_price}
                 </span>
                 <span
                   className="text-sm ml-1"
-                  style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
                 >
                   / {t.pricing_monthly_period}
                 </span>
@@ -231,13 +231,13 @@ export default function Pricing() {
 
               <p
                 className="text-sm mb-1"
-                style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+                style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
               >
                 {t.pricing_billed_monthly ?? "Billed monthly"}
               </p>
               <p
                 className="text-sm leading-relaxed mb-6 flex-1"
-                style={{ color: "oklch(0.45 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+                style={{ color: "#3D5A3D", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
               >
                 {t.pricing_monthly_desc}
               </p>
@@ -246,17 +246,17 @@ export default function Pricing() {
                 className="w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200"
                 style={{
                   backgroundColor: "transparent",
-                  border: "2px solid oklch(0.18 0.04 250)",
-                  color: "oklch(0.18 0.04 250)",
-                  fontFamily: "'DM Sans', sans-serif",
+                  border: "2px solid #0D3311",
+                  color: "#0D3311",
+                  fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "oklch(0.18 0.04 250)";
+                  e.currentTarget.style.backgroundColor = "#0D3311";
                   e.currentTarget.style.color = "white";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.color = "oklch(0.18 0.04 250)";
+                  e.currentTarget.style.color = "#0D3311";
                 }}
                 onClick={handleSubscribe}
               >
@@ -274,26 +274,26 @@ export default function Pricing() {
             <div
               className="rounded-2xl overflow-hidden"
               style={{
-                border: "2px solid oklch(0.55 0.22 260)",
-                backgroundColor: "oklch(1 0 0)",
-                boxShadow: "0 4px 24px oklch(0.18 0.04 250 / 0.1)",
+                border: "2px solid #1B5E20",
+                backgroundColor: "#FFFFFF",
+                boxShadow: "0 4px 24px rgba(13, 51, 17, 0.1)",
               }}
             >
               <div
                 className="px-6 py-4 border-b flex items-center gap-3"
-                style={{ borderColor: "oklch(0.88 0.01 250)", backgroundColor: "oklch(0.98 0.005 250)" }}
+                style={{ borderColor: "#C8E6C9", backgroundColor: "#F5F9F5" }}
               >
-                <CreditCard className="w-5 h-5" style={{ color: "oklch(0.55 0.22 260)" }} />
+                <CreditCard className="w-5 h-5" style={{ color: "#1B5E20" }} />
                 <h3
                   className="text-lg font-bold"
-                  style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
+                  style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#1A2E1A" }}
                 >
                   {t.paywall_secure ?? "Pago 100% seguro"}
                 </h3>
                 <button
                   onClick={() => setShowCheckout(false)}
                   className="ml-auto text-sm hover:underline"
-                  style={{ color: "oklch(0.50 0.02 250)" }}
+                  style={{ color: "#4A6B4A" }}
                 >
                   Cancelar
                 </button>
@@ -304,22 +304,6 @@ export default function Pricing() {
               onComplete={(data: any) => {
                    console.log("[Pricing] checkout.completed data:", JSON.stringify(data, null, 2));
                    const txnId = data.id || data.transaction_id || data.subscription_id || "";
-                   // Google Ads conversion tracking
-                   if (typeof window.gtag === "function") {
-                     window.gtag("event", "conversion", {
-                       send_to: "AW-18038662610",
-                       value: 49.90,
-                       currency: "EUR",
-                       transaction_id: txnId,
-                     });
-                     window.gtag("event", "purchase", {
-                       transaction_id: txnId,
-                       value: 49.90,
-                       currency: "EUR",
-                       items: [{ item_id: "cloudpdf_trial", item_name: `${brandName} Trial Subscription`, price: 0, quantity: 1 }],
-                     });
-                     console.log("[Pricing] Conversion tracking fired", { txnId });
-                   }
                    confirmPaddleCheckout.mutate({
                      transactionId: data.id || data.transaction_id || "",
                      subscriptionId: data.subscription_id || "",
@@ -335,12 +319,12 @@ export default function Pricing() {
       {/* ── COMPARISON TABLE ─────────────────────────────── */}
       <section
         className="py-16"
-        style={{ backgroundColor: "oklch(0.97 0.006 250)" }}
+        style={{ backgroundColor: "#E8F5E9" }}
       >
         <div className="container max-w-4xl mx-auto">
           <h2
             className="text-2xl md:text-3xl font-bold mb-8"
-            style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
+            style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#1A2E1A" }}
           >
             {t.pricing_compare_title ?? "Discover what each plan includes"}
           </h2>
@@ -348,30 +332,30 @@ export default function Pricing() {
           <div
             className="rounded-2xl overflow-hidden"
             style={{
-              border: "1px solid oklch(0.88 0.01 250)",
-              backgroundColor: "oklch(1 0 0)",
+              border: "1px solid #C8E6C9",
+              backgroundColor: "#FFFFFF",
             }}
           >
             {/* Table header */}
             <div
               className="grid grid-cols-3 px-6 py-4 border-b"
-              style={{ borderColor: "oklch(0.88 0.01 250)" }}
+              style={{ borderColor: "#C8E6C9" }}
             >
               <div
                 className="text-sm font-semibold"
-                style={{ color: "oklch(0.35 0.02 250)", fontFamily: "'Sora', sans-serif" }}
+                style={{ color: "#2E4A2E", fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
               >
                 {t.pricing_features_col ?? "Main features"}
               </div>
               <div
                 className="text-sm font-semibold text-center"
-                style={{ color: "oklch(0.55 0.22 260)", fontFamily: "'Sora', sans-serif" }}
+                style={{ color: "#1B5E20", fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
               >
                 {t.pricing_trial_name}
               </div>
               <div
                 className="text-sm font-semibold text-center"
-                style={{ color: "oklch(0.15 0.03 250)", fontFamily: "'Sora', sans-serif" }}
+                style={{ color: "#1A2E1A", fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
               >
                 {t.pricing_monthly_name}
               </div>
@@ -383,28 +367,28 @@ export default function Pricing() {
                 key={i}
                 className="grid grid-cols-3 px-6 py-3 border-b last:border-0"
                 style={{
-                  borderColor: "oklch(0.92 0.01 250)",
-                  backgroundColor: i % 2 === 0 ? "oklch(1 0 0)" : "oklch(0.99 0.003 250)",
+                  borderColor: "#C8E6C9",
+                  backgroundColor: i % 2 === 0 ? "#FFFFFF" : "#FAFCFA",
                 }}
               >
                 <div
                   className="text-sm"
-                  style={{ color: "oklch(0.35 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ color: "#2E4A2E", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
                 >
                   {feature.name}
                 </div>
                 <div className="flex justify-center">
                   {feature.trial ? (
-                    <Check className="w-4 h-4" style={{ color: "oklch(0.55 0.22 260)" }} />
+                    <Check className="w-4 h-4" style={{ color: "#1B5E20" }} />
                   ) : (
-                    <X className="w-4 h-4" style={{ color: "oklch(0.70 0.02 250)" }} />
+                    <X className="w-4 h-4" style={{ color: "#A5C7A5" }} />
                   )}
                 </div>
                 <div className="flex justify-center">
                   {feature.monthly ? (
-                    <Check className="w-4 h-4" style={{ color: "oklch(0.45 0.18 145)" }} />
+                    <Check className="w-4 h-4" style={{ color: "#D4A017" }} />
                   ) : (
-                    <X className="w-4 h-4" style={{ color: "oklch(0.70 0.02 250)" }} />
+                    <X className="w-4 h-4" style={{ color: "#A5C7A5" }} />
                   )}
                 </div>
               </div>
@@ -418,7 +402,7 @@ export default function Pricing() {
         <div className="container max-w-3xl mx-auto">
           <h2
             className="text-2xl md:text-3xl font-bold mb-8"
-            style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
+            style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#1A2E1A" }}
           >
             {t.faq_title}
           </h2>
@@ -429,8 +413,8 @@ export default function Pricing() {
                 key={i}
                 className="rounded-xl overflow-hidden"
                 style={{
-                  border: `1px solid ${openFaq === i ? "oklch(0.55 0.22 260 / 0.3)" : "oklch(0.88 0.01 250)"}`,
-                  backgroundColor: "oklch(1 0 0)",
+                  border: `1px solid ${openFaq === i ? "rgba(27, 94, 32, 0.3)" : "#C8E6C9"}`,
+                  backgroundColor: "#FFFFFF",
                 }}
               >
                 <button
@@ -439,20 +423,20 @@ export default function Pricing() {
                 >
                   <span
                     className="font-semibold text-sm pr-4"
-                    style={{ color: "oklch(0.15 0.03 250)", fontFamily: "'Sora', sans-serif" }}
+                    style={{ color: "#1A2E1A", fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
                   >
                     {faq.question}
                   </span>
                   {openFaq === i ? (
-                    <ChevronUp className="w-4 h-4 flex-shrink-0" style={{ color: "oklch(0.55 0.22 260)" }} />
+                    <ChevronUp className="w-4 h-4 flex-shrink-0" style={{ color: "#1B5E20" }} />
                   ) : (
-                    <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: "oklch(0.50 0.02 250)" }} />
+                    <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: "#4A6B4A" }} />
                   )}
                 </button>
                 {openFaq === i && (
                   <div
                     className="px-6 pb-4 text-sm leading-relaxed"
-                    style={{ color: "oklch(0.45 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+                    style={{ color: "#3D5A3D", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
                   >
                     {faq.answer}
                   </div>
@@ -576,8 +560,8 @@ function PaddleInlineCheckout({
     <div className="p-4">
       {!ready && (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin" style={{ color: "oklch(0.55 0.22 260)" }} />
-          <span className="ml-3 text-sm" style={{ color: "oklch(0.50 0.02 250)" }}>
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#1B5E20" }} />
+          <span className="ml-3 text-sm" style={{ color: "#4A6B4A" }}>
             Cargando formulario de pago...
           </span>
         </div>

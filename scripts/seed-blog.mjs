@@ -6,172 +6,172 @@ const conn = await mysql.createConnection(process.env.DATABASE_URL);
 
 const articles = [
   {
-    slug: "como-editar-un-pdf-online-gratis",
-    title: "Cómo editar un PDF online gratis en 2025: guía completa paso a paso",
-    excerpt: "Aprende a editar cualquier PDF directamente desde tu navegador sin instalar ningún programa. Texto, imágenes, firmas y más en menos de 2 minutos.",
-    content: `<h2>¿Se puede editar un PDF online sin instalar nada?</h2>
-<p>Sí. Con <strong>cloud-pdf.net</strong> puedes editar cualquier documento PDF directamente desde tu navegador, sin descargar ningún programa y completamente gratis. Solo necesitas subir el archivo y empezar a editar.</p>
+    slug: "editar-pdf-en-el-navegador-sin-programas",
+    title: "Editar PDF en el navegador sin programas: tutorial completo para 2026",
+    excerpt: "Descubre cómo modificar cualquier documento PDF desde tu navegador web en pocos pasos. Cambia textos, agrega imágenes, firma y descarga al instante.",
+    content: `<h2>Modifica tus PDFs directamente desde el navegador</h2>
+<p>Hoy en día ya no es necesario descargar software pesado para trabajar con archivos PDF. Plataformas como <strong>wegetdoc.com</strong> ofrecen un editor completo que funciona íntegramente en tu navegador, permitiéndote realizar cambios en cualquier documento en cuestión de segundos.</p>
 
-<h2>Qué puedes editar en un PDF online</h2>
-<p>Las herramientas de edición de PDF online modernas permiten realizar prácticamente cualquier modificación que necesites:</p>
+<h2>Funcionalidades disponibles al editar un PDF online</h2>
+<p>Un buen editor de PDF basado en web debería cubrir las necesidades más habituales del día a día:</p>
 <ul>
-  <li><strong>Editar texto existente</strong>: corregir errores tipográficos, cambiar palabras o frases completas</li>
-  <li><strong>Añadir texto nuevo</strong>: insertar anotaciones, comentarios o bloques de texto en cualquier parte del documento</li>
-  <li><strong>Insertar imágenes</strong>: añadir logos, fotografías o ilustraciones</li>
-  <li><strong>Añadir firma digital</strong>: firmar documentos con tu firma manuscrita digitalizada</li>
-  <li><strong>Resaltar y subrayar</strong>: marcar partes importantes del texto</li>
-  <li><strong>Añadir formas y flechas</strong>: para señalar o destacar áreas específicas</li>
+  <li><strong>Modificar texto</strong>: corrige datos incorrectos, actualiza cifras o reescribe párrafos completos sin alterar el diseño original</li>
+  <li><strong>Incorporar texto adicional</strong>: añade notas, observaciones o bloques informativos en cualquier zona del documento</li>
+  <li><strong>Agregar elementos visuales</strong>: logotipos corporativos, sellos, fotografías o diagramas</li>
+  <li><strong>Firmar documentos</strong>: estampa tu rúbrica manuscrita digitalizada en contratos y formularios</li>
+  <li><strong>Destacar información</strong>: usa resaltadores, subrayados y anotaciones de color</li>
+  <li><strong>Dibujar elementos gráficos</strong>: rectángulos, círculos y flechas para señalizar secciones clave</li>
 </ul>
 
-<h2>Cómo editar un PDF paso a paso con CloudPDF</h2>
-<p>El proceso es muy sencillo y lleva menos de 2 minutos:</p>
+<h2>Pasos para editar tu PDF con WeGetDoc</h2>
+<p>El flujo de trabajo es directo y no requiere conocimientos técnicos:</p>
 <ol>
-  <li><strong>Sube tu PDF</strong>: arrastra el archivo al editor o haz clic en "Subir PDF para editar"</li>
-  <li><strong>Selecciona la herramienta</strong>: elige entre editar texto, añadir firma, insertar imágenes, etc.</li>
-  <li><strong>Realiza los cambios</strong>: haz clic en el área del documento que quieres modificar</li>
-  <li><strong>Descarga el resultado</strong>: cuando termines, haz clic en "Descargar PDF"</li>
+  <li><strong>Carga el documento</strong>: arrastra tu archivo PDF al área de carga o selecciónalo manualmente desde tu dispositivo</li>
+  <li><strong>Elige la herramienta adecuada</strong>: texto, firma, imagen, resaltador u otra opción del panel de herramientas</li>
+  <li><strong>Aplica las modificaciones</strong>: haz clic en la zona que deseas editar y realiza los ajustes necesarios</li>
+  <li><strong>Guarda y descarga</strong>: obtén tu PDF modificado con un solo clic en el botón de descarga</li>
 </ol>
 
-<h2>¿Es seguro editar PDFs online?</h2>
-<p>cloud-pdf.net procesa los documentos directamente en tu navegador usando tecnología WebAssembly. Esto significa que <strong>el contenido de tus archivos nunca sale de tu dispositivo</strong>. No almacenamos ni transmitimos tus documentos a ningún servidor externo.</p>
+<h2>Privacidad y seguridad al editar documentos online</h2>
+<p>Una de las preocupaciones más frecuentes al utilizar herramientas web es la confidencialidad de los documentos. WeGetDoc emplea tecnología WebAssembly que procesa el contenido directamente en tu dispositivo, lo que implica que <strong>tus archivos no se transfieren a servidores externos</strong> durante la edición.</p>
 
-<h2>Diferencia entre editar un PDF y convertirlo</h2>
-<p>Muchos usuarios confunden "editar un PDF" con "convertir un PDF". Aquí está la diferencia:</p>
+<h2>Editar vs. convertir: dos procesos distintos</h2>
+<p>Es habitual confundir ambos conceptos, pero conviene diferenciarlos:</p>
 <ul>
-  <li><strong>Editar un PDF</strong>: modificar el contenido directamente sobre el archivo PDF, manteniendo el formato original</li>
-  <li><strong>Convertir un PDF</strong>: transformar el PDF a otro formato (Word, Excel, JPG) para editarlo en otra aplicación</li>
+  <li><strong>Editar</strong>: intervenir directamente sobre el archivo PDF, conservando su estructura y maquetación originales</li>
+  <li><strong>Convertir</strong>: transformar el PDF en otro formato (como Word o imagen) para trabajarlo con un programa diferente</li>
 </ul>
-<p>Para la mayoría de los casos, editar directamente el PDF es más rápido y mantiene mejor el diseño original del documento.</p>
+<p>En la mayoría de situaciones, la edición directa resulta más eficiente y preserva fielmente la apariencia del documento.</p>
 
-<h2>Preguntas frecuentes sobre edición de PDF</h2>
-<h3>¿Puedo editar un PDF escaneado?</h3>
-<p>Los PDFs escaneados son imágenes, no texto editable. Para editarlos necesitas OCR (reconocimiento óptico de caracteres). CloudPDF permite añadir texto encima de documentos escaneados, aunque no puede modificar el texto de la imagen original.</p>
+<h2>Dudas habituales sobre la edición de PDFs</h2>
+<h3>¿Es posible editar un PDF que proviene de un escáner?</h3>
+<p>Los documentos escaneados son esencialmente imágenes. Para manipular el texto contenido en ellos se necesita tecnología OCR (reconocimiento óptico de caracteres). Con WeGetDoc puedes superponer texto y anotaciones sobre estos documentos, aunque el texto original de la imagen no es modificable.</p>
 
-<h3>¿Funciona en móvil?</h3>
-<p>Sí, cloud-pdf.net funciona en cualquier dispositivo con navegador web: ordenador, tablet y móvil. No necesitas instalar ninguna app.</p>
+<h3>¿Puedo usar el editor desde un teléfono móvil?</h3>
+<p>Sí. wegetdoc.com está optimizado para todo tipo de dispositivos: ordenadores de sobremesa, portátiles, tabletas y smartphones. No hace falta descargar ninguna aplicación.</p>
 
-<h3>¿Hay límite de tamaño de archivo?</h3>
-<p>Los usuarios gratuitos pueden editar PDFs de hasta 10 MB. Con el plan Pro, el límite sube a 100 MB.</p>`,
-    metaTitle: "Cómo editar un PDF online gratis en 2025 | CloudPDF",
-    metaDescription: "Guía completa para editar PDFs online sin instalar nada. Edita texto, añade firmas e imágenes en tu PDF directamente desde el navegador, gratis.",
+<h3>¿Existe un límite en el peso del archivo?</h3>
+<p>Los usuarios con acceso gratuito pueden trabajar con PDFs de hasta 10 MB. El plan Pro amplía este límite hasta 100 MB por documento.</p>`,
+    metaTitle: "Editar PDF en el navegador sin instalar nada (2026) | WeGetDoc",
+    metaDescription: "Tutorial paso a paso para editar documentos PDF online sin descargar programas. Modifica textos, inserta firmas e imágenes desde tu navegador.",
     category: "guides",
-    tags: "editar pdf, pdf online, editar pdf gratis, editor pdf, pdf sin instalar",
+    tags: "editar pdf online, modificar pdf, editor pdf web, pdf sin instalar, editar pdf gratis",
     readTime: 5,
     published: true,
   },
   {
-    slug: "como-convertir-pdf-a-word-online",
-    title: "Cómo convertir PDF a Word online: las 5 mejores formas gratuitas",
-    excerpt: "Comparativa de los mejores métodos para convertir un PDF a Word (.docx) online, gratis y sin perder el formato. Cuál usar según tu caso.",
-    content: `<h2>¿Por qué convertir un PDF a Word?</h2>
-<p>Los archivos PDF son ideales para compartir documentos con un formato fijo, pero cuando necesitas <strong>editar el contenido de forma extensiva</strong>, convertirlos a Word (.docx) es la opción más cómoda. Esto es especialmente útil para:</p>
+    slug: "transformar-pdf-a-word-mejores-opciones",
+    title: "Transformar PDF a Word sin perder formato: 5 alternativas gratuitas comparadas",
+    excerpt: "Análisis detallado de las mejores opciones disponibles para pasar un PDF a formato Word (.docx) online y sin coste. Ventajas e inconvenientes de cada una.",
+    content: `<h2>¿En qué situaciones conviene pasar un PDF a Word?</h2>
+<p>El formato PDF garantiza que un documento se visualice igual en cualquier dispositivo, pero no siempre es práctico cuando necesitas <strong>realizar modificaciones extensas en el contenido</strong>. Convertirlo a Word (.docx) facilita enormemente la tarea en casos como:</p>
 <ul>
-  <li>Contratos y documentos legales que necesitan modificaciones</li>
-  <li>Informes que deben actualizarse periódicamente</li>
-  <li>Formularios que quieres rellenar y reenviar</li>
-  <li>Documentos académicos que necesitas citar o editar</li>
+  <li>Documentación contractual que precisa revisiones o enmiendas</li>
+  <li>Informes periódicos cuyas cifras o datos deben actualizarse</li>
+  <li>Plantillas de formularios que se reutilizan con frecuencia</li>
+  <li>Trabajos académicos o de investigación que requieren citas o ediciones</li>
 </ul>
 
-<h2>Los 5 mejores métodos para convertir PDF a Word gratis</h2>
+<h2>5 alternativas gratuitas para convertir PDF a Word</h2>
 
-<h3>1. cloud-pdf.net (recomendado para uso rápido)</h3>
-<p>La forma más rápida: sube el PDF, selecciona "PDF a Word" y descarga el .docx. No requiere registro para archivos pequeños.</p>
+<h3>1. WeGetDoc (ideal para conversiones rápidas)</h3>
+<p>La opción más ágil: sube tu documento PDF a wegetdoc.com, selecciona la función "PDF a Word" y obtén el archivo .docx en segundos. No es necesario registrarse para documentos de tamaño reducido.</p>
 
-<h3>2. Microsoft Word (si tienes Office instalado)</h3>
-<p>Word puede abrir PDFs directamente y convertirlos automáticamente. Abre Word → Archivo → Abrir → selecciona el PDF. Funciona bien con PDFs de texto, pero puede perder formato en documentos complejos.</p>
+<h3>2. Microsoft Word (requiere licencia de Office)</h3>
+<p>Si dispones de Microsoft Office, Word puede abrir archivos PDF y transformarlos automáticamente. La ruta es: Archivo > Abrir > seleccionar el PDF. Ofrece buenos resultados con documentos basados en texto, pero puede presentar desajustes en maquetaciones elaboradas.</p>
 
-<h3>3. Google Docs (gratis con cuenta Google)</h3>
-<p>Sube el PDF a Google Drive → clic derecho → "Abrir con Google Docs". Google convertirá el PDF automáticamente. Ideal para documentos de texto simple.</p>
+<h3>3. Google Docs (acceso gratuito con cuenta de Google)</h3>
+<p>Sube el PDF a Google Drive, haz clic derecho y selecciona "Abrir con Google Docs". El sistema realizará la conversión al instante. Funciona de manera óptima con documentos de texto plano.</p>
 
-<h3>4. Adobe Acrobat online (7 días gratis)</h3>
-<p>Adobe ofrece una prueba gratuita de 7 días con conversión de alta calidad. La mejor opción para documentos complejos con tablas y gráficos.</p>
+<h3>4. Adobe Acrobat en línea (prueba de 7 días)</h3>
+<p>Adobe proporciona un periodo de prueba gratuito con herramientas de conversión de alta fidelidad. Es la alternativa preferida para documentos con estructura visual compleja, como tablas y gráficos incrustados.</p>
 
-<h3>5. LibreOffice Draw (software gratuito)</h3>
-<p>LibreOffice puede abrir PDFs y exportarlos a Word. Es gratuito y funciona sin conexión, aunque la calidad de conversión es variable.</p>
+<h3>5. LibreOffice Draw (aplicación de escritorio gratuita)</h3>
+<p>LibreOffice permite importar PDFs y guardarlos como archivos Word. Al ser software libre, funciona sin conexión a Internet, si bien la calidad del resultado puede variar según la complejidad del documento.</p>
 
-<h2>¿Qué método da mejor resultado?</h2>
-<p>La calidad de la conversión depende del tipo de PDF:</p>
+<h2>¿Cuál ofrece mejores resultados según el tipo de PDF?</h2>
+<p>La fidelidad de la conversión está directamente relacionada con la naturaleza del documento original:</p>
 <ul>
-  <li><strong>PDFs de texto simple</strong>: cualquier método funciona bien</li>
-  <li><strong>PDFs con tablas y columnas</strong>: Adobe Acrobat o CloudPDF dan mejores resultados</li>
-  <li><strong>PDFs escaneados</strong>: necesitas un servicio con OCR (reconocimiento de texto)</li>
-  <li><strong>PDFs protegidos con contraseña</strong>: primero debes desprotegerlos</li>
+  <li><strong>Documentos de texto plano</strong>: cualquiera de las cinco opciones produce resultados satisfactorios</li>
+  <li><strong>Documentos con tablas y columnas</strong>: Adobe Acrobat y WeGetDoc tienden a respetar mejor la estructura</li>
+  <li><strong>PDFs digitalizados (escaneados)</strong>: se requiere un motor OCR para extraer el texto de las imágenes</li>
+  <li><strong>PDFs con contraseña</strong>: es imprescindible retirar la protección antes de iniciar la conversión</li>
 </ul>
 
-<h2>Preguntas frecuentes sobre conversión PDF a Word</h2>
-<h3>¿Se pierde el formato al convertir PDF a Word?</h3>
-<p>Depende de la complejidad del documento. Los PDFs con texto simple se convierten casi perfectamente. Los documentos con diseño complejo (columnas, tablas, imágenes integradas) pueden perder algo de formato.</p>
+<h2>Preguntas frecuentes sobre la conversión PDF a Word</h2>
+<h3>¿El formato del documento se mantiene intacto tras la conversión?</h3>
+<p>Depende del grado de complejidad visual. Los documentos con estructura sencilla se transforman con gran precisión. En cambio, aquellos con diseños elaborados (columnas múltiples, tablas anidadas, gráficos) pueden experimentar ciertos desajustes.</p>
 
-<h3>¿Puedo convertir un PDF escaneado a Word?</h3>
-<p>Sí, pero necesitas un servicio con OCR. La tecnología OCR "lee" el texto de la imagen y lo convierte en texto editable. La precisión depende de la calidad del escaneo.</p>
+<h3>¿Es viable convertir documentos escaneados a Word editable?</h3>
+<p>Sí, siempre que la herramienta disponga de OCR. Esta tecnología analiza la imagen y extrae el texto, convirtiéndolo en contenido editable. La exactitud del resultado depende en gran medida de la calidad de la digitalización.</p>
 
-<h3>¿Es seguro subir documentos confidenciales?</h3>
-<p>cloud-pdf.net procesa los archivos en tu navegador sin enviarlos a servidores externos. Para documentos muy sensibles, usa siempre herramientas que procesen localmente.</p>`,
-    metaTitle: "Cómo convertir PDF a Word online gratis (2025) | CloudPDF",
-    metaDescription: "Los 5 mejores métodos para convertir PDF a Word online gratis. Comparativa con pros y contras de cada opción. Sin instalar nada.",
+<h3>¿Mis documentos están protegidos al subirlos?</h3>
+<p>WeGetDoc procesa los archivos directamente en el navegador del usuario, evitando su envío a servidores remotos. Para documentación de alta confidencialidad, es recomendable utilizar siempre herramientas que operen de forma local.</p>`,
+    metaTitle: "Convertir PDF a Word gratis: 5 métodos comparados (2026) | WeGetDoc",
+    metaDescription: "Comparativa de las 5 mejores formas gratuitas de transformar un PDF en documento Word sin perder el formato. Encuentra la opción ideal para tu caso.",
     category: "comparisons",
-    tags: "convertir pdf a word, pdf a word, pdf a docx, convertir pdf, word online",
+    tags: "pdf a word, convertir pdf, pdf a docx, transformar pdf, word gratis",
     readTime: 6,
     published: true,
   },
   {
-    slug: "como-anadir-firma-digital-a-pdf",
-    title: "Cómo añadir una firma digital a un PDF online (sin certificado)",
-    excerpt: "Tutorial paso a paso para firmar un PDF online con tu firma manuscrita digitalizada. Sin certificados digitales, sin software, completamente gratis.",
-    content: `<h2>¿Qué es una firma digital en un PDF?</h2>
-<p>Cuando hablamos de "firmar un PDF" existen dos conceptos muy diferentes que a menudo se confunden:</p>
+    slug: "firmar-pdf-online-sin-certificado-digital",
+    title: "Firmar un PDF online sin certificado digital: guía práctica y legal",
+    excerpt: "Aprende a insertar tu firma manuscrita en cualquier PDF directamente desde el navegador. Sin certificados, sin instalaciones y de forma totalmente gratuita.",
+    content: `<h2>Tipos de firma electrónica: diferencias clave</h2>
+<p>Antes de firmar un documento PDF es fundamental distinguir entre los dos tipos principales de firma electrónica:</p>
 <ul>
-  <li><strong>Firma electrónica simple</strong>: imagen de tu firma manuscrita insertada en el PDF. Es visualmente idéntica a una firma en papel, pero no tiene validez legal certificada.</li>
-  <li><strong>Firma digital certificada</strong>: firma con certificado criptográfico que garantiza la identidad del firmante y la integridad del documento. Tiene plena validez legal.</li>
+  <li><strong>Firma electrónica simple</strong>: consiste en la inserción de una imagen de tu rúbrica manuscrita sobre el documento. Visualmente reproduce una firma en papel, aunque carece de certificación criptográfica.</li>
+  <li><strong>Firma digital cualificada</strong>: emplea un certificado criptográfico que acredita la identidad del firmante y asegura la integridad del documento. Posee pleno valor jurídico probatorio.</li>
 </ul>
-<p>En este artículo explicamos cómo añadir una <strong>firma electrónica simple</strong>, que es suficiente para la mayoría de documentos cotidianos (contratos privados, formularios, acuerdos internos).</p>
+<p>En esta guía nos centramos en la <strong>firma electrónica simple</strong>, que resulta adecuada para la mayoría de documentos de uso cotidiano: contratos entre particulares, autorizaciones internas, formularios administrativos y similares.</p>
 
-<h2>Cómo firmar un PDF con CloudPDF paso a paso</h2>
+<h2>Proceso de firma con WeGetDoc</h2>
 <ol>
-  <li><strong>Sube tu PDF</strong> a cloud-pdf.net</li>
-  <li>Selecciona la herramienta <strong>"Añadir firma"</strong> en el panel lateral</li>
-  <li>Dibuja tu firma con el ratón o el dedo (en móvil/tablet)</li>
-  <li>Ajusta el tamaño y colócala en el lugar correcto del documento</li>
-  <li>Haz clic en <strong>"Descargar PDF"</strong></li>
+  <li><strong>Carga tu documento</strong> en wegetdoc.com</li>
+  <li>Accede a la opción <strong>"Firma"</strong> en la barra de herramientas lateral</li>
+  <li>Traza tu rúbrica utilizando el ratón o, si estás en un dispositivo táctil, con el dedo</li>
+  <li>Redimensiona la firma y sitúala en la posición deseada del documento</li>
+  <li>Pulsa <strong>"Descargar PDF"</strong> para obtener el documento firmado</li>
 </ol>
 
-<h2>Tipos de firma que puedes añadir</h2>
-<p>CloudPDF ofrece tres formas de crear tu firma:</p>
+<h2>Tres maneras de crear tu firma</h2>
+<p>WeGetDoc pone a tu disposición tres modalidades para generar tu firma:</p>
 <ul>
-  <li><strong>Dibujar</strong>: traza tu firma directamente con el ratón o el dedo</li>
-  <li><strong>Escribir</strong>: escribe tu nombre y elige entre diferentes estilos caligráficos</li>
-  <li><strong>Subir imagen</strong>: sube una foto de tu firma en papel (fondo blanco o transparente)</li>
+  <li><strong>Dibujo a mano alzada</strong>: reproduce tu rúbrica directamente sobre la pantalla con el ratón o el dedo</li>
+  <li><strong>Texto con estilo caligráfico</strong>: introduce tu nombre y selecciona entre diversos estilos tipográficos que imitan la escritura manual</li>
+  <li><strong>Carga de imagen</strong>: sube una fotografía de tu firma manuscrita sobre fondo blanco o transparente</li>
 </ul>
 
-<h2>¿Tiene validez legal una firma en PDF?</h2>
-<p>En España y la Unión Europea, la validez legal de una firma electrónica está regulada por el <strong>Reglamento eIDAS (UE 910/2014)</strong>. Según este reglamento:</p>
+<h2>Marco legal de la firma electrónica en la UE</h2>
+<p>Dentro de la Unión Europea, la validez jurídica de las firmas electrónicas se regula por el <strong>Reglamento eIDAS (UE 910/2014)</strong>. Conforme a esta normativa:</p>
 <ul>
-  <li>Una firma electrónica simple (imagen de firma) tiene validez legal básica para contratos privados</li>
-  <li>Para documentos con mayor exigencia legal (contratos mercantiles importantes, documentos notariales) se recomienda una firma electrónica avanzada o cualificada</li>
+  <li>La firma electrónica simple goza de validez legal básica y resulta admisible como prueba en procedimientos judiciales para acuerdos privados</li>
+  <li>Para actos jurídicos de especial trascendencia (operaciones mercantiles de gran envergadura, documentos notariales) se aconseja recurrir a una firma electrónica avanzada o cualificada</li>
 </ul>
-<p>Para la mayoría de acuerdos cotidianos, contratos de servicios y formularios internos, una firma electrónica simple es completamente válida.</p>
+<p>En la práctica diaria, la firma electrónica simple es plenamente aceptada para la inmensa mayoría de contratos de servicios, acuerdos internos y formularios convencionales.</p>
 
-<h2>Cómo conseguir una firma de mayor validez legal</h2>
-<p>Si necesitas una firma con plena validez legal para documentos importantes:</p>
+<h2>Alternativas para obtener una firma con mayor validez jurídica</h2>
+<p>Si tu caso requiere una firma con garantías legales reforzadas, dispones de estas opciones:</p>
 <ul>
-  <li><strong>Certificado digital de la FNMT</strong>: gratuito, emitido por la Fábrica Nacional de Moneda y Timbre</li>
-  <li><strong>DNI electrónico</strong>: el DNIe español incluye certificados digitales</li>
-  <li><strong>Servicios como DocuSign o Adobe Sign</strong>: plataformas especializadas en firma electrónica certificada</li>
+  <li><strong>Certificado digital de la FNMT</strong>: expedido sin coste por la Fábrica Nacional de Moneda y Timbre</li>
+  <li><strong>DNI electrónico (DNIe)</strong>: incorpora certificados digitales reconocidos oficialmente</li>
+  <li><strong>Plataformas especializadas</strong>: soluciones como DocuSign o Adobe Sign proporcionan firmas electrónicas cualificadas con trazabilidad completa</li>
 </ul>
 
-<h2>Preguntas frecuentes sobre firma de PDFs</h2>
-<h3>¿Puedo firmar un PDF desde el móvil?</h3>
-<p>Sí, cloud-pdf.net funciona perfectamente en móvil. Puedes dibujar tu firma con el dedo directamente en la pantalla táctil.</p>
+<h2>Dudas frecuentes sobre firmas en PDF</h2>
+<h3>¿Es posible firmar desde un smartphone o tableta?</h3>
+<p>Por supuesto. wegetdoc.com funciona a la perfección en dispositivos móviles. Puedes trazar tu firma directamente con el dedo sobre la pantalla táctil, lo que resulta incluso más natural que hacerlo con ratón.</p>
 
-<h3>¿Se puede eliminar una firma añadida a un PDF?</h3>
-<p>Sí, mientras estés editando el documento puedes seleccionar la firma y eliminarla. Una vez descargado el PDF, la firma queda integrada en el documento.</p>
+<h3>¿Puedo retirar una firma ya insertada?</h3>
+<p>Mientras el documento permanezca abierto en el editor, puedes seleccionar la firma y suprimirla sin problema. No obstante, una vez descargado el PDF, la firma queda fusionada con el documento de forma permanente.</p>
 
-<h3>¿Cómo sé si un PDF ya tiene firma digital?</h3>
-<p>En Adobe Reader, ve a Panel de firmas (Ver → Mostrar/Ocultar → Paneles de navegación → Firmas). Si el PDF tiene firma digital certificada, aparecerá aquí con información sobre el firmante y la validez.</p>`,
-    metaTitle: "Cómo añadir firma digital a un PDF online gratis | CloudPDF",
-    metaDescription: "Tutorial paso a paso para firmar un PDF online sin certificados ni software. Añade tu firma manuscrita a cualquier PDF en segundos, gratis.",
+<h3>¿Cómo puedo verificar si un PDF contiene una firma digital certificada?</h3>
+<p>Abre el documento en Adobe Acrobat Reader y accede al panel de firmas desde el menú Ver > Mostrar/Ocultar > Paneles de navegación > Firmas. Si el PDF incorpora una firma digital con certificado, aparecerán los datos del firmante junto con el estado de validación.</p>`,
+    metaTitle: "Firmar PDF online sin certificado: guía gratuita (2026) | WeGetDoc",
+    metaDescription: "Guía práctica para insertar tu firma manuscrita en documentos PDF desde el navegador, sin necesidad de certificados digitales ni software adicional.",
     category: "tutorials",
-    tags: "firma digital pdf, firmar pdf online, firma electronica, pdf firma, firmar documento",
+    tags: "firmar pdf, firma electrónica pdf, firma online gratis, firmar documento pdf, rúbrica digital",
     readTime: 7,
     published: true,
   },

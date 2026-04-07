@@ -1,10 +1,11 @@
 /* =============================================================
-   CloudPDF — Design System: "Lumina"
-   Philosophy: Clean white base, indigo-violet gradient accents,
+   WeGetDoc — Design System: "Verdant Gold"
+   Philosophy: Clean white base, green-gold gradient accents,
    glassmorphism navbar, bold typography, premium SaaS feel.
-   Fonts: Sora (headings) + DM Sans (body)
+   Fonts: Nunito (headings) + Poppins (body)
    ============================================================= */
 
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -48,50 +49,50 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Custom brand tokens — Lumina */
-  --color-indigo: oklch(0.47 0.24 264);
-  --color-indigo-hover: oklch(0.41 0.24 264);
-  --color-violet: oklch(0.42 0.26 290);
-  --color-indigo-50: oklch(0.96 0.03 264);
-  --color-indigo-100: oklch(0.93 0.06 264);
-  --color-surface: oklch(0.985 0.003 264);
-  --color-surface-2: oklch(0.96 0.005 264);
+  /* Custom brand tokens — Verdant Gold */
+  --color-green-brand: #1B5E20;
+  --color-green-brand-hover: #0D3311;
+  --color-gold-brand: #D4A017;
+  --color-green-50: #F5F9F5;
+  --color-green-100: #E8F5E9;
+  --color-surface: #FAFCFA;
+  --color-surface-2: #F5F9F5;
 }
 
 :root {
   --radius: 0.75rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.13 0.015 264);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.13 0.015 264);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.13 0.015 264);
-  --primary: oklch(0.47 0.24 264);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.96 0.005 264);
-  --secondary-foreground: oklch(0.25 0.02 264);
-  --muted: oklch(0.96 0.005 264);
-  --muted-foreground: oklch(0.52 0.015 264);
-  --accent: oklch(0.93 0.06 264);
-  --accent-foreground: oklch(0.25 0.02 264);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.91 0.008 264);
-  --input: oklch(0.91 0.008 264);
-  --ring: oklch(0.47 0.24 264);
-  --chart-1: oklch(0.47 0.24 264);
-  --chart-2: oklch(0.42 0.26 290);
-  --chart-3: oklch(0.55 0.20 264);
-  --chart-4: oklch(0.65 0.15 264);
-  --chart-5: oklch(0.35 0.24 264);
-  --sidebar: oklch(0.12 0.015 264);
-  --sidebar-foreground: oklch(0.95 0.01 264);
-  --sidebar-primary: oklch(0.47 0.24 264);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.20 0.02 264);
-  --sidebar-accent-foreground: oklch(0.95 0.01 264);
-  --sidebar-border: oklch(0.22 0.02 264);
-  --sidebar-ring: oklch(0.47 0.24 264);
+  --background: #FFFFFF;
+  --foreground: #1A2E1A;
+  --card: #FFFFFF;
+  --card-foreground: #1A2E1A;
+  --popover: #FFFFFF;
+  --popover-foreground: #1A2E1A;
+  --primary: #1B5E20;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F5F9F5;
+  --secondary-foreground: #1A2E1A;
+  --muted: #F5F9F5;
+  --muted-foreground: #4A6B4A;
+  --accent: #E8F5E9;
+  --accent-foreground: #1A2E1A;
+  --destructive: #C62828;
+  --destructive-foreground: #FFFFFF;
+  --border: #C8E6C9;
+  --input: #C8E6C9;
+  --ring: #1B5E20;
+  --chart-1: #1B5E20;
+  --chart-2: #D4A017;
+  --chart-3: #4CAF50;
+  --chart-4: #F0C040;
+  --chart-5: #0D3311;
+  --sidebar: #0D3311;
+  --sidebar-foreground: #E8F5E9;
+  --sidebar-primary: #1B5E20;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #1A3A1A;
+  --sidebar-accent-foreground: #E8F5E9;
+  --sidebar-border: #1A3A1A;
+  --sidebar-ring: #1B5E20;
 }
 
 @layer base {
@@ -100,10 +101,10 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Poppins', 'Nunito', system-ui, sans-serif;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Sora', sans-serif;
+    font-family: 'Nunito', 'Poppins', system-ui, sans-serif;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -147,20 +148,20 @@
     }
   }
 
-  /* Indigo primary */
+  /* Green primary */
   .bg-indigo-brand {
-    background-color: oklch(0.47 0.24 264);
+    background-color: #1B5E20;
   }
   .text-indigo-brand {
-    color: oklch(0.47 0.24 264);
+    color: #1B5E20;
   }
   .border-indigo-brand {
-    border-color: oklch(0.47 0.24 264);
+    border-color: #1B5E20;
   }
 
   /* Gradient text utility */
   .gradient-text {
-    background: linear-gradient(135deg, oklch(0.47 0.24 264), oklch(0.42 0.26 290));
+    background: linear-gradient(135deg, #1B5E20, #D4A017);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -169,16 +170,16 @@
   /* Upload dropzone */
   .upload-zone {
     position: relative;
-    border: 2px dashed oklch(0.47 0.24 264 / 0.35);
+    border: 2px dashed rgba(27, 94, 32, 0.35);
     transition: all 0.25s ease;
-    background: oklch(1 0 0);
+    background: #FFFFFF;
   }
 
   .upload-zone:hover,
   .upload-zone.drag-over {
-    border-color: oklch(0.47 0.24 264 / 0.8);
-    background: oklch(0.97 0.02 264);
-    box-shadow: 0 0 0 6px oklch(0.47 0.24 264 / 0.07);
+    border-color: rgba(27, 94, 32, 0.8);
+    background: #F5F9F5;
+    box-shadow: 0 0 0 6px rgba(27, 94, 32, 0.07);
   }
 
   /* Card hover lift */
@@ -187,8 +188,8 @@
   }
   .card-hover:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 32px oklch(0.47 0.24 264 / 0.10);
-    border-color: oklch(0.47 0.24 264 / 0.3) !important;
+    box-shadow: 0 12px 32px rgba(27, 94, 32, 0.10);
+    border-color: rgba(27, 94, 32, 0.3) !important;
   }
 
   /* Smooth scroll */
@@ -199,22 +200,22 @@
 
   /* Gradient button */
   .btn-gradient {
-    background: linear-gradient(135deg, oklch(0.47 0.24 264), oklch(0.42 0.26 290));
+    background: linear-gradient(135deg, #1B5E20, #D4A017);
     color: white;
     transition: all 0.2s ease;
-    box-shadow: 0 4px 15px oklch(0.47 0.24 264 / 0.35);
+    box-shadow: 0 4px 15px rgba(27, 94, 32, 0.35);
   }
   .btn-gradient:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px oklch(0.47 0.24 264 / 0.50);
+    box-shadow: 0 8px 25px rgba(27, 94, 32, 0.50);
   }
 
   /* Section alternating bg */
   .section-white {
-    background-color: oklch(1 0 0);
+    background-color: #FFFFFF;
   }
   .section-surface {
-    background-color: oklch(0.985 0.003 264);
+    background-color: #FAFCFA;
   }
 
   /* Fade in animation */
@@ -242,19 +243,19 @@
   .navbar-glass {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    background-color: oklch(1 0 0 / 0.85);
-    border-bottom: 1px solid oklch(0.91 0.008 264 / 0.8);
+    background-color: rgba(255, 255, 255, 0.85);
+    border-bottom: 1px solid rgba(200, 230, 201, 0.8);
   }
 
   /* Step connector */
   .step-line {
-    background: linear-gradient(90deg, oklch(0.47 0.24 264 / 0.3), oklch(0.42 0.26 290 / 0.3));
+    background: linear-gradient(90deg, rgba(27, 94, 32, 0.3), rgba(212, 160, 23, 0.3));
   }
 
   /* Pricing card popular */
   .pricing-popular {
-    border: 2px solid oklch(0.47 0.24 264);
-    box-shadow: 0 0 0 4px oklch(0.47 0.24 264 / 0.08);
+    border: 2px solid #1B5E20;
+    box-shadow: 0 0 0 4px rgba(27, 94, 32, 0.08);
   }
 
   /* Accordion smooth */
@@ -264,78 +265,6 @@
   }
 }
 
-/* ─── FastDoc brand overrides ─── */
-[data-brand="FastDoc"] {
-  --color-indigo: oklch(0.55 0.22 38);
-  --color-indigo-hover: oklch(0.48 0.22 38);
-  --color-violet: oklch(0.58 0.20 55);
-  --color-indigo-50: oklch(0.96 0.03 38);
-  --color-indigo-100: oklch(0.93 0.06 38);
-  --color-surface: oklch(0.985 0.003 38);
-  --color-surface-2: oklch(0.96 0.005 38);
-  --primary: oklch(0.55 0.22 38);
-  --ring: oklch(0.55 0.22 38);
-  --chart-1: oklch(0.55 0.22 38);
-  --chart-2: oklch(0.58 0.20 55);
-  --foreground: oklch(0.13 0.015 38);
-  --card-foreground: oklch(0.13 0.015 38);
-  --popover-foreground: oklch(0.13 0.015 38);
-  --secondary: oklch(0.96 0.005 38);
-  --secondary-foreground: oklch(0.25 0.02 38);
-  --muted: oklch(0.96 0.005 38);
-  --muted-foreground: oklch(0.52 0.015 38);
-  --accent: oklch(0.93 0.06 38);
-  --accent-foreground: oklch(0.25 0.02 38);
-  --border: oklch(0.91 0.008 38);
-  --input: oklch(0.91 0.008 38);
-  --sidebar-primary: oklch(0.55 0.22 38);
-  --sidebar-ring: oklch(0.55 0.22 38);
-}
-
 @layer utilities {
-  [data-brand="FastDoc"] .bg-indigo-brand {
-    background-color: oklch(0.55 0.22 38);
-  }
-  [data-brand="FastDoc"] .text-indigo-brand {
-    color: oklch(0.55 0.22 38);
-  }
-  [data-brand="FastDoc"] .border-indigo-brand {
-    border-color: oklch(0.55 0.22 38);
-  }
-  [data-brand="FastDoc"] .gradient-text {
-    background: linear-gradient(135deg, oklch(0.55 0.22 38), oklch(0.58 0.20 55));
-  }
-  [data-brand="FastDoc"] .upload-zone {
-    border-color: oklch(0.55 0.22 38 / 0.35);
-  }
-  [data-brand="FastDoc"] .upload-zone:hover,
-  [data-brand="FastDoc"] .upload-zone.drag-over {
-    border-color: oklch(0.55 0.22 38 / 0.8);
-    background: oklch(0.97 0.02 38);
-    box-shadow: 0 0 0 6px oklch(0.55 0.22 38 / 0.07);
-  }
-  [data-brand="FastDoc"] .card-hover:hover {
-    box-shadow: 0 12px 32px oklch(0.55 0.22 38 / 0.10);
-    border-color: oklch(0.55 0.22 38 / 0.3) !important;
-  }
-  [data-brand="FastDoc"] .btn-gradient {
-    background: linear-gradient(135deg, oklch(0.55 0.22 38), oklch(0.58 0.20 55));
-    box-shadow: 0 4px 15px oklch(0.55 0.22 38 / 0.35);
-  }
-  [data-brand="FastDoc"] .btn-gradient:hover {
-    box-shadow: 0 8px 25px oklch(0.55 0.22 38 / 0.50);
-  }
-  [data-brand="FastDoc"] .step-line {
-    background: linear-gradient(90deg, oklch(0.55 0.22 38 / 0.3), oklch(0.58 0.20 55 / 0.3));
-  }
-  [data-brand="FastDoc"] .pricing-popular {
-    border-color: oklch(0.55 0.22 38);
-    box-shadow: 0 0 0 4px oklch(0.55 0.22 38 / 0.08);
-  }
-  [data-brand="FastDoc"] .navbar-glass {
-    border-bottom-color: oklch(0.91 0.008 38 / 0.8);
-  }
-  [data-brand="FastDoc"] .section-surface {
-    background-color: oklch(0.985 0.003 38);
-  }
+  /* No FastDoc overrides needed — single brand now */
 }

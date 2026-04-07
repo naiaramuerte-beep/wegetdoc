@@ -1,5 +1,5 @@
 /* =============================================================
-   CloudPDF App — Routes & Top-level layout
+   WeGetDoc App — Routes & Top-level layout
    Deep Navy Pro design system + i18n routing
    ============================================================= */
 

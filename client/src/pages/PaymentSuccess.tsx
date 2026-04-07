@@ -1,57 +1,16 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle, ArrowRight, Upload, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { brandName } from "@/lib/brand";
 
 export default function PaymentSuccess() {
   const utils = trpc.useUtils();
   const [, navigate] = useLocation();
   const [countdown, setCountdown] = useState(5);
-  const trackedRef = useRef(false);
 
   useEffect(() => {
     // Invalidate subscription status so it refreshes
     utils.subscription.status.invalidate();
-
-    // Fire conversion tracking only once
-    if (!trackedRef.current) {
-      trackedRef.current = true;
-
-      // Get transaction_id from URL params (Paddle transaction ID or fallback)
-      const params = new URLSearchParams(window.location.search);
-      const transactionId = params.get("txn") || params.get("transaction_id") || params.get("session_id") || `pmt_${Date.now()}`;
-      console.log("[PaymentSuccess] URL params:", window.location.search, "→ transactionId:", transactionId);
-
-      // Google Ads conversion tracking
-      if (typeof window.gtag === "function") {
-        window.gtag("event", "conversion", {
-          send_to: "AW-18038662610",
-          value: 49.90,
-          currency: "EUR",
-          transaction_id: transactionId,
-        });
-        console.log("[PaymentSuccess] Google Ads conversion fired", { transactionId });
-      }
-
-      // Google Analytics 4 purchase event
-      if (typeof window.gtag === "function") {
-        window.gtag("event", "purchase", {
-          transaction_id: transactionId,
-          value: 49.90,
-          currency: "EUR",
-          items: [
-            {
-              item_id: "cloudpdf_trial",
-              item_name: `${brandName} Trial Subscription`,
-              price: 0,
-              quantity: 1,
-            },
-          ],
-        });
-        console.log("[PaymentSuccess] GA4 purchase event fired", { transactionId });
-      }
-    }
 
     // Detect lang from URL
     const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
@@ -81,25 +40,25 @@ export default function PaymentSuccess() {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-4 text-center"
-      style={{ backgroundColor: "oklch(0.98 0.005 250)" }}
+      style={{ backgroundColor: "#F5F9F5" }}
     >
       {/* Success icon */}
       <div
         className="w-20 h-20 rounded-full flex items-center justify-center mb-6"
-        style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.12)" }}
+        style={{ backgroundColor: "rgba(27, 94, 32, 0.12)" }}
       >
-        <CheckCircle className="w-10 h-10" style={{ color: "oklch(0.55 0.22 260)" }} />
+        <CheckCircle className="w-10 h-10" style={{ color: "#1B5E20" }} />
       </div>
 
       <h1
         className="text-3xl font-extrabold mb-3"
-        style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
+        style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#1A2E1A" }}
       >
         ¡Pago completado!
       </h1>
       <p
         className="text-base mb-4 max-w-md"
-        style={{ color: "oklch(0.45 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+        style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
       >
         Tu suscripción está activa. Tu documento está guardado en tu panel y listo para descargar.
       </p>
@@ -108,12 +67,12 @@ export default function PaymentSuccess() {
       <div
         className="flex items-center gap-2 mb-8 px-4 py-3 rounded-xl"
         style={{
-          backgroundColor: "oklch(0.55 0.22 260 / 0.08)",
-          border: "1px solid oklch(0.55 0.22 260 / 0.20)",
+          backgroundColor: "rgba(27, 94, 32, 0.08)",
+          border: "1px solid rgba(27, 94, 32, 0.20)",
         }}
       >
-        <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" style={{ color: "oklch(0.55 0.22 260)" }} />
-        <span className="text-sm font-medium" style={{ color: "oklch(0.35 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}>
+        <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" style={{ color: "#1B5E20" }} />
+        <span className="text-sm font-medium" style={{ color: "#2E4A2E", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}>
           Redirigiendo en <strong>{countdown}</strong>s...
         </span>
       </div>
@@ -124,8 +83,8 @@ export default function PaymentSuccess() {
           onClick={handleGoNow}
           className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-white font-semibold text-sm transition-all duration-200"
           style={{
-            backgroundColor: "oklch(0.55 0.22 260)",
-            fontFamily: "'DM Sans', sans-serif",
+            backgroundColor: "#1B5E20",
+            fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
           }}
         >
           <Upload className="w-4 h-4" />
@@ -138,17 +97,17 @@ export default function PaymentSuccess() {
       <div
         className="p-5 rounded-xl max-w-sm w-full text-left"
         style={{
-          backgroundColor: "oklch(1 0 0)",
-          border: "1px solid oklch(0.90 0.01 250)",
+          backgroundColor: "#FFFFFF",
+          border: "1px solid #C8E6C9",
         }}
       >
         <h3
           className="font-bold mb-3 text-sm"
-          style={{ color: "oklch(0.15 0.03 250)", fontFamily: "'Sora', sans-serif" }}
+          style={{ color: "#1A2E1A", fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
         >
           ¿Qué puedes hacer ahora?
         </h3>
-        <ul className="space-y-2 text-sm" style={{ color: "oklch(0.40 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}>
+        <ul className="space-y-2 text-sm" style={{ color: "#3D5A3D", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}>
           {[
             "Descargar tus PDFs editados sin marca de agua",
             "Editar cualquier documento desde tu panel",
@@ -157,7 +116,7 @@ export default function PaymentSuccess() {
             "Acceder a tus documentos en cualquier momento",
           ].map((item, i) => (
             <li key={i} className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: "oklch(0.55 0.22 260)" }} />
+              <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: "#1B5E20" }} />
               {item}
             </li>
           ))}

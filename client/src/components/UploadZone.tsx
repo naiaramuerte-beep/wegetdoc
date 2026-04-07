@@ -1,6 +1,6 @@
 /* =============================================================
-   CloudPDF UploadZone — Drag & Drop PDF upload area
-   Deep Navy Pro design: dashed blue border, hover glow effect
+   WeGetDoc UploadZone — Drag & Drop PDF upload area
+   Verdant Gold design: dashed green border, hover glow effect
    Fully i18n-ready via useLanguage()
    ============================================================= */
 
@@ -183,12 +183,12 @@ export default function UploadZone({ onFileSelect, compact = false }: UploadZone
         compact ? "p-6" : "p-10 md:p-16"
       }`}
       style={{
-        border: `2px dashed ${isDragging ? "oklch(0.55 0.22 260)" : "oklch(0.55 0.22 260 / 0.4)"}`,
+        border: `2px dashed ${isDragging ? "#1B5E20" : "rgba(27, 94, 32, 0.4)"}`,
         backgroundColor: isDragging
-          ? "oklch(0.55 0.22 260 / 0.06)"
-          : "oklch(1 0 0)",
+          ? "rgba(27, 94, 32, 0.06)"
+          : "#FFFFFF",
         boxShadow: isDragging
-          ? "0 0 0 4px oklch(0.55 0.22 260 / 0.08)"
+          ? "0 0 0 4px rgba(27, 94, 32, 0.08)"
           : "none",
       }}
       onDragEnter={handleDragEnter}
@@ -198,14 +198,14 @@ export default function UploadZone({ onFileSelect, compact = false }: UploadZone
       onClick={handleClick}
       onMouseEnter={(e) => {
         if (!isDragging) {
-          e.currentTarget.style.borderColor = "oklch(0.55 0.22 260 / 0.7)";
-          e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260 / 0.03)";
+          e.currentTarget.style.borderColor = "rgba(27, 94, 32, 0.7)";
+          e.currentTarget.style.backgroundColor = "rgba(27, 94, 32, 0.03)";
         }
       }}
       onMouseLeave={(e) => {
         if (!isDragging) {
-          e.currentTarget.style.borderColor = "oklch(0.55 0.22 260 / 0.4)";
-          e.currentTarget.style.backgroundColor = "oklch(1 0 0)";
+          e.currentTarget.style.borderColor = "rgba(27, 94, 32, 0.4)";
+          e.currentTarget.style.backgroundColor = "#FFFFFF";
         }
       }}
     >
@@ -228,13 +228,13 @@ export default function UploadZone({ onFileSelect, compact = false }: UploadZone
         >
           <div
             className="w-full h-full rounded-xl flex items-center justify-center"
-            style={{ backgroundColor: "oklch(0.55 0.22 260 / 0.1)" }}
+            style={{ backgroundColor: "rgba(27, 94, 32, 0.1)" }}
           >
             <FileText
               style={{
                 width: compact ? "1.5rem" : "2.25rem",
                 height: compact ? "1.5rem" : "2.25rem",
-                color: "oklch(0.55 0.22 260)",
+                color: "#1B5E20",
               }}
             />
           </div>
@@ -245,15 +245,15 @@ export default function UploadZone({ onFileSelect, compact = false }: UploadZone
           <p
             className={`font-semibold ${compact ? "text-base" : "text-xl"}`}
             style={{
-              color: "oklch(0.55 0.22 260)",
-              fontFamily: "'Sora', sans-serif",
+              color: "#1B5E20",
+              fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif",
             }}
           >
             {isDragging ? txt.drop : txt.drag}
           </p>
           <p
             className={`mt-1 ${compact ? "text-xs" : "text-sm"}`}
-            style={{ color: "oklch(0.52 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+            style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
           >
             {txt.or}
           </p>
@@ -265,14 +265,14 @@ export default function UploadZone({ onFileSelect, compact = false }: UploadZone
             compact ? "px-4 py-2 text-sm" : "px-6 py-3 text-sm"
           }`}
           style={{
-            backgroundColor: "oklch(0.18 0.04 250)",
-            fontFamily: "'DM Sans', sans-serif",
+            backgroundColor: "#0D3311",
+            fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
           }}
           onMouseEnter={(e) =>
-            (e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)")
+            (e.currentTarget.style.backgroundColor = "#1B5E20")
           }
           onMouseLeave={(e) =>
-            (e.currentTarget.style.backgroundColor = "oklch(0.18 0.04 250)")
+            (e.currentTarget.style.backgroundColor = "#0D3311")
           }
           onClick={(e) => {
             e.stopPropagation();
@@ -288,7 +288,7 @@ export default function UploadZone({ onFileSelect, compact = false }: UploadZone
         {!compact && (
           <p
             className="text-xs"
-            style={{ color: "oklch(0.60 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+            style={{ color: "#6B8E6B", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
           >
             {txt.maxSize}
           </p>

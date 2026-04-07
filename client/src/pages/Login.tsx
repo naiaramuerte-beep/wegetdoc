@@ -1,5 +1,5 @@
 /* =============================================================
-   CloudPDF Login Page — Deep Navy Pro design
+   WeGetDoc Login Page — Verdant Gold design
    ============================================================= */
 
 import { useState } from "react";
@@ -15,57 +15,57 @@ export default function Login() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    toast.info("Función de autenticación próximamente disponible");
+    toast.info("La autenticación estará habilitada en breve");
   };
 
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4"
-      style={{ backgroundColor: "oklch(0.18 0.04 250)" }}
+      style={{ backgroundColor: "#0D3311" }}
     >
       <div
         className="w-full max-w-md rounded-2xl p-8"
         style={{
-          backgroundColor: "oklch(1 0 0)",
-          boxShadow: "0 24px 64px oklch(0.10 0.04 250 / 0.4)",
+          backgroundColor: "#FFFFFF",
+          boxShadow: "0 24px 64px rgba(13, 51, 17, 0.4)",
         }}
       >
         {/* Logo */}
         <div className="flex items-center gap-2 mb-8">
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
+            style={{ backgroundColor: "#1B5E20" }}
           >
             <FileText className="w-4 h-4 text-white" />
           </div>
           <span
             className="text-xl font-bold tracking-tight"
-            style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
+            style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#1A2E1A" }}
           >
-            PDF<span style={{ color: "oklch(0.55 0.22 260)" }}>Pro</span>
+            WeGet<span style={{ color: "#D4A017" }}>Doc</span>
           </span>
         </div>
 
         <h1
           className="text-2xl font-bold mb-2"
-          style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
+          style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#1A2E1A" }}
         >
-          Iniciar sesión
+          Acceder a tu cuenta
         </h1>
         <p
           className="text-sm mb-6"
-          style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+          style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
         >
-          Accede a tu cuenta de {brandName}
+          Ingresa tus credenciales de {brandName}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
               className="block text-sm font-medium mb-1.5"
-              style={{ color: "oklch(0.25 0.03 250)", fontFamily: "'DM Sans', sans-serif" }}
+              style={{ color: "#1A2E1A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
             >
-              Correo electrónico
+              Email
             </label>
             <input
               type="email"
@@ -74,16 +74,16 @@ export default function Login() {
               placeholder="tu@email.com"
               className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all duration-200"
               style={{
-                border: "1px solid oklch(0.88 0.01 250)",
-                backgroundColor: "oklch(0.99 0.003 250)",
-                color: "oklch(0.15 0.03 250)",
-                fontFamily: "'DM Sans', sans-serif",
+                border: "1px solid #C8E6C9",
+                backgroundColor: "#F5F9F5",
+                color: "#1A2E1A",
+                fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
               }}
               onFocus={(e) =>
-                (e.currentTarget.style.borderColor = "oklch(0.55 0.22 260)")
+                (e.currentTarget.style.borderColor = "#1B5E20")
               }
               onBlur={(e) =>
-                (e.currentTarget.style.borderColor = "oklch(0.88 0.01 250)")
+                (e.currentTarget.style.borderColor = "#C8E6C9")
               }
             />
           </div>
@@ -91,9 +91,9 @@ export default function Login() {
           <div>
             <label
               className="block text-sm font-medium mb-1.5"
-              style={{ color: "oklch(0.25 0.03 250)", fontFamily: "'DM Sans', sans-serif" }}
+              style={{ color: "#1A2E1A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
             >
-              Contraseña
+              Clave de acceso
             </label>
             <div className="relative">
               <input
@@ -103,23 +103,23 @@ export default function Login() {
                 placeholder="••••••••"
                 className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all duration-200 pr-10"
                 style={{
-                  border: "1px solid oklch(0.88 0.01 250)",
-                  backgroundColor: "oklch(0.99 0.003 250)",
-                  color: "oklch(0.15 0.03 250)",
-                  fontFamily: "'DM Sans', sans-serif",
+                  border: "1px solid #C8E6C9",
+                  backgroundColor: "#F5F9F5",
+                  color: "#1A2E1A",
+                  fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
                 }}
                 onFocus={(e) =>
-                  (e.currentTarget.style.borderColor = "oklch(0.55 0.22 260)")
+                  (e.currentTarget.style.borderColor = "#1B5E20")
                 }
                 onBlur={(e) =>
-                  (e.currentTarget.style.borderColor = "oklch(0.88 0.01 250)")
+                  (e.currentTarget.style.borderColor = "#C8E6C9")
                 }
               />
               <button
                 type="button"
                 className="absolute right-3 top-1/2 -translate-y-1/2"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{ color: "oklch(0.55 0.02 250)" }}
+                style={{ color: "#4A6B4A" }}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -130,9 +130,9 @@ export default function Login() {
             <a
               href="#"
               className="text-xs transition-colors duration-200"
-              style={{ color: "oklch(0.55 0.22 260)", fontFamily: "'DM Sans', sans-serif" }}
+              style={{ color: "#1B5E20", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
             >
-              ¿Olvidaste tu contraseña?
+              ¿No recuerdas tus credenciales?
             </a>
           </div>
 
@@ -140,31 +140,31 @@ export default function Login() {
             type="submit"
             className="w-full py-3 rounded-xl font-semibold text-sm text-white transition-all duration-200"
             style={{
-              backgroundColor: "oklch(0.55 0.22 260)",
-              fontFamily: "'DM Sans', sans-serif",
+              backgroundColor: "#1B5E20",
+              fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
             }}
             onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "oklch(0.48 0.22 260)")
+              (e.currentTarget.style.backgroundColor = "#0D3311")
             }
             onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "oklch(0.55 0.22 260)")
+              (e.currentTarget.style.backgroundColor = "#1B5E20")
             }
           >
-            Iniciar sesión
+            Acceder
           </button>
         </form>
 
         <p
           className="text-sm text-center mt-6"
-          style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+          style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
         >
-          ¿No tienes cuenta?{" "}
+          ¿Aún no tienes perfil?{" "}
           <Link
             href="/signup"
             className="font-semibold transition-colors duration-200"
-            style={{ color: "oklch(0.55 0.22 260)" }}
+            style={{ color: "#D4A017" }}
           >
-            Regístrate ahora
+            Crea tu cuenta
           </Link>
         </p>
 
@@ -172,9 +172,9 @@ export default function Login() {
           <Link
             href="/"
             className="text-xs transition-colors duration-200"
-            style={{ color: "oklch(0.60 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+            style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
           >
-            ← Volver al inicio
+            ← Regresar a la página principal
           </Link>
         </div>
       </div>

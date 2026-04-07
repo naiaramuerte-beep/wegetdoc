@@ -1,6 +1,6 @@
 /* =============================================================
-   CloudPDF Footer — "Lumina" design
-   Dark indigo-slate footer, matching the gradient CTA above
+   WeGetDoc Footer — "Verdant Gold" design
+   Dark green footer, matching the gradient CTA above
    ============================================================= */
 
 import { useState } from "react";
@@ -9,18 +9,18 @@ import { useLanguage, LANGUAGES } from "@/contexts/LanguageContext";
 import { logoParts, colors, isFastDoc, brandName } from "@/lib/brand";
 import ContactModal from "./ContactModal";
 
-const BG = "oklch(0.12 0.02 264)";
-const BG_LIGHTER = "oklch(0.16 0.02 264)";
-const BORDER = "oklch(0.20 0.02 264)";
+const BG = "#0D3311";
+const BG_LIGHTER = "#1A3A1A";
+const BORDER = "#2E5A2E";
 const INDIGO = colors.light;
-const TEXT_LINK = "oklch(0.58 0.02 264)";
-const TEXT_MUTED = "oklch(0.42 0.015 264)";
+const TEXT_LINK = "#81C784";
+const TEXT_MUTED = "#4A6B4A";
 
 export default function Footer() {
   const { lang, t, switchLang } = useLanguage();
   const [contactOpen, setContactOpen] = useState(false);
 
-  const pdfproLinks: { href: string; label: string; onClick?: () => void }[] = [
+  const wegetdocLinks: { href: string; label: string; onClick?: () => void }[] = [
     { href: `/${lang}/pricing`, label: t.nav_pricing },
     { href: `/${lang}/blog`, label: "Blog" },
     { href: `/${lang}#how-it-works`, label: t.footer_how },
@@ -99,7 +99,7 @@ export default function Footer() {
             </div>
           </div>
         ) : (
-          /* ── CloudPDF full footer ── */
+          /* ── WeGetDoc full footer ── */
           <>
         <div
           className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b"
@@ -116,38 +116,38 @@ export default function Footer() {
               </div>
               <span
                 className="font-bold text-xl tracking-tight"
-                style={{ fontFamily: "'Sora', sans-serif", color: "white" }}
+                style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "white" }}
               >
                 {logoParts[0]}<span style={{ color: INDIGO }}>{logoParts[1]}</span>
               </span>
             </div>
             <p
               className="text-sm leading-relaxed mb-3"
-              style={{ color: TEXT_LINK, fontFamily: "'DM Sans', sans-serif" }}
+              style={{ color: TEXT_LINK, fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
             >
               {t.footer_desc}
             </p>
             <a
-              href="mailto:support@cloud-pdf.net"
+              href="mailto:support@wegetdoc.com"
               className="inline-flex items-center gap-1.5 text-sm font-medium transition-colors duration-150"
               style={{ color: INDIGO }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
               onMouseLeave={(e) => (e.currentTarget.style.color = INDIGO)}
             >
-              ✉ support@cloud-pdf.net
+              ✉ support@wegetdoc.com
             </a>
           </div>
 
-          {/* CloudPDF links */}
+          {/* WeGetDoc links */}
           <div>
             <h4
               className="text-sm font-semibold text-white mb-4"
-              style={{ fontFamily: "'Sora', sans-serif" }}
+              style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
             >
-              {t.footer_col_pdfpro}
+              {t.footer_col_wegetdoc}
             </h4>
             <ul className="space-y-2.5">
-              {pdfproLinks.map((link) => (
+              {wegetdocLinks.map((link) => (
                 <li key={link.label}>
                   <a
                     href={link.href}
@@ -168,7 +168,7 @@ export default function Footer() {
           <div>
             <h4
               className="text-sm font-semibold text-white mb-4"
-              style={{ fontFamily: "'Sora', sans-serif" }}
+              style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
             >
               {t.footer_col_legal}
             </h4>
@@ -193,7 +193,7 @@ export default function Footer() {
           <div>
             <h4
               className="text-sm font-semibold text-white mb-4"
-              style={{ fontFamily: "'Sora', sans-serif" }}
+              style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
             >
               {t.footer_col_tools}
             </h4>
@@ -226,7 +226,7 @@ export default function Footer() {
               backgroundColor: BG_LIGHTER,
               color: TEXT_LINK,
               borderColor: BORDER,
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
             }}
             value={lang}
             onChange={(e) => switchLang(e.target.value as any)}

@@ -246,7 +246,7 @@ function ReviewCard({
         <div className="flex items-start gap-3 flex-1 min-w-0">
           <div
             className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 text-white"
-            style={{ backgroundColor: "oklch(0.35 0.12 260)" }}
+            style={{ backgroundColor: "#1B5E20" }}
           >
             {review.author.charAt(0).toUpperCase()}
           </div>
@@ -296,7 +296,7 @@ function ReviewCard({
         {review.text.length > 150 && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="text-xs text-blue-400 hover:text-blue-300 mt-1 flex items-center gap-1"
+            className="text-xs text-green-400 hover:text-green-300 mt-1 flex items-center gap-1"
           >
             {expanded ? <><ChevronUp size={12} /> Ver menos</> : <><ChevronDown size={12} /> Ver más</>}
           </button>
@@ -320,7 +320,7 @@ function ReviewCard({
           <button
             onClick={() => setShowReplyBox(!showReplyBox)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-            style={{ backgroundColor: showReplyBox ? "oklch(0.28 0.08 260)" : "#1e2433", color: "#e2e8f0" }}
+            style={{ backgroundColor: showReplyBox ? "#0D3311" : "#1e2433", color: "#e2e8f0" }}
           >
             <MessageSquare size={12} />
             Responder
@@ -353,7 +353,7 @@ function ReviewCard({
             onChange={(e) => setReplyDraft(e.target.value)}
             placeholder="Escribe tu respuesta pública para esta reseña..."
             rows={3}
-            className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+            className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-green-600 resize-none"
             style={{ borderColor: "#2d3748", color: "#e2e8f0", backgroundColor: "#0f1117" }}
           />
           <div className="flex items-center gap-2 justify-end">
@@ -368,7 +368,7 @@ function ReviewCard({
               onClick={handleSendReply}
               disabled={sending || !replyDraft.trim()}
               className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-medium text-white transition-colors disabled:opacity-50"
-              style={{ backgroundColor: "oklch(0.55 0.22 260)" }}
+              style={{ backgroundColor: "#1B5E20" }}
             >
               {sending ? (
                 <><RefreshCw size={12} className="animate-spin" /> Enviando...</>
@@ -421,9 +421,9 @@ export default function TrustpilotAdmin() {
         className="rounded-xl p-4 border flex items-start gap-3"
         style={{ backgroundColor: "#1a1a2e", borderColor: "#2d2d5e" }}
       >
-        <AlertCircle size={18} className="text-blue-400 flex-shrink-0 mt-0.5" />
+        <AlertCircle size={18} className="text-green-400 flex-shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm font-medium text-blue-300">Modo demostración activo</p>
+          <p className="text-sm font-medium text-green-300">Modo demostración activo</p>
           <p className="text-xs text-gray-400 mt-0.5">
             Los datos mostrados son de ejemplo. Para conectar tu cuenta real de Trustpilot,
             añade tu <strong className="text-gray-300">Business Unit ID</strong> y{" "}
@@ -432,7 +432,7 @@ export default function TrustpilotAdmin() {
               href="https://developers.trustpilot.com/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-400 hover:underline"
+              className="text-green-400 hover:underline"
             >
               Ver documentación →
             </a>
@@ -481,7 +481,7 @@ export default function TrustpilotAdmin() {
             value: DEMO_STATS.numberOfReviews,
             sub: "verificadas",
             icon: <Star size={18} />,
-            color: "#3b82f6",
+            color: "#1B5E20",
           },
           {
             label: "Sin responder",
@@ -538,7 +538,7 @@ export default function TrustpilotAdmin() {
               </p>
               <div className="flex items-center gap-1.5 mt-2">
                 <Globe size={12} className="text-gray-500" />
-                <span className="text-xs text-gray-500">cloud-pdf.net</span>
+                <span className="text-xs text-gray-500">wegetdoc.com</span>
               </div>
             </div>
           </div>
@@ -578,7 +578,7 @@ export default function TrustpilotAdmin() {
               onClick={() => setFilterStars(s)}
               className="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors"
               style={{
-                backgroundColor: filterStars === s ? "oklch(0.28 0.08 260)" : "#1e2433",
+                backgroundColor: filterStars === s ? "#0D3311" : "#1e2433",
                 color: filterStars === s ? "white" : "#94a3b8",
               }}
             >
@@ -601,7 +601,7 @@ export default function TrustpilotAdmin() {
               onClick={() => setFilterReplied(f.id)}
               className="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors"
               style={{
-                backgroundColor: filterReplied === f.id ? "oklch(0.28 0.08 260)" : "#1e2433",
+                backgroundColor: filterReplied === f.id ? "#0D3311" : "#1e2433",
                 color: filterReplied === f.id ? "white" : "#94a3b8",
               }}
             >
@@ -626,7 +626,7 @@ export default function TrustpilotAdmin() {
               onClick={() => setFilterLang(f.id)}
               className="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors"
               style={{
-                backgroundColor: filterLang === f.id ? "oklch(0.28 0.08 260)" : "#1e2433",
+                backgroundColor: filterLang === f.id ? "#0D3311" : "#1e2433",
                 color: filterLang === f.id ? "white" : "#94a3b8",
               }}
             >
@@ -667,25 +667,25 @@ export default function TrustpilotAdmin() {
         </p>
         <ol className="space-y-2 text-xs text-gray-400">
           <li className="flex gap-2">
-            <span className="w-5 h-5 rounded-full bg-blue-900/50 text-blue-400 flex items-center justify-center flex-shrink-0 font-bold">1</span>
+            <span className="w-5 h-5 rounded-full bg-green-900/50 text-green-400 flex items-center justify-center flex-shrink-0 font-bold">1</span>
             Crea tu cuenta en{" "}
-            <a href="https://business.trustpilot.com" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+            <a href="https://business.trustpilot.com" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">
               business.trustpilot.com
             </a>{" "}
-            y verifica tu dominio <strong className="text-gray-300">cloud-pdf.net</strong>
+            y verifica tu dominio <strong className="text-gray-300">wegetdoc.com</strong>
           </li>
           <li className="flex gap-2">
-            <span className="w-5 h-5 rounded-full bg-blue-900/50 text-blue-400 flex items-center justify-center flex-shrink-0 font-bold">2</span>
+            <span className="w-5 h-5 rounded-full bg-green-900/50 text-green-400 flex items-center justify-center flex-shrink-0 font-bold">2</span>
             Ve a <strong className="text-gray-300">Integrations → API</strong> y crea una aplicación para obtener tu API Key y Business Unit ID
           </li>
           <li className="flex gap-2">
-            <span className="w-5 h-5 rounded-full bg-blue-900/50 text-blue-400 flex items-center justify-center flex-shrink-0 font-bold">3</span>
+            <span className="w-5 h-5 rounded-full bg-green-900/50 text-green-400 flex items-center justify-center flex-shrink-0 font-bold">3</span>
             En el panel de administración, ve a <strong className="text-gray-300">Settings → Secrets</strong> y añade:
             <code className="px-1.5 py-0.5 rounded bg-gray-800 text-green-400">TRUSTPILOT_API_KEY</code> y{" "}
             <code className="px-1.5 py-0.5 rounded bg-gray-800 text-green-400">TRUSTPILOT_BUSINESS_UNIT_ID</code>
           </li>
           <li className="flex gap-2">
-            <span className="w-5 h-5 rounded-full bg-blue-900/50 text-blue-400 flex items-center justify-center flex-shrink-0 font-bold">4</span>
+            <span className="w-5 h-5 rounded-full bg-green-900/50 text-green-400 flex items-center justify-center flex-shrink-0 font-bold">4</span>
             Avisa al equipo de {brandName} para activar el endpoint real en el servidor y desactivar el modo demo
           </li>
         </ol>

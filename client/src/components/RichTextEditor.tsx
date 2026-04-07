@@ -49,7 +49,7 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
         heading: { levels: [1, 2, 3] },
       }),
       Image.configure({ inline: false, allowBase64: true }),
-      Link.configure({ openOnClick: false, HTMLAttributes: { class: "text-blue-500 underline" } }),
+      Link.configure({ openOnClick: false, HTMLAttributes: { class: "text-green-600 underline" } }),
       Underline,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Highlight.configure({ multicolor: false }),
@@ -62,7 +62,7 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
     editorProps: {
       attributes: {
         class:
-          "prose prose-sm max-w-none min-h-[400px] p-4 focus:outline-none text-foreground [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-semibold [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_blockquote]:border-l-4 [&_blockquote]:border-border [&_blockquote]:pl-4 [&_blockquote]:italic [&_code]:bg-muted [&_code]:px-1 [&_code]:rounded [&_pre]:bg-muted [&_pre]:p-3 [&_pre]:rounded [&_img]:max-w-full [&_img]:rounded [&_a]:text-blue-500 [&_a]:underline",
+          "prose prose-sm max-w-none min-h-[400px] p-4 focus:outline-none text-foreground [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-semibold [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_blockquote]:border-l-4 [&_blockquote]:border-border [&_blockquote]:pl-4 [&_blockquote]:italic [&_code]:bg-muted [&_code]:px-1 [&_code]:rounded [&_pre]:bg-muted [&_pre]:p-3 [&_pre]:rounded [&_img]:max-w-full [&_img]:rounded [&_a]:text-green-600 [&_a]:underline",
       },
     },
   });

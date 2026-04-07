@@ -1,5 +1,5 @@
 /* =============================================================
-   CloudPDF Tools Page — All PDF tools in one place
+   WeGetDoc Tools Page — All PDF tools in one place
    Deep Navy Pro design — fully i18n-ready
    ============================================================= */
 
@@ -42,14 +42,14 @@ interface ToolGroup {
   tools: ToolDef[];
 }
 
-const EDIT_COLOR = "oklch(0.55 0.22 260)";
-const EDIT_BG = "oklch(0.55 0.22 260 / 0.08)";
-const ORG_COLOR = "oklch(0.50 0.18 290)";
-const ORG_BG = "oklch(0.50 0.18 290 / 0.08)";
-const FROM_COLOR = "oklch(0.45 0.18 145)";
-const FROM_BG = "oklch(0.45 0.18 145 / 0.08)";
-const TO_COLOR = "oklch(0.60 0.20 30)";
-const TO_BG = "oklch(0.60 0.20 30 / 0.08)";
+const EDIT_COLOR = "#1B5E20";
+const EDIT_BG = "rgba(27, 94, 32, 0.08)";
+const ORG_COLOR = "#D4A017";
+const ORG_BG = "rgba(212, 160, 23, 0.08)";
+const FROM_COLOR = "#2E7D32";
+const FROM_BG = "rgba(46, 125, 50, 0.08)";
+const TO_COLOR = "#A67C00";
+const TO_BG = "rgba(166, 124, 0, 0.08)";
 
 const toolGroups: ToolGroup[] = [
   {
@@ -102,7 +102,7 @@ export default function Tools() {
   const { t } = useLanguage();
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "oklch(0.98 0.005 250)" }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#F5F9F5" }}>
       <Navbar />
 
       {/* Hero */}
@@ -111,13 +111,13 @@ export default function Tools() {
           <div className="text-center max-w-2xl mx-auto mb-12">
             <h1
               className="text-4xl md:text-5xl font-extrabold mb-4"
-              style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
+              style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#1A2E1A" }}
             >
               {t.tools_page_title}
             </h1>
             <p
               className="text-lg"
-              style={{ color: "oklch(0.45 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+              style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
             >
               {t.tools_page_subtitle}
             </p>
@@ -133,7 +133,7 @@ export default function Tools() {
               <div key={gi}>
                 <h2
                   className="text-2xl font-bold mb-6"
-                  style={{ fontFamily: "'Sora', sans-serif", color: "oklch(0.15 0.03 250)" }}
+                  style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#1A2E1A" }}
                 >
                   {t[group.categoryKey]}
                 </h2>
@@ -143,8 +143,8 @@ export default function Tools() {
                       key={ti}
                       className="flex items-start gap-4 p-5 rounded-xl text-left transition-all duration-200"
                       style={{
-                        backgroundColor: "oklch(1 0 0)",
-                        border: "1px solid oklch(0.90 0.01 250)",
+                        backgroundColor: "#FFFFFF",
+                        border: "1px solid #C8E6C9",
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.borderColor = tool.color + " / 0.4";
@@ -152,7 +152,7 @@ export default function Tools() {
                         e.currentTarget.style.transform = "translateY(-2px)";
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = "oklch(0.90 0.01 250)";
+                        e.currentTarget.style.borderColor = "#C8E6C9";
                         e.currentTarget.style.boxShadow = "none";
                         e.currentTarget.style.transform = "translateY(0)";
                       }}
@@ -167,13 +167,13 @@ export default function Tools() {
                       <div>
                         <h3
                           className="font-semibold text-sm mb-1"
-                          style={{ color: "oklch(0.15 0.03 250)", fontFamily: "'Sora', sans-serif" }}
+                          style={{ color: "#1A2E1A", fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
                         >
                           {t[tool.titleKey]}
                         </h3>
                         <p
                           className="text-xs leading-relaxed"
-                          style={{ color: "oklch(0.50 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+                          style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
                         >
                           {t[tool.descKey]}
                         </p>

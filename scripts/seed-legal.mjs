@@ -1,5 +1,5 @@
 /**
- * Seed all legal pages for cloud-pdf.net
+ * Seed all legal pages for wegetdoc.com
  * Run with: node scripts/seed-legal.mjs
  */
 import mysql from "mysql2/promise";
@@ -8,404 +8,403 @@ dotenv.config();
 
 const db = await mysql.createConnection(process.env.DATABASE_URL);
 
-// ─── Términos de Uso y Contrato ─────────────────────────────────────────
-const termsContent = `# Términos de Uso y Contrato
+// ─── Condiciones Generales de Uso y Contratación ────────────────────
+const termsContent = `# Condiciones Generales de Uso y Contratación
 
-**Última actualización:** 23 de marzo de 2026
+**Fecha de entrada en vigor:** 7 de abril de 2026
 
-Bienvenido a **CLOUD-PDF.NET** (en adelante, "el Servicio"), una plataforma de edición de documentos PDF online accesible a través del dominio cloud-pdf.net. Al acceder o utilizar el Servicio, aceptas quedar vinculado por estos Términos y Condiciones. Si no estás de acuerdo con alguno de estos términos, no utilices el Servicio.
+El presente documento establece las condiciones que regulan el acceso y la utilización de la plataforma **WeGetDoc**, disponible en el dominio wegetdoc.com (en lo sucesivo, "la Plataforma"). Toda persona que acceda a la Plataforma o haga uso de sus funcionalidades adquiere la condición de usuario y se obliga al cumplimiento íntegro de las presentes Condiciones. En caso de desacuerdo con cualquiera de las disposiciones aquí recogidas, el usuario deberá abstenerse de utilizar la Plataforma.
 
-## 1. Descripción del Servicio
+## 1. Identificación de la Plataforma
 
-CLOUD-PDF.NET es un editor de documentos PDF online que permite a los usuarios editar, anotar, firmar, comprimir, proteger con contraseña y convertir archivos PDF directamente desde el navegador, sin necesidad de instalar ningún software. El Servicio ofrece tanto funciones gratuitas como funciones premium accesibles mediante suscripción de pago.
+WeGetDoc es una solución digital de edición documental en formato PDF accesible íntegramente a través de navegadores web. La Plataforma permite modificar, anotar, comprimir, proteger mediante contraseña, firmar electrónicamente y convertir documentos PDF sin necesidad de instalar aplicaciones adicionales en el dispositivo del usuario. WeGetDoc dispone de funcionalidades de acceso libre y de funcionalidades avanzadas sujetas a la contratación de un plan de suscripción.
 
-## 2. Registro y Cuenta
+## 2. Creación de Cuenta y Responsabilidad del Usuario
 
-Para acceder a las funciones premium del Servicio, deberás crear una cuenta mediante el sistema de autenticación proporcionado. Eres responsable de mantener la confidencialidad de tus credenciales de acceso y de todas las actividades que se realicen bajo tu cuenta. Debes notificarnos inmediatamente cualquier uso no autorizado de tu cuenta.
+El acceso a las funcionalidades avanzadas de la Plataforma requiere la creación de una cuenta de usuario a través del sistema de autenticación habilitado. El usuario asume la plena responsabilidad sobre la custodia de sus credenciales de acceso, así como sobre cualquier actividad realizada desde su cuenta. Cualquier indicio de acceso no autorizado deberá ser comunicado de forma inmediata a WeGetDoc a través de support@wegetdoc.com.
 
-## 3. Suscripción y Pagos
+## 3. Suscripciones y Condiciones de Pago
 
-### 3.1 Período de prueba
+### 3.1 Periodo de prueba inicial
 
-Al contratar el Servicio, se aplica un **período de prueba de 7 días** con un cargo inicial de **0,50 €** (IVA incluido). Este cargo cubre el acceso completo a todas las funciones premium del Servicio durante los 7 días del período de prueba.
+La contratación del servicio incluye un **periodo de prueba de 7 días** con un coste inicial de **0,50 EUR** (impuestos incluidos). Durante este periodo, el usuario dispondrá de acceso completo a todas las funcionalidades avanzadas de la Plataforma.
 
-### 3.2 Renovación automática
+### 3.2 Cobro recurrente y autorización expresa
 
-**IMPORTANTE:** Al completar el pago inicial de 0,50 €, **autorizas expresamente** a CLOUD-PDF.NET a cargar automáticamente **49,90 €/mes** (IVA incluido) en tu método de pago al finalizar el período de prueba de 7 días, y de forma recurrente cada mes a partir de entonces, hasta que canceles tu suscripción.
+**AVISO IMPORTANTE:** Al formalizar el pago inicial de 0,50 EUR, el usuario **otorga autorización expresa** para que WeGetDoc efectúe un cargo periódico de **49,90 EUR/mes** (impuestos incluidos) en el medio de pago registrado una vez concluido el periodo de prueba de 7 días. Dicho cargo se repetirá mensualmente de forma automática hasta que el usuario proceda a la cancelación de su suscripción.
 
-El cargo mensual de 49,90 € se realizará automáticamente en la misma tarjeta o método de pago utilizado para el pago inicial, salvo que canceles antes de que finalice el período de prueba.
+El importe mensual se cargará en el mismo medio de pago utilizado en la transacción inicial, salvo que el usuario cancele antes de la finalización del periodo de prueba.
 
-### 3.3 Cancelación
+### 3.3 Procedimiento de cancelación
 
-Puedes cancelar tu suscripción en cualquier momento **antes de que finalice el período de prueba** sin coste adicional. Si cancelas durante el período de prueba, no se realizará ningún cargo adicional. Si cancelas después de que comience el período de facturación mensual, la cancelación entrará en vigor al final del ciclo de facturación en curso y no se realizarán reembolsos por el período parcial.
+El usuario podrá dar de baja su suscripción en cualquier momento **con anterioridad a la finalización del periodo de prueba** sin que se genere cargo adicional alguno. Si la cancelación se produce una vez iniciado un ciclo de facturación mensual, esta surtirá efecto al término del periodo ya abonado, sin derecho a devolución proporcional.
 
-Para cancelar, accede a tu cuenta en [cloud-pdf.net/es/dashboard](https://cloud-pdf.net/es/dashboard), ve a la pestaña **Facturación** y haz clic en **Cancelar suscripción**.
+Para proceder a la cancelación, el usuario deberá acceder a su panel de control en [wegetdoc.com/dashboard](https://wegetdoc.com/dashboard), dirigirse a la sección **Facturación** y pulsar **Cancelar suscripción**.
 
-### 3.4 Reembolsos
+### 3.4 Política de devoluciones
 
-Los pagos realizados no son reembolsables, salvo en los casos previstos por la legislación aplicable (Directiva 2011/83/UE sobre derechos de los consumidores). El derecho de desistimiento de 14 días no aplica una vez que el servicio digital ha comenzado a prestarse con el consentimiento expreso del usuario.
+Los importes abonados no serán objeto de reembolso, excepto en los supuestos contemplados por la normativa vigente en materia de protección del consumidor (Directiva 2011/83/UE). El derecho de desistimiento de 14 días naturales no será aplicable una vez que la prestación del servicio digital haya dado comienzo con el consentimiento expreso del usuario.
 
-### 3.5 Precios
+### 3.5 Tarifas y modificaciones de precio
 
-Todos los precios se muestran en euros (€) e incluyen el IVA aplicable. Nos reservamos el derecho a modificar los precios con un preaviso mínimo de 30 días mediante notificación por correo electrónico.
+Todas las tarifas se expresan en euros (EUR) y llevan incluido el IVA correspondiente. WeGetDoc se reserva la facultad de revisar las tarifas vigentes, notificando al usuario con una antelación mínima de 30 días a través de correo electrónico.
 
-## 4. Uso Aceptable
+## 4. Normas de Uso Responsable
 
-Al utilizar el Servicio, te comprometes a:
+El usuario se compromete a utilizar la Plataforma de conformidad con la legalidad vigente y las buenas prácticas, absteniéndose de:
 
-- No subir contenido ilegal, difamatorio, obsceno o que infrinja derechos de terceros.
-- No intentar acceder a cuentas de otros usuarios ni a sistemas internos del Servicio.
-- No utilizar el Servicio para distribuir malware, spam o realizar actividades fraudulentas.
-- No realizar ingeniería inversa ni intentar extraer el código fuente del Servicio.
-- No utilizar herramientas automatizadas (bots, scrapers) para acceder al Servicio sin autorización previa.
+- Cargar contenidos de naturaleza ilícita, injuriosa, ofensiva o que vulneren derechos de terceros.
+- Intentar acceder a cuentas ajenas o a la infraestructura interna de la Plataforma.
+- Emplear la Plataforma como medio para distribuir software malicioso, correo no solicitado o para perpetrar actividades fraudulentas.
+- Practicar ingeniería inversa o intentar extraer el código fuente de la Plataforma.
+- Recurrir a herramientas automatizadas (robots, extractores de datos) sin contar con autorización escrita previa.
 
-Nos reservamos el derecho a suspender o cancelar cuentas que incumplan estas condiciones.
+WeGetDoc se reserva el derecho de suspender o dar de baja de forma inmediata las cuentas que incurran en el incumplimiento de estas normas.
 
-## 5. Propiedad Intelectual
+## 5. Titularidad de la Propiedad Intelectual
 
-Todo el contenido, diseño, código, logotipos y marcas del Servicio son propiedad exclusiva de CLOUD-PDF.NET y están protegidos por las leyes de propiedad intelectual aplicables. Los documentos que subas al Servicio siguen siendo de tu propiedad exclusiva.
+La totalidad de elementos que conforman la Plataforma —incluyendo diseño, código fuente, logotipos, marcas y contenidos— son titularidad exclusiva de WeGetDoc y se encuentran amparados por la legislación vigente en materia de propiedad intelectual e industrial. Los documentos que el usuario cargue en la Plataforma seguirán siendo de su exclusiva propiedad en todo momento.
 
-## 6. Tratamiento de Archivos
+## 6. Gestión y Tratamiento de Archivos
 
-Los archivos que subas al Servicio se procesan en nuestros servidores exclusivamente para proporcionarte las funciones solicitadas. No accedemos, revisamos ni compartimos el contenido de tus documentos. Los archivos temporales se eliminan automáticamente de nuestros servidores tras su procesamiento. Los archivos guardados en tu cuenta permanecen almacenados mientras mantengas una suscripción activa.
+Los archivos cargados por el usuario se procesan en los servidores de WeGetDoc con la única finalidad de prestar las funcionalidades solicitadas. WeGetDoc no accede, revisa ni comparte el contenido de los documentos del usuario. Los archivos de carácter temporal se eliminan de forma automática una vez finalizado su procesamiento. Los documentos almacenados en la cuenta del usuario permanecerán disponibles mientras este mantenga una suscripción en vigor.
 
-## 7. Limitación de Responsabilidad
+## 7. Exclusión y Limitación de Responsabilidad
 
-El Servicio se proporciona "tal cual" y "según disponibilidad". CLOUD-PDF.NET no garantiza que el Servicio sea ininterrumpido, libre de errores o que cumpla con todos tus requisitos específicos. En la máxima medida permitida por la ley, CLOUD-PDF.NET no será responsable de daños indirectos, incidentales, especiales o consecuentes derivados del uso del Servicio.
+La Plataforma se ofrece en su estado actual ("as is") y sujeta a disponibilidad. WeGetDoc no garantiza la continuidad ininterrumpida del servicio, la ausencia total de errores ni la adecuación de la Plataforma a las necesidades particulares de cada usuario. En la medida máxima que permita la legislación aplicable, WeGetDoc quedará exenta de responsabilidad por cualesquiera daños indirectos, incidentales, especiales o consecuenciales derivados del uso de la Plataforma.
 
-En ningún caso la responsabilidad total de CLOUD-PDF.NET excederá el importe pagado por el usuario durante los 12 meses anteriores al evento que dio lugar a la reclamación.
+La responsabilidad total de WeGetDoc no excederá, en ningún supuesto, del importe efectivamente abonado por el usuario durante los 12 meses inmediatamente anteriores al hecho generador de la reclamación.
 
-## 8. Modificaciones
+## 8. Revisión de las Condiciones
 
-Nos reservamos el derecho a modificar estos Términos y Condiciones en cualquier momento. Las modificaciones entrarán en vigor a partir de su publicación en el Servicio. El uso continuado del Servicio tras la publicación de las modificaciones constituye la aceptación de los nuevos términos. Para cambios sustanciales, notificaremos a los usuarios registrados por correo electrónico con al menos 15 días de antelación.
+WeGetDoc podrá modificar las presentes Condiciones en cualquier momento. Las versiones actualizadas entrarán en vigor desde su publicación en la Plataforma. La continuación del uso del servicio tras la publicación de modificaciones implicará la aceptación de las nuevas condiciones. En caso de cambios de carácter sustancial, WeGetDoc informará a los usuarios registrados por correo electrónico con un mínimo de 15 días de antelación.
 
-## 9. Legislación Aplicable y Jurisdicción
+## 9. Normativa Aplicable y Fuero Competente
 
-Estos Términos se rigen por la legislación de la Unión Europea y, en particular, por la legislación española. Para la resolución de cualquier controversia, las partes se someten a los juzgados y tribunales del domicilio del consumidor, conforme a la normativa de protección del consumidor de la UE.
+Las presentes Condiciones quedan sometidas a la legislación de la Unión Europea y, subsidiariamente, a la legislación del Reino de España. Para la resolución de controversias, las partes se someterán a los juzgados y tribunales correspondientes al domicilio del consumidor, de conformidad con la normativa comunitaria de protección al consumidor.
 
-## 10. Contacto
+## 10. Datos de Contacto
 
-Para cualquier consulta relacionada con estos Términos y Condiciones, puedes contactarnos a través de la página de contacto en [cloud-pdf.net/es/contact](https://cloud-pdf.net/es/contact).`;
+Para cualquier cuestión relativa a las presentes Condiciones, el usuario puede dirigirse a WeGetDoc a través de support@wegetdoc.com o mediante el formulario disponible en [wegetdoc.com/contact](https://wegetdoc.com/contact).`;
 
 // ─── Política de Privacidad ─────────────────────────────────────────
 const privacyContent = `# Política de Privacidad
 
-**Última actualización:** 23 de marzo de 2026
+**Fecha de entrada en vigor:** 7 de abril de 2026
 
-En **CLOUD-PDF.NET** nos comprometemos a proteger tu privacidad y tus datos personales. Esta Política de Privacidad describe cómo recopilamos, utilizamos, almacenamos y protegemos tu información cuando utilizas nuestro servicio de edición de PDF online accesible en cloud-pdf.net.
+**WeGetDoc** (accesible en wegetdoc.com) reconoce la importancia de salvaguardar la privacidad y los datos personales de sus usuarios. La presente Política de Privacidad detalla las prácticas relativas a la recogida, uso, conservación y protección de la información personal cuando se accede o se utiliza nuestra plataforma de edición documental PDF.
 
-## 1. Responsable del Tratamiento
+## 1. Identidad del Responsable del Tratamiento
 
-El responsable del tratamiento de tus datos personales es **CLOUD-PDF.NET**, con domicilio digital en cloud-pdf.net. Puedes contactarnos en cualquier momento a través de nuestra página de contacto en [cloud-pdf.net/es/contact](https://cloud-pdf.net/es/contact).
+El responsable del tratamiento de los datos personales es **WeGetDoc**, con sede digital en wegetdoc.com. El usuario puede dirigir cualquier consulta a la dirección support@wegetdoc.com o a través del formulario de contacto disponible en [wegetdoc.com/contact](https://wegetdoc.com/contact).
 
-## 2. Datos que Recopilamos
+## 2. Categorías de Datos Recabados
 
-### 2.1 Datos proporcionados directamente por el usuario
+### 2.1 Información facilitada voluntariamente por el usuario
 
-- **Datos de registro:** nombre, dirección de correo electrónico y datos de autenticación proporcionados a través del sistema de inicio de sesión.
-- **Datos de pago:** información de facturación procesada de forma segura a través de Stripe. CLOUD-PDF.NET no almacena números completos de tarjeta de crédito ni datos financieros sensibles en sus servidores.
-- **Datos de contacto:** información que nos proporcionas voluntariamente a través de formularios de contacto o soporte.
+- **Datos de alta:** nombre completo, dirección de correo electrónico y credenciales generadas a través del sistema de autenticación.
+- **Información de facturación:** datos relativos al medio de pago, gestionados de forma segura mediante Stripe. WeGetDoc no almacena en sus sistemas números completos de tarjeta ni datos financieros sensibles.
+- **Comunicaciones:** cualquier información que el usuario facilite voluntariamente a través de formularios de contacto o solicitudes de soporte técnico.
 
-### 2.2 Datos recopilados automáticamente
+### 2.2 Información recogida de forma automatizada
 
-- **Datos de uso:** páginas visitadas, funciones utilizadas, tiempo de sesión y patrones de navegación.
-- **Datos técnicos:** dirección IP, tipo de navegador, sistema operativo, resolución de pantalla e idioma preferido.
-- **Cookies y tecnologías similares:** según se detalla en nuestra [Política de Cookies](/es/cookies).
+- **Datos de navegación:** secciones visitadas, funcionalidades empleadas, duración de las sesiones y patrones de interacción.
+- **Datos técnicos del dispositivo:** dirección IP, tipo y versión de navegador, sistema operativo, resolución de pantalla y configuración de idioma.
+- **Cookies y tecnologías equivalentes:** conforme a lo establecido en nuestra [Política de Cookies](/es/cookies).
 
-### 2.3 Archivos subidos
+### 2.3 Documentos cargados en la Plataforma
 
-Los documentos PDF y otros archivos que subas al Servicio se procesan exclusivamente para proporcionarte las funciones de edición solicitadas. No accedemos, revisamos ni analizamos el contenido de tus documentos para fines distintos a la prestación del Servicio.
+Los archivos PDF y demás documentos cargados por el usuario se tratan exclusivamente con el propósito de prestar las funcionalidades de edición solicitadas. WeGetDoc no accede, inspecciona ni analiza el contenido de dichos documentos para fines ajenos a la prestación del servicio.
 
-## 3. Base Legal del Tratamiento
+## 3. Fundamento Jurídico del Tratamiento
 
-Tratamos tus datos personales sobre las siguientes bases legales conforme al Reglamento General de Protección de Datos (RGPD):
+El tratamiento de datos personales se sustenta en las siguientes bases legales previstas en el Reglamento General de Protección de Datos (RGPD):
 
-- **Ejecución del contrato** (Art. 6.1.b RGPD): Prestación del Servicio, gestión de tu cuenta y procesamiento de pagos.
-- **Consentimiento** (Art. 6.1.a RGPD): Envío de comunicaciones comerciales y uso de cookies no esenciales.
-- **Interés legítimo** (Art. 6.1.f RGPD): Mejora del Servicio, prevención de fraude y seguridad.
-- **Obligación legal** (Art. 6.1.c RGPD): Cumplimiento de obligaciones fiscales y legales.
+- **Ejecución contractual** (Art. 6.1.b RGPD): necesario para la prestación del servicio, la administración de la cuenta de usuario y la gestión de pagos.
+- **Consentimiento del interesado** (Art. 6.1.a RGPD): aplicable al envío de comunicaciones promocionales y al uso de cookies no esenciales.
+- **Interés legítimo del responsable** (Art. 6.1.f RGPD): optimización de la Plataforma, detección de fraude y seguridad operativa.
+- **Cumplimiento de obligaciones legales** (Art. 6.1.c RGPD): atención a requerimientos fiscales y normativos.
 
-## 4. Finalidades del Tratamiento
+## 4. Usos de la Información Personal
 
-Utilizamos tus datos personales para las siguientes finalidades:
+WeGetDoc utiliza los datos personales del usuario para los siguientes fines:
 
-- Proporcionarte acceso al Servicio y gestionar tu cuenta de usuario.
-- Procesar pagos y gestionar tu suscripción.
-- Enviarte comunicaciones relacionadas con el Servicio (confirmaciones de pago, cambios en los términos, avisos de seguridad).
-- Mejorar y optimizar el funcionamiento del Servicio.
-- Prevenir fraudes y garantizar la seguridad del Servicio.
-- Cumplir con nuestras obligaciones legales y fiscales.
-- Con tu consentimiento previo, enviarte comunicaciones comerciales sobre nuevas funciones o promociones.
+- Facilitar el acceso a la Plataforma y administrar la cuenta de usuario.
+- Tramitar cobros y gestionar la relación de suscripción.
+- Remitir comunicaciones operativas (confirmaciones de pago, actualizaciones de condiciones, alertas de seguridad).
+- Perfeccionar el funcionamiento y la experiencia de uso de la Plataforma.
+- Detectar y prevenir usos fraudulentos o abusivos.
+- Dar cumplimiento a las obligaciones legales y tributarias aplicables.
+- Previo consentimiento, informar al usuario sobre novedades, funcionalidades o promociones.
 
-## 5. Destinatarios de los Datos
+## 5. Comunicación de Datos a Terceros
 
-Podemos compartir tus datos personales con los siguientes terceros, exclusivamente para las finalidades indicadas:
+WeGetDoc podrá compartir datos personales con los terceros que se indican, exclusivamente para los fines señalados:
 
-- **Stripe:** Procesamiento de pagos (EE.UU., con cláusulas contractuales tipo).
-- **Proveedores de alojamiento:** Almacenamiento y procesamiento de datos (UE / EE.UU.).
-- **Servicios de analítica:** Análisis de uso del Servicio (UE / EE.UU.).
+- **Stripe:** procesamiento de transacciones de pago (EE. UU., al amparo de cláusulas contractuales tipo).
+- **Proveedores de infraestructura:** alojamiento y procesamiento de datos (UE / EE. UU.).
+- **Herramientas analíticas:** medición del uso y rendimiento de la Plataforma (UE / EE. UU.).
 
-No vendemos, alquilamos ni compartimos tus datos personales con terceros para fines de marketing sin tu consentimiento expreso.
+WeGetDoc no vende, cede ni transfiere datos personales a terceros con fines publicitarios sin el consentimiento expreso del usuario.
 
-## 6. Transferencias Internacionales
+## 6. Transferencias Internacionales de Datos
 
-Algunos de nuestros proveedores de servicios pueden estar ubicados fuera del Espacio Económico Europeo (EEE). En estos casos, garantizamos que las transferencias se realizan con las salvaguardias adecuadas, incluyendo cláusulas contractuales tipo aprobadas por la Comisión Europea o decisiones de adecuación.
+Determinados proveedores de servicios de WeGetDoc pueden estar ubicados fuera del Espacio Económico Europeo (EEE). En tales supuestos, WeGetDoc garantiza la adopción de las salvaguardias pertinentes, tales como cláusulas contractuales tipo aprobadas por la Comisión Europea o decisiones de adecuación vigentes.
 
-## 7. Conservación de los Datos
+## 7. Plazos de Conservación
 
-Conservamos tus datos personales durante el tiempo necesario para cumplir con las finalidades para las que fueron recopilados:
+Los datos personales se conservarán durante el periodo estrictamente necesario para el cumplimiento de los fines para los que fueron recogidos:
 
-- **Datos de cuenta:** mientras mantengas una cuenta activa en el Servicio, y hasta 30 días después de su eliminación.
-- **Datos de facturación:** durante el período legalmente exigido (generalmente 5 años conforme a la legislación fiscal española).
-- **Archivos subidos:** los archivos temporales se eliminan automáticamente tras su procesamiento. Los archivos guardados en tu cuenta se conservan mientras mantengas una suscripción activa.
-- **Datos de uso y analítica:** durante un máximo de 26 meses.
+- **Datos de la cuenta:** mientras la cuenta permanezca activa y durante los 30 días posteriores a su supresión.
+- **Datos de facturación:** durante el plazo legalmente exigido (con carácter general, 5 años conforme a la normativa tributaria española).
+- **Documentos cargados:** los archivos temporales se eliminan automáticamente tras su procesamiento; los archivos guardados se conservan mientras la suscripción permanezca activa.
+- **Datos analíticos y de navegación:** un máximo de 26 meses.
 
-## 8. Tus Derechos
+## 8. Derechos del Usuario
 
-Conforme al RGPD, tienes los siguientes derechos sobre tus datos personales:
+De conformidad con el RGPD, el usuario dispone de los siguientes derechos:
 
-- **Derecho de acceso:** obtener confirmación de si tratamos tus datos y acceder a ellos.
-- **Derecho de rectificación:** solicitar la corrección de datos inexactos o incompletos.
-- **Derecho de supresión:** solicitar la eliminación de tus datos cuando ya no sean necesarios.
-- **Derecho de limitación:** solicitar la restricción del tratamiento en determinadas circunstancias.
-- **Derecho de portabilidad:** recibir tus datos en un formato estructurado y de uso común.
-- **Derecho de oposición:** oponerte al tratamiento de tus datos en determinadas circunstancias.
-- **Derecho a retirar el consentimiento:** en cualquier momento, sin que ello afecte a la licitud del tratamiento basado en el consentimiento previo a su retirada.
+- **Acceso:** conocer si WeGetDoc trata sus datos y obtener una copia de los mismos.
+- **Rectificación:** solicitar la corrección de datos que resulten inexactos o incompletos.
+- **Supresión:** solicitar la eliminación de sus datos cuando ya no resulten necesarios para la finalidad que motivó su recogida.
+- **Limitación del tratamiento:** solicitar la restricción del uso de sus datos en determinadas circunstancias.
+- **Portabilidad:** recibir sus datos en un formato estructurado, de uso común y lectura mecánica.
+- **Oposición:** oponerse al tratamiento de sus datos en los supuestos legalmente previstos.
+- **Revocación del consentimiento:** retirar el consentimiento en cualquier momento, sin que ello afecte a la licitud del tratamiento realizado con anterioridad.
 
-Para ejercer cualquiera de estos derechos, contacta con nosotros a través de [cloud-pdf.net/es/contact](https://cloud-pdf.net/es/contact). Responderemos a tu solicitud en un plazo máximo de 30 días.
+Para el ejercicio de estos derechos, el usuario puede dirigirse a support@wegetdoc.com o a través de [wegetdoc.com/contact](https://wegetdoc.com/contact). WeGetDoc responderá en un plazo máximo de 30 días naturales.
 
-También tienes derecho a presentar una reclamación ante la Agencia Española de Protección de Datos (AEPD) en [www.aepd.es](https://www.aepd.es) o ante la autoridad de protección de datos de tu país de residencia.
+Asimismo, el usuario tiene derecho a interponer reclamación ante la Agencia Española de Protección de Datos (AEPD) en [www.aepd.es](https://www.aepd.es) o ante la autoridad de control de protección de datos de su país de residencia.
 
-## 9. Seguridad
+## 9. Medidas de Seguridad
 
-Implementamos medidas técnicas y organizativas apropiadas para proteger tus datos personales contra el acceso no autorizado, la alteración, la divulgación o la destrucción, incluyendo cifrado SSL/TLS de 256 bits, almacenamiento seguro de contraseñas y acceso restringido a los datos personales.
+WeGetDoc aplica medidas técnicas y organizativas adecuadas para proteger los datos personales frente a accesos no autorizados, alteración, divulgación o destrucción, incluyendo cifrado SSL/TLS de 256 bits, almacenamiento seguro de credenciales y control de acceso basado en el principio de mínimo privilegio.
 
-## 10. Menores
+## 10. Uso por Menores de Edad
 
-El Servicio no está dirigido a menores de 16 años. No recopilamos conscientemente datos personales de menores de 16 años. Si descubrimos que hemos recopilado datos de un menor sin el consentimiento de sus padres o tutores, procederemos a eliminarlos.
+La Plataforma no está concebida para su uso por menores de 16 años. WeGetDoc no recaba conscientemente datos de menores de dicha edad. En caso de detectar que se han recogido datos de un menor sin el debido consentimiento parental, se procederá a su supresión inmediata.
 
-## 11. Modificaciones
+## 11. Modificaciones de la Política
 
-Nos reservamos el derecho a modificar esta Política de Privacidad. Cualquier cambio será publicado en esta página con la fecha de actualización correspondiente. Para cambios sustanciales, notificaremos a los usuarios registrados por correo electrónico.
+WeGetDoc se reserva la facultad de actualizar la presente Política de Privacidad. Cualquier modificación se publicará en esta página con la fecha de actualización correspondiente. Ante cambios sustanciales, se notificará a los usuarios registrados mediante correo electrónico.
 
 ## 12. Contacto
 
-Para cualquier consulta relacionada con esta Política de Privacidad o el tratamiento de tus datos personales, contacta con nosotros en [cloud-pdf.net/es/contact](https://cloud-pdf.net/es/contact).`;
+Para cualquier consulta relativa a la presente Política o al tratamiento de datos personales, el usuario puede contactar con WeGetDoc en support@wegetdoc.com o a través de [wegetdoc.com/contact](https://wegetdoc.com/contact).`;
 
 // ─── Política de Cookies ────────────────────────────────────────────
 const cookiesContent = `# Política de Cookies
 
-**Última actualización:** 23 de marzo de 2026
+**Fecha de entrada en vigor:** 7 de abril de 2026
 
-En **CLOUD-PDF.NET** utilizamos cookies y tecnologías similares para mejorar tu experiencia de navegación, analizar el uso del Servicio y personalizar el contenido. Esta Política de Cookies explica qué son las cookies, qué tipos utilizamos y cómo puedes gestionarlas.
+**WeGetDoc** (wegetdoc.com) emplea cookies y mecanismos de seguimiento similares con el objetivo de optimizar la experiencia de navegación, evaluar el rendimiento de la Plataforma y adaptar los contenidos mostrados al usuario. En el presente documento se describe qué son las cookies, qué categorías emplea WeGetDoc y de qué manera el usuario puede administrarlas.
 
-## 1. ¿Qué son las cookies?
+## 1. Definición de Cookie
 
-Las cookies son pequeños archivos de texto que se almacenan en tu dispositivo (ordenador, tablet o teléfono móvil) cuando visitas un sitio web. Las cookies permiten que el sitio web recuerde tus acciones y preferencias durante un período de tiempo, para que no tengas que volver a configurarlas cada vez que visites el sitio o navegues entre sus páginas.
+Una cookie es un pequeño fichero de datos que el servidor web deposita en el dispositivo del usuario (ordenador, tableta o teléfono móvil) al visitar un sitio web. Las cookies permiten al sitio recordar las preferencias y acciones del usuario durante un periodo determinado, evitando que deba reconfigurarlas en cada visita o al navegar entre distintas secciones.
 
-## 2. Tipos de Cookies que Utilizamos
+## 2. Categorías de Cookies Empleadas
 
-### 2.1 Cookies estrictamente necesarias
+### 2.1 Cookies esenciales (estrictamente necesarias)
 
-Estas cookies son esenciales para el funcionamiento del Servicio y no pueden desactivarse. Se establecen en respuesta a acciones realizadas por ti, como establecer tus preferencias de privacidad, iniciar sesión o rellenar formularios.
+Son imprescindibles para el correcto funcionamiento de la Plataforma y no pueden ser desactivadas por el usuario. Se generan en respuesta a acciones realizadas por este, tales como la configuración de preferencias de privacidad, el inicio de sesión o el envío de formularios.
 
-- **session_token:** Autenticación y sesión de usuario (duración: sesión).
-- **csrf_token:** Protección contra ataques CSRF (duración: sesión).
-- **cookie_consent:** Registro de tus preferencias de cookies (duración: 12 meses).
+- **session_token:** identificación y mantenimiento de la sesión del usuario (duración: sesión activa).
+- **csrf_token:** protección frente a ataques de falsificación de solicitudes (duración: sesión activa).
+- **cookie_consent:** registro de las preferencias de cookies del usuario (duración: 12 meses).
 
-### 2.2 Cookies de rendimiento y analítica
+### 2.2 Cookies analíticas y de rendimiento
 
-Estas cookies nos permiten contar las visitas y las fuentes de tráfico para poder medir y mejorar el rendimiento del Servicio. Nos ayudan a saber qué páginas son las más y las menos populares, y a ver cómo se mueven los visitantes por el sitio.
+Permiten contabilizar las visitas, identificar fuentes de tráfico y medir el rendimiento de la Plataforma, facilitando la detección de las secciones más y menos frecuentadas y el análisis de los recorridos de navegación.
 
-- **_ga:** Google Analytics — Identificación de usuarios (duración: 24 meses).
-- **_ga_*:** Google Analytics — Estado de sesión (duración: 24 meses).
+- **_ga:** Google Analytics — identificador de usuario único (duración: 24 meses).
+- **_ga_*:** Google Analytics — mantenimiento del estado de sesión (duración: 24 meses).
 
-### 2.3 Cookies funcionales
+### 2.3 Cookies de preferencias y funcionalidad
 
-Estas cookies permiten que el Servicio ofrezca funciones mejoradas y personalización, como recordar tu idioma preferido o la región en la que te encuentras.
+Posibilitan funciones avanzadas de personalización, como el almacenamiento del idioma seleccionado o la configuración visual elegida por el usuario.
 
-- **lang:** Preferencia de idioma (duración: 12 meses).
-- **theme:** Preferencia de tema claro/oscuro (duración: 12 meses).
+- **lang:** idioma de preferencia del usuario (duración: 12 meses).
+- **theme:** preferencia de modo visual claro u oscuro (duración: 12 meses).
 
-### 2.4 Cookies de terceros
+### 2.4 Cookies instaladas por terceros
 
-Utilizamos servicios de terceros que pueden establecer sus propias cookies:
+WeGetDoc integra servicios de terceros que pueden establecer sus propias cookies:
 
-- **Stripe:** Procesamiento seguro de pagos. Más información en [stripe.com/privacy](https://stripe.com/privacy).
-- **Google Analytics:** Análisis de uso del sitio. Más información en [policies.google.com/privacy](https://policies.google.com/privacy).
+- **Stripe:** gestión segura de procesos de pago. Más información en [stripe.com/privacy](https://stripe.com/privacy).
+- **Google Analytics:** análisis estadístico de uso de la Plataforma. Más información en [policies.google.com/privacy](https://policies.google.com/privacy).
 
-## 3. Cómo Gestionar las Cookies
+## 3. Administración de las Cookies por el Usuario
 
-Puedes controlar y gestionar las cookies de varias formas:
+El usuario dispone de diversas vías para controlar y gestionar las cookies:
 
-### 3.1 Configuración del navegador
+### 3.1 Ajustes del navegador
 
-La mayoría de los navegadores te permiten ver, gestionar y eliminar cookies. Ten en cuenta que si desactivas las cookies, algunas funciones del Servicio pueden no funcionar correctamente.
+Todos los navegadores modernos ofrecen opciones para visualizar, administrar y suprimir cookies. No obstante, la desactivación de determinadas cookies puede afectar al correcto funcionamiento de la Plataforma.
 
 - **Chrome:** Configuración > Privacidad y seguridad > Cookies
 - **Firefox:** Opciones > Privacidad y seguridad > Cookies
 - **Safari:** Preferencias > Privacidad > Cookies
 - **Edge:** Configuración > Privacidad > Cookies
 
-### 3.2 Herramientas de exclusión
+### 3.2 Mecanismos de exclusión voluntaria
 
-Para las cookies de analítica de Google, puedes instalar el [complemento de inhabilitación de Google Analytics](https://tools.google.com/dlpage/gaoptout).
+Para las cookies de analítica de Google, el usuario puede instalar el [complemento de inhabilitación de Google Analytics](https://tools.google.com/dlpage/gaoptout).
 
-## 4. Base Legal
+## 4. Fundamento Jurídico
 
-El uso de cookies estrictamente necesarias se basa en nuestro interés legítimo en proporcionar un servicio funcional y seguro. Para las demás cookies, solicitamos tu consentimiento previo conforme al artículo 22.2 de la Ley 34/2002, de Servicios de la Sociedad de la Información (LSSI), y al artículo 6.1.a del RGPD.
+La utilización de cookies esenciales se ampara en el interés legítimo de WeGetDoc en ofrecer un servicio operativo y seguro. Respecto a las demás categorías de cookies, se recabará el consentimiento previo del usuario conforme al artículo 22.2 de la Ley 34/2002, de Servicios de la Sociedad de la Información (LSSI), y al artículo 6.1.a del RGPD.
 
-## 5. Actualizaciones
+## 5. Revisiones de esta Política
 
-Podemos actualizar esta Política de Cookies periódicamente para reflejar cambios en las cookies que utilizamos o por motivos operativos, legales o regulatorios. Te recomendamos revisar esta página regularmente.
+WeGetDoc podrá actualizar la presente Política de Cookies periódicamente con el fin de reflejar cambios en las cookies utilizadas o por razones operativas, normativas o regulatorias. Se recomienda al usuario consultar esta página de forma regular.
 
 ## 6. Contacto
 
-Si tienes alguna pregunta sobre nuestra Política de Cookies, puedes contactarnos en [cloud-pdf.net/es/contact](https://cloud-pdf.net/es/contact).`;
+Ante cualquier duda relativa a la Política de Cookies, el usuario puede dirigirse a support@wegetdoc.com o a través de [wegetdoc.com/contact](https://wegetdoc.com/contact).`;
 
-// ─── Aviso Legal ────────────────────────────────────────────────────
-const legalContent = `# Aviso Legal
+// ─── Aviso Legal e Información Corporativa ──────────────────────────
+const legalContent = `# Aviso Legal e Información Corporativa
 
-**Última actualización:** 23 de marzo de 2026
+**Fecha de entrada en vigor:** 7 de abril de 2026
 
-## 1. Datos Identificativos
+## 1. Información del Titular
 
-En cumplimiento del deber de información establecido en el artículo 10 de la Ley 34/2002, de 11 de julio, de Servicios de la Sociedad de la Información y de Comercio Electrónico (LSSI-CE), se informa que el presente sitio web es propiedad de:
+De conformidad con lo dispuesto en el artículo 10 de la Ley 34/2002, de 11 de julio, de Servicios de la Sociedad de la Información y de Comercio Electrónico (LSSI-CE), se facilitan los siguientes datos identificativos del titular del sitio web:
 
-- **Denominación:** CLOUD-PDF.NET
-- **Sitio web:** [cloud-pdf.net](https://cloud-pdf.net)
-- **Contacto:** A través de la página de contacto en [cloud-pdf.net/es/contact](https://cloud-pdf.net/es/contact)
+- **Denominación:** WeGetDoc
+- **Dominio web:** [wegetdoc.com](https://wegetdoc.com)
+- **Correo electrónico:** support@wegetdoc.com
+- **Formulario de contacto:** [wegetdoc.com/contact](https://wegetdoc.com/contact)
 
-## 2. Objeto
+## 2. Actividad y Finalidad del Sitio Web
 
-CLOUD-PDF.NET pone a disposición de los usuarios un servicio de edición de documentos PDF online que permite editar, anotar, firmar, comprimir, proteger y convertir archivos PDF directamente desde el navegador web.
+WeGetDoc proporciona a los usuarios una plataforma digital de edición de documentos en formato PDF que permite modificar, anotar, firmar electrónicamente, comprimir, proteger y convertir archivos PDF de manera íntegra a través del navegador web, sin requerir la instalación de software en el dispositivo del usuario.
 
-## 3. Propiedad Intelectual e Industrial
+## 3. Derechos de Propiedad Intelectual e Industrial
 
-Todos los contenidos del sitio web, incluyendo a título enunciativo pero no limitativo, textos, fotografías, gráficos, imágenes, iconos, tecnología, software, enlaces y demás contenidos audiovisuales o sonoros, así como su diseño gráfico y códigos fuente, son propiedad intelectual de CLOUD-PDF.NET o de terceros que han autorizado su uso, sin que puedan entenderse cedidos al usuario ninguno de los derechos de explotación sobre los mismos más allá de lo estrictamente necesario para el correcto uso del Servicio.
+La totalidad de los contenidos presentes en el sitio web —incluyendo, sin carácter limitativo, textos, elementos gráficos, fotografías, iconos, software, código fuente, diseño visual y cualquier otro material audiovisual—, así como las marcas, nombres comerciales y signos distintivos, son titularidad de WeGetDoc o de terceros que han autorizado expresamente su utilización. Queda prohibida la reproducción, distribución, transformación o comunicación pública de dichos contenidos sin autorización expresa, salvo lo estrictamente necesario para el uso legítimo de la Plataforma.
 
-Las marcas, nombres comerciales o signos distintivos son titularidad de CLOUD-PDF.NET, sin que pueda entenderse que el acceso al sitio web atribuya ningún derecho sobre las citadas marcas, nombres comerciales y/o signos distintivos.
+## 4. Obligaciones del Usuario
 
-## 4. Condiciones de Uso
+El usuario se compromete a realizar un uso adecuado de la Plataforma, absteniéndose de emplearla para:
 
-El usuario se compromete a hacer un uso adecuado de los contenidos y servicios que CLOUD-PDF.NET ofrece y a no emplearlos para:
+- Llevar a cabo actividades contrarias a la ley, la buena fe o el orden público.
+- Difundir contenidos discriminatorios, violentos, pornográficos, apologéticos del terrorismo o lesivos de los derechos fundamentales.
+- Causar daños en los sistemas informáticos de WeGetDoc, de sus proveedores o de terceros.
+- Introducir o propagar virus informáticos u otros elementos susceptibles de alterar, dañar o inutilizar sistemas o datos.
 
-- Realizar actividades ilícitas o contrarias a la buena fe y al orden público.
-- Difundir contenidos o propaganda de carácter racista, xenófobo, pornográfico, de apología del terrorismo o que atenten contra los derechos humanos.
-- Provocar daños en los sistemas físicos y lógicos de CLOUD-PDF.NET, de sus proveedores o de terceros.
-- Introducir o difundir virus informáticos o cualesquiera otros sistemas que sean susceptibles de provocar daños.
+## 5. Exclusión de Garantías y Limitación de Responsabilidad
 
-## 5. Exclusión de Garantías y Responsabilidad
+WeGetDoc no asumirá responsabilidad alguna, salvo disposición legal en contrario, por los daños y perjuicios de cualquier índole que pudieran derivarse de, entre otros supuestos: inexactitudes u omisiones en los contenidos, indisponibilidad temporal de la Plataforma, o la eventual presencia de programas maliciosos, pese a haber adoptado todas las medidas tecnológicas razonablemente exigibles para prevenirlo.
 
-CLOUD-PDF.NET no se hace responsable, en ningún caso, de los daños y perjuicios de cualquier naturaleza que pudieran ocasionar, a título enunciativo: errores u omisiones en los contenidos, falta de disponibilidad del sitio web o la transmisión de virus o programas maliciosos en los contenidos, a pesar de haber adoptado todas las medidas tecnológicas necesarias para evitarlo.
+## 6. Enlaces a Sitios de Terceros
 
-## 6. Enlaces
+En caso de que la Plataforma incluya enlaces o hipervínculos a sitios web de terceros, WeGetDoc no ejerce control alguno sobre dichos sitios ni sobre sus contenidos. En consecuencia, WeGetDoc declina toda responsabilidad respecto de la información, disponibilidad, veracidad o legalidad de los contenidos alojados en páginas externas enlazadas.
 
-En el caso de que en el sitio web se dispusiesen enlaces o hipervínculos hacia otros sitios de Internet, CLOUD-PDF.NET no ejercerá ningún tipo de control sobre dichos sitios y contenidos. En ningún caso asumirá responsabilidad alguna por los contenidos de algún enlace perteneciente a un sitio web ajeno, ni garantizará la disponibilidad técnica, calidad, fiabilidad, exactitud, amplitud, veracidad, validez y constitucionalidad de cualquier material o información contenida en dichos hipervínculos.
+## 7. Potestad de Exclusión
 
-## 7. Derecho de Exclusión
+WeGetDoc se reserva la facultad de denegar o retirar el acceso a la Plataforma y a sus servicios, sin obligación de preaviso, a aquellos usuarios que contravengan las presentes condiciones de uso, ya sea por iniciativa propia o a instancia de tercero.
 
-CLOUD-PDF.NET se reserva el derecho a denegar o retirar el acceso al sitio web y/o los servicios ofrecidos sin necesidad de preaviso, a instancia propia o de un tercero, a aquellos usuarios que incumplan las presentes Condiciones de Uso.
+## 8. Legislación Aplicable y Fuero Jurisdiccional
 
-## 8. Legislación Aplicable y Jurisdicción
+La relación entre WeGetDoc y el usuario se regirá por la normativa española y comunitaria vigente. Para la resolución de cualquier controversia, las partes se someterán a los Juzgados y Tribunales del domicilio del usuario consumidor, de conformidad con la legislación de protección del consumidor de la Unión Europea.
 
-La relación entre CLOUD-PDF.NET y el usuario se regirá por la normativa española y europea vigente. Para la resolución de cualquier controversia, las partes se someterán a los Juzgados y Tribunales del domicilio del usuario consumidor, conforme a la normativa de protección del consumidor de la UE.
+Adicionalmente, y conforme al Reglamento (UE) 524/2013, se informa de que la Comisión Europea dispone de una plataforma de resolución de litigios en línea accesible en [ec.europa.eu/consumers/odr](https://ec.europa.eu/consumers/odr).`;
 
-Asimismo, conforme al Reglamento (UE) 524/2013, informamos que la Comisión Europea facilita una plataforma de resolución de litigios en línea disponible en [ec.europa.eu/consumers/odr](https://ec.europa.eu/consumers/odr).`;
+// ─── Compromiso con el RGPD ────────────────────────────────────────
+const gdprContent = `# Compromiso con el Reglamento General de Protección de Datos
 
-// ─── Cumplimiento RGPD ──────────────────────────────────────────────
-const gdprContent = `# Cumplimiento del RGPD
+**Fecha de entrada en vigor:** 7 de abril de 2026
 
-**Última actualización:** 23 de marzo de 2026
+**WeGetDoc** (wegetdoc.com) mantiene un firme compromiso con el cumplimiento del Reglamento (UE) 2016/679 del Parlamento Europeo y del Consejo, de 27 de abril de 2016, relativo a la protección de las personas físicas en lo que respecta al tratamiento de datos personales (RGPD), así como de la Ley Orgánica 3/2018, de 5 de diciembre, de Protección de Datos Personales y garantía de los derechos digitales (LOPDGDD).
 
-En **CLOUD-PDF.NET** estamos comprometidos con el cumplimiento del Reglamento General de Protección de Datos (Reglamento (UE) 2016/679, "RGPD") y la normativa española de protección de datos (Ley Orgánica 3/2018, de Protección de Datos Personales y garantía de los derechos digitales, "LOPDGDD").
+## 1. Principios Rectores del Tratamiento
 
-## 1. Nuestro Compromiso
+WeGetDoc fundamenta todas sus operaciones de tratamiento de datos en los principios esenciales del RGPD:
 
-CLOUD-PDF.NET aplica los principios fundamentales del RGPD en todas sus operaciones:
+- **Licitud, lealtad y transparencia:** los datos se tratan de manera lícita y con plena transparencia hacia el interesado, informando en todo momento sobre las finalidades y modalidades de tratamiento.
+- **Limitación de la finalidad:** la recogida de datos se circunscribe a finalidades concretas, explícitas y legítimas, sin que se realicen tratamientos incompatibles con dichas finalidades.
+- **Minimización de datos:** únicamente se recaban aquellos datos estrictamente indispensables para cada finalidad específica.
+- **Exactitud:** se adoptan medidas razonables para garantizar que los datos sean actuales y, en su caso, rectificados o suprimidos sin demora.
+- **Limitación del plazo de conservación:** los datos no se mantienen más allá del tiempo necesario para el cumplimiento de los fines para los que fueron recogidos.
+- **Integridad y confidencialidad:** se aplican medidas técnicas y organizativas orientadas a preservar la seguridad de los datos tratados.
 
-- **Licitud, lealtad y transparencia:** Tratamos los datos de forma lícita y transparente, informando siempre sobre cómo y por qué los utilizamos.
-- **Limitación de la finalidad:** Solo recopilamos datos para finalidades determinadas, explícitas y legítimas.
-- **Minimización de datos:** Solo recopilamos los datos estrictamente necesarios para cada finalidad.
-- **Exactitud:** Mantenemos los datos actualizados y tomamos medidas para corregir o suprimir datos inexactos.
-- **Limitación del plazo de conservación:** No conservamos los datos más tiempo del necesario.
-- **Integridad y confidencialidad:** Aplicamos medidas técnicas y organizativas para proteger los datos.
+## 2. Derechos Reconocidos a los Interesados
 
-## 2. Derechos de los Interesados
+Todo usuario de WeGetDoc puede ejercer los derechos que el RGPD le reconoce:
 
-Como usuario de CLOUD-PDF.NET, tienes los siguientes derechos reconocidos por el RGPD:
+- **Derecho de acceso** (Art. 15 RGPD): obtener confirmación sobre la existencia de tratamiento y acceder a una copia de los datos personales objeto del mismo.
+- **Derecho de rectificación** (Art. 16 RGPD): solicitar la subsanación de datos inexactos o la cumplimentación de datos incompletos.
+- **Derecho de supresión** (Art. 17 RGPD): reclamar la eliminación de los datos personales cuando concurra alguno de los supuestos previstos legalmente ("derecho al olvido").
+- **Derecho a la limitación del tratamiento** (Art. 18 RGPD): solicitar la restricción del tratamiento cuando se den las circunstancias legalmente previstas.
+- **Derecho a la portabilidad** (Art. 20 RGPD): recibir los datos personales en un formato estructurado, de uso habitual y lectura mecánica, y transmitirlos a otro responsable.
+- **Derecho de oposición** (Art. 21 RGPD): oponerse al tratamiento de los datos en los supuestos contemplados por la normativa.
+- **Derecho a no ser objeto de decisiones automatizadas** (Art. 22 RGPD): no quedar sujeto a decisiones basadas exclusivamente en tratamientos automatizados que produzcan efectos jurídicos o le afecten significativamente.
 
-- **Acceso** (Art. 15): Obtener confirmación de si tratamos tus datos y acceder a una copia.
-- **Rectificación** (Art. 16): Solicitar la corrección de datos inexactos o incompletos.
-- **Supresión** (Art. 17): Solicitar la eliminación de tus datos ("derecho al olvido").
-- **Limitación** (Art. 18): Solicitar la restricción del tratamiento en ciertos supuestos.
-- **Portabilidad** (Art. 20): Recibir tus datos en formato estructurado y transmitirlos a otro responsable.
-- **Oposición** (Art. 21): Oponerte al tratamiento de tus datos en determinados supuestos.
-- **No ser objeto de decisiones automatizadas** (Art. 22): No ser sometido a decisiones basadas únicamente en tratamiento automatizado.
+### Procedimiento de ejercicio
 
-### Cómo ejercer tus derechos
+El usuario podrá ejercer cualquiera de estos derechos dirigiéndose a support@wegetdoc.com o a través del formulario de contacto en [wegetdoc.com/contact](https://wegetdoc.com/contact). WeGetDoc verificará la identidad del solicitante antes de tramitar la solicitud y ofrecerá respuesta en un plazo máximo de 30 días naturales desde su recepción.
 
-Puedes ejercer cualquiera de estos derechos contactándonos a través de [cloud-pdf.net/es/contact](https://cloud-pdf.net/es/contact). Necesitaremos verificar tu identidad antes de procesar tu solicitud. Responderemos en un plazo máximo de 30 días desde la recepción de tu solicitud.
+En caso de que el usuario considere que sus derechos no han sido debidamente atendidos, podrá presentar reclamación ante la **Agencia Española de Protección de Datos (AEPD)** en [www.aepd.es](https://www.aepd.es), o ante la autoridad de control competente de su país de residencia dentro de la Unión Europea.
 
-Si consideras que tus derechos no han sido debidamente atendidos, puedes presentar una reclamación ante la **Agencia Española de Protección de Datos (AEPD)** en [www.aepd.es](https://www.aepd.es), o ante la autoridad de protección de datos de tu país de residencia dentro de la UE.
+## 3. Medidas Técnicas y Organizativas de Seguridad
 
-## 3. Medidas de Seguridad
+WeGetDoc aplica las siguientes medidas para garantizar un nivel de seguridad adecuado al riesgo:
 
-CLOUD-PDF.NET implementa las siguientes medidas técnicas y organizativas para garantizar la seguridad de tus datos personales:
+**En el ámbito técnico:**
 
-**Medidas técnicas:**
+- Cifrado de las comunicaciones mediante protocolo SSL/TLS de 256 bits.
+- Cifrado de datos sensibles en estado de reposo.
+- Procesamiento de pagos a través de Stripe, entidad certificada PCI DSS Nivel 1.
+- Supresión automática de archivos temporales tras la finalización de su procesamiento.
+- Realización de copias de respaldo periódicas con cifrado.
 
-- Cifrado SSL/TLS de 256 bits en todas las comunicaciones.
-- Cifrado de datos sensibles en reposo.
-- Procesamiento seguro de pagos a través de Stripe (certificado PCI DSS Nivel 1).
-- Eliminación automática de archivos temporales tras su procesamiento.
-- Copias de seguridad periódicas con cifrado.
+**En el ámbito organizativo:**
 
-**Medidas organizativas:**
-
-- Acceso restringido a datos personales basado en el principio de necesidad de conocer.
-- Políticas internas de protección de datos y formación del personal.
+- Acceso a datos personales restringido conforme al principio de necesidad de conocimiento.
+- Políticas internas de protección de datos y formación continua del personal.
 - Evaluaciones periódicas de seguridad y privacidad.
-- Procedimientos de notificación de brechas de seguridad conforme al artículo 33 del RGPD.
+- Protocolos de notificación de incidentes de seguridad conforme al artículo 33 del RGPD.
 
-## 4. Transferencias Internacionales
+## 4. Transferencias Internacionales de Datos
 
-Cuando transferimos datos personales fuera del Espacio Económico Europeo (EEE), nos aseguramos de que se apliquen las salvaguardias adecuadas conforme al Capítulo V del RGPD:
+Cuando resulte necesario transferir datos personales fuera del Espacio Económico Europeo (EEE), WeGetDoc se asegura de que se apliquen las garantías adecuadas conforme al Capítulo V del RGPD:
 
-- **Decisiones de adecuación** de la Comisión Europea (Art. 45 RGPD).
+- **Decisiones de adecuación** dictadas por la Comisión Europea (Art. 45 RGPD).
 - **Cláusulas contractuales tipo** aprobadas por la Comisión Europea (Art. 46.2.c RGPD).
-- **Marco de Privacidad de Datos UE-EE.UU.** para proveedores certificados.
+- **Marco de Privacidad de Datos UE-EE. UU.** para proveedores adheridos y certificados.
 
-## 5. Evaluación de Impacto
+## 5. Evaluaciones de Impacto en la Protección de Datos
 
-Realizamos evaluaciones de impacto en la protección de datos (EIPD) cuando el tratamiento puede entrañar un alto riesgo para los derechos y libertades de las personas, conforme al artículo 35 del RGPD.
+WeGetDoc lleva a cabo evaluaciones de impacto relativas a la protección de datos (EIPD) en aquellos supuestos en que el tratamiento previsto pueda entrañar un alto riesgo para los derechos y libertades de los interesados, conforme a lo establecido en el artículo 35 del RGPD.
 
 ## 6. Registro de Actividades de Tratamiento
 
-Mantenemos un registro de actividades de tratamiento conforme al artículo 30 del RGPD, que incluye las categorías de datos tratados, las finalidades del tratamiento, los destinatarios de los datos y los plazos de conservación.
+WeGetDoc mantiene un registro actualizado de las actividades de tratamiento conforme al artículo 30 del RGPD, en el que se recogen, entre otros extremos, las categorías de datos tratados, las finalidades perseguidas, los destinatarios de los datos y los plazos de conservación aplicables.
 
-## 7. Notificación de Brechas de Seguridad
+## 7. Gestión de Brechas de Seguridad
 
-En caso de producirse una brecha de seguridad que afecte a datos personales, CLOUD-PDF.NET:
+Ante la detección de una brecha de seguridad que afecte a datos personales, WeGetDoc actuará conforme al siguiente protocolo:
 
-1. Notificará a la autoridad de control competente en un plazo máximo de 72 horas desde que tenga conocimiento de la brecha (Art. 33 RGPD).
-2. Comunicará la brecha a los interesados afectados sin dilación indebida cuando la brecha entrañe un alto riesgo para sus derechos y libertades (Art. 34 RGPD).
+1. Comunicación a la autoridad de control competente en un plazo no superior a 72 horas desde la toma de conocimiento de la brecha (Art. 33 RGPD).
+2. Notificación a los interesados afectados sin dilación indebida cuando la brecha suponga un riesgo elevado para sus derechos y libertades (Art. 34 RGPD).
 
-## 8. Contacto
+## 8. Canal de Contacto
 
-Para cualquier consulta relacionada con la protección de datos o el ejercicio de tus derechos, puedes contactarnos en [cloud-pdf.net/es/contact](https://cloud-pdf.net/es/contact).
+Para cualquier consulta relacionada con la protección de datos personales o el ejercicio de derechos, el usuario puede contactar con WeGetDoc en support@wegetdoc.com o mediante el formulario de contacto en [wegetdoc.com/contact](https://wegetdoc.com/contact).
 
 ## 9. Actualizaciones
 
-Esta página se actualizará periódicamente para reflejar cualquier cambio en nuestras prácticas de protección de datos o en la normativa aplicable.`;
+La presente página será objeto de revisión periódica para reflejar cualquier modificación en las prácticas de protección de datos de WeGetDoc o en la normativa aplicable.`;
 
 // ─── Insert/Update all pages ────────────────────────────────────────
 const pages = [
-  { slug: "terms", title: "Términos de Uso y Contrato", content: termsContent },
+  { slug: "terms", title: "Condiciones Generales de Uso y Contratación", content: termsContent },
   { slug: "privacy", title: "Política de Privacidad", content: privacyContent },
   { slug: "cookies", title: "Política de Cookies", content: cookiesContent },
-  { slug: "legal", title: "Aviso Legal", content: legalContent },
-  { slug: "gdpr", title: "Cumplimiento RGPD", content: gdprContent },
+  { slug: "legal", title: "Aviso Legal e Información Corporativa", content: legalContent },
+  { slug: "gdpr", title: "Compromiso con el RGPD", content: gdprContent },
 ];
 
 try {

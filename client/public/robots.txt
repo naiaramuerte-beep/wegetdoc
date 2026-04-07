@@ -1,5 +1,5 @@
-# robots.txt for CloudPDF
-# https://cloud-pdf.net
+# robots.txt for WeGetDoc
+# https://wegetdoc.com
 
 User-agent: *
 Allow: /
@@ -20,4 +20,4 @@ Disallow: /*/payment/
 Disallow: /*/cancelar-suscripcion
 
 # Sitemap
-Sitemap: https://cloud-pdf.net/sitemap.xml
+Sitemap: https://wegetdoc.com/sitemap.xml

@@ -1,5 +1,5 @@
 /* =============================================================
-   CloudPDF AuthModal — Sign Up + Login
+   WeGetDoc AuthModal — Sign Up + Login
    ============================================================= */
 import { useState, useEffect } from "react";
 import { X, Eye, EyeOff, Mail, Lock, User as UserIcon, Loader2 } from "lucide-react";
@@ -41,7 +41,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
 
   const registerMutation = trpc.auth.register.useMutation({
     onSuccess: (data) => {
-      toast.success("¡Cuenta creada correctamente!");
+      toast.success("¡Perfil configurado exitosamente!");
       utils.auth.me.invalidate();
       onSuccess?.();
       onClose();
@@ -148,14 +148,14 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
                 value={forgotEmail}
                 onChange={(e) => setForgotEmail(e.target.value)}
                 required
-                className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 bg-gray-50"
               />
             </div>
             <button
               type="submit"
               disabled={isLoading}
               className="w-full py-2.5 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all"
-              style={{ backgroundColor: isLoading ? "#9ca3af" : "#3b82f6" }}
+              style={{ backgroundColor: isLoading ? "#9ca3af" : "#1B5E20" }}
             >
               {isLoading && <Loader2 size={15} className="animate-spin" />}
               Send reset link
@@ -163,7 +163,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
             <button
               type="button"
               onClick={() => setMode("login")}
-              className="text-sm text-center text-gray-500 hover:text-blue-600"
+              className="text-sm text-center text-gray-500 hover:text-green-700"
             >
               Back to Login
             </button>
@@ -179,7 +179,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
                   placeholder="Full name (optional)"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                  className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 bg-gray-50"
                 />
               </div>
             )}
@@ -193,7 +193,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 bg-gray-50"
               />
             </div>
 
@@ -207,7 +207,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full pl-9 pr-10 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                className="w-full pl-9 pr-10 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 bg-gray-50"
               />
               <button
                 type="button"
@@ -249,7 +249,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
               <div className="flex-1 h-px bg-gray-200" />
             </div>
 
-            {/* Google button — uses direct Google OAuth (shows "CloudPDF" on consent screen) */}
+            {/* Google button — uses direct Google OAuth (shows "WeGetDoc" on consent screen) */}
             <a
               href={`/api/auth/google?origin=${encodeURIComponent(window.location.origin)}&returnPath=${encodeURIComponent(window.location.pathname + window.location.search)}`}
               className="w-full py-2.5 rounded-lg border border-gray-200 text-sm font-semibold text-gray-700 flex items-center justify-center gap-2.5 hover:bg-gray-50 transition-colors"

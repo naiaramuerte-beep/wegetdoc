@@ -1,5 +1,5 @@
 /* =============================================================
-   CloudPDF — Dashboard de usuario
+   WeGetDoc — Dashboard de usuario
    Pestañas: Mi Cuenta | Mis Documentos | Equipo | Facturación
    ============================================================= */
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -46,16 +46,6 @@ export default function Dashboard() {
       utils.subscription.status.invalidate();
       toast.success("¡Pago completado! Tu suscripción está activa. Ya puedes descargar tus documentos.");
 
-      // Google Ads conversion tracking — use session_id from URL as transaction_id
-      const sessionId = params.get("session_id") || `pmt_${Date.now()}`;
-      if (typeof window.gtag === "function") {
-        window.gtag("event", "conversion", {
-          send_to: "AW-18038662610",
-          value: 49.90,
-          currency: "EUR",
-          transaction_id: sessionId,
-        });
-      }
 
       // Clean URL without reload
       const cleanUrl = window.location.pathname + "?tab=documents";
@@ -66,7 +56,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-green-700 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -89,7 +79,7 @@ export default function Dashboard() {
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
               {/* User info */}
               <div className="p-5 border-b border-slate-100">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg mb-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-700 to-emerald-600 flex items-center justify-center text-white font-bold text-lg mb-3">
                   {user?.name?.charAt(0)?.toUpperCase() ?? user?.email?.charAt(0)?.toUpperCase() ?? "U"}
                 </div>
                 <p className="font-semibold text-slate-800 truncate">{user?.name ?? "Usuario"}</p>
@@ -108,7 +98,7 @@ export default function Dashboard() {
                     onClick={() => setActiveTab(item.id)}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                       activeTab === item.id
-                        ? "bg-blue-50 text-blue-700"
+                        ? "bg-green-50 text-green-800"
                         : "text-slate-600 hover:bg-slate-50"
                     }`}
                   >
@@ -246,7 +236,7 @@ function AccountTab({ user }: { user: any }) {
           <Button
             onClick={handleSave}
             disabled={updateMutation.isPending}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6"
+            className="bg-green-700 hover:bg-green-800 text-white px-6"
           >
             {updateMutation.isPending ? "Guardando..." : "Guardar cambios"}
           </Button>
@@ -470,7 +460,7 @@ function DocumentsTab() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-8 px-2 gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      className="h-8 px-2 gap-1 text-green-700 hover:text-green-800 hover:bg-green-50"
                       title="Editar en el editor"
                       onClick={() => handleEditDocument(doc)}
                     >
@@ -562,7 +552,7 @@ function TeamTab() {
   });
 
   const roleColors: Record<string, string> = {
-    editor: "bg-blue-50 text-blue-700",
+    editor: "bg-green-50 text-green-800",
     viewer: "bg-slate-100 text-slate-600",
     admin: "bg-purple-50 text-purple-700",
   };
@@ -577,7 +567,7 @@ function TeamTab() {
         <Button
           size="sm"
           onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 hover:bg-blue-700 text-white"
+          className="bg-green-700 hover:bg-green-800 text-white"
         >
           <Plus size={14} className="mr-1.5" />
           Invitar
@@ -615,7 +605,7 @@ function TeamTab() {
               size="sm"
               onClick={() => inviteMutation.mutate({ email, role })}
               disabled={!email.trim() || inviteMutation.isPending}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-green-700 hover:bg-green-800 text-white"
             >
               <Mail size={14} className="mr-1.5" />
               Enviar invitación
@@ -763,7 +753,7 @@ function DashboardPaddleInline({
     <div>
       {!ready && (
         <div className="flex items-center justify-center py-10">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+          <Loader2 className="w-6 h-6 animate-spin text-green-700" />
           <span className="ml-2 text-sm text-slate-500">Cargando formulario de pago...</span>
         </div>
       )}
@@ -840,7 +830,7 @@ function BillingTab() {
         isPremium
           ? sub?.cancelAtPeriodEnd
             ? "bg-gradient-to-br from-amber-500 to-orange-600 text-white border-amber-400"
-            : "bg-gradient-to-br from-blue-600 to-indigo-700 text-white border-blue-500"
+            : "bg-gradient-to-br from-green-700 to-green-900 text-white border-green-600"
           : "bg-white border-slate-100"
       }`}>
         <div className="flex items-start justify-between gap-4">
@@ -869,7 +859,7 @@ function BillingTab() {
                 </p>
               </div>
             ) : isPremium ? (
-              <p className="text-blue-100 text-sm">
+              <p className="text-green-100 text-sm">
                 {expiryDateStr
                   ? `Próxima renovación: ${expiryDateStr}`
                   : "Acceso activo"}
@@ -886,7 +876,7 @@ function BillingTab() {
                 <p className="text-3xl font-bold text-white">
                   {sub?.plan === "trial" ? "0€" : "49,90€"}
                 </p>
-                <p className={`text-xs ${sub?.cancelAtPeriodEnd ? "text-amber-200" : "text-blue-200"}`}>
+                <p className={`text-xs ${sub?.cancelAtPeriodEnd ? "text-amber-200" : "text-green-200"}`}>
                   {sub?.plan === "trial" ? "prueba 7 días" : "/ mes"}
                 </p>
               </div>
@@ -949,8 +939,8 @@ function BillingTab() {
               "Sin marca de agua",
             ].map((feature) => (
               <div key={feature} className="flex items-center gap-2.5">
-                <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <Check size={12} className="text-blue-600" />
+                <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                  <Check size={12} className="text-green-700" />
                 </div>
                 <span className="text-sm text-slate-700">{feature}</span>
               </div>
@@ -959,7 +949,7 @@ function BillingTab() {
 
           <div className="mt-6">
             <Button
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              className="w-full bg-green-700 hover:bg-green-800 text-white"
               onClick={openInlineCheckout}
               disabled={showInlineCheckout}
             >
@@ -972,10 +962,10 @@ function BillingTab() {
 
       {/* Inline Paddle Checkout */}
       {showInlineCheckout && !isPremium && (
-        <div id="billing-checkout-section" className="bg-white rounded-2xl shadow-sm border border-blue-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between" style={{ backgroundColor: "oklch(0.98 0.005 250)" }}>
+        <div id="billing-checkout-section" className="bg-white rounded-2xl shadow-sm border border-green-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between" style={{ backgroundColor: "#F5F9F5" }}>
             <div className="flex items-center gap-2">
-              <CreditCard size={18} className="text-blue-600" />
+              <CreditCard size={18} className="text-green-700" />
               <h3 className="font-bold text-slate-800">Completa tu suscripción</h3>
             </div>
             <button onClick={() => setShowInlineCheckout(false)} className="text-sm text-slate-500 hover:text-slate-700 hover:underline">Cancelar</button>
@@ -986,21 +976,6 @@ function BillingTab() {
             onComplete={(data: any) => {
               console.log("[Dashboard] checkout.completed data:", JSON.stringify(data, null, 2));
               const txnId = data.id || data.transaction_id || data.subscription_id || "";
-              if (typeof window.gtag === "function") {
-                window.gtag("event", "conversion", {
-                  send_to: "AW-18038662610",
-                  value: 49.90,
-                  currency: "EUR",
-                  transaction_id: txnId,
-                });
-                window.gtag("event", "purchase", {
-                  transaction_id: txnId,
-                  value: 49.90,
-                  currency: "EUR",
-                  items: [{ item_id: "cloudpdf_trial", item_name: `${brandName} Trial Subscription`, price: 0, quantity: 1 }],
-                });
-                console.log("[Dashboard] Conversion tracking fired", { txnId });
-              }
               confirmPaddleCheckout.mutate({
                 transactionId: data.id || data.transaction_id || "",
                 subscriptionId: data.subscription_id || "",

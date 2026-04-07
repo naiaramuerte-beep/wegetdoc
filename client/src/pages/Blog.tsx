@@ -28,14 +28,14 @@ export default function Blog() {
     setMeta("og:title", `Blog — ${brandName} | Guías y tutoriales sobre PDF`, true);
     setMeta("og:description", "Guías, tutoriales y consejos sobre cómo trabajar con PDFs online. Todo lo que necesitas saber sobre edición, conversión y firma de documentos.", true);
     setMeta("og:type", "website", true);
-    setMeta("og:url", "https://cloud-pdf.net/blog", true);
+    setMeta("og:url", "https://wegetdoc.com/blog", true);
     return () => {
       document.title = `${brandName} — Online PDF Editor`;
     };
   }, []);
 
   const categoryColors: Record<string, string> = {
-    guides: "bg-blue-100 text-blue-700",
+    guides: "bg-green-100 text-green-800",
     tutorials: "bg-green-100 text-green-700",
     tips: "bg-amber-100 text-amber-700",
     news: "bg-purple-100 text-purple-700",
@@ -56,11 +56,11 @@ export default function Blog() {
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="py-16 md:py-20 text-center" style={{ background: "linear-gradient(135deg, oklch(0.18 0.04 250) 0%, oklch(0.22 0.06 260) 100%)" }}>
+        <section className="py-16 md:py-20 text-center" style={{ background: "linear-gradient(135deg, #0D3311 0%, #1B5E20 100%)" }}>
           <div className="container max-w-3xl">
             <div className="flex items-center justify-center gap-2 mb-4">
-              <Rss size={20} className="text-blue-400" />
-              <span className="text-blue-400 text-sm font-medium uppercase tracking-wider">Blog</span>
+              <Rss size={20} className="text-green-400" />
+              <span className="text-green-400 text-sm font-medium uppercase tracking-wider">Blog</span>
             </div>
             <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-4">
               Guías y tutoriales sobre PDF
@@ -141,7 +141,7 @@ export default function Blog() {
               <button
                 onClick={() => navigate("/")}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white transition-all hover:opacity-90"
-                style={{ background: "oklch(0.55 0.22 260)" }}
+                style={{ background: "#1B5E20" }}
               >
                 Empezar ahora <ArrowRight size={16} />
               </button>

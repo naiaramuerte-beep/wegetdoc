@@ -153,7 +153,7 @@ const SignatureCanvas = React.memo(function SignatureCanvas({
         height={140}
         className="w-full rounded border-2 border-dashed"
         style={{
-          borderColor: "oklch(0.80 0.02 250)",
+          borderColor: "#C8E6C9",
           background: "#fff",
           cursor: "crosshair",
           touchAction: "none",
@@ -172,7 +172,7 @@ const SignatureCanvas = React.memo(function SignatureCanvas({
           type="button"
           onClick={handleClear}
           className="flex-1 py-1.5 rounded text-xs font-medium border"
-          style={{ borderColor: "oklch(0.80 0.02 250)", color: "oklch(0.40 0.02 250)" }}
+          style={{ borderColor: "#C8E6C9", color: "#4A6B4A" }}
         >
           {clearLabel}
         </button>
@@ -180,7 +180,7 @@ const SignatureCanvas = React.memo(function SignatureCanvas({
           type="button"
           onClick={handlePlace}
           className="flex-1 py-1.5 rounded text-xs font-medium text-white"
-          style={{ background: "oklch(0.45 0.20 264)" }}
+          style={{ background: "#1B5E20" }}
         >
           {placeLabel}
         </button>

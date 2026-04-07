@@ -1,5 +1,5 @@
 /* =============================================================
-   CloudPDF PdfViewer — renders PDF pages using pdfjs-dist canvas
+   WeGetDoc PdfViewer — renders PDF pages using pdfjs-dist canvas
    ============================================================= */
 
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -90,16 +90,16 @@ export default function PdfViewer({
       {isRendering && (
         <div
           className="absolute inset-0 flex items-center justify-center z-10 rounded-lg"
-          style={{ backgroundColor: "oklch(0.98 0.005 250 / 0.8)" }}
+          style={{ backgroundColor: "rgba(245, 249, 245, 0.8)" }}
         >
           <div className="flex flex-col items-center gap-2">
             <div
               className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
-              style={{ borderColor: "oklch(0.55 0.22 260)", borderTopColor: "transparent" }}
+              style={{ borderColor: "#1B5E20", borderTopColor: "transparent" }}
             />
             <span
               className="text-xs"
-              style={{ color: "oklch(0.45 0.02 250)", fontFamily: "'DM Sans', sans-serif" }}
+              style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
             >
               Renderizando...
             </span>
@@ -110,9 +110,9 @@ export default function PdfViewer({
         <div
           className="flex items-center justify-center p-8 rounded-lg text-sm"
           style={{
-            backgroundColor: "oklch(0.97 0.01 30)",
-            color: "oklch(0.50 0.15 30)",
-            fontFamily: "'DM Sans', sans-serif",
+            backgroundColor: "#FFF8E1",
+            color: "#D4A017",
+            fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
           }}
         >
           {error}
@@ -121,7 +121,7 @@ export default function PdfViewer({
         <canvas
           ref={canvasRef}
           className="rounded-lg shadow-lg max-w-full"
-          style={{ boxShadow: "0 4px 24px oklch(0.18 0.04 250 / 0.15)" }}
+          style={{ boxShadow: "0 4px 24px rgba(13, 51, 17, 0.15)" }}
         />
       )}
     </div>

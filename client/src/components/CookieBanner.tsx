@@ -45,17 +45,8 @@ export default function CookieBanner() {
     }
   }, []);
 
-  const updateGoogleConsent = (granted: boolean) => {
-    if (typeof window !== "undefined" && typeof (window as any).gtag === "function") {
-      // Always keep ad_storage and ad_user_data granted for conversion tracking
-      // Only toggle ad_personalization based on user preference
-      (window as any).gtag("consent", "update", {
-        ad_storage: "granted",
-        ad_user_data: "granted",
-        ad_personalization: granted ? "granted" : "denied",
-        analytics_storage: "granted",
-      });
-    }
+  const updateGoogleConsent = (_granted: boolean) => {
+    // Tracking removed — no-op
   };
 
   const handleAcceptAll = () => {
@@ -96,8 +87,8 @@ export default function CookieBanner() {
             <div className="p-5 sm:p-6">
               {/* Header */}
               <div className="flex items-start gap-3 mb-4">
-                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                  <Cookie className="w-5 h-5 text-blue-400" />
+                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
+                  <Cookie className="w-5 h-5 text-green-400" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-white font-semibold text-base mb-1">Cookies</h3>
@@ -108,7 +99,7 @@ export default function CookieBanner() {
                     {t.cookie_banner_more_info}{" "}
                     <Link
                       href={`/${lang}/cookies`}
-                      className="text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors"
+                      className="text-green-400 hover:text-green-300 underline underline-offset-2 transition-colors"
                     >
                       {t.footer_cookies}
                     </Link>
@@ -138,17 +129,17 @@ export default function CookieBanner() {
                     className="w-full flex items-center justify-between rounded-xl bg-white/5 hover:bg-white/8 px-4 py-3 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <BarChart3 className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                      <BarChart3 className="w-4 h-4 text-green-400 flex-shrink-0" />
                       <span className="text-sm text-gray-200">{t.cookie_banner_analytics}</span>
                     </div>
                     <div
                       className={`flex-shrink-0 w-10 h-6 rounded-full flex items-center px-1 transition-colors ${
-                        analyticsEnabled ? "bg-blue-500/30 justify-end" : "bg-gray-600/30 justify-start"
+                        analyticsEnabled ? "bg-green-500/30 justify-end" : "bg-gray-600/30 justify-start"
                       }`}
                     >
                       <div
                         className={`w-4 h-4 rounded-full transition-colors ${
-                          analyticsEnabled ? "bg-blue-400" : "bg-gray-500"
+                          analyticsEnabled ? "bg-green-400" : "bg-gray-500"
                         }`}
                       />
                     </div>
@@ -162,7 +153,7 @@ export default function CookieBanner() {
                   <>
                     <button
                       onClick={handleAcceptAll}
-                      className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-400 text-white text-sm font-medium transition-colors shadow-lg shadow-blue-500/20"
+                      className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-medium transition-colors shadow-lg shadow-green-600/20"
                     >
                       {t.cookie_banner_accept}
                     </button>
@@ -184,7 +175,7 @@ export default function CookieBanner() {
                   <>
                     <button
                       onClick={handleSaveSettings}
-                      className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-400 text-white text-sm font-medium transition-colors shadow-lg shadow-blue-500/20"
+                      className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-medium transition-colors shadow-lg shadow-green-600/20"
                     >
                       {t.cookie_banner_accept}
                     </button>

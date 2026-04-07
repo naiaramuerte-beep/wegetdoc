@@ -1,10 +1,9 @@
 const BRANDS: Record<string, { name: string; domain: string }> = {
-  FastDoc: { name: "FastDoc", domain: "fastdoc.app" },
-  CloudPDF: { name: "CloudPDF", domain: "cloud-pdf.net" },
+  WeGetDoc: { name: "WeGetDoc", domain: "wegetdoc.com" },
 };
 
-const key = process.env.BRAND_NAME || "CloudPDF";
-const brand = BRANDS[key] ?? BRANDS.CloudPDF;
+const key = process.env.BRAND_NAME || "WeGetDoc";
+const brand = BRANDS[key] ?? BRANDS.WeGetDoc;
 
 export const brandName = brand.name;
 export const brandDomain = brand.domain;

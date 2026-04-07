@@ -33,17 +33,17 @@ const ACCEPTED_EXTENSIONS = new Set([
   '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.html', '.txt',
 ]);
 
-/* Inline SVG logo — CloudPDF cloud icon */
+/* Inline SVG logo — WeGetDoc cloud icon */
 const LogoSvg = () => (
   <svg width="26" height="18" viewBox="0 0 32 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
     <path d="M25.5 12.5C25.5 12.5 26 12 26 11c0-2.8-2.2-5-5-5-.5 0-1 .1-1.5.2C18.3 3.7 15.9 2 13 2 9.4 2 6.5 4.9 6.5 8.5c0 .2 0 .4 0 .6C4.5 9.6 3 11.4 3 13.5 3 16 5 18 7.5 18h16c2.2 0 4-1.8 4-4 0-1.5-.8-2.8-2-3.5z" fill={colors.light} />
     <rect x="13" y="6" width="6" height="8" rx="0.8" fill="white" fillOpacity="0.9" />
-    <path d="M16.5 6V6L19 8.5H16.5V6Z" fill="oklch(0.45 0.18 260)" />
+    <path d="M16.5 6V6L19 8.5H16.5V6Z" fill="#1B5E20" />
   </svg>
 );
 
 const LogoText = () => (
-  <span style={{ fontFamily: "'Sora', sans-serif" }}>
+  <span style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}>
     <span className="font-medium text-lg" style={{ color: "rgba(255,255,255,0.85)" }}>{logoParts[0]}</span>
     <span className="font-extrabold text-lg" style={{ color: colors.light }}>{logoParts[1]}</span>
   </span>
@@ -57,9 +57,9 @@ function EditorUploadZone({ lang }: { lang: string }) {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const navy = "oklch(0.18 0.04 250)";
-  const blue = "oklch(0.55 0.22 260)";
-  const blueLight = "oklch(0.62 0.18 280)";
+  const navy = "#0D3311";
+  const blue = "#1B5E20";
+  const blueLight = "#4CAF50";
 
   const openEditor = useCallback((file: File) => {
     const ext = '.' + file.name.split('.').pop()?.toLowerCase();
@@ -103,7 +103,7 @@ function EditorUploadZone({ lang }: { lang: string }) {
           {/* Headline */}
           <div className="text-center max-w-3xl mx-auto mb-8 md:mb-12">
             <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-4"
-              style={{ fontFamily: "'Sora', sans-serif", color: "#111" }}>
+              style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#111" }}>
               {t.hero_title_1}{" "}
               <span style={{
                 background: colors.gradient,
@@ -137,7 +137,7 @@ function EditorUploadZone({ lang }: { lang: string }) {
               </div>
 
               <div className="text-center">
-                <p className="font-bold text-lg mb-1" style={{ color: "#111", fontFamily: "'Sora', sans-serif" }}>
+                <p className="font-bold text-lg mb-1" style={{ color: "#111", fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}>
                   {t.hero_drag_here}
                 </p>
                 <p className="text-sm" style={{ color: "#999" }}>{t.hero_or}</p>
@@ -183,12 +183,12 @@ export default function EditorPage() {
   /* Loading state while restoring from session */
   if (isRestoringFromSession) {
     return (
-      <div className="flex flex-col min-h-screen" style={{ backgroundColor: "oklch(0.97 0.005 250)" }}>
-        <div className="flex items-center px-4 h-12 border-b" style={{ backgroundColor: "oklch(0.18 0.04 250)", borderColor: "oklch(0.25 0.04 250)" }}>
+      <div className="flex flex-col min-h-screen" style={{ backgroundColor: "#F5F9F5" }}>
+        <div className="flex items-center px-4 h-12 border-b" style={{ backgroundColor: "#0D3311", borderColor: "#1A3A1A" }}>
           <div className="flex items-center gap-1"><LogoSvg /><LogoText /></div>
         </div>
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center" style={{ color: "oklch(0.55 0.22 260)" }}>
+          <div className="text-center" style={{ color: "#1B5E20" }}>
             <div className="w-8 h-8 border-2 border-current border-t-transparent rounded-full animate-spin mx-auto mb-3" />
             <p className="text-sm font-medium">Loading document...</p>
           </div>
@@ -206,7 +206,7 @@ export default function EditorPage() {
     <div className="flex flex-col" style={{ height: "100dvh", overflow: "hidden" }}>
       {/* ── Custom Editor Header Bar ── */}
       <div className="flex items-center justify-between px-3 md:px-4 h-11 md:h-12 shrink-0 border-b"
-        style={{ backgroundColor: "oklch(0.18 0.04 250)", borderColor: "oklch(0.25 0.04 250)" }}>
+        style={{ backgroundColor: "#0D3311", borderColor: "#1A3A1A" }}>
         {/* Left: Logo */}
         <button onClick={handleClose} className="flex items-center gap-1 shrink-0 hover:opacity-80 transition-opacity" title="Back to home">
           <LogoSvg />
@@ -221,14 +221,14 @@ export default function EditorPage() {
                 onKeyDown={e => { if (e.key === "Enter") confirmEdit(); if (e.key === "Escape") setIsEditingName(false); }}
                 onBlur={confirmEdit}
                 className="bg-white/10 text-white text-sm px-2 py-0.5 rounded border border-white/20 outline-none focus:border-white/40 min-w-[120px] max-w-[300px]"
-                style={{ fontFamily: "'DM Sans', sans-serif" }} />
+                style={{ fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }} />
               <button onMouseDown={e => { e.preventDefault(); confirmEdit(); }} className="p-0.5 rounded hover:bg-white/10 transition-colors" title="Confirm">
-                <Check className="w-3.5 h-3.5" style={{ color: "oklch(0.65 0.18 145)" }} />
+                <Check className="w-3.5 h-3.5" style={{ color: "#4CAF50" }} />
               </button>
             </div>
           ) : (
             <button onClick={startEdit} className="flex items-center gap-1.5 min-w-0 hover:bg-white/5 rounded px-2 py-0.5 transition-colors group" title="Click to rename">
-              <span className="text-sm font-medium truncate" style={{ color: "rgba(255,255,255,0.85)", fontFamily: "'DM Sans', sans-serif" }}>{fileName}</span>
+              <span className="text-sm font-medium truncate" style={{ color: "rgba(255,255,255,0.85)", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}>{fileName}</span>
               <Pencil className="w-3 h-3 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "rgba(255,255,255,0.5)" }} />
             </button>
           )}

@@ -1,6 +1,6 @@
 /**
  * Google OAuth 2.0 — Direct integration
- * Shows "CloudPDF" on the Google consent screen.
+ * Shows "WeGetDoc" on the Google consent screen.
  *
  * Routes:
  *   GET /api/auth/google          — Redirect user to Google
@@ -85,10 +85,10 @@ export function registerGoogleOAuthRoutes(app: Express) {
     // Use the origin to determine which redirect URI to use
     // Both must be registered in Google Cloud Console
     const ALLOWED_ORIGINS: Record<string, string> = {
-      "https://cloud-pdf.net": "https://cloud-pdf.net/api/auth/google/callback",
-      "https://www.cloud-pdf.net": "https://cloud-pdf.net/api/auth/google/callback",
+      "https://wegetdoc.com": "https://wegetdoc.com/api/auth/google/callback",
+      "https://www.wegetdoc.com": "https://wegetdoc.com/api/auth/google/callback",
     };
-    const redirectUri = ALLOWED_ORIGINS[origin] || "https://cloud-pdf.net/api/auth/google/callback";
+    const redirectUri = ALLOWED_ORIGINS[origin] || "https://wegetdoc.com/api/auth/google/callback";
     const authUrl = buildGoogleAuthUrl(redirectUri, state);
 
     res.redirect(302, authUrl);
@@ -126,10 +126,10 @@ export function registerGoogleOAuthRoutes(app: Express) {
 
       // Must match exactly what was used in the auth request — derive from origin in state
       const ALLOWED_ORIGINS: Record<string, string> = {
-        "https://cloud-pdf.net": "https://cloud-pdf.net/api/auth/google/callback",
-        "https://www.cloud-pdf.net": "https://cloud-pdf.net/api/auth/google/callback",
+        "https://wegetdoc.com": "https://wegetdoc.com/api/auth/google/callback",
+        "https://www.wegetdoc.com": "https://wegetdoc.com/api/auth/google/callback",
       };
-      const redirectUri = ALLOWED_ORIGINS[origin] || "https://cloud-pdf.net/api/auth/google/callback";
+      const redirectUri = ALLOWED_ORIGINS[origin] || "https://wegetdoc.com/api/auth/google/callback";
 
       // Exchange code for tokens
       const tokens = await exchangeCodeForTokens(code, redirectUri);
@@ -153,7 +153,7 @@ export function registerGoogleOAuthRoutes(app: Express) {
           user = (await db.getUserById(existingByEmail.id)) ?? undefined;
         } else {
           // Create new user
-          const role = googleUser.email === "sergisd39@gmail.com" ? "admin" : "user";
+          const role = "user";
           user = (await db.createOwnUser({
             email: googleUser.email,
             name: googleUser.name || googleUser.email.split("@")[0],

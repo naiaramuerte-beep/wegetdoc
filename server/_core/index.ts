@@ -2,18 +2,16 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
-import { Paddle, EventName, Environment } from "@paddle/paddle-node-sdk";
 import multer from "multer";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerGoogleOAuthRoutes } from "./googleOauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { getUserById, upsertSubscription, getBlogPosts, createDocument, userHasActiveSubscription, markDocumentsPaid } from "../db";
+import { getBlogPosts, createDocument, userHasActiveSubscription } from "../db";
 import { storagePut, storageGet } from "../storage";
 import { sdk } from "./sdk";
 import { convertToPdf, isConvertibleType, ACCEPTED_EXTENSIONS } from "../convertToPdf";
-import { sendPaymentConfirmationEmail, sendCancellationEmail } from "../email";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -38,142 +36,6 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
-  // ── Paddle Webhook (MUST be before express.json) ───────────────────────────────────────────
-  const webhookPaddleEnv = (process.env.PADDLE_API_KEY || "").startsWith("pdl_live_") ? Environment.production : Environment.sandbox;
-  const paddle = new Paddle(process.env.PADDLE_API_KEY || "", { environment: webhookPaddleEnv });
-
-  app.post("/api/paddle/webhook", express.raw({ type: "application/json" }), async (req, res) => {
-    const signature = (req.headers["paddle-signature"] as string) || "";
-    const rawBody = req.body.toString();
-    const secretKey = process.env.PADDLE_WEBHOOK_NOTIFICATION_ID || "";
-
-    let eventData: any;
-    try {
-      if (signature && rawBody) {
-        eventData = paddle.webhooks.unmarshal(rawBody, secretKey, signature);
-      } else {
-        console.log("[Paddle Webhook] Missing signature or body");
-        res.status(400).json({ error: "Missing signature" });
-        return;
-      }
-    } catch (err) {
-      console.error("[Paddle Webhook] Signature verification failed:", err);
-      res.status(400).json({ error: "Signature verification failed" });
-      return;
-    }
-
-    console.log(`[Paddle Webhook] Event: ${eventData.eventType} | ID: ${eventData.eventId}`);
-
-    try {
-      const data = eventData.data;
-      // Extract userId from custom_data (set during checkout)
-      const customData = data.customData || data.custom_data || {};
-      const userId = parseInt(customData.userId || customData.user_id || "0");
-
-      if (eventData.eventType === EventName.SubscriptionCreated ||
-          eventData.eventType === EventName.SubscriptionActivated ||
-          eventData.eventType === EventName.SubscriptionTrialing) {
-        if (userId) {
-          const billingPeriod = data.currentBillingPeriod || data.current_billing_period;
-          const periodStart = billingPeriod?.startsAt || billingPeriod?.starts_at;
-          const periodEnd = billingPeriod?.endsAt || billingPeriod?.ends_at;
-          const status = data.status === "trialing" ? "trialing" : "active";
-
-          await upsertSubscription({
-            userId,
-            paddleCustomerId: data.customerId || data.customer_id || undefined,
-            paddleSubscriptionId: data.id || undefined,
-            paddleTransactionId: data.transactionId || data.transaction_id || undefined,
-            plan: data.status === "trialing" ? "trial" : "monthly",
-            status,
-            currentPeriodStart: periodStart ? new Date(periodStart) : new Date(),
-            currentPeriodEnd: periodEnd ? new Date(periodEnd) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            cancelAtPeriodEnd: false,
-          });
-
-          // Mark pending documents as paid
-          await markDocumentsPaid(userId);
-
-          // Send confirmation email (non-blocking)
-          const user = await getUserById(userId);
-          if (user?.email && periodEnd) {
-            sendPaymentConfirmationEmail({
-              to: user.email,
-              name: user.name || "Usuario",
-              trialEndDate: new Date(periodEnd),
-              cancelUrl: "https://cloud-pdf.net/cancelar-suscripcion",
-            }).catch((err: unknown) => console.error("[Email] Confirmation email failed:", err));
-          }
-
-          console.log(`[Paddle Webhook] Subscription ${status} for user ${userId}, Paddle Sub: ${data.id}`);
-        }
-      } else if (eventData.eventType === EventName.SubscriptionUpdated) {
-        if (userId) {
-          const billingPeriod = data.currentBillingPeriod || data.current_billing_period;
-          const periodStart = billingPeriod?.startsAt || billingPeriod?.starts_at;
-          const periodEnd = billingPeriod?.endsAt || billingPeriod?.ends_at;
-          const scheduledChange = data.scheduledChange || data.scheduled_change;
-          const cancelAtEnd = scheduledChange?.action === "cancel";
-
-          await upsertSubscription({
-            userId,
-            paddleCustomerId: data.customerId || data.customer_id || undefined,
-            paddleSubscriptionId: data.id || undefined,
-            plan: data.status === "trialing" ? "trial" : "monthly",
-            status: data.status as "active" | "canceled" | "past_due" | "trialing" | "incomplete",
-            currentPeriodStart: periodStart ? new Date(periodStart) : undefined,
-            currentPeriodEnd: periodEnd ? new Date(periodEnd) : undefined,
-            cancelAtPeriodEnd: cancelAtEnd,
-          });
-          console.log(`[Paddle Webhook] Subscription updated for user ${userId}, status: ${data.status}`);
-        }
-      } else if (eventData.eventType === EventName.SubscriptionCanceled) {
-        if (userId) {
-          await upsertSubscription({
-            userId,
-            paddleCustomerId: data.customerId || data.customer_id || undefined,
-            paddleSubscriptionId: data.id || undefined,
-            plan: "monthly",
-            status: "canceled",
-            currentPeriodStart: undefined,
-            currentPeriodEnd: undefined,
-            cancelAtPeriodEnd: false,
-          });
-
-          // Send cancellation email (non-blocking)
-          const user = await getUserById(userId);
-          if (user?.email) {
-            sendCancellationEmail({
-              to: user.email,
-              name: user.name || "Usuario",
-              accessUntilDate: new Date(),
-              reactivateUrl: "https://cloud-pdf.net/es/dashboard?tab=billing",
-            }).catch((err: unknown) => console.error("[Email] Cancellation email failed:", err));
-          }
-
-          console.log(`[Paddle Webhook] Subscription canceled for user ${userId}`);
-        }
-      } else if (eventData.eventType === EventName.SubscriptionPastDue) {
-        if (userId) {
-          await upsertSubscription({
-            userId,
-            paddleCustomerId: data.customerId || data.customer_id || undefined,
-            paddleSubscriptionId: data.id || undefined,
-            plan: "monthly",
-            status: "past_due",
-            cancelAtPeriodEnd: false,
-          });
-          console.log(`[Paddle Webhook] Subscription past_due for user ${userId}`);
-        }
-      }
-    } catch (err) {
-      console.error("[Paddle Webhook] Error processing event:", err);
-    }
-
-    res.json({ received: true });
-  });
-
-
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
@@ -188,22 +50,8 @@ async function startServer() {
     });
   }
 
-  // ── Domain Redirect: pdfup.io → cloud-pdf.net ─────────────────────────────
-  // 301 redirect preserving path and query params (for SEO and Google Ads gclid)
-  app.use((req, res, next) => {
-    const host = (req.headers.host || "").toLowerCase().replace(/:\d+$/, "");
-    const xForwardedHost = (req.headers["x-forwarded-host"] || "").toString().toLowerCase();
-    console.log(`[Redirect Debug] host=${host} x-forwarded-host=${xForwardedHost} url=${req.originalUrl}`);
-    if (host === "pdfup.io" || host === "www.pdfup.io" || xForwardedHost === "pdfup.io" || xForwardedHost === "www.pdfup.io") {
-      const target = `https://cloud-pdf.net${req.originalUrl}`;
-      console.log(`[Redirect] Redirecting to ${target}`);
-      return res.redirect(301, target);
-    }
-    next();
-  });
-
   // ── Security Headers ─────────────────────────────────────────────────────────
-  // Comprehensive security headers to pass Sucuri/Google Ads security scans
+  // Comprehensive security headers
   app.use((_req, res, next) => {
     // Prevent clickjacking (both legacy header and CSP frame-ancestors)
     res.setHeader("X-Frame-Options", "SAMEORIGIN");
@@ -214,16 +62,16 @@ async function startServer() {
     // Referrer policy
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     // Permissions policy — disable unnecessary browser features
-    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(self \"https://*.paddle.com\")");
+    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
     // Strict Transport Security (HSTS) — force HTTPS for 1 year
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
     // Content Security Policy
     res.setHeader("Content-Security-Policy", [
       "frame-ancestors 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://cdn.paddle.com https://pay.google.com https://www.clarity.ms",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "object-src 'none'",
       "base-uri 'self'",
-      "frame-src 'self' https://*.paddle.com https://pay.google.com https://*.google.com",
+      "frame-src 'self'",
     ].join("; "));
     next();
   });
@@ -274,7 +122,7 @@ async function startServer() {
   app.get("/sitemap.xml", async (_req, res) => {
     try {
       const posts = await getBlogPosts(true);
-      const base = "https://cloud-pdf.net";
+      const base = "https://wegetdoc.com";
       const staticUrls: Array<{ loc: string; priority: string; changefreq: string; lastmod?: string }> = [
         { loc: `${base}/es`, priority: "1.0", changefreq: "weekly" },
         { loc: `${base}/en`, priority: "1.0", changefreq: "weekly" },

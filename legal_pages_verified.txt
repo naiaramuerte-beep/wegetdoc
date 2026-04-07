@@ -1,7 +1,0 @@
-Legal pages verified:
-- /es/privacy - Política de Privacidad - OK, renders correctly with all 12 sections
-- /es/cookies - Política de Cookies - OK, renders correctly with all 6 sections
-- /es/terms - Términos y Condiciones - Already existed, updated with EDITPDF.ONLINE branding
-- /es/legal - Aviso Legal - New, inserted
-- /es/gdpr - Cumplimiento RGPD - New, inserted
-All 5 pages verified in DB with correct content lengths.
