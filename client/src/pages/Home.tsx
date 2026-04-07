@@ -206,11 +206,11 @@ export default function Home() {
                 ) : (
                   <>
                     {t.hero_title_1.replace("PDF", "").trim()}{" "}
-                    <span className="relative inline-block">
+                    <span className="relative inline-block pb-1">
                       <span style={{ color: INDIGO }}>PDF</span>
                       <span
-                        className="absolute bottom-1 left-0 w-full h-[0.18em] rounded-full -z-10"
-                        style={{ backgroundColor: "#bbf7d0" }}
+                        className="absolute bottom-0 left-0 w-full rounded-full"
+                        style={{ backgroundColor: "#4ade80", height: "6px", opacity: 0.5 }}
                       />
                     </span>{" "}
                     <span style={{ color: INDIGO }}>
