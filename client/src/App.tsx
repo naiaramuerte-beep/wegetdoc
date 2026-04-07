@@ -141,7 +141,7 @@ function App() {
         <LanguageProvider>
           <PdfFileProvider>
             <TooltipProvider>
-              <Toaster position="top-right" />
+              <Toaster position="top-right" duration={3000} />
               <Router />
               {!isFastDoc && <CookieBanner />}
             </TooltipProvider>
