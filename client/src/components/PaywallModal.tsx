@@ -83,13 +83,7 @@ function PaymentForm({ onSuccess }: { onSuccess: () => void }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Card fields */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Payment method</span>
-          <CardBrands />
-        </div>
-        <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" } }} />
-      </div>
+      <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" } }} />
 
       {/* Checkbox */}
       <label className="flex items-start gap-2.5 cursor-pointer">
@@ -230,6 +224,13 @@ function StripeCheckoutForm({
     <div className="flex flex-col md:flex-row min-h-0">
       {/* ── Left: PDF Preview ── */}
       <div className="hidden md:flex flex-col items-center justify-center bg-[#f4f5f7] p-8" style={{ minWidth: 260, maxWidth: 280 }}>
+        {/* Header */}
+        <div className="flex items-center gap-2 mb-5 w-full">
+          <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+            <Check className="w-3.5 h-3.5 text-white" />
+          </div>
+          <p className="text-sm font-semibold text-slate-800">Your document is ready!</p>
+        </div>
         {/* PDF thumbnail */}
         <div
           className="w-full rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden flex items-center justify-center mb-3"
@@ -290,20 +291,7 @@ function StripeCheckoutForm({
 
       {/* ── Right: Payment form ── */}
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
-          <div className="w-7 h-7 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-            <Check className="w-4 h-4 text-white" />
-          </div>
-          <p className="text-sm font-semibold text-slate-800">Your document is ready!</p>
-        </div>
-
         <div className="px-6 py-5 space-y-5">
-          {/* Title */}
-          <h3 className="text-lg font-bold text-slate-900">
-            Start your subscription to access your document
-          </h3>
-
           {/* Pricing breakdown */}
           <div className="rounded-xl bg-[#f8faf8] border border-slate-100 p-4">
             <div className="flex items-center justify-between">
