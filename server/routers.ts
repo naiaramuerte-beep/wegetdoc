@@ -242,32 +242,30 @@ export const appRouter = router({
       const { getStripe } = await import("./_core/stripe");
       const { ENV } = await import("./_core/env");
       const stripe = getStripe();
+
+      if (!ENV.stripePriceId) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stripe price not configured" });
+      }
+
       const session = await stripe.checkout.sessions.create({
         ui_mode: "embedded",
         mode: "subscription",
         customer_email: ctx.user.email ?? undefined,
         line_items: [
-          // Trial activation fee: 0.50 EUR one-time
           {
-            price_data: {
-              currency: "eur",
-              product_data: { name: "WeGetDoc Trial - 7 days" },
-              unit_amount: 50,
-            },
-            quantity: 1,
-          },
-          // Recurring subscription: 49.90 EUR/month after 7-day trial
-          {
-            price: ENV.stripePriceId || undefined,
+            price: ENV.stripePriceId,
             quantity: 1,
           },
         ],
         subscription_data: {
           trial_period_days: 7,
+          trial_settings: {
+            end_behavior: { missing_payment_method: "cancel" },
+          },
           metadata: { userId: ctx.user.id.toString() },
         },
         metadata: { userId: ctx.user.id.toString() },
-        return_url: `https://wegetdoc.com/{CHECKOUT_SESSION_ID}/success`,
+        return_url: "https://wegetdoc.com/payment/success?session_id={CHECKOUT_SESSION_ID}",
       });
       return { clientSecret: session.client_secret };
     }),
