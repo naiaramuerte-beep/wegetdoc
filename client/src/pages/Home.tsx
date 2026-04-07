@@ -50,6 +50,28 @@ const SURFACE    = "#ffffff";
 
 const GRAD = `linear-gradient(135deg, ${INDIGO}, ${VIOLET})`;
 
+/** Highlight specific words in a title with a colored underline */
+function highlightWords(text: string, words: string[], color = "#4ade80") {
+  const parts: React.ReactNode[] = [];
+  let remaining = text;
+  let key = 0;
+  for (const word of words) {
+    const idx = remaining.toLowerCase().indexOf(word.toLowerCase());
+    if (idx === -1) continue;
+    if (idx > 0) parts.push(remaining.slice(0, idx));
+    const matched = remaining.slice(idx, idx + word.length);
+    parts.push(
+      <span key={key++} className="relative inline-block pb-1">
+        <span style={{ color: INDIGO }}>{matched}</span>
+        <span className="absolute bottom-0 left-0 w-full rounded-full" style={{ backgroundColor: color, height: "6px", opacity: 0.5 }} />
+      </span>
+    );
+    remaining = remaining.slice(idx + word.length);
+  }
+  if (remaining) parts.push(remaining);
+  return parts;
+}
+
 // ─── Tool definitions ─────────────────────────────────────────
 const TOOLS_EDIT = [
   { icon: Type,           label_key: "tool_edit_text",  tool: "text",         color: "#f1f5f9", iconColor: INDIGO },
@@ -409,7 +431,7 @@ export default function Home() {
               className="text-3xl md:text-4xl font-bold mb-3"
               style={{ color: TEXT_MAIN }}
             >
-              {t.how_title}
+              {highlightWords(t.how_title, ["Three quick steps", "Así de sencillo", "Drei einfache Schritte", "Trois étapes", "Três passos", "Tre semplici", "Drie stappen", "Trzy kroki", "Три шага", "三步"])}
             </h2>
             <p className="text-base" style={{ color: TEXT_MUTED }}>{t.how_subtitle}</p>
           </div>
@@ -478,7 +500,7 @@ export default function Home() {
                 className="text-3xl md:text-4xl font-bold"
                 style={{ color: TEXT_MAIN }}
               >
-                {t.benefits_title}
+                {highlightWords(t.benefits_title, ["WeGetDoc"])}
               </h2>
             </div>
 
