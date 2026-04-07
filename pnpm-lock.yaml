@@ -28,12 +28,6 @@ importers:
       '@matbee/libreoffice-converter':
         specifier: ^2.6.0
         version: 2.6.0(jszip@3.10.1)(sharp@0.34.5)
-      '@paddle/paddle-js':
-        specifier: ^1.6.2
-        version: 1.6.2
-      '@paddle/paddle-node-sdk':
-        specifier: ^3.6.0
-        version: 3.6.0
       '@pdfsmaller/pdf-encrypt-lite':
         specifier: ^1.0.2
         version: 1.0.2(pdf-lib@1.17.1)
@@ -1362,13 +1356,6 @@ packages:
   '@napi-rs/canvas@0.1.96':
     resolution: {integrity: sha512-6NNmNxvoJKeucVjxaaRUt3La2i5jShgiAbaY3G/72s1Vp3U06XPrAIxkAjBxpDcamEn/t+WJ4OOlGmvILo4/Ew==}
     engines: {node: '>= 10'}
-
-  '@paddle/paddle-js@1.6.2':
-    resolution: {integrity: sha512-nx1NXCzwWUWjf0iaRDiXZlfWgFjNZ6996RFcTDk0G0ggzrh514Zsc6jGTPOUGdLB1sYJXVQiKKoNLoKoXhH+sA==}
-
-  '@paddle/paddle-node-sdk@3.6.0':
-    resolution: {integrity: sha512-EFP1thHb1FVuKGwSJ/+/oj5FvCk3l3adyVy/mpUnDq/MM31RdcAdNn+AZ8qYd0pF4rJxtwXmWMGjXqjHKhKHuA==}
-    engines: {node: '>=20'}
 
   '@pdf-lib/standard-fonts@1.0.0':
     resolution: {integrity: sha512-hU30BK9IUN/su0Mn9VdlVKsWBS6GyhVfqjwl1FjZN4TxP6cCw0jP2w7V3Hf5uX7M0AZJ16vey9yE0ny7Sa59ZA==}
@@ -6241,10 +6228,6 @@ snapshots:
       '@napi-rs/canvas-win32-arm64-msvc': 0.1.96
       '@napi-rs/canvas-win32-x64-msvc': 0.1.96
     optional: true
-
-  '@paddle/paddle-js@1.6.2': {}
-
-  '@paddle/paddle-node-sdk@3.6.0': {}
 
   '@pdf-lib/standard-fonts@1.0.0':
     dependencies:
