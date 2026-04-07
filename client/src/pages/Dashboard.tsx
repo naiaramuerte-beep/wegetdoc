@@ -696,14 +696,11 @@ function DashboardPaymentForm({ onSuccess }: { onSuccess: () => void }) {
         className="w-full mt-4 py-3 rounded-xl bg-green-700 text-white font-semibold text-sm hover:bg-green-800 transition-colors disabled:opacity-50"
       >
         {submitting ? (
-          <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Processing...</span>
+          <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> ...</span>
         ) : (
-          "Descargar PDF"
+          "Suscribirse"
         )}
       </button>
-      <p className="text-center text-xs text-slate-400 mt-3">
-        7-day free trial, then 49.90 EUR/month. Cancel anytime.
-      </p>
     </form>
   );
 }

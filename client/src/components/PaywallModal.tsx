@@ -38,6 +38,8 @@ function PaymentForm({ onSuccess }: { onSuccess: () => void }) {
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
 
+  const { t } = useLanguage();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!stripe || !elements) return;
@@ -68,14 +70,11 @@ function PaymentForm({ onSuccess }: { onSuccess: () => void }) {
         className="w-full mt-4 py-3 rounded-xl bg-[#1B5E20] text-white font-semibold text-sm hover:bg-[#0D3311] transition-colors disabled:opacity-50"
       >
         {submitting ? (
-          <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Processing...</span>
+          <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> {t.paywall_processing}</span>
         ) : (
-          "Descargar PDF"
+          t.paywall_pay_download
         )}
       </button>
-      <p className="text-center text-xs text-slate-400 mt-3">
-        7-day free trial, then 49.90 EUR/month. Cancel anytime.
-      </p>
     </form>
   );
 }
@@ -300,19 +299,6 @@ function StripeCheckoutForm({
 
         {/* ── Right column: Stripe Embedded Checkout ── */}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          {/* Price banner */}
-          <div className="mx-4 mt-4 mb-2 rounded-xl overflow-hidden" style={{ background: "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)", border: "1px solid #bbf7d0" }}>
-            <div className="flex items-center justify-center gap-3 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "#dcfce7" }}>
-                  <Check className="w-4 h-4" style={{ color: "#16a34a" }} />
-                </div>
-                <span className="text-sm font-medium" style={{ color: "#374151" }}>{t.paywall_offer_label}</span>
-              </div>
-              <span className="text-2xl font-extrabold" style={{ color: "#16a34a" }}>0,50 &euro;</span>
-            </div>
-          </div>
-
           {/* Stripe Payment Element */}
           {stripePromise && clientSecret ? (
             <div className="relative flex-1 p-4">

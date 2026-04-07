@@ -436,6 +436,7 @@ function PricingPaymentForm({ onSuccess }: { onSuccess: () => void }) {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
+  const { t } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -465,14 +466,11 @@ function PricingPaymentForm({ onSuccess }: { onSuccess: () => void }) {
         style={{ backgroundColor: "#1B5E20" }}
       >
         {submitting ? (
-          <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Processing...</span>
+          <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> {t.paywall_processing}</span>
         ) : (
-          "Descargar PDF"
+          t.paywall_pay_download
         )}
       </button>
-      <p className="text-center text-xs mt-3" style={{ color: "#4A6B4A" }}>
-        7-day free trial, then 49.90 EUR/month. Cancel anytime.
-      </p>
     </form>
   );
 }
