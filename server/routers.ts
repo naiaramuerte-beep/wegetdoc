@@ -228,6 +228,23 @@ export const appRouter = router({
       return { success: true };
     }),
 
+    // Confirm subscription after SetupIntent succeeds — activates trial immediately
+    confirmSetup: protectedProcedure.mutation(async ({ ctx }) => {
+      const { upsertSubscription, markDocumentsPaid } = await import("./db");
+      const now = new Date();
+      const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      await upsertSubscription({
+        userId: ctx.user.id,
+        plan: "trial",
+        status: "trialing",
+        currentPeriodStart: now,
+        currentPeriodEnd: trialEnd,
+        cancelAtPeriodEnd: false,
+      });
+      await markDocumentsPaid(ctx.user.id);
+      return { success: true };
+    }),
+
     // Stripe config — returns publishable key to frontend
     stripeConfig: publicProcedure.query(async () => {
       const { ENV } = await import("./_core/env");

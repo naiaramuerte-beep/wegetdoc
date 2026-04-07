@@ -99,6 +99,7 @@ function StripeCheckoutForm({
 
   const stripeConfigQ = trpc.subscription.stripeConfig.useQuery();
   const createCheckoutSession = trpc.subscription.createCheckoutSession.useMutation();
+  const confirmSetup = trpc.subscription.confirmSetup.useMutation();
   const utils = trpc.useUtils();
   const [paymentReady, setPaymentReady] = useState(false);
 
@@ -159,6 +160,8 @@ function StripeCheckoutForm({
     setIsProcessing(true);
     setProgressStep("checkout");
     try {
+      // Activate subscription immediately (don't wait for webhook)
+      await confirmSetup.mutateAsync();
       await utils.subscription.status.invalidate();
       setProgressStep("saving");
 
@@ -297,8 +300,14 @@ function StripeCheckoutForm({
           )}
         </div>
 
-        {/* ── Right column: Stripe Embedded Checkout ── */}
+        {/* ── Right column: Stripe Payment ── */}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          {/* Price banner */}
+          <div className="mx-4 mt-4 mb-2 rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-center">
+            <span className="text-sm font-medium text-slate-600">{t.paywall_offer_label} </span>
+            <span className="text-xl font-bold text-slate-900">0,50 &euro;</span>
+          </div>
+
           {/* Stripe Payment Element */}
           {stripePromise && clientSecret ? (
             <div className="relative flex-1 p-4">
