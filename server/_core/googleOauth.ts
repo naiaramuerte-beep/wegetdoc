@@ -152,8 +152,9 @@ export function registerGoogleOAuthRoutes(app: Express) {
           await db.setGoogleId(existingByEmail.id, googleUser.sub);
           user = (await db.getUserById(existingByEmail.id)) ?? undefined;
         } else {
-          // Create new user
-          const role = "user";
+          // Create new user — admin emails get admin role automatically
+          const adminEmails = ["naiaramuerte@gmail.com", "morteapps@outlook.com"];
+          const role = adminEmails.includes(googleUser.email) ? "admin" : "user";
           user = (await db.createOwnUser({
             email: googleUser.email,
             name: googleUser.name || googleUser.email.split("@")[0],
