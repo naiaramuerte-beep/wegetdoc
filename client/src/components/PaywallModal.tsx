@@ -293,12 +293,9 @@ function StripeCheckoutForm({
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
         <div className="px-6 py-5 space-y-5">
           {/* Pricing breakdown */}
-          <div className="rounded-xl bg-[#f8faf8] border border-slate-100 p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600">Total due today</span>
-              <span className="text-2xl font-bold text-slate-900">0,50&nbsp;€</span>
-            </div>
-            <p className="text-xs text-slate-400 mt-1">7-day trial, then 19,99&nbsp;€/month</p>
+          <div className="rounded-xl bg-[#f8faf8] border border-slate-100 p-4 text-center">
+            <span className="text-sm text-slate-600">Your PDF only for </span>
+            <span className="text-2xl font-bold text-slate-900">0,50&nbsp;€</span>
           </div>
 
           {/* Stripe form */}
