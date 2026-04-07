@@ -228,19 +228,60 @@ export const appRouter = router({
       return { success: true };
     }),
 
-    // Stubs kept so the frontend compiles (Paddle removed)
-    paddleConfig: publicProcedure.query(async () => {
-      return { clientToken: "", priceId: "", sandbox: true };
+    // Stripe config — returns publishable key to frontend
+    stripeConfig: publicProcedure.query(async () => {
+      const { ENV } = await import("./_core/env");
+      return {
+        publishableKey: ENV.stripePublishableKey,
+        priceId: ENV.stripePriceId,
+      };
     }),
 
-    confirmPaddleCheckout: protectedProcedure
-      .input(z.object({
-        transactionId: z.string().optional(),
-        subscriptionId: z.string().optional(),
-        customerId: z.string().optional(),
-      }))
-      .mutation(async () => {
-        return { success: true, subscriptionId: "" };
+    // Create Stripe Embedded Checkout Session
+    createCheckoutSession: protectedProcedure.mutation(async ({ ctx }) => {
+      const { getStripe } = await import("./_core/stripe");
+      const { ENV } = await import("./_core/env");
+      const stripe = getStripe();
+      const session = await stripe.checkout.sessions.create({
+        ui_mode: "embedded",
+        mode: "subscription",
+        customer_email: ctx.user.email ?? undefined,
+        line_items: [
+          // Trial activation fee: 0.50 EUR one-time
+          {
+            price_data: {
+              currency: "eur",
+              product_data: { name: "WeGetDoc Trial - 7 days" },
+              unit_amount: 50,
+            },
+            quantity: 1,
+          },
+          // Recurring subscription: 49.90 EUR/month after 7-day trial
+          {
+            price: ENV.stripePriceId || undefined,
+            quantity: 1,
+          },
+        ],
+        subscription_data: {
+          trial_period_days: 7,
+          metadata: { userId: ctx.user.id.toString() },
+        },
+        metadata: { userId: ctx.user.id.toString() },
+        return_url: `https://wegetdoc.com/{CHECKOUT_SESSION_ID}/success`,
+      });
+      return { clientSecret: session.client_secret };
+    }),
+
+    // Check session status after completion
+    sessionStatus: publicProcedure
+      .input(z.object({ sessionId: z.string() }))
+      .query(async ({ input }) => {
+        const { getStripe } = await import("./_core/stripe");
+        const session = await getStripe().checkout.sessions.retrieve(input.sessionId);
+        return {
+          status: session.status,
+          paymentStatus: session.payment_status,
+        };
       }),
   }),
 

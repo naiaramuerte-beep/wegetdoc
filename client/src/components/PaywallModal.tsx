@@ -1,16 +1,18 @@
 /*
- * PaywallModal — Paddle Inline Checkout embebido
- * - Izquierda: preview del PDF (minimal)
- * - Derecha: formulario de Paddle renderizado inline dentro del modal
+ * PaywallModal — Stripe Embedded Checkout
+ * - Left: preview del PDF (minimal)
+ * - Right: Stripe Embedded Checkout form rendered inline
  */
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { logoParts, colors } from "@/lib/brand";
-import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield } from "lucide-react";
+import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { usePdfFile } from "@/contexts/PdfFileContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { loadStripe } from "@stripe/stripe-js";
+import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
 
 // PDF data can be base64 (from editor) or tempKey (from S3 temp upload after login redirect)
 type PdfPayload =
@@ -30,8 +32,8 @@ interface PaywallModalProps {
 
 type Step = "auth-choice" | "email-form" | "plans";
 
-// ── Paddle Inline Checkout form ────────────────────────────────────────
-function PaddleCheckoutForm({
+// ── Stripe Embedded Checkout form ────────────────────────────────────────
+function StripeCheckoutForm({
   onSuccess,
   pdfData,
   thumbnailUrl,
@@ -42,42 +44,35 @@ function PaddleCheckoutForm({
   thumbnailUrl?: string;
   buildPdfForUpload?: () => Promise<{ base64: string; name: string; size: number } | null>;
 }) {
-  const { user } = useAuth();
   const { t } = useLanguage();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [progressStep, setProgressStep] = useState<"idle" | "checkout" | "saving" | "done">("idle");
-  const [paddleReady, setPaddleReady] = useState(false);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const paddleInitialized = useRef(false);
-  const checkoutOpened = useRef(false);
-  const mountedRef = useRef(true);
+  const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
 
-  const confirmPaddleCheckout = trpc.subscription.confirmPaddleCheckout.useMutation();
-  const paddleConfigQ = trpc.subscription.paddleConfig.useQuery();
+  const stripeConfigQ = trpc.subscription.stripeConfig.useQuery();
+  const createCheckoutSession = trpc.subscription.createCheckoutSession.useMutation();
   const utils = trpc.useUtils();
-  const [geoData, setGeoData] = useState<{ country: string; postalCode: string } | null>(null);
 
-  // Default postal codes per country — used when geo lookup doesn't return one
-  const defaultPostals: Record<string, string> = {
-    US: "10001", GB: "SW1A 1AA", DE: "10115", FR: "75001", ES: "28001", IT: "00100",
-    PT: "1000-001", NL: "1011", PL: "00-001", RU: "101000", CN: "100000", JP: "100-0001",
-    BR: "01000-000", MX: "06600", AR: "C1000", CL: "8320000", CO: "110111", PE: "15001",
-    IN: "110001", AU: "2000", CA: "M5H 2N2", KR: "04524", SE: "11120", NO: "0150",
-    DK: "1000", FI: "00100", AT: "1010", CH: "8001", BE: "1000", IE: "D01",
-  };
-
-  // Fetch geo data on mount — awaited before opening checkout
+  // Load Stripe.js with publishable key
   useEffect(() => {
-    fetch("/api/geo").then(r => r.json()).then(data => {
-      const country = data?.country || "";
-      const postalCode = data?.postalCode || defaultPostals[country] || "";
-      if (country) {
-        setGeoData({ country, postalCode });
-      }
-    }).catch(() => {});
-  }, []);
+    if (stripeConfigQ.data?.publishableKey) {
+      setStripePromise(loadStripe(stripeConfigQ.data.publishableKey));
+    }
+  }, [stripeConfigQ.data?.publishableKey]);
 
-  // Upload PDF via REST multipart (avoids tRPC base64 size limits)
+  // Create checkout session
+  useEffect(() => {
+    if (!stripeConfigQ.data?.publishableKey || clientSecret) return;
+    createCheckoutSession.mutateAsync().then((res) => {
+      if (res.clientSecret) setClientSecret(res.clientSecret);
+    }).catch((err) => {
+      console.error("[Stripe] Failed to create checkout session:", err);
+      toast.error("Error loading payment form. Please try again.");
+    });
+  }, [stripeConfigQ.data?.publishableKey]);
+
+  // Upload PDF via REST multipart
   const uploadPdfViaRest = async (data: { base64: string; name: string; size: number }): Promise<void> => {
     const binary = atob(data.base64);
     const bytes = new Uint8Array(binary.length);
@@ -97,7 +92,7 @@ function PaddleCheckoutForm({
     }
   };
 
-  // Claim a temp PDF from S3 (uploaded before login redirect)
+  // Claim a temp PDF from S3
   const claimTempPdf = async (tempKey: string, name: string): Promise<void> => {
     const resp = await fetch("/api/documents/claim-temp", {
       method: "POST",
@@ -111,31 +106,15 @@ function PaddleCheckoutForm({
     }
   };
 
-  // Handle post-checkout success (upload PDF, confirm subscription)
-  const handleCheckoutComplete = useCallback(async (eventData: any) => {
-    setIsLoading(true);
+  // Handle post-checkout completion
+  const handleComplete = useCallback(async () => {
+    setIsProcessing(true);
     setProgressStep("checkout");
     try {
-      // Paddle.js v2 checkout.completed passes event.data with the transaction object
-      // The transaction ID can be at: eventData.id, eventData.transaction_id, or nested
-      console.log("[PaywallModal] checkout.completed eventData:", JSON.stringify(eventData, null, 2));
-      const transactionId = eventData?.id || eventData?.transaction_id || eventData?.data?.transaction_id || eventData?.data?.id || "";
-      const subscriptionId = eventData?.subscription_id || eventData?.data?.subscription_id || "";
-      const customerId = eventData?.customer_id || eventData?.data?.customer_id || "";
-      console.log("[PaywallModal] Extracted IDs:", { transactionId, subscriptionId, customerId });
-
-      // 1. Confirm subscription in our DB
-      await confirmPaddleCheckout.mutateAsync({
-        transactionId,
-        subscriptionId,
-        customerId,
-      });
       await utils.subscription.status.invalidate();
-
-      // 2. Upload PDF now that subscription is active
       setProgressStep("saving");
 
-      // Case A: pdfData has a tempKey (uploaded to S3 before login redirect)
+      // Upload PDF
       if (pdfData && "tempKey" in pdfData) {
         try {
           await claimTempPdf(pdfData.tempKey, pdfData.name);
@@ -144,7 +123,6 @@ function PaddleCheckoutForm({
           console.error("[PaywallModal] claimTempPdf failed:", claimErr);
         }
       } else {
-        // Case B: pdfData has base64 (built in-memory, user was already logged in)
         let resolvedPdfData = pdfData as { base64: string; name: string; size: number } | undefined;
         if (!resolvedPdfData && buildPdfForUpload) {
           try {
@@ -158,177 +136,22 @@ function PaddleCheckoutForm({
             await uploadPdfViaRest(resolvedPdfData);
             await utils.documents.list.invalidate();
           } catch (uploadErr) {
-            console.error("PDF upload failed (attempt 1):", uploadErr);
-            try {
-              await uploadPdfViaRest(resolvedPdfData);
-              await utils.documents.list.invalidate();
-            } catch (uploadErr2) {
-              console.error("PDF upload failed (attempt 2):", uploadErr2);
-            }
+            console.error("PDF upload failed:", uploadErr);
           }
         }
       }
 
       setProgressStep("done");
       toast.success("Document saved! Processing...");
-
-      onSuccess(transactionId || subscriptionId);
+      onSuccess();
     } catch (err: unknown) {
       setProgressStep("idle");
       const message = err instanceof Error ? err.message : "Error processing payment";
       toast.error(message);
     } finally {
-      setIsLoading(false);
+      setIsProcessing(false);
     }
-  }, [pdfData, buildPdfForUpload, onSuccess, confirmPaddleCheckout, utils]);
-
-  // Wait for geo data before opening checkout (max 2s, then open anyway)
-  const [geoTimeout, setGeoTimeout] = useState(false);
-  useEffect(() => {
-    if (geoData) return; // already have geo
-    const timer = setTimeout(() => setGeoTimeout(true), 2000);
-    return () => clearTimeout(timer);
-  }, [geoData]);
-
-  // Initialize Paddle.js with INLINE mode and open checkout
-  useEffect(() => {
-    if (checkoutOpen || !paddleConfigQ.data?.clientToken || !paddleConfigQ.data?.priceId) return;
-    // Wait for geo data OR timeout before opening
-    if (!geoData && !geoTimeout) return;
-
-    const Paddle = (window as any).Paddle;
-    if (!Paddle) {
-      // Load script first
-      const script = document.createElement("script");
-      script.src = "https://cdn.paddle.com/paddle/v2/paddle.js";
-      script.async = true;
-      script.onload = () => initAndOpen();
-      script.onerror = () => {
-        console.error("[Paddle] Failed to load Paddle.js");
-        toast.error("Error loading payment system. Please refresh.");
-      };
-      document.head.appendChild(script);
-      return;
-    }
-
-    initAndOpen();
-
-    function initAndOpen() {
-      const P = (window as any).Paddle;
-      if (!P) return;
-
-      const clientToken = paddleConfigQ.data!.clientToken;
-      const priceId = paddleConfigQ.data!.priceId;
-
-      try {
-        if (!paddleInitialized.current) {
-          if (paddleConfigQ.data!.sandbox && P.Environment) {
-            P.Environment.set("sandbox");
-          }
-          P.Initialize({
-            token: clientToken,
-            checkout: {
-              settings: {
-                displayMode: "inline",
-                frameTarget: "paddle-checkout-container",
-                frameInitialHeight: "450",
-                frameStyle: "width: 100%; min-width: 312px; background-color: transparent; border: none;",
-              },
-            },
-            eventCallback: (event: any) => {
-              console.log("[Paddle] Event:", event.name, event);
-              if (event.name === "checkout.loaded") {
-                setPaddleReady(true);
-              }
-              if (event.name === "checkout.completed") {
-                handleCheckoutComplete(event.data);
-              }
-              if (event.name === "checkout.closed") {
-                // User closed the checkout
-              }
-              if (event.name === "checkout.error") {
-                console.error("[Paddle] Checkout error:", event);
-                toast.error("Payment error. Please try again.");
-              }
-            },
-          });
-          paddleInitialized.current = true;
-        } else {
-          // Already initialized, update the event callback
-          P.Update({
-            eventCallback: (event: any) => {
-              console.log("[Paddle] Event:", event.name, event);
-              if (event.name === "checkout.loaded") {
-                setPaddleReady(true);
-              }
-              if (event.name === "checkout.completed") {
-                handleCheckoutComplete(event.data);
-              }
-              if (event.name === "checkout.error") {
-                console.error("[Paddle] Checkout error:", event);
-                toast.error("Payment error. Please try again.");
-              }
-            },
-          });
-        }
-
-        // Open the checkout — renders inside the div with class "paddle-checkout-container"
-        // Delay slightly to ensure DOM is ready
-        setTimeout(() => {
-          const items = [{ priceId, quantity: 1 }];
-
-          const customerData: any = {
-            email: user?.email || undefined,
-          };
-          if (geoData?.country) {
-            customerData.address = {
-              countryCode: geoData.country,
-              postalCode: geoData.postalCode || defaultPostals[geoData.country] || "00000",
-            };
-          }
-
-          P.Checkout.open({
-            items,
-            discountId: "dsc_01kn9r3e3et9pdv30atyv82h4x",
-            customer: customerData,
-            customData: {
-              user_id: user?.id?.toString() || "",
-              user_email: user?.email || "",
-              user_name: user?.name || "",
-            },
-            settings: {
-              locale: "en",
-              allowLogout: false,
-              showAddDiscounts: false,
-            },
-          });
-
-          setCheckoutOpen(true);
-          checkoutOpened.current = true;
-          console.log("[Paddle] Inline checkout opened");
-        }, 150);
-      } catch (err) {
-        console.error("[Paddle] Init/open error:", err);
-        toast.error("Error opening payment form. Please try again.");
-      }
-    }
-  }, [checkoutOpen, paddleConfigQ.data, user, handleCheckoutComplete, geoData, geoTimeout]);
-
-  // Close Paddle checkout when component unmounts
-  useEffect(() => {
-    return () => {
-      mountedRef.current = false;
-      if (checkoutOpened.current && (window as any).Paddle) {
-        try {
-          (window as any).Paddle.Checkout.close();
-          console.log("[Paddle] Checkout closed on unmount");
-        } catch (e) {
-          console.warn("[Paddle] Error closing checkout:", e);
-        }
-        checkoutOpened.current = false;
-      }
-    };
-  }, []);
+  }, [pdfData, buildPdfForUpload, onSuccess, utils]);
 
   return (
     <div className="flex flex-col min-h-0">
@@ -339,7 +162,6 @@ function PaddleCheckoutForm({
         </div>
         <p className="text-base font-semibold text-slate-800">Your document is ready!</p>
       </div>
-
 
       <div className="flex flex-col md:flex-row min-h-0">
         {/* ── Left column: Logo + PDF Preview ── */}
@@ -388,7 +210,7 @@ function PaddleCheckoutForm({
           </p>
 
           {/* Progress steps — visible during payment processing */}
-          {isLoading && (
+          {isProcessing && (
             <div className="mt-4 w-full rounded-xl border border-slate-100 bg-white p-3">
               {([
                 { key: "checkout",     label: "Processing payment..." },
@@ -427,9 +249,9 @@ function PaddleCheckoutForm({
           )}
         </div>
 
-        {/* ── Right column: Paddle Inline Checkout ── */}
+        {/* ── Right column: Stripe Embedded Checkout ── */}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          {/* Price banner — visible above checkout */}
+          {/* Price banner */}
           <div className="mx-4 mt-4 mb-2 rounded-xl overflow-hidden" style={{ background: "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)", border: "1px solid #bbf7d0" }}>
             <div className="flex items-center justify-center gap-3 px-4 py-3">
               <div className="flex items-center gap-2">
@@ -438,12 +260,24 @@ function PaddleCheckoutForm({
                 </div>
                 <span className="text-sm font-medium" style={{ color: "#374151" }}>{t.paywall_offer_label}</span>
               </div>
-              <span className="text-2xl font-extrabold" style={{ color: "#16a34a" }}>0,90 &euro;</span>
+              <span className="text-2xl font-extrabold" style={{ color: "#16a34a" }}>0,50 &euro;</span>
             </div>
           </div>
 
-          {/* Loading state while Paddle loads */}
-          {!paddleReady && (
+          {/* Stripe Embedded Checkout */}
+          {stripePromise && clientSecret ? (
+            <div className="relative flex-1 p-2" style={{ minHeight: 450 }}>
+              <EmbeddedCheckoutProvider
+                stripe={stripePromise}
+                options={{
+                  clientSecret,
+                  onComplete: handleComplete,
+                }}
+              >
+                <EmbeddedCheckout />
+              </EmbeddedCheckoutProvider>
+            </div>
+          ) : (
             <div className="flex items-center justify-center p-8">
               <div className="flex flex-col items-center gap-3">
                 <Loader2 className="w-8 h-8 animate-spin text-[#1B5E20]" />
@@ -451,18 +285,6 @@ function PaddleCheckoutForm({
               </div>
             </div>
           )}
-          {/* Paddle inline checkout renders here */}
-          <div className="relative flex-1">
-            <div
-              className="paddle-checkout-container"
-              style={{
-                minHeight: 450,
-                padding: "0 8px",
-                opacity: paddleReady ? 1 : 0,
-                transition: "opacity 0.3s ease",
-              }}
-            />
-          </div>
         </div>
       </div>
     </div>
@@ -496,25 +318,21 @@ export default function PaywallModal({
   if (!isOpen) return null;
 
   const currentStep = isAuthenticated ? "plans" : step;
-  // Use pdfData from prop OR from sessionStorage-restored pendingEditedPdf (after login redirect)
   const effectivePdfData = pdfData ?? pendingEditedPdf ?? undefined;
 
   const handleGoogleLogin = async () => {
-    // Save the original PDF file
     if (pendingFile) {
       try { await savePdfToSession(pendingFile); } catch {}
     }
-     // Save the EDITED PDF (with annotations) so it survives the OAuth redirect
     if (pdfData) {
       try { await saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size); } catch {}
     }
     setPendingPaywall(true);
-    // Also set the pending action flag so the auto-resume useEffect has a reliable signal
     sessionStorage.setItem("cloudpdf_pending_action", "download");
-    // Use direct Google OAuth (shows "WeGetDoc" on Google consent screen)
     const returnPath = window.location.pathname + window.location.search;
     window.location.href = `/api/auth/google?origin=${encodeURIComponent(window.location.origin)}&returnPath=${encodeURIComponent(returnPath)}`;
   };
+
   const handleEmailSubmit = async () => {
     if (!emailInput.trim() || !emailInput.includes("@")) {
       toast.error(t.paywall_enter_email);
@@ -538,9 +356,7 @@ export default function PaywallModal({
           password: passwordInput,
         });
       }
-      // Refresh auth state — cookie is set by the server
       await refresh();
-      // Auto-save the document to the user's account (so it appears in "My Documents" even if they cancel payment)
       const docToSave = (effectivePdfData && "base64" in effectivePdfData ? effectivePdfData : null) ?? (buildPdfForUpload ? await buildPdfForUpload() : null);
       if (docToSave && "base64" in docToSave) {
         try {
@@ -556,7 +372,6 @@ export default function PaywallModal({
           console.warn("[PaywallModal] Auto-save after registration failed:", e);
         }
       }
-      // Auth state is now updated, step will auto-switch to "plans"
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Error";
       toast.error(message);
@@ -717,9 +532,9 @@ export default function PaywallModal({
           </div>
         )}
 
-        {/* ── Plans: payment step (no header, just PDF preview + Paddle) ── */}
+        {/* ── Plans: payment step ── */}
         {currentStep === "plans" && (
-          <PaddleCheckoutForm
+          <StripeCheckoutForm
             onSuccess={handlePaymentSuccess}
             pdfData={effectivePdfData}
             thumbnailUrl={thumbnailUrl}

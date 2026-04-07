@@ -1,10 +1,10 @@
 /* =============================================================
    WeGetDoc Pricing Page — Verdant Gold design
    Two plans: Trial + Monthly, with feature comparison table
-   Paddle inline checkout embebido (no overlay)
+   Stripe Embedded Checkout inline
    ============================================================= */
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Check, X, ChevronDown, ChevronUp, Zap, Crown, Loader2, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
@@ -13,20 +13,14 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { brandName } from "@/lib/brand";
+import { loadStripe } from "@stripe/stripe-js";
+import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
 
 export default function Pricing() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [showCheckout, setShowCheckout] = useState(false);
   const { isAuthenticated, user } = useAuth();
   const { t } = useLanguage();
-  const paddleConfigQ = trpc.subscription.paddleConfig.useQuery();
-  const confirmPaddleCheckout = trpc.subscription.confirmPaddleCheckout.useMutation({
-    onSuccess: () => {
-      toast.success("Subscription activated!");
-      setShowCheckout(false);
-    },
-    onError: () => toast.error(t.pricing_error ?? "Error processing payment. Please try again."),
-  });
 
   const features = [
     { name: t.pricing_feature_convert ?? "Unlimited conversions", trial: false, monthly: true },
@@ -72,14 +66,12 @@ export default function Pricing() {
 
   const handleSubscribe = () => {
     if (!isAuthenticated) {
-      // Redirect to home page with login modal for authentication
       const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
       const currentLang = langMatch ? langMatch[1] : "es";
       window.location.href = `/${currentLang}?login=true`;
       return;
     }
     setShowCheckout(true);
-    // Scroll to checkout section
     setTimeout(() => {
       document.getElementById("pricing-checkout")?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 100);
@@ -121,7 +113,6 @@ export default function Pricing() {
                 boxShadow: "0 0 0 4px rgba(27, 94, 32, 0.08)",
               }}
             >
-              {/* Most popular badge */}
               <div className="absolute -top-3 left-6">
                 <span
                   className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold text-white"
@@ -298,19 +289,7 @@ export default function Pricing() {
                   Cancelar
                 </button>
               </div>
-              <PaddleInlineCheckout
-                paddleConfig={paddleConfigQ.data}
-                user={user}
-              onComplete={(data: any) => {
-                   console.log("[Pricing] checkout.completed data:", JSON.stringify(data, null, 2));
-                   const txnId = data.id || data.transaction_id || data.subscription_id || "";
-                   confirmPaddleCheckout.mutate({
-                     transactionId: data.id || data.transaction_id || "",
-                     subscriptionId: data.subscription_id || "",
-                     customerId: data.customer_id || "",
-                   });
-                 }}
-              />
+              <StripeInlineCheckout />
             </div>
           </div>
         </section>
@@ -452,128 +431,58 @@ export default function Pricing() {
   );
 }
 
-// ── Paddle Inline Checkout component (reusable) ─────────────────────────────
-function PaddleInlineCheckout({
-  paddleConfig,
-  user,
-  onComplete,
-}: {
-  paddleConfig?: { clientToken: string; priceId: string; sandbox?: boolean } | null;
-  user?: { id: number; email: string | null; name?: string | null } | null;
-  onComplete: (data: any) => void;
-}) {
-  const [ready, setReady] = useState(false);
-  const initialized = useRef(false);
-  const opened = useRef(false);
-  const geoRef = useRef<{ country: string; postalCode: string } | null>(null);
+// ── Stripe Inline Checkout component ─────────────────────────────
+function StripeInlineCheckout() {
+  const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+
+  const stripeConfigQ = trpc.subscription.stripeConfig.useQuery();
+  const createCheckoutSession = trpc.subscription.createCheckoutSession.useMutation();
+  const utils = trpc.useUtils();
 
   useEffect(() => {
-    fetch("/api/geo").then(r => r.json()).then(data => {
-      if (data?.country && data?.postalCode) geoRef.current = { country: data.country, postalCode: data.postalCode };
-    }).catch(() => {});
-  }, []);
-
-  const handleComplete = useCallback((eventData: any) => {
-    onComplete(eventData);
-  }, [onComplete]);
-
-  useEffect(() => {
-    if (!paddleConfig?.clientToken || !paddleConfig?.priceId) return;
-
-    const P = (window as any).Paddle;
-    if (!P) return;
-
-    try {
-      if (!initialized.current) {
-        if (paddleConfig.sandbox && P.Environment) {
-          P.Environment.set("sandbox");
-        }
-        P.Initialize({
-          token: paddleConfig.clientToken,
-          checkout: {
-            settings: {
-              displayMode: "inline",
-              frameTarget: "pricing-paddle-checkout",
-              frameInitialHeight: "450",
-              frameStyle: "width: 100%; min-width: 312px; background-color: transparent; border: none;",
-            },
-          },
-          eventCallback: (event: any) => {
-            if (event.name === "checkout.loaded") setReady(true);
-            if (event.name === "checkout.completed") handleComplete(event.data);
-            if (event.name === "checkout.error") {
-              console.error("[Paddle] Checkout error:", event);
-              toast.error("Error en el proceso de pago.");
-            }
-          },
-        });
-        initialized.current = true;
-      } else {
-        P.Update({
-          eventCallback: (event: any) => {
-            if (event.name === "checkout.loaded") setReady(true);
-            if (event.name === "checkout.completed") handleComplete(event.data);
-            if (event.name === "checkout.error") {
-              console.error("[Paddle] Checkout error:", event);
-              toast.error("Error en el proceso de pago.");
-            }
-          },
-        });
-      }
-
-      if (!opened.current) {
-        const pricingCustomer: any = { email: user?.email || undefined };
-        if (geoRef.current) {
-          pricingCustomer.address = { countryCode: geoRef.current.country, postalCode: geoRef.current.postalCode };
-        }
-        P.Checkout.open({
-          items: [{ priceId: paddleConfig.priceId, quantity: 1 }],
-          customer: pricingCustomer,
-          customData: {
-            user_id: user?.id?.toString() || "",
-            user_email: user?.email || "",
-            user_name: user?.name || "",
-          },
-          settings: {
-            locale: "es",
-            allowLogout: false,
-            showAddDiscounts: true,
-          },
-        });
-        opened.current = true;
-      }
-    } catch (err) {
-      console.error("[Paddle] Init error:", err);
-      toast.error("Error loading payment form.");
+    if (stripeConfigQ.data?.publishableKey) {
+      setStripePromise(loadStripe(stripeConfigQ.data.publishableKey));
     }
-  }, [paddleConfig, user, handleComplete]);
+  }, [stripeConfigQ.data?.publishableKey]);
 
   useEffect(() => {
-    return () => {
-      if (opened.current && (window as any).Paddle) {
-        try { (window as any).Paddle.Checkout.close(); } catch {}
-      }
-    };
-  }, []);
+    if (!stripeConfigQ.data?.publishableKey || clientSecret) return;
+    createCheckoutSession.mutateAsync().then((res) => {
+      if (res.clientSecret) setClientSecret(res.clientSecret);
+    }).catch((err) => {
+      console.error("[Stripe] Failed to create checkout session:", err);
+      toast.error("Error loading payment form.");
+    });
+  }, [stripeConfigQ.data?.publishableKey]);
+
+  const handleComplete = useCallback(async () => {
+    await utils.subscription.status.invalidate();
+    toast.success("Subscription activated!");
+  }, [utils]);
+
+  if (!stripePromise || !clientSecret) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#1B5E20" }} />
+        <span className="ml-3 text-sm" style={{ color: "#4A6B4A" }}>
+          Cargando formulario de pago...
+        </span>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4">
-      {!ready && (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#1B5E20" }} />
-          <span className="ml-3 text-sm" style={{ color: "#4A6B4A" }}>
-            Cargando formulario de pago...
-          </span>
-        </div>
-      )}
-      <div
-        className="pricing-paddle-checkout"
-        style={{
-          minHeight: ready ? "auto" : 0,
-          opacity: ready ? 1 : 0,
-          transition: "opacity 0.3s ease",
+    <div className="p-4" style={{ minHeight: 450 }}>
+      <EmbeddedCheckoutProvider
+        stripe={stripePromise}
+        options={{
+          clientSecret,
+          onComplete: handleComplete,
         }}
-      />
+      >
+        <EmbeddedCheckout />
+      </EmbeddedCheckoutProvider>
     </div>
   );
 }

@@ -145,6 +145,9 @@ export async function upsertSubscription(data: {
   paddleCustomerId?: string;
   paddleSubscriptionId?: string;
   paddleTransactionId?: string;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  stripeSessionId?: string;
   plan?: "trial" | "monthly" | "annual";
   status: "active" | "canceled" | "past_due" | "trialing" | "incomplete";
   currentPeriodStart?: Date;
@@ -163,9 +166,27 @@ export async function upsertSubscription(data: {
   }
 }
 
+export async function getSubscriptionByStripeSubId(stripeSubscriptionId: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(subscriptions)
+    .where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId)).limit(1);
+  return result[0] ?? null;
+}
+
 export async function cancelSubscriptionDb(userId: number) {
   const db = await getDb();
   if (!db) return;
+  // Find the active subscription to cancel in Stripe if applicable
+  const sub = await getActiveSubscription(userId);
+  if (sub?.stripeSubscriptionId) {
+    try {
+      const { getStripe } = await import("./_core/stripe");
+      await getStripe().subscriptions.update(sub.stripeSubscriptionId, { cancel_at_period_end: true });
+    } catch (err) {
+      console.error("[Stripe] Failed to cancel subscription:", err);
+    }
+  }
   await db.update(subscriptions).set({ status: "canceled", cancelAtPeriodEnd: true })
     .where(eq(subscriptions.userId, userId));
 }
@@ -184,6 +205,7 @@ export async function getAllSubscribedUsers() {
     plan: subscriptions.plan,
     currentPeriodEnd: subscriptions.currentPeriodEnd,
     paddleCustomerId: subscriptions.paddleCustomerId,
+    stripeCustomerId: subscriptions.stripeCustomerId,
   }).from(users)
     .innerJoin(subscriptions, eq(users.id, subscriptions.userId))
     .orderBy(desc(users.createdAt));
@@ -536,11 +558,11 @@ export async function getBillingStats() {
     db.select({ count: sql<number>`count(*)` }).from(users).where(sql`${users.createdAt} >= ${startOfMonth}`),
   ]);
 
-  // Calculate MRR: trial = 0.99€, monthly = 9.99€, annual = 99€/12
+  // Calculate MRR: trial = 0.50€, monthly = 49.90€, annual = 99€/12
   let mrr = 0;
   for (const sub of allActiveSubs) {
-    if (sub.plan === "trial") mrr += 0.99;
-    else if (sub.plan === "monthly") mrr += 9.99;
+    if (sub.plan === "trial") mrr += 0.50;
+    else if (sub.plan === "monthly") mrr += 49.90;
     else if (sub.plan === "annual") mrr += 99 / 12;
   }
 
@@ -554,8 +576,8 @@ export async function getBillingStats() {
     );
     let rev = 0;
     for (const s of monthSubs) {
-      if (s.plan === "trial") rev += 0.99;
-      else if (s.plan === "monthly") rev += 9.99;
+      if (s.plan === "trial") rev += 0.50;
+      else if (s.plan === "monthly") rev += 49.90;
       else if (s.plan === "annual") rev += 99;
     }
     monthlyRevenue.push({
@@ -596,6 +618,7 @@ export async function getCanceledSubscriptions() {
     plan: subscriptions.plan,
     canceledAt: subscriptions.updatedAt,
     paddleCustomerId: subscriptions.paddleCustomerId,
+    stripeCustomerId: subscriptions.stripeCustomerId,
   }).from(users)
     .innerJoin(subscriptions, eq(users.id, subscriptions.userId))
     .where(eq(subscriptions.status, "canceled"))

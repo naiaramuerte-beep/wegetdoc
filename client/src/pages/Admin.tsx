@@ -464,7 +464,7 @@ export default function Admin() {
                           {u.subPlan ?? "\u2014"}
                         </td>
                         <td className="px-4 py-3 text-xs text-gray-500 font-mono">
-                          {u.paddleCustomerId ??"\u2014"}
+                          {u.stripeCustomerId ?? u.paddleCustomerId ??"\u2014"}
                         </td>
                         <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">
                           {u.currentPeriodEnd ? new Date(u.currentPeriodEnd).toLocaleDateString("es-ES") : "\u2014"}
@@ -571,7 +571,7 @@ export default function Admin() {
                         </td>
                         <td className="px-4 py-3 text-gray-400">{u.country ?? "—"}</td>
                         <td className="px-4 py-3 text-gray-500 text-xs font-mono">
-                          {u.paddleCustomerId ??"—"}
+                          {u.stripeCustomerId ?? u.paddleCustomerId ??"—"}
                         </td>
                       </tr>
                     ))}

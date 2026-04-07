@@ -37,6 +37,126 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
+  // ── Stripe Webhook (MUST be before express.json — needs raw body) ──────────
+  app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+    const { getStripe } = await import("./stripe");
+    const { ENV } = await import("./env");
+    const db = await import("../db");
+    const stripe = getStripe();
+    const sig = req.headers["stripe-signature"] as string;
+
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, ENV.stripeWebhookSecret);
+    } catch (err: any) {
+      console.error("[Stripe Webhook] Signature verification failed:", err.message);
+      res.status(400).send(`Webhook Error: ${err.message}`);
+      return;
+    }
+
+    console.log("[Stripe Webhook] Event:", event.type);
+
+    try {
+      switch (event.type) {
+        case "checkout.session.completed": {
+          const session = event.data.object as any;
+          const userId = parseInt(session.metadata?.userId || "0");
+          if (!userId) break;
+          const stripeSubscriptionId = session.subscription as string;
+          const stripeCustomerId = session.customer as string;
+          const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+          await db.upsertSubscription({
+            userId,
+            stripeCustomerId,
+            stripeSubscriptionId,
+            stripeSessionId: session.id,
+            plan: "trial",
+            status: "trialing",
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: trialEnd,
+            cancelAtPeriodEnd: false,
+          });
+          await db.markDocumentsPaid(userId);
+          console.log(`[Stripe Webhook] Subscription activated for user ${userId} (trial)`);
+          break;
+        }
+        case "customer.subscription.updated": {
+          const sub = event.data.object as any;
+          const existing = await db.getSubscriptionByStripeSubId(sub.id);
+          if (!existing) break;
+          const status = sub.status === "active" ? "active"
+            : sub.status === "trialing" ? "trialing"
+            : sub.status === "past_due" ? "past_due"
+            : sub.status === "canceled" ? "canceled"
+            : "incomplete";
+          const plan = sub.status === "trialing" ? "trial" : "monthly";
+          await db.upsertSubscription({
+            userId: existing.userId,
+            stripeSubscriptionId: sub.id,
+            plan,
+            status,
+            currentPeriodStart: new Date(sub.current_period_start * 1000),
+            currentPeriodEnd: new Date(sub.current_period_end * 1000),
+            cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
+          });
+          if (status === "active") {
+            await db.markDocumentsPaid(existing.userId);
+          }
+          console.log(`[Stripe Webhook] Subscription updated for user ${existing.userId}: ${status}`);
+          break;
+        }
+        case "invoice.paid": {
+          const invoice = event.data.object as any;
+          const subId = invoice.subscription as string;
+          if (!subId) break;
+          const existing = await db.getSubscriptionByStripeSubId(subId);
+          if (!existing) break;
+          await db.upsertSubscription({
+            userId: existing.userId,
+            stripeSubscriptionId: subId,
+            plan: "monthly",
+            status: "active",
+            currentPeriodStart: new Date(invoice.period_start * 1000),
+            currentPeriodEnd: new Date(invoice.period_end * 1000),
+          });
+          await db.markDocumentsPaid(existing.userId);
+          console.log(`[Stripe Webhook] Invoice paid for user ${existing.userId}`);
+          break;
+        }
+        case "invoice.payment_failed": {
+          const invoice = event.data.object as any;
+          const subId = invoice.subscription as string;
+          if (!subId) break;
+          const existing = await db.getSubscriptionByStripeSubId(subId);
+          if (!existing) break;
+          await db.upsertSubscription({
+            userId: existing.userId,
+            stripeSubscriptionId: subId,
+            status: "past_due",
+          });
+          console.log(`[Stripe Webhook] Payment failed for user ${existing.userId}`);
+          break;
+        }
+        case "customer.subscription.deleted": {
+          const sub = event.data.object as any;
+          const existing = await db.getSubscriptionByStripeSubId(sub.id);
+          if (!existing) break;
+          await db.upsertSubscription({
+            userId: existing.userId,
+            stripeSubscriptionId: sub.id,
+            status: "canceled",
+          });
+          console.log(`[Stripe Webhook] Subscription canceled for user ${existing.userId}`);
+          break;
+        }
+      }
+    } catch (err) {
+      console.error("[Stripe Webhook] Error handling event:", err);
+    }
+
+    res.json({ received: true });
+  });
+
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
@@ -62,17 +182,18 @@ async function startServer() {
     res.setHeader("X-XSS-Protection", "1; mode=block");
     // Referrer policy
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-    // Permissions policy — disable unnecessary browser features
-    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
+    // Permissions policy — disable unnecessary browser features (payment allowed for Stripe)
+    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
     // Strict Transport Security (HSTS) — force HTTPS for 1 year
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
     // Content Security Policy
     res.setHeader("Content-Security-Policy", [
       "frame-ancestors 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
       "object-src 'none'",
       "base-uri 'self'",
-      "frame-src 'self'",
+      "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+      "connect-src 'self' https://api.stripe.com",
     ].join("; "));
     next();
   });
