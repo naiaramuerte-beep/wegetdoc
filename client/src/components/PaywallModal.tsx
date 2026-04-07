@@ -83,7 +83,7 @@ function PaymentForm({ onSuccess }: { onSuccess: () => void }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Card fields */}
-      <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" } }} />
+      <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" }, fields: { billingDetails: { address: { country: "never", postalCode: "never" } } } }} />
 
       {/* Checkbox */}
       <label className="flex items-start gap-2.5 cursor-pointer">
