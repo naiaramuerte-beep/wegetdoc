@@ -760,6 +760,7 @@ export default function Admin() {
                 className="rounded-xl border p-5 space-y-4"
                 style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
               >
+              </div>
                 {/* Site settings */}
               <div
                 className="rounded-xl border p-5 space-y-4"
