@@ -242,6 +242,20 @@ export const appRouter = router({
         cancelAtPeriodEnd: false,
       });
       await markDocumentsPaid(ctx.user.id);
+
+      // Send confirmation email
+      if (ctx.user.email) {
+        const { sendSubscriptionConfirmationEmail } = await import("./emails");
+        sendSubscriptionConfirmationEmail({
+          to: ctx.user.email,
+          userName: ctx.user.name ?? ctx.user.email.split("@")[0],
+          plan: "Trial (7 días)",
+          amount: "0,50€",
+          nextBillingDate: trialEnd.toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" }),
+          cancelUrl: "https://wegetdoc.com/es/dashboard?tab=billing",
+        }).catch(() => {});
+      }
+
       return { success: true };
     }),
 

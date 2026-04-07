@@ -38,7 +38,7 @@ function PaymentForm({ onSuccess }: { onSuccess: () => void }) {
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
 
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,6 +75,15 @@ function PaymentForm({ onSuccess }: { onSuccess: () => void }) {
           t.paywall_pay_download
         )}
       </button>
+      <p className="text-center text-xs text-slate-500 mt-3">
+        0,50€ hoy, luego 49,90€/mes. Cancela cuando quieras.
+      </p>
+      <p className="text-center text-xs text-slate-400 mt-2">
+        Al pagar aceptas los{" "}
+        <a href={`/${lang}/terms`} target="_blank" className="underline hover:text-slate-600">Términos de Servicio</a>{" "}
+        y la{" "}
+        <a href={`/${lang}/privacy`} target="_blank" className="underline hover:text-slate-600">Política de Privacidad</a>
+      </p>
     </form>
   );
 }
@@ -307,6 +316,9 @@ function StripeCheckoutForm({
             <span className="text-sm font-medium text-slate-600">{t.paywall_offer_label} </span>
             <span className="text-xl font-bold text-slate-900">0,50 &euro;</span>
           </div>
+          <p className="text-center text-xs text-slate-400 mb-2">
+            0,50€ hoy, luego 49,90€/mes. Cancela cuando quieras.
+          </p>
 
           {/* Stripe Payment Element */}
           {stripePromise && clientSecret ? (

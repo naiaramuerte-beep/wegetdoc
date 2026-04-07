@@ -652,6 +652,11 @@ ${allUrls.map(u => `  <url>
   server.listen(port, "0.0.0.0", () => {
     console.log(`Server running on http://0.0.0.0:${port}/`);
   });
+
+  // Seed legal pages if they don't exist
+  import("../seed-legal-pages").then(({ seedLegalPages }) => {
+    seedLegalPages().catch((err) => console.error("[Seed] Legal pages failed:", err));
+  });
 }
 
 startServer().catch(console.error);
