@@ -467,7 +467,7 @@ function PricingPaymentForm({ onSuccess }: { onSuccess: () => void }) {
         {submitting ? (
           <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Processing...</span>
         ) : (
-          "Start 7-day trial"
+          "Descargar PDF"
         )}
       </button>
       <p className="text-center text-xs mt-3" style={{ color: "#4A6B4A" }}>

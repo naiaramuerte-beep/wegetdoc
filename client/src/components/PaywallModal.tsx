@@ -70,7 +70,7 @@ function PaymentForm({ onSuccess }: { onSuccess: () => void }) {
         {submitting ? (
           <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Processing...</span>
         ) : (
-          "Start 7-day trial"
+          "Descargar PDF"
         )}
       </button>
       <p className="text-center text-xs text-slate-400 mt-3">
