@@ -9,6 +9,7 @@ export const ENV = {
   stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? "",
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
   stripePriceId: process.env.STRIPE_PRICE_ID ?? "",
+  stripeIntroPriceId: process.env.STRIPE_INTRO_PRICE_ID ?? "",
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
   // Cloudflare R2 storage

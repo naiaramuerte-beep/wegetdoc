@@ -228,17 +228,70 @@ export const appRouter = router({
       return { success: true };
     }),
 
-    // Confirm subscription after SetupIntent succeeds — activates trial immediately
+    // After SetupIntent succeeds: set default payment method + create subscription schedule
     confirmSetup: protectedProcedure.mutation(async ({ ctx }) => {
+      const { getStripe } = await import("./_core/stripe");
+      const { ENV } = await import("./_core/env");
       const { upsertSubscription, markDocumentsPaid } = await import("./db");
-      const now = new Date();
-      const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const stripe = getStripe();
+
+      if (!ENV.stripePriceId || !ENV.stripeIntroPriceId) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stripe prices not configured" });
+      }
+
+      // Find the customer for this user
+      const existingCustomers = await stripe.customers.list({ email: ctx.user.email ?? undefined, limit: 1 });
+      const customer = existingCustomers.data[0];
+      if (!customer) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stripe customer not found" });
+      }
+
+      // Get the payment method from the customer's most recent SetupIntent
+      const paymentMethods = await stripe.paymentMethods.list({ customer: customer.id, type: "card", limit: 1 });
+      const pm = paymentMethods.data[0];
+      if (!pm) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "No payment method found" });
+      }
+
+      // Set as default payment method on customer
+      await stripe.customers.update(customer.id, {
+        invoice_settings: { default_payment_method: pm.id },
+      });
+
+      // Create Subscription Schedule with two phases
+      const now = Math.floor(Date.now() / 1000);
+      const schedule = await stripe.subscriptionSchedules.create({
+        customer: customer.id,
+        start_date: now,
+        end_behavior: "release",
+        metadata: { userId: ctx.user.id.toString() },
+        phases: [
+          {
+            items: [{ price: ENV.stripeIntroPriceId, quantity: 1 }],
+            iterations: 1,
+            metadata: { userId: ctx.user.id.toString(), phase: "intro" },
+          },
+          {
+            items: [{ price: ENV.stripePriceId, quantity: 1 }],
+            metadata: { userId: ctx.user.id.toString(), phase: "monthly" },
+          },
+        ],
+      });
+
+      // Get the subscription created by the schedule
+      const stripeSubscriptionId = (schedule.subscription as string) ?? "";
+
+      // Save to DB
+      const nowDate = new Date();
+      const phase1End = new Date(nowDate.getTime() + 30 * 24 * 60 * 60 * 1000); // ~1 month
       await upsertSubscription({
         userId: ctx.user.id,
+        stripeCustomerId: customer.id,
+        stripeSubscriptionId,
         plan: "trial",
-        status: "trialing",
-        currentPeriodStart: now,
-        currentPeriodEnd: trialEnd,
+        status: "active",
+        currentPeriodStart: nowDate,
+        currentPeriodEnd: phase1End,
         cancelAtPeriodEnd: false,
       });
       await markDocumentsPaid(ctx.user.id);
@@ -249,9 +302,9 @@ export const appRouter = router({
         sendSubscriptionConfirmationEmail({
           to: ctx.user.email,
           userName: ctx.user.name ?? ctx.user.email.split("@")[0],
-          plan: "Trial (7 días)",
+          plan: "WeGetDoc (0,50€ primer mes)",
           amount: "0,50€",
-          nextBillingDate: trialEnd.toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" }),
+          nextBillingDate: phase1End.toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" }),
           cancelUrl: "https://wegetdoc.com/es/dashboard?tab=billing",
         }).catch(() => {});
       }
@@ -268,15 +321,10 @@ export const appRouter = router({
       };
     }),
 
-    // Create Stripe subscription with trial — returns clientSecret for PaymentElement
+    // Collect payment method via SetupIntent — schedule created after confirmation
     createCheckoutSession: protectedProcedure.mutation(async ({ ctx }) => {
       const { getStripe } = await import("./_core/stripe");
-      const { ENV } = await import("./_core/env");
       const stripe = getStripe();
-
-      if (!ENV.stripePriceId) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stripe price not configured" });
-      }
 
       // Find or create Stripe customer
       const existingCustomers = await stripe.customers.list({ email: ctx.user.email ?? undefined, limit: 1 });
@@ -289,39 +337,14 @@ export const appRouter = router({
         });
       }
 
-      // Create subscription with trial — requires payment method upfront via SetupIntent
-      const subscription = await stripe.subscriptions.create({
+      // Create SetupIntent to collect payment method
+      const setupIntent = await stripe.setupIntents.create({
         customer: customer.id,
-        items: [{ price: ENV.stripePriceId }],
-        trial_period_days: 7,
-        payment_behavior: "default_incomplete",
-        payment_settings: {
-          save_default_payment_method: "on_subscription",
-        },
+        payment_method_types: ["card"],
         metadata: { userId: ctx.user.id.toString() },
-        expand: ["pending_setup_intent"],
       });
 
-      const setupIntent = subscription.pending_setup_intent as any;
-      if (!setupIntent?.client_secret) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create setup intent" });
-      }
-
-      // Save subscription to DB immediately (incomplete until payment method confirmed)
-      const { upsertSubscription } = await import("./db");
-      const now = new Date();
-      const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      await upsertSubscription({
-        userId: ctx.user.id,
-        stripeCustomerId: customer.id,
-        stripeSubscriptionId: subscription.id,
-        plan: "trial",
-        status: "incomplete",
-        currentPeriodStart: now,
-        currentPeriodEnd: trialEnd,
-      });
-
-      return { clientSecret: setupIntent.client_secret, subscriptionId: subscription.id };
+      return { clientSecret: setupIntent.client_secret, customerId: customer.id };
     }),
   }),
 
