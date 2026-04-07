@@ -152,7 +152,7 @@ export default function Admin() {
                 onClick={() => setTab(t.id)}
                 className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-left transition-colors w-full"
                 style={{
-                  backgroundColor: tab === t.id ? "#0D3311" : "transparent",
+                  backgroundColor: tab === t.id ? "#14532d" : "transparent",
                   color: tab === t.id ? "white" : "#94a3b8",
                 }}
                 onMouseEnter={(e) => { if (tab !== t.id) e.currentTarget.style.backgroundColor = "#1e2433"; }}

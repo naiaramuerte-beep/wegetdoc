@@ -29,7 +29,7 @@ export default function Signup() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4 py-12"
-      style={{ backgroundColor: "#0D3311" }}
+      style={{ backgroundColor: "#14532d" }}
     >
       <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-0 rounded-2xl overflow-hidden"
         style={{ boxShadow: "0 24px 64px rgba(13, 51, 17, 0.5)" }}
@@ -37,7 +37,7 @@ export default function Signup() {
         {/* Left panel — benefits */}
         <div
           className="p-8 flex flex-col justify-between"
-          style={{ backgroundColor: "#1A3A1A" }}
+          style={{ backgroundColor: "#1e293b" }}
         >
           <div>
             <div className="flex items-center gap-2 mb-8">
@@ -51,7 +51,7 @@ export default function Signup() {
                 className="text-xl font-bold tracking-tight text-white"
                 style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
               >
-                WeGet<span style={{ color: "#D4A017" }}>Doc</span>
+                WeGet<span style={{ color: "#1B5E20" }}>Doc</span>
               </span>
             </div>
 
@@ -63,7 +63,7 @@ export default function Signup() {
             </h2>
             <p
               className="text-sm mb-8"
-              style={{ color: "#81C784", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+              style={{ color: "#94a3b8", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
             >
               Únete a millones de profesionales que eligen {brandName} para gestionar sus archivos.
             </p>
@@ -79,7 +79,7 @@ export default function Signup() {
                   </div>
                   <span
                     className="text-sm"
-                    style={{ color: "#C8E6C9", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+                    style={{ color: "#e2e8f0", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
                   >
                     {benefit}
                   </span>
@@ -90,14 +90,14 @@ export default function Signup() {
 
           <p
             className="text-xs mt-8"
-            style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+            style={{ color: "#64748b", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
           >
             Al crear tu cuenta, aceptas nuestras{" "}
-            <a href="/terms" className="underline" style={{ color: "#D4A017" }}>
+            <a href="/terms" className="underline" style={{ color: "#1B5E20" }}>
               Condiciones de servicio
             </a>{" "}
             y{" "}
-            <a href="/privacy" className="underline" style={{ color: "#D4A017" }}>
+            <a href="/privacy" className="underline" style={{ color: "#1B5E20" }}>
               Normas de privacidad
             </a>
             .
@@ -108,13 +108,13 @@ export default function Signup() {
         <div className="p-8" style={{ backgroundColor: "#FFFFFF" }}>
           <h1
             className="text-2xl font-bold mb-2"
-            style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#1A2E1A" }}
+            style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#0f172a" }}
           >
             Registrar perfil
           </h1>
           <p
             className="text-sm mb-6"
-            style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+            style={{ color: "#64748b", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
           >
             Configura tu perfil en {brandName}
           </p>
@@ -123,7 +123,7 @@ export default function Signup() {
             <div>
               <label
                 className="block text-sm font-medium mb-1.5"
-                style={{ color: "#1A2E1A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+                style={{ color: "#0f172a", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
               >
                 Tu nombre
               </label>
@@ -134,16 +134,16 @@ export default function Signup() {
                 placeholder="Tu nombre"
                 className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all duration-200"
                 style={{
-                  border: "1px solid #C8E6C9",
-                  backgroundColor: "#F5F9F5",
-                  color: "#1A2E1A",
+                  border: "1px solid #e2e8f0",
+                  backgroundColor: "#f8fafc",
+                  color: "#0f172a",
                   fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
                 }}
                 onFocus={(e) =>
                   (e.currentTarget.style.borderColor = "#1B5E20")
                 }
                 onBlur={(e) =>
-                  (e.currentTarget.style.borderColor = "#C8E6C9")
+                  (e.currentTarget.style.borderColor = "#e2e8f0")
                 }
               />
             </div>
@@ -151,7 +151,7 @@ export default function Signup() {
             <div>
               <label
                 className="block text-sm font-medium mb-1.5"
-                style={{ color: "#1A2E1A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+                style={{ color: "#0f172a", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
               >
                 Email
               </label>
@@ -162,16 +162,16 @@ export default function Signup() {
                 placeholder="tu@email.com"
                 className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all duration-200"
                 style={{
-                  border: "1px solid #C8E6C9",
-                  backgroundColor: "#F5F9F5",
-                  color: "#1A2E1A",
+                  border: "1px solid #e2e8f0",
+                  backgroundColor: "#f8fafc",
+                  color: "#0f172a",
                   fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
                 }}
                 onFocus={(e) =>
                   (e.currentTarget.style.borderColor = "#1B5E20")
                 }
                 onBlur={(e) =>
-                  (e.currentTarget.style.borderColor = "#C8E6C9")
+                  (e.currentTarget.style.borderColor = "#e2e8f0")
                 }
               />
             </div>
@@ -179,7 +179,7 @@ export default function Signup() {
             <div>
               <label
                 className="block text-sm font-medium mb-1.5"
-                style={{ color: "#1A2E1A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+                style={{ color: "#0f172a", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
               >
                 Clave de acceso
               </label>
@@ -191,23 +191,23 @@ export default function Signup() {
                   placeholder="Al menos 8 caracteres"
                   className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all duration-200 pr-10"
                   style={{
-                    border: "1px solid #C8E6C9",
-                    backgroundColor: "#F5F9F5",
-                    color: "#1A2E1A",
+                    border: "1px solid #e2e8f0",
+                    backgroundColor: "#f8fafc",
+                    color: "#0f172a",
                     fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
                   }}
                   onFocus={(e) =>
                     (e.currentTarget.style.borderColor = "#1B5E20")
                   }
                   onBlur={(e) =>
-                    (e.currentTarget.style.borderColor = "#C8E6C9")
+                    (e.currentTarget.style.borderColor = "#e2e8f0")
                   }
                 />
                 <button
                   type="button"
                   className="absolute right-3 top-1/2 -translate-y-1/2"
                   onClick={() => setShowPassword(!showPassword)}
-                  style={{ color: "#4A6B4A" }}
+                  style={{ color: "#64748b" }}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -222,7 +222,7 @@ export default function Signup() {
                 fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
               }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "#0D3311")
+                (e.currentTarget.style.backgroundColor = "#14532d")
               }
               onMouseLeave={(e) =>
                 (e.currentTarget.style.backgroundColor = "#1B5E20")
@@ -234,13 +234,13 @@ export default function Signup() {
 
           <p
             className="text-sm text-center mt-6"
-            style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+            style={{ color: "#64748b", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
           >
             ¿Ya dispones de un perfil?{" "}
             <Link
               href="/login"
               className="font-semibold transition-colors duration-200"
-              style={{ color: "#D4A017" }}
+              style={{ color: "#1B5E20" }}
             >
               Acceder a tu cuenta
             </Link>
@@ -250,7 +250,7 @@ export default function Signup() {
             <Link
               href="/"
               className="text-xs transition-colors duration-200"
-              style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+              style={{ color: "#64748b", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
             >
               ← Regresar a la página principal
             </Link>

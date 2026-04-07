@@ -1,5 +1,5 @@
 /* =============================================================
-   WeGetDoc Footer — "Verdant Gold" design
+   WeGetDoc Footer — "Clean White" design
    Dark green footer, matching the gradient CTA above
    ============================================================= */
 
@@ -9,12 +9,12 @@ import { useLanguage, LANGUAGES } from "@/contexts/LanguageContext";
 import { logoParts, colors, isFastDoc, brandName } from "@/lib/brand";
 import ContactModal from "./ContactModal";
 
-const BG = "#0D3311";
-const BG_LIGHTER = "#1A3A1A";
-const BORDER = "#2E5A2E";
+const BG = "#0f172a";
+const BG_LIGHTER = "#1e293b";
+const BORDER = "#334155";
 const INDIGO = colors.light;
-const TEXT_LINK = "#81C784";
-const TEXT_MUTED = "#4A6B4A";
+const TEXT_LINK = "#94a3b8";
+const TEXT_MUTED = "#64748b";
 
 export default function Footer() {
   const { lang, t, switchLang } = useLanguage();

@@ -140,7 +140,7 @@ export default function BlogPost() {
 
       <main className="flex-1">
         {/* Article header */}
-        <header className="py-12 md:py-16 border-b border-border" style={{ background: "linear-gradient(135deg, #0D3311 0%, #1B5E20 100%)" }}>
+        <header className="py-12 md:py-16 border-b border-border" style={{ background: "linear-gradient(135deg, #14532d 0%, #1B5E20 100%)" }}>
           <div className="container max-w-3xl">
             <button
               onClick={() => navigate("/blog")}
@@ -206,7 +206,7 @@ export default function BlogPost() {
             {/* CTA */}
             <div
               className="mt-10 rounded-2xl p-6 md:p-8 text-center"
-              style={{ background: "linear-gradient(135deg, #0D3311 0%, #1B5E20 100%)" }}
+              style={{ background: "linear-gradient(135deg, #14532d 0%, #1B5E20 100%)" }}
             >
               <h3 className="text-xl font-bold text-white mb-2">¿Listo para editar tu PDF?</h3>
               <p className="text-slate-300 mb-5 text-sm">

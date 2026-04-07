@@ -21,7 +21,7 @@ export default function Login() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4"
-      style={{ backgroundColor: "#0D3311" }}
+      style={{ backgroundColor: "#14532d" }}
     >
       <div
         className="w-full max-w-md rounded-2xl p-8"
@@ -40,21 +40,21 @@ export default function Login() {
           </div>
           <span
             className="text-xl font-bold tracking-tight"
-            style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#1A2E1A" }}
+            style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#0f172a" }}
           >
-            WeGet<span style={{ color: "#D4A017" }}>Doc</span>
+            WeGet<span style={{ color: "#1B5E20" }}>Doc</span>
           </span>
         </div>
 
         <h1
           className="text-2xl font-bold mb-2"
-          style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#1A2E1A" }}
+          style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#0f172a" }}
         >
           Acceder a tu cuenta
         </h1>
         <p
           className="text-sm mb-6"
-          style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+          style={{ color: "#64748b", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
         >
           Ingresa tus credenciales de {brandName}
         </p>
@@ -63,7 +63,7 @@ export default function Login() {
           <div>
             <label
               className="block text-sm font-medium mb-1.5"
-              style={{ color: "#1A2E1A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+              style={{ color: "#0f172a", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
             >
               Email
             </label>
@@ -74,16 +74,16 @@ export default function Login() {
               placeholder="tu@email.com"
               className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all duration-200"
               style={{
-                border: "1px solid #C8E6C9",
-                backgroundColor: "#F5F9F5",
-                color: "#1A2E1A",
+                border: "1px solid #e2e8f0",
+                backgroundColor: "#f8fafc",
+                color: "#0f172a",
                 fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
               }}
               onFocus={(e) =>
                 (e.currentTarget.style.borderColor = "#1B5E20")
               }
               onBlur={(e) =>
-                (e.currentTarget.style.borderColor = "#C8E6C9")
+                (e.currentTarget.style.borderColor = "#e2e8f0")
               }
             />
           </div>
@@ -91,7 +91,7 @@ export default function Login() {
           <div>
             <label
               className="block text-sm font-medium mb-1.5"
-              style={{ color: "#1A2E1A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+              style={{ color: "#0f172a", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
             >
               Clave de acceso
             </label>
@@ -103,23 +103,23 @@ export default function Login() {
                 placeholder="••••••••"
                 className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all duration-200 pr-10"
                 style={{
-                  border: "1px solid #C8E6C9",
-                  backgroundColor: "#F5F9F5",
-                  color: "#1A2E1A",
+                  border: "1px solid #e2e8f0",
+                  backgroundColor: "#f8fafc",
+                  color: "#0f172a",
                   fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
                 }}
                 onFocus={(e) =>
                   (e.currentTarget.style.borderColor = "#1B5E20")
                 }
                 onBlur={(e) =>
-                  (e.currentTarget.style.borderColor = "#C8E6C9")
+                  (e.currentTarget.style.borderColor = "#e2e8f0")
                 }
               />
               <button
                 type="button"
                 className="absolute right-3 top-1/2 -translate-y-1/2"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{ color: "#4A6B4A" }}
+                style={{ color: "#64748b" }}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -144,7 +144,7 @@ export default function Login() {
               fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
             }}
             onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#0D3311")
+              (e.currentTarget.style.backgroundColor = "#14532d")
             }
             onMouseLeave={(e) =>
               (e.currentTarget.style.backgroundColor = "#1B5E20")
@@ -156,13 +156,13 @@ export default function Login() {
 
         <p
           className="text-sm text-center mt-6"
-          style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+          style={{ color: "#64748b", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
         >
           ¿Aún no tienes perfil?{" "}
           <Link
             href="/signup"
             className="font-semibold transition-colors duration-200"
-            style={{ color: "#D4A017" }}
+            style={{ color: "#1B5E20" }}
           >
             Crea tu cuenta
           </Link>
@@ -172,7 +172,7 @@ export default function Login() {
           <Link
             href="/"
             className="text-xs transition-colors duration-200"
-            style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+            style={{ color: "#64748b", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
           >
             ← Regresar a la página principal
           </Link>

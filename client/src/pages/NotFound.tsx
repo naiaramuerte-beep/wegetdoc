@@ -5,7 +5,7 @@ export default function NotFound() {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-4 text-center"
-      style={{ backgroundColor: "#0D3311" }}
+      style={{ backgroundColor: "#14532d" }}
     >
       <div className="flex items-center gap-2 mb-12">
         <div
@@ -26,7 +26,7 @@ export default function NotFound() {
         className="text-8xl md:text-9xl font-extrabold mb-6"
         style={{
           fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif",
-          background: "linear-gradient(135deg, #1B5E20, #D4A017)",
+          background: "linear-gradient(135deg, #1B5E20, #1B5E20)",
           WebkitBackgroundClip: "text",
           WebkitTextFillColor: "transparent",
           backgroundClip: "text",
@@ -53,17 +53,17 @@ export default function NotFound() {
           onClick={() => window.history.back()}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
           style={{
-            border: "1px solid #2E5A2E",
-            color: "#81C784",
+            border: "1px solid #334155",
+            color: "#94a3b8",
             fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
           }}
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#1A3A1A";
+            (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#1e293b";
             (e.currentTarget as HTMLButtonElement).style.color = "white";
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent";
-            (e.currentTarget as HTMLButtonElement).style.color = "#81C784";
+            (e.currentTarget as HTMLButtonElement).style.color = "#94a3b8";
           }}
         >
           <ArrowLeft className="w-4 h-4" />
@@ -77,7 +77,7 @@ export default function NotFound() {
               fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
             }}
             onMouseEnter={(e) =>
-              ((e.currentTarget as HTMLButtonElement).style.backgroundColor = "#0D3311")
+              ((e.currentTarget as HTMLButtonElement).style.backgroundColor = "#14532d")
             }
             onMouseLeave={(e) =>
               ((e.currentTarget as HTMLButtonElement).style.backgroundColor = "#1B5E20")

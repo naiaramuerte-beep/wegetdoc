@@ -9,11 +9,11 @@ interface BrandColors {
 
 const COLORS_WEGETDOC: BrandColors = {
   primary: "#1B5E20",
-  secondary: "#D4A017",
-  primaryHover: "#0D3311",
-  gradient: "linear-gradient(135deg, #1B5E20, #D4A017)",
-  light: "#4CAF50",
-  lightBg: "rgba(27, 94, 32, 0.08)",
+  secondary: "#1B5E20",
+  primaryHover: "#14532d",
+  gradient: "linear-gradient(135deg, #1B5E20, #166534)",
+  light: "#22c55e",
+  lightBg: "rgba(27, 94, 32, 0.06)",
 };
 
 const BRANDS: Record<string, { name: string; domain: string; logoParts: [string, string]; brandKey: string; colors: BrandColors }> = {

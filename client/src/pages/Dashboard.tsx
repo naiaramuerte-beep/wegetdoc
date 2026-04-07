@@ -940,7 +940,7 @@ function BillingTab() {
       {/* Inline Stripe Checkout */}
       {showInlineCheckout && !isPremium && (
         <div id="billing-checkout-section" className="bg-white rounded-2xl shadow-sm border border-green-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between" style={{ backgroundColor: "#F5F9F5" }}>
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between" style={{ backgroundColor: "#f8fafc" }}>
             <div className="flex items-center gap-2">
               <CreditCard size={18} className="text-green-700" />
               <h3 className="font-bold text-slate-800">Completa tu suscripción</h3>

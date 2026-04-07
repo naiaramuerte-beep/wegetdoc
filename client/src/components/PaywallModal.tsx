@@ -67,7 +67,7 @@ function PaymentForm({ onSuccess }: { onSuccess: () => void }) {
       <button
         type="submit"
         disabled={!stripe || submitting}
-        className="w-full mt-4 py-3 rounded-xl bg-[#1B5E20] text-white font-semibold text-sm hover:bg-[#0D3311] transition-colors disabled:opacity-50"
+        className="w-full mt-4 py-3 rounded-xl bg-[#1B5E20] text-white font-semibold text-sm hover:bg-[#14532d] transition-colors disabled:opacity-50"
       >
         {submitting ? (
           <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> {t.paywall_processing}</span>
@@ -545,7 +545,7 @@ export default function PaywallModal({
               <button
                 onClick={handleEmailSubmit}
                 disabled={emailLoading}
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#1B5E20] text-white font-bold text-sm hover:bg-[#0D3311] transition-colors disabled:opacity-60"
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#1B5E20] text-white font-bold text-sm hover:bg-[#14532d] transition-colors disabled:opacity-60"
               >
                 {emailLoading ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> {emailMode === "register" ? t.paywall_registering : t.paywall_logging_in}</>

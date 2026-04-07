@@ -253,7 +253,7 @@ export default function UploadZone({ onFileSelect, compact = false }: UploadZone
           </p>
           <p
             className={`mt-1 ${compact ? "text-xs" : "text-sm"}`}
-            style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+            style={{ color: "#64748b", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
           >
             {txt.or}
           </p>
@@ -265,14 +265,14 @@ export default function UploadZone({ onFileSelect, compact = false }: UploadZone
             compact ? "px-4 py-2 text-sm" : "px-6 py-3 text-sm"
           }`}
           style={{
-            backgroundColor: "#0D3311",
+            backgroundColor: "#14532d",
             fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
           }}
           onMouseEnter={(e) =>
             (e.currentTarget.style.backgroundColor = "#1B5E20")
           }
           onMouseLeave={(e) =>
-            (e.currentTarget.style.backgroundColor = "#0D3311")
+            (e.currentTarget.style.backgroundColor = "#14532d")
           }
           onClick={(e) => {
             e.stopPropagation();

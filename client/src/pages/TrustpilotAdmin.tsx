@@ -320,7 +320,7 @@ function ReviewCard({
           <button
             onClick={() => setShowReplyBox(!showReplyBox)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-            style={{ backgroundColor: showReplyBox ? "#0D3311" : "#1e2433", color: "#e2e8f0" }}
+            style={{ backgroundColor: showReplyBox ? "#14532d" : "#1e2433", color: "#e2e8f0" }}
           >
             <MessageSquare size={12} />
             Responder
@@ -578,7 +578,7 @@ export default function TrustpilotAdmin() {
               onClick={() => setFilterStars(s)}
               className="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors"
               style={{
-                backgroundColor: filterStars === s ? "#0D3311" : "#1e2433",
+                backgroundColor: filterStars === s ? "#14532d" : "#1e2433",
                 color: filterStars === s ? "white" : "#94a3b8",
               }}
             >
@@ -601,7 +601,7 @@ export default function TrustpilotAdmin() {
               onClick={() => setFilterReplied(f.id)}
               className="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors"
               style={{
-                backgroundColor: filterReplied === f.id ? "#0D3311" : "#1e2433",
+                backgroundColor: filterReplied === f.id ? "#14532d" : "#1e2433",
                 color: filterReplied === f.id ? "white" : "#94a3b8",
               }}
             >
@@ -626,7 +626,7 @@ export default function TrustpilotAdmin() {
               onClick={() => setFilterLang(f.id)}
               className="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors"
               style={{
-                backgroundColor: filterLang === f.id ? "#0D3311" : "#1e2433",
+                backgroundColor: filterLang === f.id ? "#14532d" : "#1e2433",
                 color: filterLang === f.id ? "white" : "#94a3b8",
               }}
             >

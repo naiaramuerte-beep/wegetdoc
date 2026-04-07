@@ -57,7 +57,7 @@ function EditorUploadZone({ lang }: { lang: string }) {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const navy = "#0D3311";
+  const navy = "#14532d";
   const blue = "#1B5E20";
   const blueLight = "#4CAF50";
 
@@ -183,8 +183,8 @@ export default function EditorPage() {
   /* Loading state while restoring from session */
   if (isRestoringFromSession) {
     return (
-      <div className="flex flex-col min-h-screen" style={{ backgroundColor: "#F5F9F5" }}>
-        <div className="flex items-center px-4 h-12 border-b" style={{ backgroundColor: "#0D3311", borderColor: "#1A3A1A" }}>
+      <div className="flex flex-col min-h-screen" style={{ backgroundColor: "#f8fafc" }}>
+        <div className="flex items-center px-4 h-12 border-b" style={{ backgroundColor: "#14532d", borderColor: "#1e293b" }}>
           <div className="flex items-center gap-1"><LogoSvg /><LogoText /></div>
         </div>
         <div className="flex-1 flex items-center justify-center">
@@ -206,7 +206,7 @@ export default function EditorPage() {
     <div className="flex flex-col" style={{ height: "100dvh", overflow: "hidden" }}>
       {/* ── Custom Editor Header Bar ── */}
       <div className="flex items-center justify-between px-3 md:px-4 h-11 md:h-12 shrink-0 border-b"
-        style={{ backgroundColor: "#0D3311", borderColor: "#1A3A1A" }}>
+        style={{ backgroundColor: "#14532d", borderColor: "#1e293b" }}>
         {/* Left: Logo */}
         <button onClick={handleClose} className="flex items-center gap-1 shrink-0 hover:opacity-80 transition-opacity" title="Back to home">
           <LogoSvg />

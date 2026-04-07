@@ -264,7 +264,7 @@ export default function ToolLanding({ tool }: { tool: ToolDef }) {
             <div className="flex items-center gap-2">
               <div className="flex">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 fill-current" style={{ color: "#D4A017" }} />
+                  <Star key={i} className="w-4 h-4 fill-current" style={{ color: "#1B5E20" }} />
                 ))}
               </div>
               <span className="text-sm font-semibold" style={{ color: "#333" }}>4.8/5</span>

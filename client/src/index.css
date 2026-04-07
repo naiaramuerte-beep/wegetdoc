@@ -1,7 +1,7 @@
 /* =============================================================
-   WeGetDoc — Design System: "Verdant Gold"
-   Philosophy: Clean white base, green-gold gradient accents,
-   glassmorphism navbar, bold typography, premium SaaS feel.
+   WeGetDoc — Design System: "Clean White"
+   Philosophy: Pure white base, green accent buttons,
+   neutral slate tones, clean typography, professional SaaS feel.
    Fonts: Nunito (headings) + Poppins (body)
    ============================================================= */
 
@@ -49,49 +49,48 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Custom brand tokens — Verdant Gold */
+  /* Custom brand tokens — Clean White */
   --color-green-brand: #1B5E20;
-  --color-green-brand-hover: #0D3311;
-  --color-gold-brand: #D4A017;
-  --color-green-50: #F5F9F5;
-  --color-green-100: #E8F5E9;
-  --color-surface: #FAFCFA;
-  --color-surface-2: #F5F9F5;
+  --color-green-brand-hover: #14532d;
+  --color-green-50: #f8fafc;
+  --color-green-100: #f1f5f9;
+  --color-surface: #ffffff;
+  --color-surface-2: #f8fafc;
 }
 
 :root {
   --radius: 0.75rem;
   --background: #FFFFFF;
-  --foreground: #1A2E1A;
+  --foreground: #0f172a;
   --card: #FFFFFF;
-  --card-foreground: #1A2E1A;
+  --card-foreground: #0f172a;
   --popover: #FFFFFF;
-  --popover-foreground: #1A2E1A;
+  --popover-foreground: #0f172a;
   --primary: #1B5E20;
   --primary-foreground: #FFFFFF;
-  --secondary: #F5F9F5;
-  --secondary-foreground: #1A2E1A;
-  --muted: #F5F9F5;
-  --muted-foreground: #4A6B4A;
-  --accent: #E8F5E9;
-  --accent-foreground: #1A2E1A;
+  --secondary: #f8fafc;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
   --destructive: #C62828;
   --destructive-foreground: #FFFFFF;
-  --border: #C8E6C9;
-  --input: #C8E6C9;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
   --ring: #1B5E20;
   --chart-1: #1B5E20;
-  --chart-2: #D4A017;
+  --chart-2: #22c55e;
   --chart-3: #4CAF50;
-  --chart-4: #F0C040;
-  --chart-5: #0D3311;
-  --sidebar: #0D3311;
-  --sidebar-foreground: #E8F5E9;
+  --chart-4: #86efac;
+  --chart-5: #14532d;
+  --sidebar: #0f172a;
+  --sidebar-foreground: #f1f5f9;
   --sidebar-primary: #1B5E20;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #1A3A1A;
-  --sidebar-accent-foreground: #E8F5E9;
-  --sidebar-border: #1A3A1A;
+  --sidebar-accent: #1e293b;
+  --sidebar-accent-foreground: #f1f5f9;
+  --sidebar-border: #1e293b;
   --sidebar-ring: #1B5E20;
 }
 
@@ -161,7 +160,7 @@
 
   /* Gradient text utility */
   .gradient-text {
-    background: linear-gradient(135deg, #1B5E20, #D4A017);
+    background: linear-gradient(135deg, #1B5E20, #166534);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -170,16 +169,16 @@
   /* Upload dropzone */
   .upload-zone {
     position: relative;
-    border: 2px dashed rgba(27, 94, 32, 0.35);
+    border: 2px dashed rgba(15, 23, 42, 0.2);
     transition: all 0.25s ease;
     background: #FFFFFF;
   }
 
   .upload-zone:hover,
   .upload-zone.drag-over {
-    border-color: rgba(27, 94, 32, 0.8);
-    background: #F5F9F5;
-    box-shadow: 0 0 0 6px rgba(27, 94, 32, 0.07);
+    border-color: rgba(27, 94, 32, 0.6);
+    background: #f8fafc;
+    box-shadow: 0 0 0 6px rgba(27, 94, 32, 0.05);
   }
 
   /* Card hover lift */
@@ -188,8 +187,8 @@
   }
   .card-hover:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 32px rgba(27, 94, 32, 0.10);
-    border-color: rgba(27, 94, 32, 0.3) !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+    border-color: rgba(0, 0, 0, 0.15) !important;
   }
 
   /* Smooth scroll */
@@ -200,14 +199,14 @@
 
   /* Gradient button */
   .btn-gradient {
-    background: linear-gradient(135deg, #1B5E20, #D4A017);
+    background: #1B5E20;
     color: white;
     transition: all 0.2s ease;
-    box-shadow: 0 4px 15px rgba(27, 94, 32, 0.35);
+    box-shadow: 0 4px 15px rgba(27, 94, 32, 0.25);
   }
   .btn-gradient:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(27, 94, 32, 0.50);
+    box-shadow: 0 8px 25px rgba(27, 94, 32, 0.35);
   }
 
   /* Section alternating bg */
@@ -215,7 +214,7 @@
     background-color: #FFFFFF;
   }
   .section-surface {
-    background-color: #FAFCFA;
+    background-color: #f8fafc;
   }
 
   /* Fade in animation */
@@ -244,18 +243,18 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     background-color: rgba(255, 255, 255, 0.85);
-    border-bottom: 1px solid rgba(200, 230, 201, 0.8);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
   }
 
   /* Step connector */
   .step-line {
-    background: linear-gradient(90deg, rgba(27, 94, 32, 0.3), rgba(212, 160, 23, 0.3));
+    background: rgba(27, 94, 32, 0.2);
   }
 
   /* Pricing card popular */
   .pricing-popular {
     border: 2px solid #1B5E20;
-    box-shadow: 0 0 0 4px rgba(27, 94, 32, 0.08);
+    box-shadow: 0 0 0 4px rgba(27, 94, 32, 0.06);
   }
 
   /* Accordion smooth */
@@ -266,5 +265,5 @@
 }
 
 @layer utilities {
-  /* No FastDoc overrides needed — single brand now */
+  /* No overrides needed — single brand now */
 }

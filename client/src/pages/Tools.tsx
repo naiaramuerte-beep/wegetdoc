@@ -44,7 +44,7 @@ interface ToolGroup {
 
 const EDIT_COLOR = "#1B5E20";
 const EDIT_BG = "rgba(27, 94, 32, 0.08)";
-const ORG_COLOR = "#D4A017";
+const ORG_COLOR = "#1B5E20";
 const ORG_BG = "rgba(212, 160, 23, 0.08)";
 const FROM_COLOR = "#2E7D32";
 const FROM_BG = "rgba(46, 125, 50, 0.08)";
@@ -102,7 +102,7 @@ export default function Tools() {
   const { t } = useLanguage();
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#F5F9F5" }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#f8fafc" }}>
       <Navbar />
 
       {/* Hero */}
@@ -111,13 +111,13 @@ export default function Tools() {
           <div className="text-center max-w-2xl mx-auto mb-12">
             <h1
               className="text-4xl md:text-5xl font-extrabold mb-4"
-              style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#1A2E1A" }}
+              style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#0f172a" }}
             >
               {t.tools_page_title}
             </h1>
             <p
               className="text-lg"
-              style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+              style={{ color: "#64748b", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
             >
               {t.tools_page_subtitle}
             </p>
@@ -133,7 +133,7 @@ export default function Tools() {
               <div key={gi}>
                 <h2
                   className="text-2xl font-bold mb-6"
-                  style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#1A2E1A" }}
+                  style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#0f172a" }}
                 >
                   {t[group.categoryKey]}
                 </h2>
@@ -144,7 +144,7 @@ export default function Tools() {
                       className="flex items-start gap-4 p-5 rounded-xl text-left transition-all duration-200"
                       style={{
                         backgroundColor: "#FFFFFF",
-                        border: "1px solid #C8E6C9",
+                        border: "1px solid #e2e8f0",
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.borderColor = tool.color + " / 0.4";
@@ -152,7 +152,7 @@ export default function Tools() {
                         e.currentTarget.style.transform = "translateY(-2px)";
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = "#C8E6C9";
+                        e.currentTarget.style.borderColor = "#e2e8f0";
                         e.currentTarget.style.boxShadow = "none";
                         e.currentTarget.style.transform = "translateY(0)";
                       }}
@@ -167,13 +167,13 @@ export default function Tools() {
                       <div>
                         <h3
                           className="font-semibold text-sm mb-1"
-                          style={{ color: "#1A2E1A", fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
+                          style={{ color: "#0f172a", fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
                         >
                           {t[tool.titleKey]}
                         </h3>
                         <p
                           className="text-xs leading-relaxed"
-                          style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+                          style={{ color: "#64748b", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
                         >
                           {t[tool.descKey]}
                         </p>

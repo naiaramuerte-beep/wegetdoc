@@ -40,7 +40,7 @@ export default function PaymentSuccess() {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-4 text-center"
-      style={{ backgroundColor: "#F5F9F5" }}
+      style={{ backgroundColor: "#f8fafc" }}
     >
       {/* Success icon */}
       <div
@@ -52,13 +52,13 @@ export default function PaymentSuccess() {
 
       <h1
         className="text-3xl font-extrabold mb-3"
-        style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#1A2E1A" }}
+        style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#0f172a" }}
       >
         ¡Pago completado!
       </h1>
       <p
         className="text-base mb-4 max-w-md"
-        style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+        style={{ color: "#64748b", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
       >
         Tu suscripción está activa. Tu documento está guardado en tu panel y listo para descargar.
       </p>
@@ -98,16 +98,16 @@ export default function PaymentSuccess() {
         className="p-5 rounded-xl max-w-sm w-full text-left"
         style={{
           backgroundColor: "#FFFFFF",
-          border: "1px solid #C8E6C9",
+          border: "1px solid #e2e8f0",
         }}
       >
         <h3
           className="font-bold mb-3 text-sm"
-          style={{ color: "#1A2E1A", fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
+          style={{ color: "#0f172a", fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
         >
           ¿Qué puedes hacer ahora?
         </h3>
-        <ul className="space-y-2 text-sm" style={{ color: "#3D5A3D", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}>
+        <ul className="space-y-2 text-sm" style={{ color: "#475569", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}>
           {[
             "Descargar tus PDFs editados sin marca de agua",
             "Editar cualquier documento desde tu panel",

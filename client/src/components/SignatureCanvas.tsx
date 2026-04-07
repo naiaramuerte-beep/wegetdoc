@@ -153,7 +153,7 @@ const SignatureCanvas = React.memo(function SignatureCanvas({
         height={140}
         className="w-full rounded border-2 border-dashed"
         style={{
-          borderColor: "#C8E6C9",
+          borderColor: "#e2e8f0",
           background: "#fff",
           cursor: "crosshair",
           touchAction: "none",
@@ -172,7 +172,7 @@ const SignatureCanvas = React.memo(function SignatureCanvas({
           type="button"
           onClick={handleClear}
           className="flex-1 py-1.5 rounded text-xs font-medium border"
-          style={{ borderColor: "#C8E6C9", color: "#4A6B4A" }}
+          style={{ borderColor: "#e2e8f0", color: "#64748b" }}
         >
           {clearLabel}
         </button>

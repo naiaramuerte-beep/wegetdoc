@@ -56,7 +56,7 @@ export default function Blog() {
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="py-16 md:py-20 text-center" style={{ background: "linear-gradient(135deg, #0D3311 0%, #1B5E20 100%)" }}>
+        <section className="py-16 md:py-20 text-center" style={{ background: "linear-gradient(135deg, #14532d 0%, #1B5E20 100%)" }}>
           <div className="container max-w-3xl">
             <div className="flex items-center justify-center gap-2 mb-4">
               <Rss size={20} className="text-green-400" />

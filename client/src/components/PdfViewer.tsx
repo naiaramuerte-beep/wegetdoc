@@ -99,7 +99,7 @@ export default function PdfViewer({
             />
             <span
               className="text-xs"
-              style={{ color: "#4A6B4A", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+              style={{ color: "#64748b", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
             >
               Renderizando...
             </span>
@@ -111,7 +111,7 @@ export default function PdfViewer({
           className="flex items-center justify-center p-8 rounded-lg text-sm"
           style={{
             backgroundColor: "#FFF8E1",
-            color: "#D4A017",
+            color: "#1B5E20",
             fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
           }}
         >

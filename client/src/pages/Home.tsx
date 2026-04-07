@@ -42,41 +42,41 @@ const ACCEPTED_EXTENSIONS = new Set([
 // ─── Design tokens ───────────────────────────────────────────
 const INDIGO     = colors.primary;
 const VIOLET     = colors.secondary;
-const TEXT_MAIN  = "#1A2E1A";
-const TEXT_MUTED = "#4A6B4A";
-const TEXT_LIGHT = "#6B8E6B";
-const BORDER     = "#C8E6C9";
-const SURFACE    = "#FAFCFA";
+const TEXT_MAIN  = "#0f172a";
+const TEXT_MUTED = "#64748b";
+const TEXT_LIGHT = "#94a3b8";
+const BORDER     = "#e2e8f0";
+const SURFACE    = "#ffffff";
 
 const GRAD = `linear-gradient(135deg, ${INDIGO}, ${VIOLET})`;
 
 // ─── Tool definitions ─────────────────────────────────────────
 const TOOLS_EDIT = [
-  { icon: Type,           label_key: "tool_edit_text",  tool: "text",         color: "#E8F5E9", iconColor: INDIGO },
-  { icon: PenTool,        label_key: "tool_add_sign",   tool: "sign",         color: "#E8F5E9", iconColor: INDIGO },
-  { icon: MessageSquare,  label_key: "tool_annotate",   tool: "notes",        color: "#E8F5E9", iconColor: INDIGO },
-  { icon: Image,          label_key: "tool_images",     tool: "image",        color: "#E8F5E9", iconColor: INDIGO },
-  { icon: Lock,           label_key: "tool_protect",    tool: "protect",      color: "#E8F5E9", iconColor: INDIGO },
-  { icon: Merge,          label_key: "tool_merge",      tool: "merge",        color: "#E8F5E9", iconColor: INDIGO },
-  { icon: Scissors,       label_key: "tool_split",      tool: "split",        color: "#E8F5E9", iconColor: INDIGO },
-  { icon: RotateCcw,      label_key: "tool_rotate",     tool: "rotate",       color: "#E8F5E9", iconColor: INDIGO },
-  { icon: Minimize2,      label_key: "tool_compress",   tool: "compress",     color: "#E8F5E9", iconColor: INDIGO },
+  { icon: Type,           label_key: "tool_edit_text",  tool: "text",         color: "#f1f5f9", iconColor: INDIGO },
+  { icon: PenTool,        label_key: "tool_add_sign",   tool: "sign",         color: "#f1f5f9", iconColor: INDIGO },
+  { icon: MessageSquare,  label_key: "tool_annotate",   tool: "notes",        color: "#f1f5f9", iconColor: INDIGO },
+  { icon: Image,          label_key: "tool_images",     tool: "image",        color: "#f1f5f9", iconColor: INDIGO },
+  { icon: Lock,           label_key: "tool_protect",    tool: "protect",      color: "#f1f5f9", iconColor: INDIGO },
+  { icon: Merge,          label_key: "tool_merge",      tool: "merge",        color: "#f1f5f9", iconColor: INDIGO },
+  { icon: Scissors,       label_key: "tool_split",      tool: "split",        color: "#f1f5f9", iconColor: INDIGO },
+  { icon: RotateCcw,      label_key: "tool_rotate",     tool: "rotate",       color: "#f1f5f9", iconColor: INDIGO },
+  { icon: Minimize2,      label_key: "tool_compress",   tool: "compress",     color: "#f1f5f9", iconColor: INDIGO },
 ];
 const TOOLS_FROM_PDF = [
-  { icon: FileText,        label_key: "tool_pdf_word",  tool: "convert-word",  color: "#FFF8E1", iconColor: "#D4A017" },
-  { icon: FileSpreadsheet, label_key: "tool_pdf_excel", tool: "convert-excel", color: "#FFF8E1", iconColor: "#D4A017" },
-  { icon: Presentation,    label_key: "tool_pdf_ppt",   tool: "convert-ppt",   color: "#FFF8E1", iconColor: "#D4A017" },
-  { icon: FileImage,       label_key: "tool_pdf_jpg",   tool: "convert-jpg",   color: "#FFF8E1", iconColor: "#D4A017" },
-  { icon: FileImage,       label_key: "tool_pdf_png",   tool: "convert-png",   color: "#FFF8E1", iconColor: "#D4A017" },
-  { icon: FileCode,        label_key: "tool_pdf_html",  tool: "convert-html",  color: "#FFF8E1", iconColor: "#D4A017" },
+  { icon: FileText,        label_key: "tool_pdf_word",  tool: "convert-word",  color: "#f1f5f9", iconColor: "#1B5E20" },
+  { icon: FileSpreadsheet, label_key: "tool_pdf_excel", tool: "convert-excel", color: "#f1f5f9", iconColor: "#1B5E20" },
+  { icon: Presentation,    label_key: "tool_pdf_ppt",   tool: "convert-ppt",   color: "#f1f5f9", iconColor: "#1B5E20" },
+  { icon: FileImage,       label_key: "tool_pdf_jpg",   tool: "convert-jpg",   color: "#f1f5f9", iconColor: "#1B5E20" },
+  { icon: FileImage,       label_key: "tool_pdf_png",   tool: "convert-png",   color: "#f1f5f9", iconColor: "#1B5E20" },
+  { icon: FileCode,        label_key: "tool_pdf_html",  tool: "convert-html",  color: "#f1f5f9", iconColor: "#1B5E20" },
 ];
 const TOOLS_TO_PDF = [
-  { icon: FileText,        label_key: "tool_word_pdf",  tool: "word-to-pdf",  color: "#F5F9F5", iconColor: "#2E7D32" },
-  { icon: FileSpreadsheet, label_key: "tool_excel_pdf", tool: "excel-to-pdf", color: "#F5F9F5", iconColor: "#2E7D32" },
-  { icon: Presentation,    label_key: "tool_ppt_pdf",   tool: "ppt-to-pdf",   color: "#F5F9F5", iconColor: "#2E7D32" },
-  { icon: FileImage,       label_key: "tool_jpg_pdf",   tool: "jpg-to-pdf",   color: "#F5F9F5", iconColor: "#2E7D32" },
-  { icon: FileImage,       label_key: "tool_png_pdf",   tool: "png-to-pdf",   color: "#F5F9F5", iconColor: "#2E7D32" },
-  { icon: FileCode,        label_key: "tool_html_pdf",  tool: "html-to-pdf",  color: "#F5F9F5", iconColor: "#2E7D32" },
+  { icon: FileText,        label_key: "tool_word_pdf",  tool: "word-to-pdf",  color: "#f8fafc", iconColor: "#16a34a" },
+  { icon: FileSpreadsheet, label_key: "tool_excel_pdf", tool: "excel-to-pdf", color: "#f8fafc", iconColor: "#16a34a" },
+  { icon: Presentation,    label_key: "tool_ppt_pdf",   tool: "ppt-to-pdf",   color: "#f8fafc", iconColor: "#16a34a" },
+  { icon: FileImage,       label_key: "tool_jpg_pdf",   tool: "jpg-to-pdf",   color: "#f8fafc", iconColor: "#16a34a" },
+  { icon: FileImage,       label_key: "tool_png_pdf",   tool: "png-to-pdf",   color: "#f8fafc", iconColor: "#16a34a" },
+  { icon: FileCode,        label_key: "tool_html_pdf",  tool: "html-to-pdf",  color: "#f8fafc", iconColor: "#16a34a" },
 ];
 
 const FILE_FREE_TOOLS = ["jpg-to-pdf", "png-to-pdf", "word-to-pdf", "excel-to-pdf", "ppt-to-pdf", "html-to-pdf"];
@@ -84,7 +84,7 @@ const FILE_FREE_TOOLS = ["jpg-to-pdf", "png-to-pdf", "word-to-pdf", "excel-to-pd
 // ─── Testimonials ─────────────────────────────────────────────
 const TESTIMONIALS_META = [
   { name: "María García",      avatar: "MG", avatarColor: "#1B5E20", textKey: "testimonial1_text", roleKey: "testimonial1_role" },
-  { name: "Carlos Rodríguez",  avatar: "CR", avatarColor: "#D4A017", textKey: "testimonial2_text", roleKey: "testimonial2_role" },
+  { name: "Carlos Rodríguez",  avatar: "CR", avatarColor: "#1B5E20", textKey: "testimonial2_text", roleKey: "testimonial2_role" },
   { name: "Ana Martínez",      avatar: "AM", avatarColor: "#4CAF50",  textKey: "testimonial3_text", roleKey: "testimonial3_role" },
 ];
 
@@ -244,7 +244,7 @@ export default function Home() {
             <span className="flex items-center gap-1.5">
               <span className="flex">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-3.5 h-3.5 fill-current" style={{ color: "#D4A017" }} />
+                  <Star key={i} className="w-3.5 h-3.5 fill-current" style={{ color: "#1B5E20" }} />
                 ))}
               </span>
               <strong style={{ color: TEXT_MAIN }}>4.8/5</strong>
@@ -276,11 +276,11 @@ export default function Home() {
               onClick={() => fileInputRef.current?.click()}
               className="cursor-pointer rounded-2xl border-2 border-dashed transition-all duration-300"
               style={{
-                borderColor: isDraggingOver ? INDIGO : "rgba(27, 94, 32, 0.28)",
-                backgroundColor: isDraggingOver ? "#F5F9F5" : "white",
+                borderColor: isDraggingOver ? INDIGO : "rgba(0, 0, 0, 0.20)",
+                backgroundColor: isDraggingOver ? "#f8fafc" : "white",
                 boxShadow: isDraggingOver
-                  ? `0 0 0 5px rgba(27, 94, 32, 0.08), 0 12px 48px rgba(27, 94, 32, 0.12)`
-                  : "0 4px 32px rgba(26, 46, 26 / 0.07), 0 1px 4px rgba(26, 46, 26 / 0.04)",
+                  ? `0 0 0 5px rgba(0, 0, 0, 0.06), 0 12px 48px rgba(0, 0, 0, 0.10)`
+                  : "0 4px 32px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.03)",
               }}
             >
               {/* Main content: icon → text → button, centrado vertical */}
@@ -288,7 +288,7 @@ export default function Home() {
                 {/* Icon */}
                 <div
                   className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                  style={{ background: GRAD, boxShadow: `0 8px 24px rgba(27, 94, 32, 0.28)` }}
+                  style={{ background: GRAD, boxShadow: `0 8px 24px rgba(0, 0, 0, 0.20)` }}
                 >
                   <FileText className="w-8 h-8 text-white" />
                 </div>
@@ -309,7 +309,7 @@ export default function Home() {
                 {/* CTA button */}
                 <button
                   className="inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
-                  style={{ background: GRAD, boxShadow: `0 4px 16px rgba(27, 94, 32, 0.35)` }}
+                  style={{ background: GRAD, boxShadow: `0 4px 16px rgba(0, 0, 0, 0.25)` }}
                   onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
                 >
                   <Upload className="w-4 h-4" />
@@ -322,7 +322,7 @@ export default function Home() {
               {/* Bottom bar: formats only */}
               <div
                 className="flex flex-wrap items-center justify-center gap-1.5 px-8 py-3 border-t"
-                style={{ borderColor: "rgba(27, 94, 32, 0.10)", backgroundColor: SURFACE }}
+                style={{ borderColor: "rgba(0, 0, 0, 0.08)", backgroundColor: SURFACE }}
               >
                 {["PDF", "Word", "Excel", "PPT", "JPG", "PNG"].map((fmt) => (
                   <span
@@ -342,7 +342,7 @@ export default function Home() {
           <div className="max-w-3xl mx-auto w-full mt-8 pb-12">
             <div
               className="grid grid-cols-2 md:grid-cols-4 rounded-2xl border"
-              style={{ borderColor: "#C8E6C9", backgroundColor: "#FAFCFA", borderRadius: "1rem" }}
+              style={{ borderColor: "#e2e8f0", backgroundColor: "#ffffff", borderRadius: "1rem" }}
             >
               {[
                 { value: "15+",   label: (t as any).hero_social_tools ?? "Herramientas PDF", icon: Sparkles },
@@ -353,7 +353,7 @@ export default function Home() {
                 <div
                   key={i}
                   className="flex flex-col items-center gap-0.5 px-4 py-4 text-center border-r last:border-r-0"
-                  style={{ borderColor: "#C8E6C9" }}
+                  style={{ borderColor: "#e2e8f0" }}
                 >
                   <stat.icon className="w-4 h-4 mb-0.5" style={{ color: INDIGO, opacity: 0.45 }} />
                   <div
@@ -404,8 +404,8 @@ export default function Home() {
             >
               {[
                 { id: "edit" as const,    label: t.tools_tab_edit,     color: INDIGO },
-                { id: "fromPdf" as const, label: t.tools_tab_from_pdf, color: "#D4A017" },
-                { id: "toPdf" as const,   label: t.tools_tab_to_pdf,   color: "#2E7D32" },
+                { id: "fromPdf" as const, label: t.tools_tab_from_pdf, color: "#1B5E20" },
+                { id: "toPdf" as const,   label: t.tools_tab_to_pdf,   color: "#16a34a" },
               ].map((cat) => (
                 <button
                   key={cat.id}
@@ -415,7 +415,7 @@ export default function Home() {
                     backgroundColor: activeTab === cat.id ? "white" : "transparent",
                     color: activeTab === cat.id ? cat.color : TEXT_MUTED,
                     boxShadow: activeTab === cat.id
-                      ? "0 1px 6px rgba(26, 46, 26 / 0.10), 0 0 0 1px #C8E6C9"
+                      ? "0 1px 6px rgba(0, 0, 0, 0.08), 0 0 0 1px #e2e8f0"
                       : "none",
                     fontWeight: activeTab === cat.id ? "600" : "400",
                   }}
@@ -454,7 +454,7 @@ export default function Home() {
           <div className="text-center">
             <button
               className="inline-flex items-center gap-2 px-8 py-3 rounded-xl text-white font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
-              style={{ background: GRAD, boxShadow: `0 4px 16px rgba(27, 94, 32, 0.30)` }}
+              style={{ background: GRAD, boxShadow: `0 4px 16px rgba(0, 0, 0, 0.22)` }}
               onClick={() => scrollToEditor()}
             >
               <Upload className="w-4 h-4" />
@@ -482,8 +482,8 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {[
               { step: "01", icon: Upload,   title: t.how_step1_title, desc: t.how_step1_desc, grad: GRAD },
-              { step: "02", icon: Edit3,    title: t.how_step2_title, desc: t.how_step2_desc, grad: "linear-gradient(135deg, #2E7D32, #D4A017)" },
-              { step: "03", icon: Download, title: t.how_step3_title, desc: t.how_step3_desc, grad: "linear-gradient(135deg, #D4A017, #A67C00)" },
+              { step: "02", icon: Edit3,    title: t.how_step2_title, desc: t.how_step2_desc, grad: "linear-gradient(135deg, #16a34a, #1B5E20)" },
+              { step: "03", icon: Download, title: t.how_step3_title, desc: t.how_step3_desc, grad: "linear-gradient(135deg, #1B5E20, #166534)" },
             ].map((item, i) => (
               <div
                 key={i}
@@ -495,7 +495,7 @@ export default function Home() {
                   className="absolute top-5 right-5 text-6xl font-black leading-none select-none"
                   style={{
                     fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif",
-                    color: "rgba(26, 46, 26 / 0.04)",
+                    color: "rgba(0, 0, 0, 0.03)",
                   }}
                 >
                   {item.step}
@@ -503,7 +503,7 @@ export default function Home() {
 
                 <div
                   className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: item.grad, boxShadow: `0 6px 20px rgba(27, 94, 32, 0.25)` }}
+                  style={{ background: item.grad, boxShadow: `0 6px 20px rgba(0, 0, 0, 0.18)` }}
                 >
                   <item.icon className="w-7 h-7 text-white" />
                 </div>
@@ -526,7 +526,7 @@ export default function Home() {
           <div className="flex justify-center mt-10">
             <button
               className="inline-flex items-center gap-2 px-8 py-3 rounded-xl text-white font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5"
-              style={{ background: GRAD, boxShadow: `0 4px 16px rgba(27, 94, 32, 0.30)` }}
+              style={{ background: GRAD, boxShadow: `0 4px 16px rgba(0, 0, 0, 0.22)` }}
               onClick={() => scrollToEditor()}
             >
               <Upload className="w-4 h-4" />
@@ -557,23 +557,23 @@ export default function Home() {
                 icon: Zap,
                 title: t.benefit1_title,
                 desc: t.benefit1_desc,
-                color: "#FFF8E1",
-                iconColor: "#D4A017",
+                color: "#f1f5f9",
+                iconColor: "#1B5E20",
                 points: [(t as any).benefit1_point1, (t as any).benefit1_point2, (t as any).benefit1_point3],
               },
               {
                 icon: Shield,
                 title: t.benefit2_title,
                 desc: t.benefit2_desc,
-                color: "#F5F9F5",
-                iconColor: "#2E7D32",
+                color: "#f8fafc",
+                iconColor: "#16a34a",
                 points: [(t as any).benefit2_point1, (t as any).benefit2_point2, (t as any).benefit2_point3],
               },
               {
                 icon: Edit3,
                 title: t.benefit3_title,
                 desc: t.benefit3_desc,
-                color: "#E8F5E9",
+                color: "#f1f5f9",
                 iconColor: INDIGO,
                 points: [(t as any).benefit3_point1, (t as any).benefit3_point2, (t as any).benefit3_point3],
               },
@@ -581,7 +581,7 @@ export default function Home() {
                 icon: Monitor,
                 title: t.benefit4_title,
                 desc: t.benefit4_desc,
-                color: "#E8F5E9",
+                color: "#f1f5f9",
                 iconColor: VIOLET,
                 points: [(t as any).benefit4_point1, (t as any).benefit4_point2, (t as any).benefit4_point3],
               },
@@ -632,7 +632,7 @@ export default function Home() {
           <div className="text-center mb-10">
             <div className="flex justify-center items-center gap-1 mb-3">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-5 h-5 fill-current" style={{ color: "#D4A017" }} />
+                <Star key={i} className="w-5 h-5 fill-current" style={{ color: "#1B5E20" }} />
               ))}
             </div>
             <h2
@@ -656,7 +656,7 @@ export default function Home() {
                 {/* Stars */}
                 <div className="flex items-center gap-0.5">
                   {[...Array(5)].map((_, j) => (
-                    <Star key={j} className="w-4 h-4 fill-current" style={{ color: "#D4A017" }} />
+                    <Star key={j} className="w-4 h-4 fill-current" style={{ color: "#1B5E20" }} />
                   ))}
                 </div>
 
@@ -698,7 +698,7 @@ export default function Home() {
             {/* Header */}
             <div
               className="px-8 py-6 flex items-center gap-4 border-b"
-              style={{ backgroundColor: "#F5F9F5", borderColor: BORDER }}
+              style={{ backgroundColor: "#f8fafc", borderColor: BORDER }}
             >
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -726,13 +726,13 @@ export default function Home() {
                   icon: Shield,
                   title: (t as any).security_ssl_title,
                   desc: (t as any).security_ssl_desc,
-                  color: "#2E7D32",
+                  color: "#16a34a",
                 },
                 {
                   icon: Trash2,
                   title: (t as any).security_delete_title,
                   desc: (t as any).security_delete_desc,
-                  color: "#D4A017",
+                  color: "#1B5E20",
                 },
                 {
                   icon: Globe,
@@ -787,9 +787,9 @@ export default function Home() {
                 key={i}
                 className="rounded-2xl overflow-hidden border transition-all duration-200"
                 style={{
-                  borderColor: openFaq === i ? "rgba(27, 94, 32, 0.30)" : BORDER,
+                  borderColor: openFaq === i ? "rgba(0, 0, 0, 0.22)" : BORDER,
                   backgroundColor: "white",
-                  boxShadow: openFaq === i ? "0 4px 20px rgba(27, 94, 32, 0.06)" : "none",
+                  boxShadow: openFaq === i ? "0 4px 20px rgba(0, 0, 0, 0.05)" : "none",
                 }}
               >
                 <button
@@ -805,7 +805,7 @@ export default function Home() {
                   <div
                     className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-all"
                     style={{
-                      backgroundColor: openFaq === i ? "#E8F5E9" : SURFACE,
+                      backgroundColor: openFaq === i ? "#f1f5f9" : SURFACE,
                     }}
                   >
                     {openFaq === i
@@ -835,7 +835,7 @@ export default function Home() {
           style={{
             background: isFastDoc
               ? `linear-gradient(135deg, #E8590C 0%, #F97316 60%, #FB923C 100%)`
-              : `linear-gradient(135deg, #0D3311 0%, #1B5E20 60%, #D4A017 100%)`,
+              : `linear-gradient(135deg, #14532d 0%, #1B5E20 60%, #166534 100%)`,
           }}
         />
         {/* Decorations */}
@@ -863,9 +863,9 @@ export default function Home() {
           {!isFastDoc && (
           <div className="flex justify-center items-center gap-1 mb-5">
             {[...Array(5)].map((_, i) => (
-              <Star key={i} className="w-5 h-5 fill-current" style={{ color: "#F0C040" }} />
+              <Star key={i} className="w-5 h-5 fill-current" style={{ color: "#22c55e" }} />
             ))}
-            <span className="ml-2 text-sm font-medium" style={{ color: "#C8E6C9" }}>
+            <span className="ml-2 text-sm font-medium" style={{ color: "#e2e8f0" }}>
               4.8/5 · 2.3M usuarios
             </span>
           </div>
@@ -879,7 +879,7 @@ export default function Home() {
           </h2>
           <p
             className="text-base md:text-lg mb-10 max-w-lg mx-auto leading-relaxed"
-            style={{ color: isFastDoc ? "rgba(255,255,255,0.92)" : "#C8E6C9", fontWeight: isFastDoc ? 500 : undefined }}
+            style={{ color: isFastDoc ? "rgba(255,255,255,0.92)" : "#e2e8f0", fontWeight: isFastDoc ? 500 : undefined }}
           >
             {t.cta_subtitle}
           </p>
@@ -901,7 +901,7 @@ export default function Home() {
 
             <div
               className="flex items-center gap-2 text-sm font-medium rounded-xl px-5 py-3"
-              style={{ color: isFastDoc ? "rgba(255,255,255,0.85)" : "#A5C7A5" }}
+              style={{ color: isFastDoc ? "rgba(255,255,255,0.85)" : "#cbd5e1" }}
             >
               <Globe className="w-4 h-4" style={{ color: isFastDoc ? "rgba(255,255,255,0.7)" : "#4CAF50" }} />
               {(t as any).cta_no_card ?? "100% Online · Sin instalación"}
