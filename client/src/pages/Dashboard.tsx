@@ -851,7 +851,7 @@ function BillingTab() {
             {isPremium ? (
               <div>
                 <p className="text-3xl font-bold text-white">
-                  {sub?.plan === "trial" ? "0€" : "49,90€"}
+                  {sub?.plan === "trial" ? "0€" : "19,99€"}
                 </p>
                 <p className={`text-xs ${sub?.cancelAtPeriodEnd ? "text-amber-200" : "text-green-200"}`}>
                   {sub?.plan === "trial" ? "prueba 7 días" : "/ mes"}

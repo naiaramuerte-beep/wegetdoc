@@ -53,7 +53,7 @@ export async function sendSubscriptionConfirmationEmail(params: {
       </tr>
       <tr>
         <td style="padding: 8px 0; color: #64748b;">Precio mensual:</td>
-        <td style="padding: 8px 0; text-align: right; font-weight: 600;">49,90€/mes</td>
+        <td style="padding: 8px 0; text-align: right; font-weight: 600;">19,99€/mes</td>
       </tr>
     </table>
   </div>

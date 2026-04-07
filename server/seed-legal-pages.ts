@@ -20,7 +20,7 @@ const termsContent = `
 <p>wegetdoc.com opera mediante un modelo de suscripcion con las siguientes condiciones:</p>
 <ul>
   <li><strong>Periodo de prueba:</strong> El usuario puede acceder al servicio completo durante 7 dias por un coste de 0,50 EUR.</li>
-  <li><strong>Suscripcion mensual:</strong> Tras finalizar el periodo de prueba, la suscripcion se renueva automaticamente a un precio de 49,90 EUR al mes.</li>
+  <li><strong>Suscripcion mensual:</strong> Tras finalizar el periodo de prueba, la suscripcion se renueva automaticamente a un precio de 19,99 EUR al mes.</li>
   <li>La renovacion es automatica salvo que el usuario cancele su suscripcion antes de que finalice el periodo de facturacion vigente.</li>
 </ul>
 
@@ -230,7 +230,7 @@ const cookiesContent = `
 const refundContent = `
 <h2>1. Derecho de reembolso</h2>
 <p>En wegetdoc.com queremos que nuestros usuarios esten satisfechos con el servicio. Por ello, ofrecemos un <strong>periodo de reembolso de 7 dias naturales</strong> contados desde la fecha del primer cargo realizado en su metodo de pago.</p>
-<p>Este derecho aplica tanto al cargo del periodo de prueba (0,50 EUR) como al primer cargo de la suscripcion mensual (49,90 EUR) si este se produce dentro de los 7 dias posteriores al inicio del uso del servicio.</p>
+<p>Este derecho aplica tanto al cargo del periodo de prueba (0,50 EUR) como al primer cargo de la suscripcion mensual (19,99 EUR) si este se produce dentro de los 7 dias posteriores al inicio del uso del servicio.</p>
 
 <h2>2. Como solicitar un reembolso</h2>
 <p>Para solicitar un reembolso, envie un correo electronico a <a href="mailto:morteapps@outlook.com">morteapps@outlook.com</a> con la siguiente informacion:</p>
@@ -262,7 +262,7 @@ const refundContent = `
 </ul>
 
 <h2>6. Cargos recurrentes posteriores</h2>
-<p>Los cargos de renovacion mensual (49,90 EUR) realizados tras el primer periodo de facturacion no son reembolsables, salvo que existan circunstancias excepcionales que seran valoradas caso por caso. Si desea evitar cargos futuros, le recomendamos cancelar su suscripcion antes de la fecha de renovacion desde la configuracion de su cuenta.</p>
+<p>Los cargos de renovacion mensual (19,99 EUR) realizados tras el primer periodo de facturacion no son reembolsables, salvo que existan circunstancias excepcionales que seran valoradas caso por caso. Si desea evitar cargos futuros, le recomendamos cancelar su suscripcion antes de la fecha de renovacion desde la configuracion de su cuenta.</p>
 
 <h2>7. Derecho de desistimiento legal</h2>
 <p>De conformidad con la normativa europea de proteccion al consumidor, el usuario tiene derecho a desistir de la contratacion en el plazo de 14 dias naturales desde la celebracion del contrato. No obstante, al tratarse de un servicio de contenido digital cuya prestacion comienza con el consentimiento expreso del usuario, este acepta la perdida del derecho de desistimiento una vez que haya accedido al servicio, conforme al articulo 103.m) del Real Decreto Legislativo 1/2007.</p>
