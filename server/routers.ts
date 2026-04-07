@@ -248,7 +248,7 @@ export const appRouter = router({
       }
 
       const session = await stripe.checkout.sessions.create({
-        ui_mode: "embedded",
+        ui_mode: "embedded_page",
         mode: "subscription",
         customer_email: ctx.user.email ?? undefined,
         line_items: [
