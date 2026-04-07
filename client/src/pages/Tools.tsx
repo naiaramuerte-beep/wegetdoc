@@ -111,13 +111,13 @@ export default function Tools() {
           <div className="text-center max-w-2xl mx-auto mb-12">
             <h1
               className="text-4xl md:text-5xl font-extrabold mb-4"
-              style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#0f172a" }}
+              style={{ color: "#0f172a" }}
             >
               {t.tools_page_title}
             </h1>
             <p
               className="text-lg"
-              style={{ color: "#64748b", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+              style={{ color: "#64748b" }}
             >
               {t.tools_page_subtitle}
             </p>
@@ -133,7 +133,7 @@ export default function Tools() {
               <div key={gi}>
                 <h2
                   className="text-2xl font-bold mb-6"
-                  style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#0f172a" }}
+                  style={{ color: "#0f172a" }}
                 >
                   {t[group.categoryKey]}
                 </h2>
@@ -167,13 +167,13 @@ export default function Tools() {
                       <div>
                         <h3
                           className="font-semibold text-sm mb-1"
-                          style={{ color: "#0f172a", fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
+                          style={{ color: "#0f172a" }}
                         >
                           {t[tool.titleKey]}
                         </h3>
                         <p
                           className="text-xs leading-relaxed"
-                          style={{ color: "#64748b", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+                          style={{ color: "#64748b" }}
                         >
                           {t[tool.descKey]}
                         </p>

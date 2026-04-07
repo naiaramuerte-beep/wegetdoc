@@ -52,13 +52,13 @@ export default function PaymentSuccess() {
 
       <h1
         className="text-3xl font-extrabold mb-3"
-        style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#0f172a" }}
+        style={{ color: "#0f172a" }}
       >
         ¡Pago completado!
       </h1>
       <p
         className="text-base mb-4 max-w-md"
-        style={{ color: "#64748b", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+        style={{ color: "#64748b" }}
       >
         Tu suscripción está activa. Tu documento está guardado en tu panel y listo para descargar.
       </p>
@@ -72,7 +72,7 @@ export default function PaymentSuccess() {
         }}
       >
         <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" style={{ color: "#1B5E20" }} />
-        <span className="text-sm font-medium" style={{ color: "#2E4A2E", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}>
+        <span className="text-sm font-medium" style={{ color: "#2E4A2E" }}>
           Redirigiendo en <strong>{countdown}</strong>s...
         </span>
       </div>
@@ -84,7 +84,6 @@ export default function PaymentSuccess() {
           className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-white font-semibold text-sm transition-all duration-200"
           style={{
             backgroundColor: "#1B5E20",
-            fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
           }}
         >
           <Upload className="w-4 h-4" />
@@ -103,11 +102,11 @@ export default function PaymentSuccess() {
       >
         <h3
           className="font-bold mb-3 text-sm"
-          style={{ color: "#0f172a", fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
+          style={{ color: "#0f172a" }}
         >
           ¿Qué puedes hacer ahora?
         </h3>
-        <ul className="space-y-2 text-sm" style={{ color: "#475569", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}>
+        <ul className="space-y-2 text-sm" style={{ color: "#475569" }}>
           {[
             "Descargar tus PDFs editados sin marca de agua",
             "Editar cualquier documento desde tu panel",

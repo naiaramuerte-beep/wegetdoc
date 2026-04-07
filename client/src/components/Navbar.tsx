@@ -93,7 +93,7 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
             >
               <FileText className="w-4 h-4 text-white" />
             </div>
-            <span style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}>
+            <span>
               <span className="font-semibold text-lg" style={{ color: TEXT_MAIN }}>{logoParts[0]}</span>
               <span
                 className="font-extrabold text-lg"
@@ -297,7 +297,6 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
                 <button
                   onClick={openSignup}
                   className="px-4 py-2 text-sm font-semibold rounded-lg text-white transition-all duration-150 btn-gradient"
-                  style={{ fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
                 >
                   {t.nav_signup}
                 </button>

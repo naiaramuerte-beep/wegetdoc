@@ -16,7 +16,6 @@ export default function NotFound() {
         </div>
         <span
           className="text-xl font-bold tracking-tight text-white"
-          style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
         >
           PDF<span style={{ color: "#1B5E20" }}>Pro</span>
         </span>
@@ -25,7 +24,6 @@ export default function NotFound() {
       <h1
         className="text-8xl md:text-9xl font-extrabold mb-6"
         style={{
-          fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif",
           background: "linear-gradient(135deg, #1B5E20, #1B5E20)",
           WebkitBackgroundClip: "text",
           WebkitTextFillColor: "transparent",
@@ -37,13 +35,12 @@ export default function NotFound() {
 
       <h2
         className="text-2xl font-bold text-white mb-3"
-        style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
       >
         Página no encontrada
       </h2>
       <p
         className="text-sm mb-8 max-w-md"
-        style={{ color: "#6B8E6B", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+        style={{ color: "#6B8E6B" }}
       >
         La página que estás buscando no existe o no está disponible. Verifica la URL o regresa al inicio.
       </p>
@@ -55,7 +52,6 @@ export default function NotFound() {
           style={{
             border: "1px solid #334155",
             color: "#94a3b8",
-            fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
           }}
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#1e293b";
@@ -74,7 +70,6 @@ export default function NotFound() {
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-all duration-200"
             style={{
               backgroundColor: "#1B5E20",
-              fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
             }}
             onMouseEnter={(e) =>
               ((e.currentTarget as HTMLButtonElement).style.backgroundColor = "#14532d")

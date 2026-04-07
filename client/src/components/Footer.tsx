@@ -116,14 +116,14 @@ export default function Footer() {
               </div>
               <span
                 className="font-bold text-xl tracking-tight"
-                style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "white" }}
+                style={{ color: "white" }}
               >
                 {logoParts[0]}<span style={{ color: INDIGO }}>{logoParts[1]}</span>
               </span>
             </div>
             <p
               className="text-sm leading-relaxed mb-3"
-              style={{ color: TEXT_LINK, fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+              style={{ color: TEXT_LINK }}
             >
               {t.footer_desc}
             </p>
@@ -142,7 +142,6 @@ export default function Footer() {
           <div>
             <h4
               className="text-sm font-semibold text-white mb-4"
-              style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
             >
               {t.footer_col_wegetdoc}
             </h4>
@@ -168,7 +167,6 @@ export default function Footer() {
           <div>
             <h4
               className="text-sm font-semibold text-white mb-4"
-              style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
             >
               {t.footer_col_legal}
             </h4>
@@ -193,7 +191,6 @@ export default function Footer() {
           <div>
             <h4
               className="text-sm font-semibold text-white mb-4"
-              style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
             >
               {t.footer_col_tools}
             </h4>
@@ -226,7 +223,6 @@ export default function Footer() {
               backgroundColor: BG_LIGHTER,
               color: TEXT_LINK,
               borderColor: BORDER,
-              fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
             }}
             value={lang}
             onChange={(e) => switchLang(e.target.value as any)}

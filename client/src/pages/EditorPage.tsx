@@ -43,7 +43,7 @@ const LogoSvg = () => (
 );
 
 const LogoText = () => (
-  <span style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}>
+  <span>
     <span className="font-medium text-lg" style={{ color: "rgba(255,255,255,0.85)" }}>{logoParts[0]}</span>
     <span className="font-extrabold text-lg" style={{ color: colors.light }}>{logoParts[1]}</span>
   </span>
@@ -103,7 +103,7 @@ function EditorUploadZone({ lang }: { lang: string }) {
           {/* Headline */}
           <div className="text-center max-w-3xl mx-auto mb-8 md:mb-12">
             <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-4"
-              style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#111" }}>
+              style={{ color: "#111" }}>
               {t.hero_title_1}{" "}
               <span style={{
                 background: colors.gradient,
@@ -137,7 +137,7 @@ function EditorUploadZone({ lang }: { lang: string }) {
               </div>
 
               <div className="text-center">
-                <p className="font-bold text-lg mb-1" style={{ color: "#111", fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}>
+                <p className="font-bold text-lg mb-1" style={{ color: "#111" }}>
                   {t.hero_drag_here}
                 </p>
                 <p className="text-sm" style={{ color: "#999" }}>{t.hero_or}</p>
@@ -221,14 +221,14 @@ export default function EditorPage() {
                 onKeyDown={e => { if (e.key === "Enter") confirmEdit(); if (e.key === "Escape") setIsEditingName(false); }}
                 onBlur={confirmEdit}
                 className="bg-white/10 text-white text-sm px-2 py-0.5 rounded border border-white/20 outline-none focus:border-white/40 min-w-[120px] max-w-[300px]"
-                style={{ fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }} />
+                />
               <button onMouseDown={e => { e.preventDefault(); confirmEdit(); }} className="p-0.5 rounded hover:bg-white/10 transition-colors" title="Confirm">
                 <Check className="w-3.5 h-3.5" style={{ color: "#4CAF50" }} />
               </button>
             </div>
           ) : (
             <button onClick={startEdit} className="flex items-center gap-1.5 min-w-0 hover:bg-white/5 rounded px-2 py-0.5 transition-colors group" title="Click to rename">
-              <span className="text-sm font-medium truncate" style={{ color: "rgba(255,255,255,0.85)", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}>{fileName}</span>
+              <span className="text-sm font-medium truncate" style={{ color: "rgba(255,255,255,0.85)" }}>{fileName}</span>
               <Pencil className="w-3 h-3 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "rgba(255,255,255,0.5)" }} />
             </button>
           )}

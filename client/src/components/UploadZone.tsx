@@ -246,14 +246,13 @@ export default function UploadZone({ onFileSelect, compact = false }: UploadZone
             className={`font-semibold ${compact ? "text-base" : "text-xl"}`}
             style={{
               color: "#1B5E20",
-              fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif",
             }}
           >
             {isDragging ? txt.drop : txt.drag}
           </p>
           <p
             className={`mt-1 ${compact ? "text-xs" : "text-sm"}`}
-            style={{ color: "#64748b", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+            style={{ color: "#64748b" }}
           >
             {txt.or}
           </p>
@@ -266,7 +265,6 @@ export default function UploadZone({ onFileSelect, compact = false }: UploadZone
           }`}
           style={{
             backgroundColor: "#14532d",
-            fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
           }}
           onMouseEnter={(e) =>
             (e.currentTarget.style.backgroundColor = "#1B5E20")
@@ -288,7 +286,7 @@ export default function UploadZone({ onFileSelect, compact = false }: UploadZone
         {!compact && (
           <p
             className="text-xs"
-            style={{ color: "#6B8E6B", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+            style={{ color: "#6B8E6B" }}
           >
             {txt.maxSize}
           </p>

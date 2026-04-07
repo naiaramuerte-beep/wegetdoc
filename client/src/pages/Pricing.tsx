@@ -86,13 +86,13 @@ export default function Pricing() {
         <div className="container max-w-3xl mx-auto">
           <h1
             className="text-4xl md:text-5xl font-extrabold mb-4"
-            style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#0f172a" }}
+            style={{ color: "#0f172a" }}
           >
             {t.pricing_title}
           </h1>
           <p
             className="text-base"
-            style={{ color: "#64748b", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+            style={{ color: "#64748b" }}
           >
             {t.pricing_subtitle}
           </p>
@@ -118,7 +118,6 @@ export default function Pricing() {
                   className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold text-white"
                   style={{
                     backgroundColor: "#1B5E20",
-                    fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
                   }}
                 >
                   <Zap className="w-3 h-3" />
@@ -135,7 +134,7 @@ export default function Pricing() {
                 </div>
                 <h2
                   className="text-xl font-bold"
-                  style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#0f172a" }}
+                  style={{ color: "#0f172a" }}
                 >
                   {t.pricing_trial_name}
                 </h2>
@@ -144,13 +143,13 @@ export default function Pricing() {
               <div className="mb-4">
                 <span
                   className="text-4xl font-extrabold"
-                  style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#0f172a" }}
+                  style={{ color: "#0f172a" }}
                 >
                   {t.pricing_trial_price}
                 </span>
                 <span
                   className="text-sm ml-1"
-                  style={{ color: "#64748b", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+                  style={{ color: "#64748b" }}
                 >
                   / {t.pricing_trial_period}
                 </span>
@@ -158,7 +157,7 @@ export default function Pricing() {
 
               <p
                 className="text-sm leading-relaxed mb-6 flex-1"
-                style={{ color: "#475569", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+                style={{ color: "#475569",  }}
               >
                 {t.pricing_trial_desc}
               </p>
@@ -167,7 +166,6 @@ export default function Pricing() {
                 className="w-full py-3 rounded-xl font-semibold text-sm text-white transition-all duration-200"
                 style={{
                   backgroundColor: showCheckout ? "#1B5E20" : "#14532d",
-                  fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
                 }}
                 onMouseEnter={(e) =>
                   (e.currentTarget.style.backgroundColor = "#1B5E20")
@@ -199,7 +197,7 @@ export default function Pricing() {
                 </div>
                 <h2
                   className="text-xl font-bold"
-                  style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#0f172a" }}
+                  style={{ color: "#0f172a" }}
                 >
                   {t.pricing_monthly_name}
                 </h2>
@@ -208,13 +206,13 @@ export default function Pricing() {
               <div className="mb-4">
                 <span
                   className="text-4xl font-extrabold"
-                  style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#0f172a" }}
+                  style={{ color: "#0f172a" }}
                 >
                   {t.pricing_monthly_price}
                 </span>
                 <span
                   className="text-sm ml-1"
-                  style={{ color: "#64748b", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+                  style={{ color: "#64748b" }}
                 >
                   / {t.pricing_monthly_period}
                 </span>
@@ -222,13 +220,13 @@ export default function Pricing() {
 
               <p
                 className="text-sm mb-1"
-                style={{ color: "#64748b", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+                style={{ color: "#64748b" }}
               >
                 {t.pricing_billed_monthly ?? "Billed monthly"}
               </p>
               <p
                 className="text-sm leading-relaxed mb-6 flex-1"
-                style={{ color: "#475569", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+                style={{ color: "#475569",  }}
               >
                 {t.pricing_monthly_desc}
               </p>
@@ -239,7 +237,6 @@ export default function Pricing() {
                   backgroundColor: "transparent",
                   border: "2px solid #14532d",
                   color: "#14532d",
-                  fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = "#14532d";
@@ -277,7 +274,7 @@ export default function Pricing() {
                 <CreditCard className="w-5 h-5" style={{ color: "#1B5E20" }} />
                 <h3
                   className="text-lg font-bold"
-                  style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#0f172a" }}
+                  style={{ color: "#0f172a" }}
                 >
                   {t.paywall_secure ?? "Pago 100% seguro"}
                 </h3>
@@ -303,7 +300,7 @@ export default function Pricing() {
         <div className="container max-w-4xl mx-auto">
           <h2
             className="text-2xl md:text-3xl font-bold mb-8"
-            style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#0f172a" }}
+            style={{ color: "#0f172a" }}
           >
             {t.pricing_compare_title ?? "Discover what each plan includes"}
           </h2>
@@ -322,19 +319,19 @@ export default function Pricing() {
             >
               <div
                 className="text-sm font-semibold"
-                style={{ color: "#334155", fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
+                style={{ color: "#334155",  }}
               >
                 {t.pricing_features_col ?? "Main features"}
               </div>
               <div
                 className="text-sm font-semibold text-center"
-                style={{ color: "#1B5E20", fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
+                style={{ color: "#1B5E20",  }}
               >
                 {t.pricing_trial_name}
               </div>
               <div
                 className="text-sm font-semibold text-center"
-                style={{ color: "#0f172a", fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
+                style={{ color: "#0f172a",  }}
               >
                 {t.pricing_monthly_name}
               </div>
@@ -352,7 +349,7 @@ export default function Pricing() {
               >
                 <div
                   className="text-sm"
-                  style={{ color: "#334155", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+                  style={{ color: "#334155",  }}
                 >
                   {feature.name}
                 </div>
@@ -381,7 +378,7 @@ export default function Pricing() {
         <div className="container max-w-3xl mx-auto">
           <h2
             className="text-2xl md:text-3xl font-bold mb-8"
-            style={{ fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif", color: "#0f172a" }}
+            style={{ color: "#0f172a" }}
           >
             {t.faq_title}
           </h2>
@@ -402,7 +399,7 @@ export default function Pricing() {
                 >
                   <span
                     className="font-semibold text-sm pr-4"
-                    style={{ color: "#0f172a", fontFamily: "'Nunito', 'Poppins', system-ui, sans-serif" }}
+                    style={{ color: "#0f172a",  }}
                   >
                     {faq.question}
                   </span>
@@ -415,7 +412,7 @@ export default function Pricing() {
                 {openFaq === i && (
                   <div
                     className="px-6 pb-4 text-sm leading-relaxed"
-                    style={{ color: "#475569", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+                    style={{ color: "#475569",  }}
                   >
                     {faq.answer}
                   </div>

@@ -99,7 +99,7 @@ export default function PdfViewer({
             />
             <span
               className="text-xs"
-              style={{ color: "#64748b", fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif" }}
+              style={{ color: "#64748b" }}
             >
               Renderizando...
             </span>
@@ -112,7 +112,6 @@ export default function PdfViewer({
           style={{
             backgroundColor: "#FFF8E1",
             color: "#1B5E20",
-            fontFamily: "'Poppins', 'Nunito', system-ui, sans-serif",
           }}
         >
           {error}
