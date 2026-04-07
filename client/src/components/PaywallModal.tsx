@@ -303,7 +303,7 @@ function StripeCheckoutForm({
 
           {/* Stripe form */}
           {stripePromise && clientSecret ? (
-            <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: "stripe", variables: { colorPrimary: "#1B5E20", borderRadius: "10px" } } }}>
+            <Elements stripe={stripePromise} options={{ clientSecret, locale: "en", appearance: { theme: "stripe", variables: { colorPrimary: "#1B5E20", borderRadius: "10px" } } }}>
               <PaymentForm onSuccess={handleComplete} />
             </Elements>
           ) : (
