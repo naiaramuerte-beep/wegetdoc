@@ -520,11 +520,11 @@ ${allUrls.map(u => `  <url>
     serveStatic(app);
   }
 
-  const preferredPort = parseInt(process.env.PORT || "8080");
-  const port = await findAvailablePort(preferredPort);
+  const PORT = parseInt(process.env.PORT || "8080", 10);
+  const port = await findAvailablePort(PORT);
 
-  if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
+  if (port !== PORT) {
+    console.log(`Port ${PORT} is busy, using port ${port} instead`);
   }
 
   server.listen(port, "0.0.0.0", () => {
