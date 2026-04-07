@@ -2,10 +2,10 @@
    WeGetDoc — Design System: "Clean White"
    Philosophy: Pure white base, green accent buttons,
    neutral slate tones, clean typography, professional SaaS feel.
-   Fonts: Nunito (headings) + Poppins (body)
+   Fonts: Inter (all)
    ============================================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -100,10 +100,10 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Poppins', 'Nunito', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Nunito', 'Poppins', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
