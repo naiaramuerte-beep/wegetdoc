@@ -755,13 +755,7 @@ export default function Admin() {
             <div className="space-y-6">
               <h2 className="text-lg font-semibold text-white">Ajustes del sitio</h2>
 
-              {/* Paddle Payment Info */}
-              <div
-                className="rounded-xl border p-5 space-y-4"
-                style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
-              >
-              </div>
-                {/* Site settings */}
+              {/* Site settings */}
               <div
                 className="rounded-xl border p-5 space-y-4"
                 style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
