@@ -16,9 +16,11 @@ export default function LegalPage({ slug }: LegalPageProps) {
 
   const defaultTitles: Record<string, string> = {
     privacy: "Política de Privacidad",
-    terms: "Términos de Uso y Contrato",
+    terms: "Términos de Servicio",
     cookies: "Política de Cookies",
     legal: "Aviso Legal",
+    gdpr: "RGPD",
+    refund: "Política de Reembolso",
   };
 
   const title = page?.title ?? defaultTitles[slug] ?? "Página legal";
@@ -44,7 +46,7 @@ export default function LegalPage({ slug }: LegalPageProps) {
             )}
             <div
               className="prose prose-slate max-w-none prose-headings:font-semibold prose-a:text-green-700"
-              dangerouslySetInnerHTML={{ __html: markdownToHtml(page.content ?? "") }}
+              dangerouslySetInnerHTML={{ __html: contentToHtml(page.content ?? "") }}
             />
           </article>
         ) : (
@@ -63,18 +65,12 @@ export default function LegalPage({ slug }: LegalPageProps) {
   );
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-// Simple Markdown to HTML converter — escapes raw HTML before conversion
-function markdownToHtml(md: string): string {
-  const safe = escapeHtml(md);
-  return safe
+/** If content already contains HTML tags, return as-is; otherwise run simple Markdown conversion */
+function contentToHtml(content: string): string {
+  if (/<[a-z][\s\S]*>/i.test(content)) {
+    return content;
+  }
+  return content
     .replace(/^### (.+)$/gm, "<h3>$1</h3>")
     .replace(/^## (.+)$/gm, "<h2>$1</h2>")
     .replace(/^# (.+)$/gm, "<h1>$1</h1>")
