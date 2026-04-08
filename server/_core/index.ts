@@ -662,10 +662,21 @@ ${allUrls.map(u => `  <url>
     console.log(`Server running on http://0.0.0.0:${port}/`);
   });
 
-  // Seed legal pages if they don't exist
-  import("../seed-legal-pages").then(({ seedLegalPages }) => {
-    seedLegalPages().catch((err) => console.error("[Seed] Legal pages failed:", err));
-  });
+  // Seed legal pages if they don't exist (retry after 5s if DB not ready yet)
+  const runSeed = async (attempt = 1) => {
+    try {
+      const { seedLegalPages } = await import("../seed-legal-pages");
+      await seedLegalPages();
+      console.log("[Seed] Legal pages seeding completed (attempt " + attempt + ")");
+    } catch (err) {
+      console.error("[Seed] Legal pages failed (attempt " + attempt + "):", err);
+      if (attempt < 3) {
+        console.log("[Seed] Retrying in 5 seconds...");
+        setTimeout(() => runSeed(attempt + 1), 5000);
+      }
+    }
+  };
+  runSeed();
 }
 
 startServer().catch(console.error);
