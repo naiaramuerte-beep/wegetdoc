@@ -668,8 +668,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         return;
       }
 
-      // Not premium → open paywall directly (no intermediate loading)
+      // Not premium → open paywall immediately, auto-save in background
+      const currentPendingEdited = pendingEditedPdfRef.current;
       const currentPdfBytes = pdfBytesRef.current;
+
+      // Build paywall data and open it right away
       if (currentPdfBytes) {
         try {
           const out = await buildAnnotatedPdf();
@@ -683,6 +686,22 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         } catch {}
       }
       setShowPaywall(true);
+
+      // Auto-save document in background (so it's in the user's account even if they don't pay)
+      if (currentPendingEdited) {
+        fetch("/api/documents/claim-temp", {
+          method: "POST", credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tempKey: currentPendingEdited.tempKey, name: currentPendingEdited.name, paymentStatus: "pending" }),
+        }).then(r => r.ok ? r.json() : null).then(data => {
+          if (data?.doc?.id) setSavedDocId(data.doc.id);
+        }).catch(() => {});
+        clearPendingEditedPdf();
+      } else if (currentPdfBytes) {
+        buildAnnotatedPdf().then(out => {
+          if (out) autoSaveDocument(out).then(r => { if (r?.docId) setSavedDocId(r.docId); });
+        }).catch(() => {});
+      }
     }, 300);
 
     return () => clearInterval(interval);
