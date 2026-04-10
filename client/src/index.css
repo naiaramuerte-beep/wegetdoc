@@ -11,6 +11,13 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Hide Stripe mandate text rendered outside the iframe */
+#payment-element + div,
+.StripeElement + div:not([class]),
+[class*="__PrivateStripeElement"] + div {
+  display: none !important;
+}
+
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);

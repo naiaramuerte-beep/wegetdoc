@@ -95,7 +95,7 @@ function PaymentForm({ onSuccess, userCountry, userPostalCode }: { onSuccess: ()
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Card fields */}
-      <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" }, fields: { billingDetails: { address: { country: "never", postalCode: "never" } } }, terms: { card: "never" } }} />
+      <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" }, fields: { billingDetails: { address: { country: "never", postalCode: "never" } } }, terms: { card: "never", auBecsDebit: "never", bancontact: "never", ideal: "never", sepaDebit: "never", sofort: "never", usBankAccount: "never", cashapp: "never" } } as any} />
 
       {/* Submit button */}
       <button
@@ -303,7 +303,6 @@ function StripeCheckoutForm({
           <div className="rounded-xl p-5 text-center" style={{ background: "linear-gradient(135deg, #1B5E20, #166534)" }}>
             <p className="text-sm text-green-100 mb-1">{t.paywall_your_pdf}</p>
             <p className="text-3xl font-extrabold text-white tracking-tight">{t.paywall_only_for}</p>
-            <p className="text-xs text-green-200 mt-1.5">{t.paywall_7day_access}</p>
           </div>
 
           {/* Stripe form */}
