@@ -228,15 +228,15 @@ export const appRouter = router({
       return { success: true };
     }),
 
-    // After SetupIntent succeeds: set default payment method + create subscription schedule
+    // After payment succeeds: find the active intro subscription, schedule transition to monthly, save to DB
     confirmSetup: protectedProcedure.mutation(async ({ ctx }) => {
       const { getStripe } = await import("./_core/stripe");
       const { ENV } = await import("./_core/env");
       const { upsertSubscription, markDocumentsPaid } = await import("./db");
       const stripe = getStripe();
 
-      if (!ENV.stripePriceId || !ENV.stripeIntroPriceId) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stripe prices not configured" });
+      if (!ENV.stripePriceId) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stripe monthly price not configured" });
       }
 
       // Find the customer for this user
@@ -246,41 +246,30 @@ export const appRouter = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stripe customer not found" });
       }
 
-      // Get the payment method — try customer's cards first, then fall back to latest SetupIntent
-      let pm = (await stripe.paymentMethods.list({ customer: customer.id, type: "card", limit: 1 })).data[0];
-      if (!pm) {
-        // Card may not be listed yet — get it from the most recent completed SetupIntent
-        const setupIntents = await stripe.setupIntents.list({ customer: customer.id, limit: 1 });
-        const latestSi = setupIntents.data[0];
-        if (latestSi?.payment_method && latestSi.status === "succeeded") {
-          const pmId = typeof latestSi.payment_method === "string" ? latestSi.payment_method : latestSi.payment_method.id;
-          pm = await stripe.paymentMethods.retrieve(pmId);
-          // Attach to customer if not already attached
-          if (!pm.customer) {
-            await stripe.paymentMethods.attach(pmId, { customer: customer.id });
-          }
-        }
-      }
-      if (!pm) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "No payment method found" });
+      // Find the active intro subscription (created by createCheckoutSession)
+      const subscriptions = await stripe.subscriptions.list({
+        customer: customer.id,
+        status: "active",
+        limit: 1,
+      });
+      const introSub = subscriptions.data[0];
+      if (!introSub) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "No active subscription found" });
       }
 
-      // Set as default payment method on customer
-      await stripe.customers.update(customer.id, {
-        invoice_settings: { default_payment_method: pm.id },
+      // Create a schedule from the existing subscription to transition to monthly price
+      const schedule = await stripe.subscriptionSchedules.create({
+        from_subscription: introSub.id,
       });
 
-      // Create Subscription Schedule with two phases
-      const now = Math.floor(Date.now() / 1000);
-      const schedule = await stripe.subscriptionSchedules.create({
-        customer: customer.id,
-        start_date: now,
+      // Update the schedule: keep current intro phase, add monthly phase after it
+      await stripe.subscriptionSchedules.update(schedule.id, {
         end_behavior: "release",
-        metadata: { userId: ctx.user.id.toString() },
         phases: [
           {
             items: [{ price: ENV.stripeIntroPriceId, quantity: 1 }],
-            iterations: 1,
+            start_date: schedule.phases[0].start_date,
+            end_date: schedule.phases[0].end_date,
             metadata: { userId: ctx.user.id.toString(), phase: "intro" },
           },
           {
@@ -290,16 +279,13 @@ export const appRouter = router({
         ],
       });
 
-      // Get the subscription created by the schedule
-      const stripeSubscriptionId = (schedule.subscription as string) ?? "";
-
       // Save to DB
       const nowDate = new Date();
-      const phase1End = new Date(nowDate.getTime() + 30 * 24 * 60 * 60 * 1000); // ~1 month
+      const phase1End = new Date((schedule.phases[0].end_date ?? 0) * 1000);
       await upsertSubscription({
         userId: ctx.user.id,
         stripeCustomerId: customer.id,
-        stripeSubscriptionId,
+        stripeSubscriptionId: introSub.id,
         plan: "trial",
         status: "active",
         currentPeriodStart: nowDate,
@@ -333,10 +319,15 @@ export const appRouter = router({
       };
     }),
 
-    // Collect payment method via SetupIntent — schedule created after confirmation
+    // Create a Subscription with the intro price (0,50€) — charges immediately
     createCheckoutSession: protectedProcedure.mutation(async ({ ctx }) => {
       const { getStripe } = await import("./_core/stripe");
+      const { ENV } = await import("./_core/env");
       const stripe = getStripe();
+
+      if (!ENV.stripeIntroPriceId) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stripe intro price not configured" });
+      }
 
       // Find or create Stripe customer
       const existingCustomers = await stripe.customers.list({ email: ctx.user.email ?? undefined, limit: 1 });
@@ -349,16 +340,28 @@ export const appRouter = router({
         });
       }
 
-      // Create SetupIntent to collect payment method
-      // When customer is set, Stripe automatically attaches the payment method to the customer
-      const setupIntent = await stripe.setupIntents.create({
+      // Create Subscription with intro price — default_incomplete means we get
+      // a PaymentIntent that the frontend must confirm (3D Secure shows 0,50€)
+      const subscription = await stripe.subscriptions.create({
         customer: customer.id,
-        payment_method_types: ["card"],
-        usage: "off_session",
-        metadata: { userId: ctx.user.id.toString() },
+        items: [{ price: ENV.stripeIntroPriceId }],
+        payment_behavior: "default_incomplete",
+        payment_settings: { save_default_payment_method: "on_subscription" },
+        metadata: { userId: ctx.user.id.toString(), phase: "intro" },
+        expand: ["latest_invoice.payment_intent"],
       });
 
-      return { clientSecret: setupIntent.client_secret, customerId: customer.id };
+      const invoice = subscription.latest_invoice as any;
+      const paymentIntent = invoice?.payment_intent;
+      if (!paymentIntent?.client_secret) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create payment intent" });
+      }
+
+      return {
+        clientSecret: paymentIntent.client_secret,
+        customerId: customer.id,
+        subscriptionId: subscription.id,
+      };
     }),
   }),
 

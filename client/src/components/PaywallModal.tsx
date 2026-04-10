@@ -67,7 +67,7 @@ function PaymentForm({ onSuccess, userCountry, userPostalCode }: { onSuccess: ()
     if (!stripe || !elements || !accepted) return;
     setSubmitting(true);
     try {
-      const { error } = await stripe.confirmSetup({
+      const { error } = await stripe.confirmPayment({
         elements,
         redirect: "if_required",
         confirmParams: {

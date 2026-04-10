@@ -23,11 +23,9 @@ Online PDF editor SaaS — edit, convert, sign, and protect PDFs in the browser.
 ## Key Architecture
 
 ### Stripe Payment Flow
-1. `createCheckoutSession` creates a **SetupIntent** (0€) with `attach_to_self: true` to collect the card
-2. Frontend calls `stripe.confirmSetup()` with billing country + postal_code from `/api/geo`
-3. `confirmSetup` mutation creates a **SubscriptionSchedule** with two phases:
-   - Phase 1: `STRIPE_INTRO_PRICE_ID` (0.50€, 1 iteration)
-   - Phase 2: `STRIPE_PRICE_ID` (19.99€/month, ongoing)
+1. `createCheckoutSession` creates a **Subscription** with `STRIPE_INTRO_PRICE_ID` (0.50€) and `payment_behavior: "default_incomplete"` — returns the PaymentIntent's client_secret so 3D Secure shows the real amount
+2. Frontend calls `stripe.confirmPayment()` with billing country + postal_code from `/api/geo`
+3. `confirmSetup` mutation finds the active intro subscription, creates a **SubscriptionSchedule** from it to transition to `STRIPE_PRICE_ID` (19.99€/month) after the intro period ends
 4. PaymentElement hides country and postalCode fields (`"never"`) — values come from geolocation
 
 ### Google OAuth
@@ -89,3 +87,4 @@ Online PDF editor SaaS — edit, convert, sign, and protect PDFs in the browser.
 4. **CSP updates:** Added Google Translate (gstatic.com, translate.googleapis.com) and google.com
 5. **Auth fix:** autoResume poll now calls `refreshAuth()` periodically instead of relying on single `retry: false` query
 6. **Google Translate fix:** Added `translate="no"` and `notranslate` class to root div + meta tag to prevent Google Translate from modifying React-managed DOM (causes `insertBefore` errors)
+7. **Stripe payment flow rewrite:** Replaced SetupIntent (0€) with real Subscription using STRIPE_INTRO_PRICE_ID (0.50€) so 3D Secure shows the actual charge amount. confirmSetup now creates a schedule from the existing subscription to transition to monthly.
