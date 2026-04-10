@@ -117,7 +117,7 @@ const articles = [
   {
     slug: "firmar-pdf-online-sin-certificado-digital",
     title: "Firmar un PDF online sin certificado digital: guía práctica y legal",
-    excerpt: "Aprende a insertar tu firma manuscrita en cualquier PDF directamente desde el navegador. Sin certificados, sin instalaciones y de forma totalmente gratuita.",
+    excerpt: "Aprende a insertar tu firma manuscrita en cualquier PDF directamente desde el navegador. Sin certificados y sin instalaciones.",
     content: `<h2>Tipos de firma electrónica: diferencias clave</h2>
 <p>Antes de firmar un documento PDF es fundamental distinguir entre los dos tipos principales de firma electrónica:</p>
 <ul>
@@ -169,7 +169,7 @@ const articles = [
 <h3>¿Cómo puedo verificar si un PDF contiene una firma digital certificada?</h3>
 <p>Abre el documento en Adobe Acrobat Reader y accede al panel de firmas desde el menú Ver > Mostrar/Ocultar > Paneles de navegación > Firmas. Si el PDF incorpora una firma digital con certificado, aparecerán los datos del firmante junto con el estado de validación.</p>`,
     metaTitle: "Firmar PDF online sin certificado: guía gratuita (2026) | EditorPDF",
-    metaDescription: "Guía práctica para insertar tu firma manuscrita en documentos PDF desde el navegador, sin necesidad de certificados digitales ni software adicional.",
+    metaDescription: "Guía práctica para insertar tu firma manuscrita en documentos PDF desde el navegador, sin necesidad de certificados digitales.",
     category: "tutorials",
     tags: "firmar pdf, firma electrónica pdf, firma online gratis, firmar documento pdf, rúbrica digital",
     readTime: 7,

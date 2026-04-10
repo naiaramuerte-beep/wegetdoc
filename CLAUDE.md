@@ -87,4 +87,5 @@ Online PDF editor SaaS — edit, convert, sign, and protect PDFs in the browser.
 4. **CSP updates:** Added Google Translate (gstatic.com, translate.googleapis.com) and google.com
 5. **Auth fix:** autoResume poll now calls `refreshAuth()` periodically instead of relying on single `retry: false` query
 6. **Google Translate fix:** Added `translate="no"` and `notranslate` class to root div + meta tag to prevent Google Translate from modifying React-managed DOM (causes `insertBefore` errors)
-7. **Stripe payment flow rewrite:** Replaced SetupIntent (0€) with real Subscription using STRIPE_INTRO_PRICE_ID (0.50€) so 3D Secure shows the actual charge amount. confirmSetup now creates a schedule from the existing subscription to transition to monthly.
+7. **Stripe payment flow rewrite:** Replaced SetupIntent (0€) with PaymentIntent using STRIPE_INTRO_PRICE_ID (0.50€, one-time price). confirmSetup creates monthly subscription with 7-day trial.
+8. **Google Ads compliance:** Removed "free", "no software", "no installation" language from schema markup, FAQ, i18n strings, and blog content to avoid "free desktop software" classification.
