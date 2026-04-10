@@ -85,6 +85,6 @@ Online PDF editor SaaS — edit, convert, sign, and protect PDFs in the browser.
 3. **Stripe fixes:**
    - Pass billing country from geolocation to `confirmSetup`
    - Pass postal_code from geolocation to `confirmSetup`
-   - Add `attach_to_self: true` + `usage: "off_session"` to SetupIntent so payment method attaches to customer
+   - Removed `attach_to_self` (incompatible with `customer`), added fallback in `confirmSetup` to retrieve payment method from latest SetupIntent if not found via `paymentMethods.list`
 4. **CSP updates:** Added Google Translate (gstatic.com, translate.googleapis.com) and google.com
 5. **Auth fix:** autoResume poll now calls `refreshAuth()` periodically instead of relying on single `retry: false` query

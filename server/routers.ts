@@ -246,9 +246,21 @@ export const appRouter = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stripe customer not found" });
       }
 
-      // Get the payment method from the customer's most recent SetupIntent
-      const paymentMethods = await stripe.paymentMethods.list({ customer: customer.id, type: "card", limit: 1 });
-      const pm = paymentMethods.data[0];
+      // Get the payment method — try customer's cards first, then fall back to latest SetupIntent
+      let pm = (await stripe.paymentMethods.list({ customer: customer.id, type: "card", limit: 1 })).data[0];
+      if (!pm) {
+        // Card may not be listed yet — get it from the most recent completed SetupIntent
+        const setupIntents = await stripe.setupIntents.list({ customer: customer.id, limit: 1 });
+        const latestSi = setupIntents.data[0];
+        if (latestSi?.payment_method && latestSi.status === "succeeded") {
+          const pmId = typeof latestSi.payment_method === "string" ? latestSi.payment_method : latestSi.payment_method.id;
+          pm = await stripe.paymentMethods.retrieve(pmId);
+          // Attach to customer if not already attached
+          if (!pm.customer) {
+            await stripe.paymentMethods.attach(pmId, { customer: customer.id });
+          }
+        }
+      }
       if (!pm) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "No payment method found" });
       }
@@ -338,13 +350,11 @@ export const appRouter = router({
       }
 
       // Create SetupIntent to collect payment method
-      // attach_to_self ensures the payment method is automatically attached to the customer
-      // after confirmation, so confirmSetup can find it via paymentMethods.list
+      // When customer is set, Stripe automatically attaches the payment method to the customer
       const setupIntent = await stripe.setupIntents.create({
         customer: customer.id,
         payment_method_types: ["card"],
         usage: "off_session",
-        attach_to_self: true,
         metadata: { userId: ctx.user.id.toString() },
       });
 
