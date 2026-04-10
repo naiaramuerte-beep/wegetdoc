@@ -3986,6 +3986,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               <span style={{ fontSize: 10, whiteSpace: "nowrap" }}>{label}</span>
             </button>
           ))}
+          {/* Rotate page button */}
+          <button
+            onClick={rotatePage}
+            className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg shrink-0 transition-all"
+            style={{ color: "#2E4A2E", minWidth: 56 }}
+          >
+            <RotateCw className="w-5 h-5" />
+            <span style={{ fontSize: 10, whiteSpace: "nowrap" }}>{t.editor_rotate}</span>
+          </button>
         </div>
         {/* Fade gradient on right to indicate more tools */}
         <div className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none" style={{ background: "linear-gradient(to right, transparent, white)" }} />
