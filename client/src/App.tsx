@@ -3,6 +3,7 @@
    Deep Navy Pro design system + i18n routing
    ============================================================= */
 
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -13,21 +14,32 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import { PdfFileProvider } from "./contexts/PdfFileContext";
 import { LANGUAGES, detectLangFromBrowser } from "./lib/i18n";
 import Home from "./pages/Home";
-import Pricing from "./pages/Pricing";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import Tools from "./pages/Tools";
-import PaymentSuccess from "./pages/PaymentSuccess";
-import Dashboard from "./pages/Dashboard";
-import Admin from "./pages/Admin";
-import LegalPage from "./pages/LegalPage";
-import EditorPage from "./pages/EditorPage";
-import CancelSubscription from "./pages/CancelSubscription";
-import CookieBanner from "./components/CookieBanner";
 import { isFastDoc } from "./lib/brand";
-import Blog from "./pages/Blog";
-import BlogPost from "./pages/BlogPost";
-import ToolLanding, { TOOL_LANDINGS } from "./pages/ToolLanding";
+import { TOOL_LANDINGS } from "./pages/ToolLanding";
+
+// Lazy-loaded pages — only downloaded when the user navigates to them
+const EditorPage = lazy(() => import("./pages/EditorPage"));
+const Pricing = lazy(() => import("./pages/Pricing"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Admin = lazy(() => import("./pages/Admin"));
+const Tools = lazy(() => import("./pages/Tools"));
+const Login = lazy(() => import("./pages/Login"));
+const Signup = lazy(() => import("./pages/Signup"));
+const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
+const LegalPage = lazy(() => import("./pages/LegalPage"));
+const CancelSubscription = lazy(() => import("./pages/CancelSubscription"));
+const CookieBanner = lazy(() => import("./components/CookieBanner"));
+const Blog = lazy(() => import("./pages/Blog"));
+const BlogPost = lazy(() => import("./pages/BlogPost"));
+const ToolLanding = lazy(() => import("./pages/ToolLanding"));
+
+function LazyFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="w-8 h-8 border-3 border-green-700 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
 
 // Redirect root "/" to language-prefixed URL based on browser language
 function RootRedirect() {
@@ -142,7 +154,9 @@ function App() {
           <PdfFileProvider>
             <TooltipProvider>
               <Toaster position="top-right" duration={3000} />
-              <Router />
+              <Suspense fallback={<LazyFallback />}>
+                <Router />
+              </Suspense>
               {!isFastDoc && <CookieBanner />}
             </TooltipProvider>
           </PdfFileProvider>
