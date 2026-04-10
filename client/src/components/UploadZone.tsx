@@ -1,5 +1,5 @@
 /* =============================================================
-   WeGetDoc UploadZone — Drag & Drop PDF upload area
+   EditorPDF UploadZone — Drag & Drop PDF upload area
    Verdant Gold design: dashed green border, hover glow effect
    Fully i18n-ready via useLanguage()
    ============================================================= */

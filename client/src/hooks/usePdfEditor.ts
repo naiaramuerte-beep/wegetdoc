@@ -1,5 +1,5 @@
 /* =============================================================
-   WeGetDoc — usePdfEditor hook
+   EditorPDF — usePdfEditor hook
    Manages PDF state: loaded file, pages, current tool, etc.
    ============================================================= */
 

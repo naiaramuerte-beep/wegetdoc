@@ -1,5 +1,5 @@
 /* =============================================================
-   WeGetDoc — Página legal dinámica
+   EditorPDF — Página legal dinámica
    Renderiza contenido Markdown desde la base de datos
    ============================================================= */
 import { trpc } from "@/lib/trpc";

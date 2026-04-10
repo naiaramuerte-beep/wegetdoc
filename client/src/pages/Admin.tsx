@@ -1,5 +1,5 @@
 /* =============================================================
-   WeGetDoc Admin Panel — Dashboard completo
+   EditorPDF Admin Panel — Dashboard completo
    MRR, ARR, estadísticas de facturación, usuarios, pagos, legal
    ============================================================= */
 import { useState } from "react";

@@ -1,4 +1,4 @@
-# robots.txt for WeGetDoc
+# robots.txt for EditorPDF
 # https://editorpdf.net
 
 User-agent: *

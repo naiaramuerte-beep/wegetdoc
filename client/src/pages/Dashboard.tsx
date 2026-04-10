@@ -1,5 +1,5 @@
 /* =============================================================
-   WeGetDoc — Dashboard de usuario
+   EditorPDF — Dashboard de usuario
    Pestañas: Mi Cuenta | Mis Documentos | Equipo | Facturación
    ============================================================= */
 import { useState, useEffect, useCallback } from "react";

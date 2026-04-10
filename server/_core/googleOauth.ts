@@ -1,6 +1,6 @@
 /**
  * Google OAuth 2.0 — Direct integration
- * Shows "WeGetDoc" on the Google consent screen.
+ * Shows "EditorPDF" on the Google consent screen.
  *
  * Routes:
  *   GET /api/auth/google          — Redirect user to Google

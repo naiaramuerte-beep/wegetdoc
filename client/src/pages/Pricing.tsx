@@ -1,5 +1,5 @@
 /* =============================================================
-   WeGetDoc Pricing Page — Clean White design
+   EditorPDF Pricing Page — Clean White design
    Two plans: Trial + Monthly, with feature comparison table
    Stripe Embedded Checkout inline
    ============================================================= */

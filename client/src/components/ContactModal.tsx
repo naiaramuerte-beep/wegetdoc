@@ -1,5 +1,5 @@
 /* =============================================================
-   WeGetDoc — Modal de contacto
+   EditorPDF — Modal de contacto
    Se abre desde el menú de navegación
    ============================================================= */
 import { useState } from "react";

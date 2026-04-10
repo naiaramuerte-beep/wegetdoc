@@ -1,5 +1,5 @@
 /* =============================================================
-   WeGetDoc Home Page — Professional & Trustworthy Design
+   EditorPDF Home Page — Professional & Trustworthy Design
    Light theme, green-gold accents, upload-first hero,
    social proof, testimonials, security section, tools, FAQ
    ============================================================= */
@@ -500,7 +500,7 @@ export default function Home() {
                 className="text-3xl md:text-4xl font-bold"
                 style={{ color: TEXT_MAIN }}
               >
-                {highlightWords(t.benefits_title, ["WeGetDoc"])}
+                {highlightWords(t.benefits_title, ["EditorPDF"])}
               </h2>
             </div>
 

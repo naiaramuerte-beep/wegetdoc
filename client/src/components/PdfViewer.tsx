@@ -1,5 +1,5 @@
 /* =============================================================
-   WeGetDoc PdfViewer — renders PDF pages using pdfjs-dist canvas
+   EditorPDF PdfViewer — renders PDF pages using pdfjs-dist canvas
    ============================================================= */
 
 import { useEffect, useRef, useState, useCallback } from "react";

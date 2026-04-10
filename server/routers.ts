@@ -302,7 +302,7 @@ export const appRouter = router({
         sendSubscriptionConfirmationEmail({
           to: ctx.user.email,
           userName: ctx.user.name ?? ctx.user.email.split("@")[0],
-          plan: "WeGetDoc (0,50€ primer mes)",
+          plan: "EditorPDF (0,50€ primer mes)",
           amount: "0,50€",
           nextBillingDate: phase1End.toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" }),
           cancelUrl: "https://editorpdf.net/es/dashboard?tab=billing",

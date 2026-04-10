@@ -1,5 +1,5 @@
 /* =============================================================
-   WeGetDoc Signup Page — Verdant Gold design
+   EditorPDF Signup Page — Verdant Gold design
    ============================================================= */
 
 import { useState } from "react";

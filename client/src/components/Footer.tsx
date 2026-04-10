@@ -1,5 +1,5 @@
 /* =============================================================
-   WeGetDoc Footer — "Clean White" design
+   EditorPDF Footer — "Clean White" design
    Dark green footer, matching the gradient CTA above
    ============================================================= */
 
@@ -99,7 +99,7 @@ export default function Footer() {
             </div>
           </div>
         ) : (
-          /* ── WeGetDoc full footer ── */
+          /* ── EditorPDF full footer ── */
           <>
         <div
           className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b"
@@ -138,7 +138,7 @@ export default function Footer() {
             </a>
           </div>
 
-          {/* WeGetDoc links */}
+          {/* EditorPDF links */}
           <div>
             <h4
               className="text-sm font-semibold text-white mb-4"

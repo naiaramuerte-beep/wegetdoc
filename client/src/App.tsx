@@ -1,5 +1,5 @@
 /* =============================================================
-   WeGetDoc App — Routes & Top-level layout
+   EditorPDF App — Routes & Top-level layout
    Deep Navy Pro design system + i18n routing
    ============================================================= */
 

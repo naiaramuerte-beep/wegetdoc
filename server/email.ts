@@ -1,5 +1,5 @@
 /* =============================================================
-   WeGetDoc Email Service — Resend integration
+   EditorPDF Email Service — Resend integration
    Sends transactional emails for payment confirmation, etc.
    ============================================================= */
 
@@ -55,7 +55,7 @@ export async function sendPaymentConfirmationEmail({
           <tr>
             <td style="background:#1a3c6e;padding:32px 40px;text-align:center;">
               <span style="color:#ffffff;font-size:26px;font-weight:700;letter-spacing:-0.5px;">
-                WeGet<span style="color:#60a5fa;">Doc</span>
+                Editor<span style="color:#60a5fa;">PDF</span>
               </span>
             </td>
           </tr>
@@ -209,7 +209,7 @@ export async function sendCancellationEmail({
           <tr>
             <td style="background:#1a3c6e;padding:32px 40px;text-align:center;">
               <span style="color:#ffffff;font-size:26px;font-weight:700;letter-spacing:-0.5px;">
-                WeGet<span style="color:#60a5fa;">Doc</span>
+                Editor<span style="color:#60a5fa;">PDF</span>
               </span>
             </td>
           </tr>

@@ -23,7 +23,7 @@ const articles = [
   <li><strong>Dibujar elementos gráficos</strong>: rectángulos, círculos y flechas para señalizar secciones clave</li>
 </ul>
 
-<h2>Pasos para editar tu PDF con WeGetDoc</h2>
+<h2>Pasos para editar tu PDF con EditorPDF</h2>
 <p>El flujo de trabajo es directo y no requiere conocimientos técnicos:</p>
 <ol>
   <li><strong>Carga el documento</strong>: arrastra tu archivo PDF al área de carga o selecciónalo manualmente desde tu dispositivo</li>
@@ -33,7 +33,7 @@ const articles = [
 </ol>
 
 <h2>Privacidad y seguridad al editar documentos online</h2>
-<p>Una de las preocupaciones más frecuentes al utilizar herramientas web es la confidencialidad de los documentos. WeGetDoc emplea tecnología WebAssembly que procesa el contenido directamente en tu dispositivo, lo que implica que <strong>tus archivos no se transfieren a servidores externos</strong> durante la edición.</p>
+<p>Una de las preocupaciones más frecuentes al utilizar herramientas web es la confidencialidad de los documentos. EditorPDF emplea tecnología WebAssembly que procesa el contenido directamente en tu dispositivo, lo que implica que <strong>tus archivos no se transfieren a servidores externos</strong> durante la edición.</p>
 
 <h2>Editar vs. convertir: dos procesos distintos</h2>
 <p>Es habitual confundir ambos conceptos, pero conviene diferenciarlos:</p>
@@ -45,14 +45,14 @@ const articles = [
 
 <h2>Dudas habituales sobre la edición de PDFs</h2>
 <h3>¿Es posible editar un PDF que proviene de un escáner?</h3>
-<p>Los documentos escaneados son esencialmente imágenes. Para manipular el texto contenido en ellos se necesita tecnología OCR (reconocimiento óptico de caracteres). Con WeGetDoc puedes superponer texto y anotaciones sobre estos documentos, aunque el texto original de la imagen no es modificable.</p>
+<p>Los documentos escaneados son esencialmente imágenes. Para manipular el texto contenido en ellos se necesita tecnología OCR (reconocimiento óptico de caracteres). Con EditorPDF puedes superponer texto y anotaciones sobre estos documentos, aunque el texto original de la imagen no es modificable.</p>
 
 <h3>¿Puedo usar el editor desde un teléfono móvil?</h3>
 <p>Sí. editorpdf.net está optimizado para todo tipo de dispositivos: ordenadores de sobremesa, portátiles, tabletas y smartphones. No hace falta descargar ninguna aplicación.</p>
 
 <h3>¿Existe un límite en el peso del archivo?</h3>
 <p>Los usuarios con acceso gratuito pueden trabajar con PDFs de hasta 10 MB. El plan Pro amplía este límite hasta 100 MB por documento.</p>`,
-    metaTitle: "Editar PDF en el navegador sin instalar nada (2026) | WeGetDoc",
+    metaTitle: "Editar PDF en el navegador sin instalar nada (2026) | EditorPDF",
     metaDescription: "Tutorial paso a paso para editar documentos PDF online sin descargar programas. Modifica textos, inserta firmas e imágenes desde tu navegador.",
     category: "guides",
     tags: "editar pdf online, modificar pdf, editor pdf web, pdf sin instalar, editar pdf gratis",
@@ -74,7 +74,7 @@ const articles = [
 
 <h2>5 alternativas gratuitas para convertir PDF a Word</h2>
 
-<h3>1. WeGetDoc (ideal para conversiones rápidas)</h3>
+<h3>1. EditorPDF (ideal para conversiones rápidas)</h3>
 <p>La opción más ágil: sube tu documento PDF a editorpdf.net, selecciona la función "PDF a Word" y obtén el archivo .docx en segundos. No es necesario registrarse para documentos de tamaño reducido.</p>
 
 <h3>2. Microsoft Word (requiere licencia de Office)</h3>
@@ -93,7 +93,7 @@ const articles = [
 <p>La fidelidad de la conversión está directamente relacionada con la naturaleza del documento original:</p>
 <ul>
   <li><strong>Documentos de texto plano</strong>: cualquiera de las cinco opciones produce resultados satisfactorios</li>
-  <li><strong>Documentos con tablas y columnas</strong>: Adobe Acrobat y WeGetDoc tienden a respetar mejor la estructura</li>
+  <li><strong>Documentos con tablas y columnas</strong>: Adobe Acrobat y EditorPDF tienden a respetar mejor la estructura</li>
   <li><strong>PDFs digitalizados (escaneados)</strong>: se requiere un motor OCR para extraer el texto de las imágenes</li>
   <li><strong>PDFs con contraseña</strong>: es imprescindible retirar la protección antes de iniciar la conversión</li>
 </ul>
@@ -106,8 +106,8 @@ const articles = [
 <p>Sí, siempre que la herramienta disponga de OCR. Esta tecnología analiza la imagen y extrae el texto, convirtiéndolo en contenido editable. La exactitud del resultado depende en gran medida de la calidad de la digitalización.</p>
 
 <h3>¿Mis documentos están protegidos al subirlos?</h3>
-<p>WeGetDoc procesa los archivos directamente en el navegador del usuario, evitando su envío a servidores remotos. Para documentación de alta confidencialidad, es recomendable utilizar siempre herramientas que operen de forma local.</p>`,
-    metaTitle: "Convertir PDF a Word gratis: 5 métodos comparados (2026) | WeGetDoc",
+<p>EditorPDF procesa los archivos directamente en el navegador del usuario, evitando su envío a servidores remotos. Para documentación de alta confidencialidad, es recomendable utilizar siempre herramientas que operen de forma local.</p>`,
+    metaTitle: "Convertir PDF a Word gratis: 5 métodos comparados (2026) | EditorPDF",
     metaDescription: "Comparativa de las 5 mejores formas gratuitas de transformar un PDF en documento Word sin perder el formato. Encuentra la opción ideal para tu caso.",
     category: "comparisons",
     tags: "pdf a word, convertir pdf, pdf a docx, transformar pdf, word gratis",
@@ -126,7 +126,7 @@ const articles = [
 </ul>
 <p>En esta guía nos centramos en la <strong>firma electrónica simple</strong>, que resulta adecuada para la mayoría de documentos de uso cotidiano: contratos entre particulares, autorizaciones internas, formularios administrativos y similares.</p>
 
-<h2>Proceso de firma con WeGetDoc</h2>
+<h2>Proceso de firma con EditorPDF</h2>
 <ol>
   <li><strong>Carga tu documento</strong> en editorpdf.net</li>
   <li>Accede a la opción <strong>"Firma"</strong> en la barra de herramientas lateral</li>
@@ -136,7 +136,7 @@ const articles = [
 </ol>
 
 <h2>Tres maneras de crear tu firma</h2>
-<p>WeGetDoc pone a tu disposición tres modalidades para generar tu firma:</p>
+<p>EditorPDF pone a tu disposición tres modalidades para generar tu firma:</p>
 <ul>
   <li><strong>Dibujo a mano alzada</strong>: reproduce tu rúbrica directamente sobre la pantalla con el ratón o el dedo</li>
   <li><strong>Texto con estilo caligráfico</strong>: introduce tu nombre y selecciona entre diversos estilos tipográficos que imitan la escritura manual</li>
@@ -168,7 +168,7 @@ const articles = [
 
 <h3>¿Cómo puedo verificar si un PDF contiene una firma digital certificada?</h3>
 <p>Abre el documento en Adobe Acrobat Reader y accede al panel de firmas desde el menú Ver > Mostrar/Ocultar > Paneles de navegación > Firmas. Si el PDF incorpora una firma digital con certificado, aparecerán los datos del firmante junto con el estado de validación.</p>`,
-    metaTitle: "Firmar PDF online sin certificado: guía gratuita (2026) | WeGetDoc",
+    metaTitle: "Firmar PDF online sin certificado: guía gratuita (2026) | EditorPDF",
     metaDescription: "Guía práctica para insertar tu firma manuscrita en documentos PDF desde el navegador, sin necesidad de certificados digitales ni software adicional.",
     category: "tutorials",
     tags: "firmar pdf, firma electrónica pdf, firma online gratis, firmar documento pdf, rúbrica digital",

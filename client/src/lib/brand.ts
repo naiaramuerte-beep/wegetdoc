@@ -7,7 +7,7 @@ interface BrandColors {
   lightBg: string;
 }
 
-const COLORS_WEGETDOC: BrandColors = {
+const COLORS_EDITORPDF: BrandColors = {
   primary: "#1B5E20",
   secondary: "#1B5E20",
   primaryHover: "#14532d",
@@ -17,11 +17,11 @@ const COLORS_WEGETDOC: BrandColors = {
 };
 
 const BRANDS: Record<string, { name: string; domain: string; logoParts: [string, string]; brandKey: string; colors: BrandColors }> = {
-  WeGetDoc: { name: "WeGetDoc", domain: "editorpdf.net", logoParts: ["WeGet", "Doc"], brandKey: "WeGetDoc", colors: COLORS_WEGETDOC },
+  EditorPDF: { name: "EditorPDF", domain: "editorpdf.net", logoParts: ["Editor", "PDF"], brandKey: "EditorPDF", colors: COLORS_EDITORPDF },
 };
 
-const key = import.meta.env.VITE_BRAND_NAME || "WeGetDoc";
-const brand = BRANDS[key] ?? BRANDS.WeGetDoc;
+const key = import.meta.env.VITE_BRAND_NAME || "EditorPDF";
+const brand = BRANDS[key] ?? BRANDS.EditorPDF;
 
 export const brandName = brand.name;
 export const brandDomain = brand.domain;

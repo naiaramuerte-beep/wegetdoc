@@ -13,15 +13,15 @@ const termsContent = `# Condiciones Generales de Uso y Contratación
 
 **Fecha de entrada en vigor:** 7 de abril de 2026
 
-El presente documento establece las condiciones que regulan el acceso y la utilización de la plataforma **WeGetDoc**, disponible en el dominio editorpdf.net (en lo sucesivo, "la Plataforma"). Toda persona que acceda a la Plataforma o haga uso de sus funcionalidades adquiere la condición de usuario y se obliga al cumplimiento íntegro de las presentes Condiciones. En caso de desacuerdo con cualquiera de las disposiciones aquí recogidas, el usuario deberá abstenerse de utilizar la Plataforma.
+El presente documento establece las condiciones que regulan el acceso y la utilización de la plataforma **EditorPDF**, disponible en el dominio editorpdf.net (en lo sucesivo, "la Plataforma"). Toda persona que acceda a la Plataforma o haga uso de sus funcionalidades adquiere la condición de usuario y se obliga al cumplimiento íntegro de las presentes Condiciones. En caso de desacuerdo con cualquiera de las disposiciones aquí recogidas, el usuario deberá abstenerse de utilizar la Plataforma.
 
 ## 1. Identificación de la Plataforma
 
-WeGetDoc es una solución digital de edición documental en formato PDF accesible íntegramente a través de navegadores web. La Plataforma permite modificar, anotar, comprimir, proteger mediante contraseña, firmar electrónicamente y convertir documentos PDF sin necesidad de instalar aplicaciones adicionales en el dispositivo del usuario. WeGetDoc dispone de funcionalidades de acceso libre y de funcionalidades avanzadas sujetas a la contratación de un plan de suscripción.
+EditorPDF es una solución digital de edición documental en formato PDF accesible íntegramente a través de navegadores web. La Plataforma permite modificar, anotar, comprimir, proteger mediante contraseña, firmar electrónicamente y convertir documentos PDF sin necesidad de instalar aplicaciones adicionales en el dispositivo del usuario. EditorPDF dispone de funcionalidades de acceso libre y de funcionalidades avanzadas sujetas a la contratación de un plan de suscripción.
 
 ## 2. Creación de Cuenta y Responsabilidad del Usuario
 
-El acceso a las funcionalidades avanzadas de la Plataforma requiere la creación de una cuenta de usuario a través del sistema de autenticación habilitado. El usuario asume la plena responsabilidad sobre la custodia de sus credenciales de acceso, así como sobre cualquier actividad realizada desde su cuenta. Cualquier indicio de acceso no autorizado deberá ser comunicado de forma inmediata a WeGetDoc a través de support@editorpdf.net.
+El acceso a las funcionalidades avanzadas de la Plataforma requiere la creación de una cuenta de usuario a través del sistema de autenticación habilitado. El usuario asume la plena responsabilidad sobre la custodia de sus credenciales de acceso, así como sobre cualquier actividad realizada desde su cuenta. Cualquier indicio de acceso no autorizado deberá ser comunicado de forma inmediata a EditorPDF a través de support@editorpdf.net.
 
 ## 3. Suscripciones y Condiciones de Pago
 
@@ -31,7 +31,7 @@ La contratación del servicio incluye un **periodo de prueba de 7 días** con un
 
 ### 3.2 Cobro recurrente y autorización expresa
 
-**AVISO IMPORTANTE:** Al formalizar el pago inicial de 0,50 EUR, el usuario **otorga autorización expresa** para que WeGetDoc efectúe un cargo periódico de **49,90 EUR/mes** (impuestos incluidos) en el medio de pago registrado una vez concluido el periodo de prueba de 7 días. Dicho cargo se repetirá mensualmente de forma automática hasta que el usuario proceda a la cancelación de su suscripción.
+**AVISO IMPORTANTE:** Al formalizar el pago inicial de 0,50 EUR, el usuario **otorga autorización expresa** para que EditorPDF efectúe un cargo periódico de **49,90 EUR/mes** (impuestos incluidos) en el medio de pago registrado una vez concluido el periodo de prueba de 7 días. Dicho cargo se repetirá mensualmente de forma automática hasta que el usuario proceda a la cancelación de su suscripción.
 
 El importe mensual se cargará en el mismo medio de pago utilizado en la transacción inicial, salvo que el usuario cancele antes de la finalización del periodo de prueba.
 
@@ -47,7 +47,7 @@ Los importes abonados no serán objeto de reembolso, excepto en los supuestos co
 
 ### 3.5 Tarifas y modificaciones de precio
 
-Todas las tarifas se expresan en euros (EUR) y llevan incluido el IVA correspondiente. WeGetDoc se reserva la facultad de revisar las tarifas vigentes, notificando al usuario con una antelación mínima de 30 días a través de correo electrónico.
+Todas las tarifas se expresan en euros (EUR) y llevan incluido el IVA correspondiente. EditorPDF se reserva la facultad de revisar las tarifas vigentes, notificando al usuario con una antelación mínima de 30 días a través de correo electrónico.
 
 ## 4. Normas de Uso Responsable
 
@@ -59,25 +59,25 @@ El usuario se compromete a utilizar la Plataforma de conformidad con la legalida
 - Practicar ingeniería inversa o intentar extraer el código fuente de la Plataforma.
 - Recurrir a herramientas automatizadas (robots, extractores de datos) sin contar con autorización escrita previa.
 
-WeGetDoc se reserva el derecho de suspender o dar de baja de forma inmediata las cuentas que incurran en el incumplimiento de estas normas.
+EditorPDF se reserva el derecho de suspender o dar de baja de forma inmediata las cuentas que incurran en el incumplimiento de estas normas.
 
 ## 5. Titularidad de la Propiedad Intelectual
 
-La totalidad de elementos que conforman la Plataforma —incluyendo diseño, código fuente, logotipos, marcas y contenidos— son titularidad exclusiva de WeGetDoc y se encuentran amparados por la legislación vigente en materia de propiedad intelectual e industrial. Los documentos que el usuario cargue en la Plataforma seguirán siendo de su exclusiva propiedad en todo momento.
+La totalidad de elementos que conforman la Plataforma —incluyendo diseño, código fuente, logotipos, marcas y contenidos— son titularidad exclusiva de EditorPDF y se encuentran amparados por la legislación vigente en materia de propiedad intelectual e industrial. Los documentos que el usuario cargue en la Plataforma seguirán siendo de su exclusiva propiedad en todo momento.
 
 ## 6. Gestión y Tratamiento de Archivos
 
-Los archivos cargados por el usuario se procesan en los servidores de WeGetDoc con la única finalidad de prestar las funcionalidades solicitadas. WeGetDoc no accede, revisa ni comparte el contenido de los documentos del usuario. Los archivos de carácter temporal se eliminan de forma automática una vez finalizado su procesamiento. Los documentos almacenados en la cuenta del usuario permanecerán disponibles mientras este mantenga una suscripción en vigor.
+Los archivos cargados por el usuario se procesan en los servidores de EditorPDF con la única finalidad de prestar las funcionalidades solicitadas. EditorPDF no accede, revisa ni comparte el contenido de los documentos del usuario. Los archivos de carácter temporal se eliminan de forma automática una vez finalizado su procesamiento. Los documentos almacenados en la cuenta del usuario permanecerán disponibles mientras este mantenga una suscripción en vigor.
 
 ## 7. Exclusión y Limitación de Responsabilidad
 
-La Plataforma se ofrece en su estado actual ("as is") y sujeta a disponibilidad. WeGetDoc no garantiza la continuidad ininterrumpida del servicio, la ausencia total de errores ni la adecuación de la Plataforma a las necesidades particulares de cada usuario. En la medida máxima que permita la legislación aplicable, WeGetDoc quedará exenta de responsabilidad por cualesquiera daños indirectos, incidentales, especiales o consecuenciales derivados del uso de la Plataforma.
+La Plataforma se ofrece en su estado actual ("as is") y sujeta a disponibilidad. EditorPDF no garantiza la continuidad ininterrumpida del servicio, la ausencia total de errores ni la adecuación de la Plataforma a las necesidades particulares de cada usuario. En la medida máxima que permita la legislación aplicable, EditorPDF quedará exenta de responsabilidad por cualesquiera daños indirectos, incidentales, especiales o consecuenciales derivados del uso de la Plataforma.
 
-La responsabilidad total de WeGetDoc no excederá, en ningún supuesto, del importe efectivamente abonado por el usuario durante los 12 meses inmediatamente anteriores al hecho generador de la reclamación.
+La responsabilidad total de EditorPDF no excederá, en ningún supuesto, del importe efectivamente abonado por el usuario durante los 12 meses inmediatamente anteriores al hecho generador de la reclamación.
 
 ## 8. Revisión de las Condiciones
 
-WeGetDoc podrá modificar las presentes Condiciones en cualquier momento. Las versiones actualizadas entrarán en vigor desde su publicación en la Plataforma. La continuación del uso del servicio tras la publicación de modificaciones implicará la aceptación de las nuevas condiciones. En caso de cambios de carácter sustancial, WeGetDoc informará a los usuarios registrados por correo electrónico con un mínimo de 15 días de antelación.
+EditorPDF podrá modificar las presentes Condiciones en cualquier momento. Las versiones actualizadas entrarán en vigor desde su publicación en la Plataforma. La continuación del uso del servicio tras la publicación de modificaciones implicará la aceptación de las nuevas condiciones. En caso de cambios de carácter sustancial, EditorPDF informará a los usuarios registrados por correo electrónico con un mínimo de 15 días de antelación.
 
 ## 9. Normativa Aplicable y Fuero Competente
 
@@ -85,25 +85,25 @@ Las presentes Condiciones quedan sometidas a la legislación de la Unión Europe
 
 ## 10. Datos de Contacto
 
-Para cualquier cuestión relativa a las presentes Condiciones, el usuario puede dirigirse a WeGetDoc a través de support@editorpdf.net o mediante el formulario disponible en [editorpdf.net/contact](https://editorpdf.net/contact).`;
+Para cualquier cuestión relativa a las presentes Condiciones, el usuario puede dirigirse a EditorPDF a través de support@editorpdf.net o mediante el formulario disponible en [editorpdf.net/contact](https://editorpdf.net/contact).`;
 
 // ─── Política de Privacidad ─────────────────────────────────────────
 const privacyContent = `# Política de Privacidad
 
 **Fecha de entrada en vigor:** 7 de abril de 2026
 
-**WeGetDoc** (accesible en editorpdf.net) reconoce la importancia de salvaguardar la privacidad y los datos personales de sus usuarios. La presente Política de Privacidad detalla las prácticas relativas a la recogida, uso, conservación y protección de la información personal cuando se accede o se utiliza nuestra plataforma de edición documental PDF.
+**EditorPDF** (accesible en editorpdf.net) reconoce la importancia de salvaguardar la privacidad y los datos personales de sus usuarios. La presente Política de Privacidad detalla las prácticas relativas a la recogida, uso, conservación y protección de la información personal cuando se accede o se utiliza nuestra plataforma de edición documental PDF.
 
 ## 1. Identidad del Responsable del Tratamiento
 
-El responsable del tratamiento de los datos personales es **WeGetDoc**, con sede digital en editorpdf.net. El usuario puede dirigir cualquier consulta a la dirección support@editorpdf.net o a través del formulario de contacto disponible en [editorpdf.net/contact](https://editorpdf.net/contact).
+El responsable del tratamiento de los datos personales es **EditorPDF**, con sede digital en editorpdf.net. El usuario puede dirigir cualquier consulta a la dirección support@editorpdf.net o a través del formulario de contacto disponible en [editorpdf.net/contact](https://editorpdf.net/contact).
 
 ## 2. Categorías de Datos Recabados
 
 ### 2.1 Información facilitada voluntariamente por el usuario
 
 - **Datos de alta:** nombre completo, dirección de correo electrónico y credenciales generadas a través del sistema de autenticación.
-- **Información de facturación:** datos relativos al medio de pago, gestionados de forma segura mediante Stripe. WeGetDoc no almacena en sus sistemas números completos de tarjeta ni datos financieros sensibles.
+- **Información de facturación:** datos relativos al medio de pago, gestionados de forma segura mediante Stripe. EditorPDF no almacena en sus sistemas números completos de tarjeta ni datos financieros sensibles.
 - **Comunicaciones:** cualquier información que el usuario facilite voluntariamente a través de formularios de contacto o solicitudes de soporte técnico.
 
 ### 2.2 Información recogida de forma automatizada
@@ -114,7 +114,7 @@ El responsable del tratamiento de los datos personales es **WeGetDoc**, con sede
 
 ### 2.3 Documentos cargados en la Plataforma
 
-Los archivos PDF y demás documentos cargados por el usuario se tratan exclusivamente con el propósito de prestar las funcionalidades de edición solicitadas. WeGetDoc no accede, inspecciona ni analiza el contenido de dichos documentos para fines ajenos a la prestación del servicio.
+Los archivos PDF y demás documentos cargados por el usuario se tratan exclusivamente con el propósito de prestar las funcionalidades de edición solicitadas. EditorPDF no accede, inspecciona ni analiza el contenido de dichos documentos para fines ajenos a la prestación del servicio.
 
 ## 3. Fundamento Jurídico del Tratamiento
 
@@ -127,7 +127,7 @@ El tratamiento de datos personales se sustenta en las siguientes bases legales p
 
 ## 4. Usos de la Información Personal
 
-WeGetDoc utiliza los datos personales del usuario para los siguientes fines:
+EditorPDF utiliza los datos personales del usuario para los siguientes fines:
 
 - Facilitar el acceso a la Plataforma y administrar la cuenta de usuario.
 - Tramitar cobros y gestionar la relación de suscripción.
@@ -139,17 +139,17 @@ WeGetDoc utiliza los datos personales del usuario para los siguientes fines:
 
 ## 5. Comunicación de Datos a Terceros
 
-WeGetDoc podrá compartir datos personales con los terceros que se indican, exclusivamente para los fines señalados:
+EditorPDF podrá compartir datos personales con los terceros que se indican, exclusivamente para los fines señalados:
 
 - **Stripe:** procesamiento de transacciones de pago (EE. UU., al amparo de cláusulas contractuales tipo).
 - **Proveedores de infraestructura:** alojamiento y procesamiento de datos (UE / EE. UU.).
 - **Herramientas analíticas:** medición del uso y rendimiento de la Plataforma (UE / EE. UU.).
 
-WeGetDoc no vende, cede ni transfiere datos personales a terceros con fines publicitarios sin el consentimiento expreso del usuario.
+EditorPDF no vende, cede ni transfiere datos personales a terceros con fines publicitarios sin el consentimiento expreso del usuario.
 
 ## 6. Transferencias Internacionales de Datos
 
-Determinados proveedores de servicios de WeGetDoc pueden estar ubicados fuera del Espacio Económico Europeo (EEE). En tales supuestos, WeGetDoc garantiza la adopción de las salvaguardias pertinentes, tales como cláusulas contractuales tipo aprobadas por la Comisión Europea o decisiones de adecuación vigentes.
+Determinados proveedores de servicios de EditorPDF pueden estar ubicados fuera del Espacio Económico Europeo (EEE). En tales supuestos, EditorPDF garantiza la adopción de las salvaguardias pertinentes, tales como cláusulas contractuales tipo aprobadas por la Comisión Europea o decisiones de adecuación vigentes.
 
 ## 7. Plazos de Conservación
 
@@ -164,7 +164,7 @@ Los datos personales se conservarán durante el periodo estrictamente necesario 
 
 De conformidad con el RGPD, el usuario dispone de los siguientes derechos:
 
-- **Acceso:** conocer si WeGetDoc trata sus datos y obtener una copia de los mismos.
+- **Acceso:** conocer si EditorPDF trata sus datos y obtener una copia de los mismos.
 - **Rectificación:** solicitar la corrección de datos que resulten inexactos o incompletos.
 - **Supresión:** solicitar la eliminación de sus datos cuando ya no resulten necesarios para la finalidad que motivó su recogida.
 - **Limitación del tratamiento:** solicitar la restricción del uso de sus datos en determinadas circunstancias.
@@ -172,32 +172,32 @@ De conformidad con el RGPD, el usuario dispone de los siguientes derechos:
 - **Oposición:** oponerse al tratamiento de sus datos en los supuestos legalmente previstos.
 - **Revocación del consentimiento:** retirar el consentimiento en cualquier momento, sin que ello afecte a la licitud del tratamiento realizado con anterioridad.
 
-Para el ejercicio de estos derechos, el usuario puede dirigirse a support@editorpdf.net o a través de [editorpdf.net/contact](https://editorpdf.net/contact). WeGetDoc responderá en un plazo máximo de 30 días naturales.
+Para el ejercicio de estos derechos, el usuario puede dirigirse a support@editorpdf.net o a través de [editorpdf.net/contact](https://editorpdf.net/contact). EditorPDF responderá en un plazo máximo de 30 días naturales.
 
 Asimismo, el usuario tiene derecho a interponer reclamación ante la Agencia Española de Protección de Datos (AEPD) en [www.aepd.es](https://www.aepd.es) o ante la autoridad de control de protección de datos de su país de residencia.
 
 ## 9. Medidas de Seguridad
 
-WeGetDoc aplica medidas técnicas y organizativas adecuadas para proteger los datos personales frente a accesos no autorizados, alteración, divulgación o destrucción, incluyendo cifrado SSL/TLS de 256 bits, almacenamiento seguro de credenciales y control de acceso basado en el principio de mínimo privilegio.
+EditorPDF aplica medidas técnicas y organizativas adecuadas para proteger los datos personales frente a accesos no autorizados, alteración, divulgación o destrucción, incluyendo cifrado SSL/TLS de 256 bits, almacenamiento seguro de credenciales y control de acceso basado en el principio de mínimo privilegio.
 
 ## 10. Uso por Menores de Edad
 
-La Plataforma no está concebida para su uso por menores de 16 años. WeGetDoc no recaba conscientemente datos de menores de dicha edad. En caso de detectar que se han recogido datos de un menor sin el debido consentimiento parental, se procederá a su supresión inmediata.
+La Plataforma no está concebida para su uso por menores de 16 años. EditorPDF no recaba conscientemente datos de menores de dicha edad. En caso de detectar que se han recogido datos de un menor sin el debido consentimiento parental, se procederá a su supresión inmediata.
 
 ## 11. Modificaciones de la Política
 
-WeGetDoc se reserva la facultad de actualizar la presente Política de Privacidad. Cualquier modificación se publicará en esta página con la fecha de actualización correspondiente. Ante cambios sustanciales, se notificará a los usuarios registrados mediante correo electrónico.
+EditorPDF se reserva la facultad de actualizar la presente Política de Privacidad. Cualquier modificación se publicará en esta página con la fecha de actualización correspondiente. Ante cambios sustanciales, se notificará a los usuarios registrados mediante correo electrónico.
 
 ## 12. Contacto
 
-Para cualquier consulta relativa a la presente Política o al tratamiento de datos personales, el usuario puede contactar con WeGetDoc en support@editorpdf.net o a través de [editorpdf.net/contact](https://editorpdf.net/contact).`;
+Para cualquier consulta relativa a la presente Política o al tratamiento de datos personales, el usuario puede contactar con EditorPDF en support@editorpdf.net o a través de [editorpdf.net/contact](https://editorpdf.net/contact).`;
 
 // ─── Política de Cookies ────────────────────────────────────────────
 const cookiesContent = `# Política de Cookies
 
 **Fecha de entrada en vigor:** 7 de abril de 2026
 
-**WeGetDoc** (editorpdf.net) emplea cookies y mecanismos de seguimiento similares con el objetivo de optimizar la experiencia de navegación, evaluar el rendimiento de la Plataforma y adaptar los contenidos mostrados al usuario. En el presente documento se describe qué son las cookies, qué categorías emplea WeGetDoc y de qué manera el usuario puede administrarlas.
+**EditorPDF** (editorpdf.net) emplea cookies y mecanismos de seguimiento similares con el objetivo de optimizar la experiencia de navegación, evaluar el rendimiento de la Plataforma y adaptar los contenidos mostrados al usuario. En el presente documento se describe qué son las cookies, qué categorías emplea EditorPDF y de qué manera el usuario puede administrarlas.
 
 ## 1. Definición de Cookie
 
@@ -229,7 +229,7 @@ Posibilitan funciones avanzadas de personalización, como el almacenamiento del 
 
 ### 2.4 Cookies instaladas por terceros
 
-WeGetDoc integra servicios de terceros que pueden establecer sus propias cookies:
+EditorPDF integra servicios de terceros que pueden establecer sus propias cookies:
 
 - **Stripe:** gestión segura de procesos de pago. Más información en [stripe.com/privacy](https://stripe.com/privacy).
 - **Google Analytics:** análisis estadístico de uso de la Plataforma. Más información en [policies.google.com/privacy](https://policies.google.com/privacy).
@@ -253,11 +253,11 @@ Para las cookies de analítica de Google, el usuario puede instalar el [compleme
 
 ## 4. Fundamento Jurídico
 
-La utilización de cookies esenciales se ampara en el interés legítimo de WeGetDoc en ofrecer un servicio operativo y seguro. Respecto a las demás categorías de cookies, se recabará el consentimiento previo del usuario conforme al artículo 22.2 de la Ley 34/2002, de Servicios de la Sociedad de la Información (LSSI), y al artículo 6.1.a del RGPD.
+La utilización de cookies esenciales se ampara en el interés legítimo de EditorPDF en ofrecer un servicio operativo y seguro. Respecto a las demás categorías de cookies, se recabará el consentimiento previo del usuario conforme al artículo 22.2 de la Ley 34/2002, de Servicios de la Sociedad de la Información (LSSI), y al artículo 6.1.a del RGPD.
 
 ## 5. Revisiones de esta Política
 
-WeGetDoc podrá actualizar la presente Política de Cookies periódicamente con el fin de reflejar cambios en las cookies utilizadas o por razones operativas, normativas o regulatorias. Se recomienda al usuario consultar esta página de forma regular.
+EditorPDF podrá actualizar la presente Política de Cookies periódicamente con el fin de reflejar cambios en las cookies utilizadas o por razones operativas, normativas o regulatorias. Se recomienda al usuario consultar esta página de forma regular.
 
 ## 6. Contacto
 
@@ -272,18 +272,18 @@ const legalContent = `# Aviso Legal e Información Corporativa
 
 De conformidad con lo dispuesto en el artículo 10 de la Ley 34/2002, de 11 de julio, de Servicios de la Sociedad de la Información y de Comercio Electrónico (LSSI-CE), se facilitan los siguientes datos identificativos del titular del sitio web:
 
-- **Denominación:** WeGetDoc
+- **Denominación:** EditorPDF
 - **Dominio web:** [editorpdf.net](https://editorpdf.net)
 - **Correo electrónico:** support@editorpdf.net
 - **Formulario de contacto:** [editorpdf.net/contact](https://editorpdf.net/contact)
 
 ## 2. Actividad y Finalidad del Sitio Web
 
-WeGetDoc proporciona a los usuarios una plataforma digital de edición de documentos en formato PDF que permite modificar, anotar, firmar electrónicamente, comprimir, proteger y convertir archivos PDF de manera íntegra a través del navegador web, sin requerir la instalación de software en el dispositivo del usuario.
+EditorPDF proporciona a los usuarios una plataforma digital de edición de documentos en formato PDF que permite modificar, anotar, firmar electrónicamente, comprimir, proteger y convertir archivos PDF de manera íntegra a través del navegador web, sin requerir la instalación de software en el dispositivo del usuario.
 
 ## 3. Derechos de Propiedad Intelectual e Industrial
 
-La totalidad de los contenidos presentes en el sitio web —incluyendo, sin carácter limitativo, textos, elementos gráficos, fotografías, iconos, software, código fuente, diseño visual y cualquier otro material audiovisual—, así como las marcas, nombres comerciales y signos distintivos, son titularidad de WeGetDoc o de terceros que han autorizado expresamente su utilización. Queda prohibida la reproducción, distribución, transformación o comunicación pública de dichos contenidos sin autorización expresa, salvo lo estrictamente necesario para el uso legítimo de la Plataforma.
+La totalidad de los contenidos presentes en el sitio web —incluyendo, sin carácter limitativo, textos, elementos gráficos, fotografías, iconos, software, código fuente, diseño visual y cualquier otro material audiovisual—, así como las marcas, nombres comerciales y signos distintivos, son titularidad de EditorPDF o de terceros que han autorizado expresamente su utilización. Queda prohibida la reproducción, distribución, transformación o comunicación pública de dichos contenidos sin autorización expresa, salvo lo estrictamente necesario para el uso legítimo de la Plataforma.
 
 ## 4. Obligaciones del Usuario
 
@@ -291,24 +291,24 @@ El usuario se compromete a realizar un uso adecuado de la Plataforma, abstenién
 
 - Llevar a cabo actividades contrarias a la ley, la buena fe o el orden público.
 - Difundir contenidos discriminatorios, violentos, pornográficos, apologéticos del terrorismo o lesivos de los derechos fundamentales.
-- Causar daños en los sistemas informáticos de WeGetDoc, de sus proveedores o de terceros.
+- Causar daños en los sistemas informáticos de EditorPDF, de sus proveedores o de terceros.
 - Introducir o propagar virus informáticos u otros elementos susceptibles de alterar, dañar o inutilizar sistemas o datos.
 
 ## 5. Exclusión de Garantías y Limitación de Responsabilidad
 
-WeGetDoc no asumirá responsabilidad alguna, salvo disposición legal en contrario, por los daños y perjuicios de cualquier índole que pudieran derivarse de, entre otros supuestos: inexactitudes u omisiones en los contenidos, indisponibilidad temporal de la Plataforma, o la eventual presencia de programas maliciosos, pese a haber adoptado todas las medidas tecnológicas razonablemente exigibles para prevenirlo.
+EditorPDF no asumirá responsabilidad alguna, salvo disposición legal en contrario, por los daños y perjuicios de cualquier índole que pudieran derivarse de, entre otros supuestos: inexactitudes u omisiones en los contenidos, indisponibilidad temporal de la Plataforma, o la eventual presencia de programas maliciosos, pese a haber adoptado todas las medidas tecnológicas razonablemente exigibles para prevenirlo.
 
 ## 6. Enlaces a Sitios de Terceros
 
-En caso de que la Plataforma incluya enlaces o hipervínculos a sitios web de terceros, WeGetDoc no ejerce control alguno sobre dichos sitios ni sobre sus contenidos. En consecuencia, WeGetDoc declina toda responsabilidad respecto de la información, disponibilidad, veracidad o legalidad de los contenidos alojados en páginas externas enlazadas.
+En caso de que la Plataforma incluya enlaces o hipervínculos a sitios web de terceros, EditorPDF no ejerce control alguno sobre dichos sitios ni sobre sus contenidos. En consecuencia, EditorPDF declina toda responsabilidad respecto de la información, disponibilidad, veracidad o legalidad de los contenidos alojados en páginas externas enlazadas.
 
 ## 7. Potestad de Exclusión
 
-WeGetDoc se reserva la facultad de denegar o retirar el acceso a la Plataforma y a sus servicios, sin obligación de preaviso, a aquellos usuarios que contravengan las presentes condiciones de uso, ya sea por iniciativa propia o a instancia de tercero.
+EditorPDF se reserva la facultad de denegar o retirar el acceso a la Plataforma y a sus servicios, sin obligación de preaviso, a aquellos usuarios que contravengan las presentes condiciones de uso, ya sea por iniciativa propia o a instancia de tercero.
 
 ## 8. Legislación Aplicable y Fuero Jurisdiccional
 
-La relación entre WeGetDoc y el usuario se regirá por la normativa española y comunitaria vigente. Para la resolución de cualquier controversia, las partes se someterán a los Juzgados y Tribunales del domicilio del usuario consumidor, de conformidad con la legislación de protección del consumidor de la Unión Europea.
+La relación entre EditorPDF y el usuario se regirá por la normativa española y comunitaria vigente. Para la resolución de cualquier controversia, las partes se someterán a los Juzgados y Tribunales del domicilio del usuario consumidor, de conformidad con la legislación de protección del consumidor de la Unión Europea.
 
 Adicionalmente, y conforme al Reglamento (UE) 524/2013, se informa de que la Comisión Europea dispone de una plataforma de resolución de litigios en línea accesible en [ec.europa.eu/consumers/odr](https://ec.europa.eu/consumers/odr).`;
 
@@ -317,11 +317,11 @@ const gdprContent = `# Compromiso con el Reglamento General de Protección de Da
 
 **Fecha de entrada en vigor:** 7 de abril de 2026
 
-**WeGetDoc** (editorpdf.net) mantiene un firme compromiso con el cumplimiento del Reglamento (UE) 2016/679 del Parlamento Europeo y del Consejo, de 27 de abril de 2016, relativo a la protección de las personas físicas en lo que respecta al tratamiento de datos personales (RGPD), así como de la Ley Orgánica 3/2018, de 5 de diciembre, de Protección de Datos Personales y garantía de los derechos digitales (LOPDGDD).
+**EditorPDF** (editorpdf.net) mantiene un firme compromiso con el cumplimiento del Reglamento (UE) 2016/679 del Parlamento Europeo y del Consejo, de 27 de abril de 2016, relativo a la protección de las personas físicas en lo que respecta al tratamiento de datos personales (RGPD), así como de la Ley Orgánica 3/2018, de 5 de diciembre, de Protección de Datos Personales y garantía de los derechos digitales (LOPDGDD).
 
 ## 1. Principios Rectores del Tratamiento
 
-WeGetDoc fundamenta todas sus operaciones de tratamiento de datos en los principios esenciales del RGPD:
+EditorPDF fundamenta todas sus operaciones de tratamiento de datos en los principios esenciales del RGPD:
 
 - **Licitud, lealtad y transparencia:** los datos se tratan de manera lícita y con plena transparencia hacia el interesado, informando en todo momento sobre las finalidades y modalidades de tratamiento.
 - **Limitación de la finalidad:** la recogida de datos se circunscribe a finalidades concretas, explícitas y legítimas, sin que se realicen tratamientos incompatibles con dichas finalidades.
@@ -332,7 +332,7 @@ WeGetDoc fundamenta todas sus operaciones de tratamiento de datos en los princip
 
 ## 2. Derechos Reconocidos a los Interesados
 
-Todo usuario de WeGetDoc puede ejercer los derechos que el RGPD le reconoce:
+Todo usuario de EditorPDF puede ejercer los derechos que el RGPD le reconoce:
 
 - **Derecho de acceso** (Art. 15 RGPD): obtener confirmación sobre la existencia de tratamiento y acceder a una copia de los datos personales objeto del mismo.
 - **Derecho de rectificación** (Art. 16 RGPD): solicitar la subsanación de datos inexactos o la cumplimentación de datos incompletos.
@@ -344,13 +344,13 @@ Todo usuario de WeGetDoc puede ejercer los derechos que el RGPD le reconoce:
 
 ### Procedimiento de ejercicio
 
-El usuario podrá ejercer cualquiera de estos derechos dirigiéndose a support@editorpdf.net o a través del formulario de contacto en [editorpdf.net/contact](https://editorpdf.net/contact). WeGetDoc verificará la identidad del solicitante antes de tramitar la solicitud y ofrecerá respuesta en un plazo máximo de 30 días naturales desde su recepción.
+El usuario podrá ejercer cualquiera de estos derechos dirigiéndose a support@editorpdf.net o a través del formulario de contacto en [editorpdf.net/contact](https://editorpdf.net/contact). EditorPDF verificará la identidad del solicitante antes de tramitar la solicitud y ofrecerá respuesta en un plazo máximo de 30 días naturales desde su recepción.
 
 En caso de que el usuario considere que sus derechos no han sido debidamente atendidos, podrá presentar reclamación ante la **Agencia Española de Protección de Datos (AEPD)** en [www.aepd.es](https://www.aepd.es), o ante la autoridad de control competente de su país de residencia dentro de la Unión Europea.
 
 ## 3. Medidas Técnicas y Organizativas de Seguridad
 
-WeGetDoc aplica las siguientes medidas para garantizar un nivel de seguridad adecuado al riesgo:
+EditorPDF aplica las siguientes medidas para garantizar un nivel de seguridad adecuado al riesgo:
 
 **En el ámbito técnico:**
 
@@ -369,7 +369,7 @@ WeGetDoc aplica las siguientes medidas para garantizar un nivel de seguridad ade
 
 ## 4. Transferencias Internacionales de Datos
 
-Cuando resulte necesario transferir datos personales fuera del Espacio Económico Europeo (EEE), WeGetDoc se asegura de que se apliquen las garantías adecuadas conforme al Capítulo V del RGPD:
+Cuando resulte necesario transferir datos personales fuera del Espacio Económico Europeo (EEE), EditorPDF se asegura de que se apliquen las garantías adecuadas conforme al Capítulo V del RGPD:
 
 - **Decisiones de adecuación** dictadas por la Comisión Europea (Art. 45 RGPD).
 - **Cláusulas contractuales tipo** aprobadas por la Comisión Europea (Art. 46.2.c RGPD).
@@ -377,26 +377,26 @@ Cuando resulte necesario transferir datos personales fuera del Espacio Económic
 
 ## 5. Evaluaciones de Impacto en la Protección de Datos
 
-WeGetDoc lleva a cabo evaluaciones de impacto relativas a la protección de datos (EIPD) en aquellos supuestos en que el tratamiento previsto pueda entrañar un alto riesgo para los derechos y libertades de los interesados, conforme a lo establecido en el artículo 35 del RGPD.
+EditorPDF lleva a cabo evaluaciones de impacto relativas a la protección de datos (EIPD) en aquellos supuestos en que el tratamiento previsto pueda entrañar un alto riesgo para los derechos y libertades de los interesados, conforme a lo establecido en el artículo 35 del RGPD.
 
 ## 6. Registro de Actividades de Tratamiento
 
-WeGetDoc mantiene un registro actualizado de las actividades de tratamiento conforme al artículo 30 del RGPD, en el que se recogen, entre otros extremos, las categorías de datos tratados, las finalidades perseguidas, los destinatarios de los datos y los plazos de conservación aplicables.
+EditorPDF mantiene un registro actualizado de las actividades de tratamiento conforme al artículo 30 del RGPD, en el que se recogen, entre otros extremos, las categorías de datos tratados, las finalidades perseguidas, los destinatarios de los datos y los plazos de conservación aplicables.
 
 ## 7. Gestión de Brechas de Seguridad
 
-Ante la detección de una brecha de seguridad que afecte a datos personales, WeGetDoc actuará conforme al siguiente protocolo:
+Ante la detección de una brecha de seguridad que afecte a datos personales, EditorPDF actuará conforme al siguiente protocolo:
 
 1. Comunicación a la autoridad de control competente en un plazo no superior a 72 horas desde la toma de conocimiento de la brecha (Art. 33 RGPD).
 2. Notificación a los interesados afectados sin dilación indebida cuando la brecha suponga un riesgo elevado para sus derechos y libertades (Art. 34 RGPD).
 
 ## 8. Canal de Contacto
 
-Para cualquier consulta relacionada con la protección de datos personales o el ejercicio de derechos, el usuario puede contactar con WeGetDoc en support@editorpdf.net o mediante el formulario de contacto en [editorpdf.net/contact](https://editorpdf.net/contact).
+Para cualquier consulta relacionada con la protección de datos personales o el ejercicio de derechos, el usuario puede contactar con EditorPDF en support@editorpdf.net o mediante el formulario de contacto en [editorpdf.net/contact](https://editorpdf.net/contact).
 
 ## 9. Actualizaciones
 
-La presente página será objeto de revisión periódica para reflejar cualquier modificación en las prácticas de protección de datos de WeGetDoc o en la normativa aplicable.`;
+La presente página será objeto de revisión periódica para reflejar cualquier modificación en las prácticas de protección de datos de EditorPDF o en la normativa aplicable.`;
 
 // ─── Insert/Update all pages ────────────────────────────────────────
 const pages = [

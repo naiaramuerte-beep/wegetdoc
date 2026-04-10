@@ -1,5 +1,5 @@
 /* =============================================================
-   WeGetDoc PdfEditor — Professional PDF editor layout
+   EditorPDF PdfEditor — Professional PDF editor layout
    Top toolbar | Left thumbnails | Center viewer | Right tool panel
    All tools functional: sign, text, highlight, compress, convert, protect
    ============================================================= */

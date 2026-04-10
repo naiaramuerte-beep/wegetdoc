@@ -1,5 +1,5 @@
 /* =============================================================
-   WeGetDoc Tools Page — All PDF tools in one place
+   EditorPDF Tools Page — All PDF tools in one place
    Deep Navy Pro design — fully i18n-ready
    ============================================================= */
 

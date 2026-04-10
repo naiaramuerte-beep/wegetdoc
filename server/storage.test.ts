@@ -3,7 +3,7 @@ import { storagePut, storageGet } from "./storage";
 
 describe("Cloudflare R2 Storage", () => {
   const testKey = `test/${Date.now()}-test.txt`;
-  const testContent = "Hello from WeGetDoc storage test!";
+  const testContent = "Hello from EditorPDF storage test!";
 
   it("should upload a file to R2 and return a public URL", async () => {
     const result = await storagePut(testKey, testContent, "text/plain");

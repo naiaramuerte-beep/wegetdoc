@@ -1,5 +1,5 @@
 /* =============================================================
-   WeGetDoc Navbar — "Clean White" design
+   EditorPDF Navbar — "Clean White" design
    Clean white glass navbar, neutral accents
    Responsive: mobile hamburger (<md), desktop nav (md+)
    ============================================================= */
