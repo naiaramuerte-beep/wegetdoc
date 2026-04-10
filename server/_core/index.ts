@@ -453,12 +453,11 @@ ${allUrls.map(u => `  <url>
     try {
       const fileUrl = req.query.url as string;
       if (!fileUrl) { res.status(400).json({ error: "Missing url parameter" }); return; }
-      // Only allow proxying from our R2 bucket domain for security
-      const allowedDomains = [
-        "pub-9115567915bb439c891a63ec2454650a.r2.dev",
-      ];
+      // Only allow proxying from R2 bucket domains for security
       const parsedUrl = new URL(fileUrl);
-      if (!allowedDomains.some(d => parsedUrl.hostname === d)) {
+      const hostname = parsedUrl.hostname;
+      const isR2Domain = hostname.endsWith(".r2.dev") || hostname.endsWith(".r2.cloudflarestorage.com");
+      if (!isR2Domain) {
         res.status(403).json({ error: "Domain not allowed" }); return;
       }
       const response = await fetch(fileUrl);
