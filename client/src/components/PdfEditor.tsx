@@ -343,7 +343,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   });
   const isPremium = subData?.isPremium ?? false;
   const { t } = useLanguage();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, refresh: refreshAuth } = useAuth();
   const { saveEditedPdfToSession, savePdfToSession, setPendingPaywall, setPendingFile, pendingFile, pendingEditedPdf, clearPendingEditedPdf, pendingPaywall: ctxPendingPaywall } = usePdfFile();
   // Track the saved document ID so we don't re-save on every download click
   const [savedDocId, setSavedDocId] = useState<number | null>(null);
@@ -631,7 +631,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       }
 
       // Need auth. PDF is optional (we can open paywall without it if we have pendingEditedPdf)
-      if (!authed) return;
+      if (!authed) {
+        // Retry auth query every ~1.5s in case session cookie wasn't ready
+        if (attempts % 5 === 0) refreshAuth();
+        return;
+      }
       // Need either a loaded PDF or a pendingEditedPdf from S3
       if (!hasPdf) {
         // If we've waited 3+ seconds and still no PDF, open paywall anyway
