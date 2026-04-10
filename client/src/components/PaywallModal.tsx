@@ -98,26 +98,18 @@ function PaymentForm({ onSuccess, userCountry, userPostalCode }: { onSuccess: ()
       {/* Card fields */}
       <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" }, fields: { billingDetails: { address: { country: "never", postalCode: "never" } } } }} />
 
-      {/* Checkbox */}
-      <label className="flex items-start gap-2.5 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={accepted}
-          onChange={(e) => setAccepted(e.target.checked)}
-          className="mt-0.5 w-4 h-4 rounded border-slate-300 accent-[#1B5E20] flex-shrink-0"
-        />
-        <span className="text-[11px] text-slate-400 leading-relaxed">
-          By checking this box, you agree to a 7-day trial (0,50&nbsp;€) and a subsequent monthly subscription of 19,99&nbsp;€. You authorize recurring charges and can cancel at any time. You have 14 calendar days to request a refund, subject to our{" "}
-          <a href={`/${lang}/terms`} target="_blank" className="underline hover:text-slate-600">Terms of Service</a>{" "}
-          and{" "}
-          <a href={`/${lang}/privacy`} target="_blank" className="underline hover:text-slate-600">Privacy Policy</a>.
-        </span>
-      </label>
+      {/* Legal disclaimer */}
+      <p className="text-[11px] text-slate-400 leading-relaxed">
+        By proceeding, you agree to a 7-day trial (0,50&nbsp;€) and a subsequent monthly subscription of 19,99&nbsp;€. You authorize recurring charges and can cancel at any time. You have 14 calendar days to request a refund, subject to our{" "}
+        <a href={`/${lang}/terms`} target="_blank" className="underline hover:text-slate-600">Terms of Service</a>{" "}
+        and{" "}
+        <a href={`/${lang}/privacy`} target="_blank" className="underline hover:text-slate-600">Privacy Policy</a>.
+      </p>
 
       {/* Submit button */}
       <button
         type="submit"
-        disabled={!stripe || submitting || !accepted}
+        disabled={!stripe || submitting}
         className="w-full py-3.5 rounded-xl text-white font-bold text-sm transition-all duration-200 disabled:opacity-40"
         style={{ backgroundColor: "#1B5E20" }}
       >
