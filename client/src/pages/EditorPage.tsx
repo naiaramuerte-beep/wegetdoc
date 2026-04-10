@@ -162,7 +162,7 @@ function EditorUploadZone({ lang }: { lang: string }) {
 }
 
 export default function EditorPage() {
-  const { pendingFile, pendingTool, pendingPaywall, setPendingPaywall, isRestoringFromSession, pendingEditedPdf } = usePdfFile();
+  const { pendingFile, pendingTool, pendingPaywall, setPendingPaywall, isRestoringFromSession } = usePdfFile();
   const [, navigate] = useLocation();
   const { lang } = useLanguage();
   const isFileFree = pendingTool ? FILE_FREE_TOOLS.includes(pendingTool) : false;
@@ -198,7 +198,7 @@ export default function EditorPage() {
   }
 
   /* No file loaded — show upload zone (for direct access from Google Ads etc.) */
-  if (!pendingFile && !isFileFree && !pendingPaywall && !pendingEditedPdf) {
+  if (!pendingFile && !isFileFree && !pendingPaywall) {
     return <EditorUploadZone lang={lang} />;
   }
 
