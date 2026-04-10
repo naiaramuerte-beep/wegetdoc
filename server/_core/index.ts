@@ -304,6 +304,23 @@ ${allUrls.map(u => `  <url>
     }
   });
 
+  // ── Download a temp PDF by key (for generating previews after OAuth redirect) ──
+  app.get("/api/documents/temp-download/:key(*)", async (req, res) => {
+    try {
+      const tempKey = req.params.key;
+      if (!tempKey || !tempKey.startsWith("temp/")) { res.status(400).json({ error: "Invalid key" }); return; }
+      const { url } = await storageGet(tempKey, 300);
+      const response = await fetch(url);
+      if (!response.ok) { res.status(404).json({ error: "File not found" }); return; }
+      const buffer = Buffer.from(await response.arrayBuffer());
+      res.setHeader("Content-Type", "application/pdf");
+      res.send(buffer);
+    } catch (err) {
+      console.error("[TempDownload] Error:", err);
+      res.status(500).json({ error: "Download failed" });
+    }
+  });
+
   // ── REST endpoint for claiming a temp PDF after login + payment ────────────────
   // Moves the temp PDF to the user's permanent folder and creates a DB record.
   app.post("/api/documents/claim-temp", async (req, res) => {

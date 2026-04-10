@@ -351,8 +351,12 @@ export default function PaywallModal({
   const effectivePdfData = pdfData ?? pendingEditedPdf ?? undefined;
 
   const handleGoogleLogin = async () => {
-    if (pendingFile) { try { await savePdfToSession(pendingFile); } catch {} }
-    if (pdfData) { try { await saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size); } catch {} }
+    // Save the edited PDF (with annotations) if available, otherwise save the original
+    if (pdfData) {
+      try { await saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size); } catch {}
+    } else if (pendingFile) {
+      try { await savePdfToSession(pendingFile); } catch {}
+    }
     setPendingPaywall(true);
     sessionStorage.setItem("cloudpdf_pending_action", "download");
     const returnPath = window.location.pathname + window.location.search;

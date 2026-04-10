@@ -686,6 +686,31 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             generateAnnotatedThumbnail(out).then(t => { if (t) setPaywallThumbnail(t); });
           }
         } catch {}
+      } else if (currentPendingEdited) {
+        // No PDF loaded in editor but we have an edited PDF in temp storage
+        // Fetch it to generate thumbnail for the paywall
+        try {
+          const tempKey = currentPendingEdited.tempKey;
+          let pdfBytes: Uint8Array | null = null;
+          if (tempKey.startsWith("base64:")) {
+            const b64 = tempKey.slice(7);
+            const bin = atob(b64);
+            const arr = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+            pdfBytes = arr;
+          } else {
+            const resp = await fetch(`/api/documents/temp-download/${encodeURIComponent(tempKey)}`);
+            if (resp.ok) pdfBytes = new Uint8Array(await resp.arrayBuffer());
+          }
+          if (pdfBytes) {
+            setPdfDataForPaywall({
+              base64: uint8ToBase64(pdfBytes),
+              name: currentPendingEdited.name,
+              size: pdfBytes.byteLength,
+            });
+            generateAnnotatedThumbnail(pdfBytes).then(t => { if (t) setPaywallThumbnail(t); });
+          }
+        } catch {}
       }
       setShowPaywall(true);
 
