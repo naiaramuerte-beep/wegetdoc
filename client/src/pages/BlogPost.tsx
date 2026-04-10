@@ -25,7 +25,7 @@ export default function BlogPost() {
 
     const title = post.metaTitle || post.title;
     const description = post.metaDescription || post.excerpt;
-    const url = `https://wegetdoc.com/blog/${post.slug}`;
+    const url = `https://editorpdf.net/blog/${post.slug}`;
 
     document.title = `${title} | ${brandName} Blog`;
 
@@ -65,15 +65,15 @@ export default function BlogPost() {
       "author": {
         "@type": "Organization",
         "name": brandName,
-        "url": "https://wegetdoc.com"
+        "url": "https://editorpdf.net"
       },
       "publisher": {
         "@type": "Organization",
         "name": brandName,
-        "url": "https://wegetdoc.com",
+        "url": "https://editorpdf.net",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://wegetdoc.com/favicon.ico"
+          "url": "https://editorpdf.net/favicon.ico"
         }
       },
       "mainEntityOfPage": {

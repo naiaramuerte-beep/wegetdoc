@@ -1,5 +1,5 @@
 # robots.txt for WeGetDoc
-# https://wegetdoc.com
+# https://editorpdf.net
 
 User-agent: *
 Allow: /
@@ -20,4 +20,4 @@ Disallow: /*/payment/
 Disallow: /*/cancelar-suscripcion
 
 # Sitemap
-Sitemap: https://wegetdoc.com/sitemap.xml
+Sitemap: https://editorpdf.net/sitemap.xml

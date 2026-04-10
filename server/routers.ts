@@ -305,7 +305,7 @@ export const appRouter = router({
           plan: "WeGetDoc (0,50€ primer mes)",
           amount: "0,50€",
           nextBillingDate: phase1End.toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" }),
-          cancelUrl: "https://wegetdoc.com/es/dashboard?tab=billing",
+          cancelUrl: "https://editorpdf.net/es/dashboard?tab=billing",
         }).catch(() => {});
       }
 

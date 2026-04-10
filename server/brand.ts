@@ -1,5 +1,5 @@
 const BRANDS: Record<string, { name: string; domain: string }> = {
-  WeGetDoc: { name: "WeGetDoc", domain: "wegetdoc.com" },
+  WeGetDoc: { name: "WeGetDoc", domain: "editorpdf.net" },
 };
 
 const key = process.env.BRAND_NAME || "WeGetDoc";

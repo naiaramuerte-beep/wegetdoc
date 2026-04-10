@@ -513,7 +513,7 @@ export default function BlogAdmin() {
                   <p className="text-sm font-medium text-green-700 truncate">
                     {form.metaTitle || form.title}
                   </p>
-                  <p className="text-xs text-green-700">wegetdoc.com/blog/{form.slug || "slug"}</p>
+                  <p className="text-xs text-green-700">editorpdf.net/blog/{form.slug || "slug"}</p>
                   <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
                     {form.metaDescription || form.excerpt || "Sin descripción"}
                   </p>

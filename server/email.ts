@@ -114,7 +114,7 @@ export async function sendPaymentConfirmationEmail({
               <table cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
                 <tr>
                   <td style="padding-right:12px;">
-                    <a href="https://wegetdoc.com/es/dashboard" style="display:inline-block;background:#1a3c6e;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;">
+                    <a href="https://editorpdf.net/es/dashboard" style="display:inline-block;background:#1a3c6e;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;">
                       Ir a mi panel
                     </a>
                   </td>
@@ -131,10 +131,10 @@ export async function sendPaymentConfirmationEmail({
           <tr>
             <td style="background:#f8faff;padding:24px 40px;border-top:1px solid #e2e8f0;">
               <p style="margin:0 0 8px;color:#94a3b8;font-size:12px;line-height:1.6;">
-                Has recibido este email porque completaste una compra en <a href="https://wegetdoc.com" style="color:#1a3c6e;">wegetdoc.com</a>. Si no reconoces esta compra, contacta con nosotros en <a href="mailto:support@wegetdoc.com" style="color:#1a3c6e;">support@wegetdoc.com</a>.
+                Has recibido este email porque completaste una compra en <a href="https://editorpdf.net" style="color:#1a3c6e;">editorpdf.net</a>. Si no reconoces esta compra, contacta con nosotros en <a href="mailto:support@editorpdf.net" style="color:#1a3c6e;">support@editorpdf.net</a>.
               </p>
               <p style="margin:0;color:#94a3b8;font-size:12px;">
-                © 2026 ${brandName} — <a href="https://wegetdoc.com/es/terms" style="color:#94a3b8;">Términos de uso</a> · <a href="https://wegetdoc.com/es/privacy" style="color:#94a3b8;">Privacidad</a> · <a href="${cancelUrl}" style="color:#94a3b8;">Cancelar suscripción</a>
+                © 2026 ${brandName} — <a href="https://editorpdf.net/es/terms" style="color:#94a3b8;">Términos de uso</a> · <a href="https://editorpdf.net/es/privacy" style="color:#94a3b8;">Privacidad</a> · <a href="${cancelUrl}" style="color:#94a3b8;">Cancelar suscripción</a>
               </p>
             </td>
           </tr>
@@ -248,7 +248,7 @@ export async function sendCancellationEmail({
                     </a>
                   </td>
                   <td>
-                    <a href="https://wegetdoc.com/es/dashboard" style="display:inline-block;background:#ffffff;color:#1a3c6e;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;border:1.5px solid #1a3c6e;">
+                    <a href="https://editorpdf.net/es/dashboard" style="display:inline-block;background:#ffffff;color:#1a3c6e;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;border:1.5px solid #1a3c6e;">
                       Ir a mi panel
                     </a>
                   </td>
@@ -256,7 +256,7 @@ export async function sendCancellationEmail({
               </table>
 
               <p style="margin:0 0 8px;color:#94a3b8;font-size:13px;line-height:1.6;">
-                ¿Tuviste algún problema o quieres contarnos por qué cancelaste? Escríbenos a <a href="mailto:support@wegetdoc.com" style="color:#1a3c6e;">support@wegetdoc.com</a> — tu opinión nos ayuda a mejorar.
+                ¿Tuviste algún problema o quieres contarnos por qué cancelaste? Escríbenos a <a href="mailto:support@editorpdf.net" style="color:#1a3c6e;">support@editorpdf.net</a> — tu opinión nos ayuda a mejorar.
               </p>
             </td>
           </tr>
@@ -264,7 +264,7 @@ export async function sendCancellationEmail({
           <tr>
             <td style="background:#f8faff;padding:24px 40px;border-top:1px solid #e2e8f0;">
               <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.6;">
-                © 2026 ${brandName} — <a href="https://wegetdoc.com/es/terms" style="color:#94a3b8;">Términos de uso</a> · <a href="https://wegetdoc.com/es/privacy" style="color:#94a3b8;">Privacidad</a>
+                © 2026 ${brandName} — <a href="https://editorpdf.net/es/terms" style="color:#94a3b8;">Términos de uso</a> · <a href="https://editorpdf.net/es/privacy" style="color:#94a3b8;">Privacidad</a>
               </p>
             </td>
           </tr>

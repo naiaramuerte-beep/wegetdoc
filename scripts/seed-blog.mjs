@@ -10,7 +10,7 @@ const articles = [
     title: "Editar PDF en el navegador sin programas: tutorial completo para 2026",
     excerpt: "Descubre cómo modificar cualquier documento PDF desde tu navegador web en pocos pasos. Cambia textos, agrega imágenes, firma y descarga al instante.",
     content: `<h2>Modifica tus PDFs directamente desde el navegador</h2>
-<p>Hoy en día ya no es necesario descargar software pesado para trabajar con archivos PDF. Plataformas como <strong>wegetdoc.com</strong> ofrecen un editor completo que funciona íntegramente en tu navegador, permitiéndote realizar cambios en cualquier documento en cuestión de segundos.</p>
+<p>Hoy en día ya no es necesario descargar software pesado para trabajar con archivos PDF. Plataformas como <strong>editorpdf.net</strong> ofrecen un editor completo que funciona íntegramente en tu navegador, permitiéndote realizar cambios en cualquier documento en cuestión de segundos.</p>
 
 <h2>Funcionalidades disponibles al editar un PDF online</h2>
 <p>Un buen editor de PDF basado en web debería cubrir las necesidades más habituales del día a día:</p>
@@ -48,7 +48,7 @@ const articles = [
 <p>Los documentos escaneados son esencialmente imágenes. Para manipular el texto contenido en ellos se necesita tecnología OCR (reconocimiento óptico de caracteres). Con WeGetDoc puedes superponer texto y anotaciones sobre estos documentos, aunque el texto original de la imagen no es modificable.</p>
 
 <h3>¿Puedo usar el editor desde un teléfono móvil?</h3>
-<p>Sí. wegetdoc.com está optimizado para todo tipo de dispositivos: ordenadores de sobremesa, portátiles, tabletas y smartphones. No hace falta descargar ninguna aplicación.</p>
+<p>Sí. editorpdf.net está optimizado para todo tipo de dispositivos: ordenadores de sobremesa, portátiles, tabletas y smartphones. No hace falta descargar ninguna aplicación.</p>
 
 <h3>¿Existe un límite en el peso del archivo?</h3>
 <p>Los usuarios con acceso gratuito pueden trabajar con PDFs de hasta 10 MB. El plan Pro amplía este límite hasta 100 MB por documento.</p>`,
@@ -75,7 +75,7 @@ const articles = [
 <h2>5 alternativas gratuitas para convertir PDF a Word</h2>
 
 <h3>1. WeGetDoc (ideal para conversiones rápidas)</h3>
-<p>La opción más ágil: sube tu documento PDF a wegetdoc.com, selecciona la función "PDF a Word" y obtén el archivo .docx en segundos. No es necesario registrarse para documentos de tamaño reducido.</p>
+<p>La opción más ágil: sube tu documento PDF a editorpdf.net, selecciona la función "PDF a Word" y obtén el archivo .docx en segundos. No es necesario registrarse para documentos de tamaño reducido.</p>
 
 <h3>2. Microsoft Word (requiere licencia de Office)</h3>
 <p>Si dispones de Microsoft Office, Word puede abrir archivos PDF y transformarlos automáticamente. La ruta es: Archivo > Abrir > seleccionar el PDF. Ofrece buenos resultados con documentos basados en texto, pero puede presentar desajustes en maquetaciones elaboradas.</p>
@@ -128,7 +128,7 @@ const articles = [
 
 <h2>Proceso de firma con WeGetDoc</h2>
 <ol>
-  <li><strong>Carga tu documento</strong> en wegetdoc.com</li>
+  <li><strong>Carga tu documento</strong> en editorpdf.net</li>
   <li>Accede a la opción <strong>"Firma"</strong> en la barra de herramientas lateral</li>
   <li>Traza tu rúbrica utilizando el ratón o, si estás en un dispositivo táctil, con el dedo</li>
   <li>Redimensiona la firma y sitúala en la posición deseada del documento</li>
@@ -161,7 +161,7 @@ const articles = [
 
 <h2>Dudas frecuentes sobre firmas en PDF</h2>
 <h3>¿Es posible firmar desde un smartphone o tableta?</h3>
-<p>Por supuesto. wegetdoc.com funciona a la perfección en dispositivos móviles. Puedes trazar tu firma directamente con el dedo sobre la pantalla táctil, lo que resulta incluso más natural que hacerlo con ratón.</p>
+<p>Por supuesto. editorpdf.net funciona a la perfección en dispositivos móviles. Puedes trazar tu firma directamente con el dedo sobre la pantalla táctil, lo que resulta incluso más natural que hacerlo con ratón.</p>
 
 <h3>¿Puedo retirar una firma ya insertada?</h3>
 <p>Mientras el documento permanezca abierto en el editor, puedes seleccionar la firma y suprimirla sin problema. No obstante, una vez descargado el PDF, la firma queda fusionada con el documento de forma permanente.</p>

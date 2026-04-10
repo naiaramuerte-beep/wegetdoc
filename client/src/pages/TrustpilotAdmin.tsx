@@ -538,7 +538,7 @@ export default function TrustpilotAdmin() {
               </p>
               <div className="flex items-center gap-1.5 mt-2">
                 <Globe size={12} className="text-gray-500" />
-                <span className="text-xs text-gray-500">wegetdoc.com</span>
+                <span className="text-xs text-gray-500">editorpdf.net</span>
               </div>
             </div>
           </div>
@@ -672,7 +672,7 @@ export default function TrustpilotAdmin() {
             <a href="https://business.trustpilot.com" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">
               business.trustpilot.com
             </a>{" "}
-            y verifica tu dominio <strong className="text-gray-300">wegetdoc.com</strong>
+            y verifica tu dominio <strong className="text-gray-300">editorpdf.net</strong>
           </li>
           <li className="flex gap-2">
             <span className="w-5 h-5 rounded-full bg-green-900/50 text-green-400 flex items-center justify-center flex-shrink-0 font-bold">2</span>

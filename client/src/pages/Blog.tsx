@@ -28,7 +28,7 @@ export default function Blog() {
     setMeta("og:title", `Blog — ${brandName} | Guías y tutoriales sobre PDF`, true);
     setMeta("og:description", "Guías, tutoriales y consejos sobre cómo trabajar con PDFs online. Todo lo que necesitas saber sobre edición, conversión y firma de documentos.", true);
     setMeta("og:type", "website", true);
-    setMeta("og:url", "https://wegetdoc.com/blog", true);
+    setMeta("og:url", "https://editorpdf.net/blog", true);
     return () => {
       document.title = `${brandName} — Online PDF Editor`;
     };

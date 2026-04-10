@@ -128,13 +128,13 @@ export default function Footer() {
               {t.footer_desc}
             </p>
             <a
-              href="mailto:support@wegetdoc.com"
+              href="mailto:support@editorpdf.net"
               className="inline-flex items-center gap-1.5 text-sm font-medium transition-colors duration-150"
               style={{ color: INDIGO }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
               onMouseLeave={(e) => (e.currentTarget.style.color = INDIGO)}
             >
-              ✉ support@wegetdoc.com
+              ✉ support@editorpdf.net
             </a>
           </div>
 

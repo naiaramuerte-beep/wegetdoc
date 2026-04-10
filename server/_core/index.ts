@@ -253,7 +253,7 @@ async function startServer() {
   app.get("/sitemap.xml", async (_req, res) => {
     try {
       const posts = await getBlogPosts(true);
-      const base = "https://wegetdoc.com";
+      const base = "https://editorpdf.net";
       const staticUrls: Array<{ loc: string; priority: string; changefreq: string; lastmod?: string }> = [
         { loc: `${base}/es`, priority: "1.0", changefreq: "weekly" },
         { loc: `${base}/en`, priority: "1.0", changefreq: "weekly" },

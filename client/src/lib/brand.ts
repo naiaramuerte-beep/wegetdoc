@@ -17,7 +17,7 @@ const COLORS_WEGETDOC: BrandColors = {
 };
 
 const BRANDS: Record<string, { name: string; domain: string; logoParts: [string, string]; brandKey: string; colors: BrandColors }> = {
-  WeGetDoc: { name: "WeGetDoc", domain: "wegetdoc.com", logoParts: ["WeGet", "Doc"], brandKey: "WeGetDoc", colors: COLORS_WEGETDOC },
+  WeGetDoc: { name: "WeGetDoc", domain: "editorpdf.net", logoParts: ["WeGet", "Doc"], brandKey: "WeGetDoc", colors: COLORS_WEGETDOC },
 };
 
 const key = import.meta.env.VITE_BRAND_NAME || "WeGetDoc";

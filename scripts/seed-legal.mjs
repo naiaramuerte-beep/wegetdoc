@@ -1,5 +1,5 @@
 /**
- * Seed all legal pages for wegetdoc.com
+ * Seed all legal pages for editorpdf.net
  * Run with: node scripts/seed-legal.mjs
  */
 import mysql from "mysql2/promise";
@@ -13,7 +13,7 @@ const termsContent = `# Condiciones Generales de Uso y Contratación
 
 **Fecha de entrada en vigor:** 7 de abril de 2026
 
-El presente documento establece las condiciones que regulan el acceso y la utilización de la plataforma **WeGetDoc**, disponible en el dominio wegetdoc.com (en lo sucesivo, "la Plataforma"). Toda persona que acceda a la Plataforma o haga uso de sus funcionalidades adquiere la condición de usuario y se obliga al cumplimiento íntegro de las presentes Condiciones. En caso de desacuerdo con cualquiera de las disposiciones aquí recogidas, el usuario deberá abstenerse de utilizar la Plataforma.
+El presente documento establece las condiciones que regulan el acceso y la utilización de la plataforma **WeGetDoc**, disponible en el dominio editorpdf.net (en lo sucesivo, "la Plataforma"). Toda persona que acceda a la Plataforma o haga uso de sus funcionalidades adquiere la condición de usuario y se obliga al cumplimiento íntegro de las presentes Condiciones. En caso de desacuerdo con cualquiera de las disposiciones aquí recogidas, el usuario deberá abstenerse de utilizar la Plataforma.
 
 ## 1. Identificación de la Plataforma
 
@@ -21,7 +21,7 @@ WeGetDoc es una solución digital de edición documental en formato PDF accesibl
 
 ## 2. Creación de Cuenta y Responsabilidad del Usuario
 
-El acceso a las funcionalidades avanzadas de la Plataforma requiere la creación de una cuenta de usuario a través del sistema de autenticación habilitado. El usuario asume la plena responsabilidad sobre la custodia de sus credenciales de acceso, así como sobre cualquier actividad realizada desde su cuenta. Cualquier indicio de acceso no autorizado deberá ser comunicado de forma inmediata a WeGetDoc a través de support@wegetdoc.com.
+El acceso a las funcionalidades avanzadas de la Plataforma requiere la creación de una cuenta de usuario a través del sistema de autenticación habilitado. El usuario asume la plena responsabilidad sobre la custodia de sus credenciales de acceso, así como sobre cualquier actividad realizada desde su cuenta. Cualquier indicio de acceso no autorizado deberá ser comunicado de forma inmediata a WeGetDoc a través de support@editorpdf.net.
 
 ## 3. Suscripciones y Condiciones de Pago
 
@@ -39,7 +39,7 @@ El importe mensual se cargará en el mismo medio de pago utilizado en la transac
 
 El usuario podrá dar de baja su suscripción en cualquier momento **con anterioridad a la finalización del periodo de prueba** sin que se genere cargo adicional alguno. Si la cancelación se produce una vez iniciado un ciclo de facturación mensual, esta surtirá efecto al término del periodo ya abonado, sin derecho a devolución proporcional.
 
-Para proceder a la cancelación, el usuario deberá acceder a su panel de control en [wegetdoc.com/dashboard](https://wegetdoc.com/dashboard), dirigirse a la sección **Facturación** y pulsar **Cancelar suscripción**.
+Para proceder a la cancelación, el usuario deberá acceder a su panel de control en [editorpdf.net/dashboard](https://editorpdf.net/dashboard), dirigirse a la sección **Facturación** y pulsar **Cancelar suscripción**.
 
 ### 3.4 Política de devoluciones
 
@@ -85,18 +85,18 @@ Las presentes Condiciones quedan sometidas a la legislación de la Unión Europe
 
 ## 10. Datos de Contacto
 
-Para cualquier cuestión relativa a las presentes Condiciones, el usuario puede dirigirse a WeGetDoc a través de support@wegetdoc.com o mediante el formulario disponible en [wegetdoc.com/contact](https://wegetdoc.com/contact).`;
+Para cualquier cuestión relativa a las presentes Condiciones, el usuario puede dirigirse a WeGetDoc a través de support@editorpdf.net o mediante el formulario disponible en [editorpdf.net/contact](https://editorpdf.net/contact).`;
 
 // ─── Política de Privacidad ─────────────────────────────────────────
 const privacyContent = `# Política de Privacidad
 
 **Fecha de entrada en vigor:** 7 de abril de 2026
 
-**WeGetDoc** (accesible en wegetdoc.com) reconoce la importancia de salvaguardar la privacidad y los datos personales de sus usuarios. La presente Política de Privacidad detalla las prácticas relativas a la recogida, uso, conservación y protección de la información personal cuando se accede o se utiliza nuestra plataforma de edición documental PDF.
+**WeGetDoc** (accesible en editorpdf.net) reconoce la importancia de salvaguardar la privacidad y los datos personales de sus usuarios. La presente Política de Privacidad detalla las prácticas relativas a la recogida, uso, conservación y protección de la información personal cuando se accede o se utiliza nuestra plataforma de edición documental PDF.
 
 ## 1. Identidad del Responsable del Tratamiento
 
-El responsable del tratamiento de los datos personales es **WeGetDoc**, con sede digital en wegetdoc.com. El usuario puede dirigir cualquier consulta a la dirección support@wegetdoc.com o a través del formulario de contacto disponible en [wegetdoc.com/contact](https://wegetdoc.com/contact).
+El responsable del tratamiento de los datos personales es **WeGetDoc**, con sede digital en editorpdf.net. El usuario puede dirigir cualquier consulta a la dirección support@editorpdf.net o a través del formulario de contacto disponible en [editorpdf.net/contact](https://editorpdf.net/contact).
 
 ## 2. Categorías de Datos Recabados
 
@@ -172,7 +172,7 @@ De conformidad con el RGPD, el usuario dispone de los siguientes derechos:
 - **Oposición:** oponerse al tratamiento de sus datos en los supuestos legalmente previstos.
 - **Revocación del consentimiento:** retirar el consentimiento en cualquier momento, sin que ello afecte a la licitud del tratamiento realizado con anterioridad.
 
-Para el ejercicio de estos derechos, el usuario puede dirigirse a support@wegetdoc.com o a través de [wegetdoc.com/contact](https://wegetdoc.com/contact). WeGetDoc responderá en un plazo máximo de 30 días naturales.
+Para el ejercicio de estos derechos, el usuario puede dirigirse a support@editorpdf.net o a través de [editorpdf.net/contact](https://editorpdf.net/contact). WeGetDoc responderá en un plazo máximo de 30 días naturales.
 
 Asimismo, el usuario tiene derecho a interponer reclamación ante la Agencia Española de Protección de Datos (AEPD) en [www.aepd.es](https://www.aepd.es) o ante la autoridad de control de protección de datos de su país de residencia.
 
@@ -190,14 +190,14 @@ WeGetDoc se reserva la facultad de actualizar la presente Política de Privacida
 
 ## 12. Contacto
 
-Para cualquier consulta relativa a la presente Política o al tratamiento de datos personales, el usuario puede contactar con WeGetDoc en support@wegetdoc.com o a través de [wegetdoc.com/contact](https://wegetdoc.com/contact).`;
+Para cualquier consulta relativa a la presente Política o al tratamiento de datos personales, el usuario puede contactar con WeGetDoc en support@editorpdf.net o a través de [editorpdf.net/contact](https://editorpdf.net/contact).`;
 
 // ─── Política de Cookies ────────────────────────────────────────────
 const cookiesContent = `# Política de Cookies
 
 **Fecha de entrada en vigor:** 7 de abril de 2026
 
-**WeGetDoc** (wegetdoc.com) emplea cookies y mecanismos de seguimiento similares con el objetivo de optimizar la experiencia de navegación, evaluar el rendimiento de la Plataforma y adaptar los contenidos mostrados al usuario. En el presente documento se describe qué son las cookies, qué categorías emplea WeGetDoc y de qué manera el usuario puede administrarlas.
+**WeGetDoc** (editorpdf.net) emplea cookies y mecanismos de seguimiento similares con el objetivo de optimizar la experiencia de navegación, evaluar el rendimiento de la Plataforma y adaptar los contenidos mostrados al usuario. En el presente documento se describe qué son las cookies, qué categorías emplea WeGetDoc y de qué manera el usuario puede administrarlas.
 
 ## 1. Definición de Cookie
 
@@ -261,7 +261,7 @@ WeGetDoc podrá actualizar la presente Política de Cookies periódicamente con 
 
 ## 6. Contacto
 
-Ante cualquier duda relativa a la Política de Cookies, el usuario puede dirigirse a support@wegetdoc.com o a través de [wegetdoc.com/contact](https://wegetdoc.com/contact).`;
+Ante cualquier duda relativa a la Política de Cookies, el usuario puede dirigirse a support@editorpdf.net o a través de [editorpdf.net/contact](https://editorpdf.net/contact).`;
 
 // ─── Aviso Legal e Información Corporativa ──────────────────────────
 const legalContent = `# Aviso Legal e Información Corporativa
@@ -273,9 +273,9 @@ const legalContent = `# Aviso Legal e Información Corporativa
 De conformidad con lo dispuesto en el artículo 10 de la Ley 34/2002, de 11 de julio, de Servicios de la Sociedad de la Información y de Comercio Electrónico (LSSI-CE), se facilitan los siguientes datos identificativos del titular del sitio web:
 
 - **Denominación:** WeGetDoc
-- **Dominio web:** [wegetdoc.com](https://wegetdoc.com)
-- **Correo electrónico:** support@wegetdoc.com
-- **Formulario de contacto:** [wegetdoc.com/contact](https://wegetdoc.com/contact)
+- **Dominio web:** [editorpdf.net](https://editorpdf.net)
+- **Correo electrónico:** support@editorpdf.net
+- **Formulario de contacto:** [editorpdf.net/contact](https://editorpdf.net/contact)
 
 ## 2. Actividad y Finalidad del Sitio Web
 
@@ -317,7 +317,7 @@ const gdprContent = `# Compromiso con el Reglamento General de Protección de Da
 
 **Fecha de entrada en vigor:** 7 de abril de 2026
 
-**WeGetDoc** (wegetdoc.com) mantiene un firme compromiso con el cumplimiento del Reglamento (UE) 2016/679 del Parlamento Europeo y del Consejo, de 27 de abril de 2016, relativo a la protección de las personas físicas en lo que respecta al tratamiento de datos personales (RGPD), así como de la Ley Orgánica 3/2018, de 5 de diciembre, de Protección de Datos Personales y garantía de los derechos digitales (LOPDGDD).
+**WeGetDoc** (editorpdf.net) mantiene un firme compromiso con el cumplimiento del Reglamento (UE) 2016/679 del Parlamento Europeo y del Consejo, de 27 de abril de 2016, relativo a la protección de las personas físicas en lo que respecta al tratamiento de datos personales (RGPD), así como de la Ley Orgánica 3/2018, de 5 de diciembre, de Protección de Datos Personales y garantía de los derechos digitales (LOPDGDD).
 
 ## 1. Principios Rectores del Tratamiento
 
@@ -344,7 +344,7 @@ Todo usuario de WeGetDoc puede ejercer los derechos que el RGPD le reconoce:
 
 ### Procedimiento de ejercicio
 
-El usuario podrá ejercer cualquiera de estos derechos dirigiéndose a support@wegetdoc.com o a través del formulario de contacto en [wegetdoc.com/contact](https://wegetdoc.com/contact). WeGetDoc verificará la identidad del solicitante antes de tramitar la solicitud y ofrecerá respuesta en un plazo máximo de 30 días naturales desde su recepción.
+El usuario podrá ejercer cualquiera de estos derechos dirigiéndose a support@editorpdf.net o a través del formulario de contacto en [editorpdf.net/contact](https://editorpdf.net/contact). WeGetDoc verificará la identidad del solicitante antes de tramitar la solicitud y ofrecerá respuesta en un plazo máximo de 30 días naturales desde su recepción.
 
 En caso de que el usuario considere que sus derechos no han sido debidamente atendidos, podrá presentar reclamación ante la **Agencia Española de Protección de Datos (AEPD)** en [www.aepd.es](https://www.aepd.es), o ante la autoridad de control competente de su país de residencia dentro de la Unión Europea.
 
@@ -392,7 +392,7 @@ Ante la detección de una brecha de seguridad que afecte a datos personales, WeG
 
 ## 8. Canal de Contacto
 
-Para cualquier consulta relacionada con la protección de datos personales o el ejercicio de derechos, el usuario puede contactar con WeGetDoc en support@wegetdoc.com o mediante el formulario de contacto en [wegetdoc.com/contact](https://wegetdoc.com/contact).
+Para cualquier consulta relacionada con la protección de datos personales o el ejercicio de derechos, el usuario puede contactar con WeGetDoc en support@editorpdf.net o mediante el formulario de contacto en [editorpdf.net/contact](https://editorpdf.net/contact).
 
 ## 9. Actualizaciones
 

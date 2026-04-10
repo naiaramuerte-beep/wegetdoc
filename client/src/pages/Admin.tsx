@@ -767,7 +767,7 @@ export default function Admin() {
                   <div className="space-y-3">
                     {[
                       { key: "site_name", label: "Nombre del sitio", placeholder: brandName },
-                      { key: "support_email", label: "Email de soporte", placeholder: "soporte@wegetdoc.com" },
+                      { key: "support_email", label: "Email de soporte", placeholder: "soporte@editorpdf.net" },
                       { key: "trial_price_eur", label: "Precio prueba 7 días (€)", placeholder: "0.99" },
                       { key: "monthly_price_eur", label: "Precio mensual (€)", placeholder: "9.99" },
                     ].map((setting) => {

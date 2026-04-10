@@ -19,7 +19,7 @@ export async function sendSubscriptionConfirmationEmail(params: {
 
   try {
     await resend.emails.send({
-      from: "WeGetDoc <noreply@wegetdoc.com>",
+      from: "WeGetDoc <noreply@editorpdf.net>",
       to,
       subject: "Tu suscripción a WeGetDoc está activa",
       html: `
@@ -72,9 +72,9 @@ export async function sendSubscriptionConfirmationEmail(params: {
 
   <p style="font-size: 12px; color: #94a3b8; text-align: center;">
     WeGetDoc · Naiara Muerte Parra · morteapps@outlook.com<br/>
-    <a href="https://wegetdoc.com/es/terms" style="color: #64748b;">Términos</a> ·
-    <a href="https://wegetdoc.com/es/privacy" style="color: #64748b;">Privacidad</a> ·
-    <a href="https://wegetdoc.com/es/refund" style="color: #64748b;">Reembolsos</a>
+    <a href="https://editorpdf.net/es/terms" style="color: #64748b;">Términos</a> ·
+    <a href="https://editorpdf.net/es/privacy" style="color: #64748b;">Privacidad</a> ·
+    <a href="https://editorpdf.net/es/refund" style="color: #64748b;">Reembolsos</a>
   </p>
 </body>
 </html>
