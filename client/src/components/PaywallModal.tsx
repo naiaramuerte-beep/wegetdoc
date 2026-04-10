@@ -95,7 +95,7 @@ function PaymentForm({ onSuccess, userCountry, userPostalCode }: { onSuccess: ()
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Card fields */}
-      <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" }, fields: { billingDetails: { address: { country: "never", postalCode: "never" } } } }} />
+      <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" }, fields: { billingDetails: { address: { country: "never", postalCode: "never" } } }, terms: { card: "never" } }} />
 
       {/* Submit button */}
       <button
