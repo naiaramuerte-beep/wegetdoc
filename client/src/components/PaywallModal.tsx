@@ -59,12 +59,11 @@ function PaymentForm({ onSuccess, userCountry, userPostalCode }: { onSuccess: ()
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
-  const [accepted, setAccepted] = useState(false);
   const { t, lang } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!stripe || !elements || !accepted) return;
+    if (!stripe || !elements) return;
     setSubmitting(true);
     try {
       const { error } = await stripe.confirmPayment({
