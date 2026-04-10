@@ -301,9 +301,10 @@ function StripeCheckoutForm({
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
         <div className="px-6 py-5 space-y-5">
           {/* Pricing breakdown */}
-          <div className="rounded-xl bg-[#f8faf8] border border-slate-100 p-4 text-center">
-            <span className="text-sm text-slate-600">Your PDF only for </span>
-            <span className="text-2xl font-bold text-slate-900">0,50&nbsp;€</span>
+          <div className="rounded-xl p-5 text-center" style={{ background: "linear-gradient(135deg, #1B5E20, #166534)" }}>
+            <p className="text-sm text-green-100 mb-1">{t.paywall_your_pdf}</p>
+            <p className="text-3xl font-extrabold text-white tracking-tight">{t.paywall_only_for}</p>
+            <p className="text-xs text-green-200 mt-1.5">{t.paywall_7day_access}</p>
           </div>
 
           {/* Stripe form */}
