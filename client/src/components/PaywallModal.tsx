@@ -98,14 +98,6 @@ function PaymentForm({ onSuccess, userCountry, userPostalCode }: { onSuccess: ()
       {/* Card fields */}
       <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" }, fields: { billingDetails: { address: { country: "never", postalCode: "never" } } } }} />
 
-      {/* Legal disclaimer */}
-      <p className="text-[11px] text-slate-400 leading-relaxed">
-        By proceeding, you agree to a 7-day trial (0,50&nbsp;€) and a subsequent monthly subscription of 19,99&nbsp;€. You authorize recurring charges and can cancel at any time. You have 14 calendar days to request a refund, subject to our{" "}
-        <a href={`/${lang}/terms`} target="_blank" className="underline hover:text-slate-600">Terms of Service</a>{" "}
-        and{" "}
-        <a href={`/${lang}/privacy`} target="_blank" className="underline hover:text-slate-600">Privacy Policy</a>.
-      </p>
-
       {/* Submit button */}
       <button
         type="submit"
@@ -126,11 +118,13 @@ function PaymentForm({ onSuccess, userCountry, userPostalCode }: { onSuccess: ()
         )}
       </button>
 
-      {/* Disclaimer */}
-      <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
-        <Shield className="w-3 h-3" />
-        <span>Cancel anytime. No hidden fees.</span>
-      </div>
+      {/* Legal disclaimer */}
+      <p className="text-[9px] text-slate-300 leading-relaxed text-center">
+        By proceeding, you agree to a 7-day trial (0,50&nbsp;€) and a subsequent monthly subscription of 19,99&nbsp;€. You authorize recurring charges and can cancel at any time. You have 14 calendar days to request a refund, subject to our{" "}
+        <a href={`/${lang}/terms`} target="_blank" className="underline hover:text-slate-400">Terms of Service</a>{" "}
+        and{" "}
+        <a href={`/${lang}/privacy`} target="_blank" className="underline hover:text-slate-400">Privacy Policy</a>.
+      </p>
     </form>
   );
 }
