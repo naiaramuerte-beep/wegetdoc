@@ -55,7 +55,7 @@ function CardBrands() {
 }
 
 // ── Inner payment form (must be inside <Elements>) ──────────────────────
-function PaymentForm({ onSuccess, userCountry }: { onSuccess: () => void; userCountry: string }) {
+function PaymentForm({ onSuccess, userCountry, userPostalCode }: { onSuccess: () => void; userCountry: string; userPostalCode: string }) {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
@@ -75,6 +75,7 @@ function PaymentForm({ onSuccess, userCountry }: { onSuccess: () => void; userCo
             billing_details: {
               address: {
                 country: userCountry,
+                postal_code: userPostalCode,
               },
             },
           },
@@ -161,6 +162,7 @@ function StripeCheckoutForm({
   const [clientSecret, setClientSecret] = useState<string | null>(null);
 
   const [userCountry, setUserCountry] = useState("ES");
+  const [userPostalCode, setUserPostalCode] = useState("");
   const stripeConfigQ = trpc.subscription.stripeConfig.useQuery();
   const createCheckoutSession = trpc.subscription.createCheckoutSession.useMutation();
   const confirmSetup = trpc.subscription.confirmSetup.useMutation();
@@ -169,6 +171,7 @@ function StripeCheckoutForm({
   useEffect(() => {
     fetch("/api/geo").then(r => r.json()).then(data => {
       if (data.country) setUserCountry(data.country.toUpperCase());
+      if (data.postalCode) setUserPostalCode(data.postalCode);
     }).catch(() => {});
   }, []);
 
@@ -320,7 +323,7 @@ function StripeCheckoutForm({
           {/* Stripe form */}
           {stripePromise && clientSecret ? (
             <Elements stripe={stripePromise} options={{ clientSecret, locale: "en", appearance: { theme: "stripe", variables: { colorPrimary: "#1B5E20", borderRadius: "10px" } } }}>
-              <PaymentForm onSuccess={handleComplete} userCountry={userCountry} />
+              <PaymentForm onSuccess={handleComplete} userCountry={userCountry} userPostalCode={userPostalCode} />
             </Elements>
           ) : (
             <div className="flex items-center justify-center py-10">
