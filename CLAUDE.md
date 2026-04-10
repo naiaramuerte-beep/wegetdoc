@@ -25,7 +25,7 @@ Online PDF editor SaaS — edit, convert, sign, and protect PDFs in the browser.
 ### Stripe Payment Flow
 1. `createCheckoutSession` creates a **PaymentIntent** for the intro amount (0.50€, read from `STRIPE_INTRO_PRICE_ID` which is a one-time price) with `setup_future_usage: "off_session"` to save the card
 2. Frontend calls `stripe.confirmPayment()` with billing country + postal_code from `/api/geo` — 3D Secure shows 0.50€
-3. `confirmSetup` sets the saved card as default, creates a **Subscription** with `STRIPE_PRICE_ID` (19.99€/month) and `trial_end` 30 days out (first monthly charge delayed since intro was already paid)
+3. `confirmSetup` sets the saved card as default, creates a **Subscription** with `STRIPE_PRICE_ID` (19.99€/month) and `trial_end` 7 days out (first monthly charge delayed since intro was already paid)
 4. PaymentElement hides country and postalCode fields (`"never"`) — values come from geolocation
 
 ### Google OAuth
