@@ -338,9 +338,13 @@ export const appRouter = router({
       }
 
       // Create SetupIntent to collect payment method
+      // attach_to_self ensures the payment method is automatically attached to the customer
+      // after confirmation, so confirmSetup can find it via paymentMethods.list
       const setupIntent = await stripe.setupIntents.create({
         customer: customer.id,
         payment_method_types: ["card"],
+        usage: "off_session",
+        attach_to_self: true,
         metadata: { userId: ctx.user.id.toString() },
       });
 
