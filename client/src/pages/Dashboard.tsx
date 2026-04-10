@@ -23,6 +23,7 @@ import PaywallModal from "@/components/PaywallModal";
 import { useLocation } from "wouter";
 import { usePdfFile } from "@/contexts/PdfFileContext";
 import { brandName } from "@/lib/brand";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
@@ -30,6 +31,7 @@ type Tab = "account" | "documents" | "team" | "billing";
 
 export default function Dashboard() {
   const { user, isAuthenticated, loading, logout } = useAuth();
+  const { t, lang } = useLanguage();
   const [, navigate] = useLocation();
   // Read tab from URL query param (e.g. ?tab=documents after payment)
   const getInitialTab = (): Tab => {
@@ -46,7 +48,7 @@ export default function Dashboard() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("payment") === "success") {
       utils.subscription.status.invalidate();
-      toast.success("¡Pago completado! Tu suscripción está activa. Ya puedes descargar tus documentos.");
+      toast.success(t.dash_payment_success);
 
 
       // Clean URL without reload
@@ -84,16 +86,16 @@ export default function Dashboard() {
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-700 to-emerald-600 flex items-center justify-center text-white font-bold text-lg mb-3">
                   {user?.name?.charAt(0)?.toUpperCase() ?? user?.email?.charAt(0)?.toUpperCase() ?? "U"}
                 </div>
-                <p className="font-semibold text-slate-800 truncate">{user?.name ?? "Usuario"}</p>
+                <p className="font-semibold text-slate-800 truncate">{user?.name ?? t.dash_user}</p>
                 <p className="text-xs text-slate-500 truncate">{user?.email}</p>
               </div>
               {/* Nav */}
               <nav className="p-2">
                 {([
-                  { id: "account", label: "Mi Cuenta", icon: User },
-                  { id: "documents", label: "Documentos", icon: FileText },
-                  { id: "team", label: "Equipo", icon: Users },
-                  { id: "billing", label: "Facturación", icon: CreditCard },
+                  { id: "account", label: t.dash_account, icon: User },
+                  { id: "documents", label: t.dash_documents, icon: FileText },
+                  { id: "team", label: t.dash_team, icon: Users },
+                  { id: "billing", label: t.dash_billing, icon: CreditCard },
                 ] as const).map((item) => (
                   <button
                     key={item.id}
@@ -114,7 +116,7 @@ export default function Dashboard() {
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
                 >
                   <LogOut size={16} />
-                  Cerrar sesión
+                  {t.dash_logout}
                 </button>
               </nav>
             </div>
@@ -136,6 +138,7 @@ export default function Dashboard() {
 
 // ─── Account Tab ──────────────────────────────────────────────
 function AccountTab({ user }: { user: any }) {
+  const { t } = useLanguage();
   const utils = trpc.useUtils();
   const [form, setForm] = useState({
     name: user?.name ?? "",
@@ -149,18 +152,18 @@ function AccountTab({ user }: { user: any }) {
 
   const updateMutation = trpc.user.updateProfile.useMutation({
     onSuccess: () => {
-      toast.success("Perfil actualizado correctamente");
+      toast.success(t.dash_profile_updated);
       utils.auth.me.invalidate();
     },
-    onError: () => toast.error("Error al actualizar el perfil"),
+    onError: () => toast.error(t.dash_profile_error),
   });
 
   const deleteMutation = trpc.user.deleteAccount.useMutation({
     onSuccess: () => {
-      toast.success("Cuenta eliminada");
+      toast.success(t.dash_account_deleted);
       window.location.href = "/";
     },
-    onError: () => toast.error("Error al eliminar la cuenta"),
+    onError: () => toast.error(t.dash_account_delete_error),
   });
 
   const handleSave = () => {
@@ -170,18 +173,18 @@ function AccountTab({ user }: { user: any }) {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-        <h2 className="text-lg font-semibold text-slate-800 mb-5">Información personal</h2>
+        <h2 className="text-lg font-semibold text-slate-800 mb-5">{t.dash_personal_info}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label className="text-sm text-slate-600 mb-1.5 block">Nombre completo</Label>
+            <Label className="text-sm text-slate-600 mb-1.5 block">{t.dash_full_name}</Label>
             <Input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="Tu nombre"
+              placeholder={t.dash_your_name}
             />
           </div>
           <div>
-            <Label className="text-sm text-slate-600 mb-1.5 block">Correo electrónico</Label>
+            <Label className="text-sm text-slate-600 mb-1.5 block">{t.dash_email}</Label>
             <Input
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -190,7 +193,7 @@ function AccountTab({ user }: { user: any }) {
             />
           </div>
           <div>
-            <Label className="text-sm text-slate-600 mb-1.5 block">Teléfono</Label>
+            <Label className="text-sm text-slate-600 mb-1.5 block">{t.dash_phone}</Label>
             <Input
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -198,7 +201,7 @@ function AccountTab({ user }: { user: any }) {
             />
           </div>
           <div>
-            <Label className="text-sm text-slate-600 mb-1.5 block">País</Label>
+            <Label className="text-sm text-slate-600 mb-1.5 block">{t.dash_country}</Label>
             <Input
               value={form.country}
               onChange={(e) => setForm({ ...form, country: e.target.value })}
@@ -206,7 +209,7 @@ function AccountTab({ user }: { user: any }) {
             />
           </div>
           <div>
-            <Label className="text-sm text-slate-600 mb-1.5 block">Idioma</Label>
+            <Label className="text-sm text-slate-600 mb-1.5 block">{t.dash_language}</Label>
             <select
               value={form.language}
               onChange={(e) => setForm({ ...form, language: e.target.value })}
@@ -220,7 +223,7 @@ function AccountTab({ user }: { user: any }) {
             </select>
           </div>
           <div>
-            <Label className="text-sm text-slate-600 mb-1.5 block">Zona horaria</Label>
+            <Label className="text-sm text-slate-600 mb-1.5 block">{t.dash_timezone}</Label>
             <select
               value={form.timezone}
               onChange={(e) => setForm({ ...form, timezone: e.target.value })}
@@ -240,16 +243,16 @@ function AccountTab({ user }: { user: any }) {
             disabled={updateMutation.isPending}
             className="bg-green-700 hover:bg-green-800 text-white px-6"
           >
-            {updateMutation.isPending ? "Guardando..." : "Guardar cambios"}
+            {updateMutation.isPending ? t.dash_saving : t.dash_save_changes}
           </Button>
         </div>
       </div>
 
       {/* Danger zone */}
       <div className="bg-white rounded-2xl shadow-sm border border-red-100 p-6">
-        <h2 className="text-lg font-semibold text-red-700 mb-2">Zona de peligro</h2>
+        <h2 className="text-lg font-semibold text-red-700 mb-2">{t.dash_danger_zone}</h2>
         <p className="text-sm text-slate-500 mb-4">
-          Una vez elimines tu cuenta, no hay vuelta atrás. Por favor, asegúrate antes de continuar.
+          {t.dash_danger_warning}
         </p>
         {!showDeleteConfirm ? (
           <Button
@@ -258,21 +261,21 @@ function AccountTab({ user }: { user: any }) {
             className="border-red-300 text-red-600 hover:bg-red-50"
           >
             <Trash2 size={16} className="mr-2" />
-            Eliminar cuenta
+            {t.dash_delete_account}
           </Button>
         ) : (
           <div className="flex gap-3 items-center">
-            <p className="text-sm text-red-600 font-medium">¿Estás seguro? Esta acción es irreversible.</p>
+            <p className="text-sm text-red-600 font-medium">{t.dash_delete_confirm}</p>
             <Button
               variant="destructive"
               onClick={() => deleteMutation.mutate()}
               disabled={deleteMutation.isPending}
               size="sm"
             >
-              Sí, eliminar
+              {t.dash_delete_yes}
             </Button>
             <Button variant="outline" size="sm" onClick={() => setShowDeleteConfirm(false)}>
-              Cancelar
+              {t.dash_cancel}
             </Button>
           </div>
         )}
@@ -283,6 +286,7 @@ function AccountTab({ user }: { user: any }) {
 
 // ─── Documents Tab ────────────────────────────────────────────────────────
 function DocumentsTab() {
+  const { t, lang } = useLanguage();
   const { data: docs, isLoading } = trpc.documents.list.useQuery();
   const { data: folders } = trpc.folders.list.useQuery();
   const { data: subData } = trpc.subscription.status.useQuery();
@@ -296,13 +300,13 @@ function DocumentsTab() {
 
   // ── Download document as blob to avoid cross-origin download attribute being ignored ──
   const handleDownloadDocument = async (doc: any) => {
-    if (!doc.fileUrl) { toast.error("No se puede descargar este documento"); return; }
+    if (!doc.fileUrl) { toast.error(t.dash_cannot_download); return; }
     try {
-      toast.loading("Preparando descarga...", { id: "download-doc" });
+      toast.loading(t.dash_preparing_download, { id: "download-doc" });
       // Use server-side proxy to avoid CORS issues with R2 storage
       const proxyUrl = `/api/documents/proxy?url=${encodeURIComponent(doc.fileUrl)}`;
       const response = await fetch(proxyUrl);
-      if (!response.ok) throw new Error("Error al descargar el documento");
+      if (!response.ok) throw new Error(t.dash_download_error);
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -312,20 +316,20 @@ function DocumentsTab() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success("Documento descargado", { id: "download-doc" });
+      toast.success(t.dash_doc_downloaded, { id: "download-doc" });
     } catch (err) {
-      toast.error("Error al descargar el documento", { id: "download-doc" });
+      toast.error(t.dash_download_error, { id: "download-doc" });
     }
   };
 
   const handleEditDocument = async (doc: any) => {
-    if (!doc.fileUrl) { toast.error("No se puede abrir este documento"); return; }
+    if (!doc.fileUrl) { toast.error(t.dash_cannot_open); return; }
     try {
-      toast.loading("Cargando documento...", { id: "load-doc" });
+      toast.loading(t.dash_loading_doc, { id: "load-doc" });
       // Use server-side proxy to avoid CORS issues with R2 storage
       const proxyUrl = `/api/documents/proxy?url=${encodeURIComponent(doc.fileUrl)}`;
       const response = await fetch(proxyUrl);
-      if (!response.ok) throw new Error("Error al descargar el documento");
+      if (!response.ok) throw new Error(t.dash_download_error);
       const blob = await response.blob();
       const file = new File([blob], doc.name, { type: "application/pdf" });
       setPendingFile(file);
@@ -336,20 +340,20 @@ function DocumentsTab() {
       navigate(`/${lang}/editor`);
     } catch (err) {
       toast.dismiss("load-doc");
-      toast.error("Error al cargar el documento");
+      toast.error(t.dash_load_error);
     }
   };
 
   const deleteMutation = trpc.documents.delete.useMutation({
-    onSuccess: () => { utils.documents.list.invalidate(); toast.success("Documento eliminado"); },
+    onSuccess: () => { utils.documents.list.invalidate(); toast.success(t.dash_doc_deleted); },
   });
 
   const createFolderMutation = trpc.folders.create.useMutation({
-    onSuccess: () => { utils.folders.list.invalidate(); setNewFolderName(""); setShowNewFolder(false); toast.success("Carpeta creada"); },
+    onSuccess: () => { utils.folders.list.invalidate(); setNewFolderName(""); setShowNewFolder(false); toast.success(t.dash_folder_created); },
   });
 
   const deleteFolderMutation = trpc.folders.delete.useMutation({
-    onSuccess: () => { utils.folders.list.invalidate(); toast.success("Carpeta eliminada"); },
+    onSuccess: () => { utils.folders.list.invalidate(); toast.success(t.dash_folder_deleted); },
   });
 
   if (isLoading) {
@@ -369,9 +373,9 @@ function DocumentsTab() {
       {/* Folders */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-800">Carpetas</h2>
+          <h2 className="text-lg font-semibold text-slate-800">{t.dash_folders}</h2>
           <Button size="sm" variant="outline" onClick={() => setShowNewFolder(true)}>
-            <Plus size={14} className="mr-1.5" />Nueva carpeta
+            <Plus size={14} className="mr-1.5" />{t.dash_new_folder}
           </Button>
         </div>
         {showNewFolder && (
@@ -379,7 +383,7 @@ function DocumentsTab() {
             <Input
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
-              placeholder="Nombre de la carpeta..."
+              placeholder={t.dash_folder_name}
               onKeyDown={(e) => e.key === "Enter" && createFolderMutation.mutate({ name: newFolderName })}
               autoFocus
             />
@@ -409,18 +413,18 @@ function DocumentsTab() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-slate-400 text-center py-3">Sin carpetas aún</p>
+          <p className="text-sm text-slate-400 text-center py-3">{t.dash_no_folders}</p>
         )}
       </div>
 
       {/* Documents */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-800">Mis documentos</h2>
+          <h2 className="text-lg font-semibold text-slate-800">{t.dash_my_documents}</h2>
           {isPremium ? (
             <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
               <Crown size={12} className="text-emerald-600" />
-              Descarga activa
+              {t.dash_download_active}
             </span>
           ) : (
             <button
@@ -428,7 +432,7 @@ function DocumentsTab() {
               className="flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full hover:bg-amber-100 transition-colors"
             >
               <Crown size={12} className="text-amber-600" />
-              Suscríbete para descargar
+              {t.dash_subscribe_download}
             </button>
           )}
         </div>
@@ -445,13 +449,13 @@ function DocumentsTab() {
                     <div className="flex items-center gap-1.5">
                       <p className="text-xs text-slate-400">
                         {doc.fileSize ? `${(doc.fileSize / 1024 / 1024).toFixed(1)} MB · ` : ""}
-                        {new Date(doc.createdAt).toLocaleDateString("es-ES")}
+                        {new Date(doc.createdAt).toLocaleDateString()}
                       </p>
                       {!isPremium && doc.paymentStatus === "pending" && (
-                        <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">Pago pendiente</span>
+                        <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">{t.dash_payment_pending}</span>
                       )}
                       {doc.paymentStatus === "paid" && (
-                        <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">Pagado</span>
+                        <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">{t.dash_paid}</span>
                       )}
                     </div>
                   </div>
@@ -463,11 +467,11 @@ function DocumentsTab() {
                       size="sm"
                       variant="ghost"
                       className="h-8 px-2 gap-1 text-green-700 hover:text-green-800 hover:bg-green-50"
-                      title="Editar en el editor"
+                      title={t.dash_edit_in_editor}
                       onClick={() => handleEditDocument(doc)}
                     >
                       <Edit3 size={13} />
-                      <span className="text-xs">Editar</span>
+                      <span className="text-xs">{t.dash_edit}</span>
                     </Button>
                   )}
                   {doc.fileUrl && (
@@ -476,7 +480,7 @@ function DocumentsTab() {
                         size="sm"
                         variant="ghost"
                         className="h-8 w-8 p-0"
-                        title="Descargar"
+                        title={t.dash_download}
                         onClick={() => handleDownloadDocument(doc)}
                       >
                         <Download size={14} />
@@ -486,18 +490,18 @@ function DocumentsTab() {
                         size="sm"
                         variant="ghost"
                         className="h-8 px-2 gap-1 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                        title="Pagar para descargar"
+                        title={t.dash_pay_to_download}
                         onClick={() => setShowPaywall(true)}
                       >
                         <CreditCard size={13} />
-                        <span className="text-xs font-medium">Pagar</span>
+                        <span className="text-xs font-medium">{t.dash_pay}</span>
                       </Button>
                     ) : (
                       <Button
                         size="sm"
                         variant="ghost"
                         className="h-8 w-8 p-0 text-amber-500"
-                        title="Requiere suscripción activa"
+                        title={t.dash_requires_subscription}
                         onClick={() => setShowPaywall(true)}
                       >
                         <Crown size={14} />
@@ -519,20 +523,21 @@ function DocumentsTab() {
         ) : (
           <div className="text-center py-10">
             <FileText size={40} className="text-slate-200 mx-auto mb-3" />
-            <p className="text-slate-500 font-medium">Sin documentos aún</p>
-            <p className="text-sm text-slate-400 mt-1">Los PDFs que edites y descargues aparecerán aquí</p>
+            <p className="text-slate-500 font-medium">{t.dash_no_documents}</p>
+            <p className="text-sm text-slate-400 mt-1">{t.dash_no_documents_desc}</p>
           </div>
         )}
       </div>
 
       {/* Paywall: shown when user tries to download without subscription */}
-      <PaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} action="descargar" />
+      <PaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} action={t.dash_download} />
     </div>
   );
 }
 
 // ─── Team Tab ────────────────────────────────────────────────────────
 function TeamTab() {
+  const { t } = useLanguage();
   const { data: team, isLoading } = trpc.team.list.useQuery();
   const utils = trpc.useUtils();
   const [email, setEmail] = useState("");
@@ -544,13 +549,13 @@ function TeamTab() {
       utils.team.list.invalidate();
       setEmail("");
       setShowForm(false);
-      toast.success("Invitación enviada correctamente");
+      toast.success(t.dash_invite_sent);
     },
-    onError: () => toast.error("Error al enviar la invitación"),
+    onError: () => toast.error(t.dash_invite_error),
   });
 
   const removeMutation = trpc.team.remove.useMutation({
-    onSuccess: () => { utils.team.list.invalidate(); toast.success("Miembro eliminado"); },
+    onSuccess: () => { utils.team.list.invalidate(); toast.success(t.dash_member_removed); },
   });
 
   const roleColors: Record<string, string> = {
@@ -563,8 +568,8 @@ function TeamTab() {
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h2 className="text-lg font-semibold text-slate-800">Equipo</h2>
-          <p className="text-sm text-slate-500 mt-0.5">Invita a colaboradores para trabajar juntos en tus documentos</p>
+          <h2 className="text-lg font-semibold text-slate-800">{t.dash_team_title}</h2>
+          <p className="text-sm text-slate-500 mt-0.5">{t.dash_team_desc}</p>
         </div>
         <Button
           size="sm"
@@ -572,7 +577,7 @@ function TeamTab() {
           className="bg-green-700 hover:bg-green-800 text-white"
         >
           <Plus size={14} className="mr-1.5" />
-          Invitar
+          {t.dash_invite}
         </Button>
       </div>
 
@@ -580,7 +585,7 @@ function TeamTab() {
         <div className="mb-5 p-4 bg-slate-50 rounded-xl border border-slate-100">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="md:col-span-2">
-              <Label className="text-xs text-slate-500 mb-1 block">Correo electrónico</Label>
+              <Label className="text-xs text-slate-500 mb-1 block">{t.dash_email}</Label>
               <Input
                 type="email"
                 value={email}
@@ -590,15 +595,15 @@ function TeamTab() {
               />
             </div>
             <div>
-              <Label className="text-xs text-slate-500 mb-1 block">Rol</Label>
+              <Label className="text-xs text-slate-500 mb-1 block">{t.dash_role}</Label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value as any)}
                 className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
               >
-                <option value="viewer">Visor</option>
-                <option value="editor">Editor</option>
-                <option value="admin">Admin</option>
+                <option value="viewer">{t.dash_viewer}</option>
+                <option value="editor">{t.dash_editor}</option>
+                <option value="admin">{t.dash_admin}</option>
               </select>
             </div>
           </div>
@@ -610,10 +615,10 @@ function TeamTab() {
               className="bg-green-700 hover:bg-green-800 text-white"
             >
               <Mail size={14} className="mr-1.5" />
-              Enviar invitación
+              {t.dash_send_invite}
             </Button>
             <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>
-              Cancelar
+              {t.dash_cancel}
             </Button>
           </div>
         </div>
@@ -634,13 +639,13 @@ function TeamTab() {
                 <div>
                   <p className="text-sm font-medium text-slate-800">{member.inviteeEmail}</p>
                   <p className="text-xs text-slate-400">
-                    Invitado el {new Date(member.createdAt).toLocaleDateString("es-ES")}
+                    {t.dash_invited_on} {new Date(member.createdAt).toLocaleDateString()}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${roleColors[member.role] ?? "bg-slate-100 text-slate-600"}`}>
-                  {member.role === "editor" ? "Editor" : member.role === "viewer" ? "Visor" : "Admin"}
+                  {member.role === "editor" ? t.dash_editor : member.role === "viewer" ? t.dash_viewer : t.dash_admin}
                 </span>
                 <button
                   onClick={() => removeMutation.mutate({ id: member.id })}
@@ -655,8 +660,8 @@ function TeamTab() {
       ) : (
         <div className="text-center py-10">
           <Users size={40} className="text-slate-200 mx-auto mb-3" />
-          <p className="text-slate-500 font-medium">Sin miembros en el equipo</p>
-          <p className="text-sm text-slate-400 mt-1">Invita a colaboradores para trabajar juntos</p>
+          <p className="text-slate-500 font-medium">{t.dash_no_team}</p>
+          <p className="text-sm text-slate-400 mt-1">{t.dash_no_team_desc}</p>
         </div>
       )}
     </div>
@@ -665,6 +670,7 @@ function TeamTab() {
 
 // ─── Dashboard Payment Form (inside Elements) ──────────────────
 function DashboardPaymentForm({ onSuccess }: { onSuccess: () => void }) {
+  const { t } = useLanguage();
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
@@ -698,7 +704,7 @@ function DashboardPaymentForm({ onSuccess }: { onSuccess: () => void }) {
         {submitting ? (
           <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> ...</span>
         ) : (
-          "Suscribirse"
+          t.dash_subscribe
         )}
       </button>
     </form>
@@ -707,6 +713,7 @@ function DashboardPaymentForm({ onSuccess }: { onSuccess: () => void }) {
 
 // ─── Stripe Inline Checkout (Dashboard) ──────────────────────
 function DashboardStripeInline({ onComplete }: { onComplete: () => void }) {
+  const { t } = useLanguage();
   const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const stripeConfigQ = trpc.subscription.stripeConfig.useQuery();
@@ -732,7 +739,7 @@ function DashboardStripeInline({ onComplete }: { onComplete: () => void }) {
     return (
       <div className="flex items-center justify-center py-10">
         <Loader2 className="w-6 h-6 animate-spin text-green-700" />
-        <span className="ml-2 text-sm text-slate-500">Cargando formulario de pago...</span>
+        <span className="ml-2 text-sm text-slate-500">{t.dash_loading_payment}</span>
       </div>
     );
   }
@@ -748,6 +755,7 @@ function DashboardStripeInline({ onComplete }: { onComplete: () => void }) {
 
 // ─── Billing Tab ──────────────────────────────────────────────
 function BillingTab() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const { data: subData, isLoading } = trpc.subscription.status.useQuery();
   const utils = trpc.useUtils();
@@ -757,7 +765,7 @@ function BillingTab() {
   const handleStripeComplete = useCallback(async () => {
     await utils.subscription.status.invalidate();
     setShowInlineCheckout(false);
-    toast.success("¡Suscripción activada correctamente!");
+    toast.success(t.dash_subscription_activated);
   }, [utils]);
 
   const openInlineCheckout = () => {
@@ -771,10 +779,10 @@ function BillingTab() {
     onSuccess: () => {
       utils.subscription.status.invalidate();
       setShowCancelModal(false);
-      toast.success("Suscripción cancelada. Seguirás teniendo acceso hasta el final del período.");
+      toast.success(t.dash_subscription_cancelled);
     },
     onError: () => {
-      toast.error("Error al cancelar la suscripción. Inténtalo de nuevo.");
+      toast.error(t.dash_cancel_error);
     },
   });
 
@@ -782,7 +790,7 @@ function BillingTab() {
   const sub = subData?.subscription;
 
   const expiryDateStr = sub?.currentPeriodEnd
-    ? new Date(sub.currentPeriodEnd).toLocaleDateString("es-ES", {
+    ? new Date(sub.currentPeriodEnd).toLocaleDateString(undefined, {
         day: "numeric",
         month: "long",
         year: "numeric",
@@ -817,9 +825,9 @@ function BillingTab() {
               <h2 className={`text-lg font-bold truncate ${isPremium ? "text-white" : "text-slate-800"}`}>
                 {isPremium
                   ? sub?.cancelAtPeriodEnd
-                    ? "Suscripción cancelada"
-                    : `Plan ${sub?.plan === "trial" ? "Prueba (7 días)" : "Premium Mensual"}`
-                  : "Plan Básico"}
+                    ? t.dash_cancelled_plan
+                    : sub?.plan === "trial" ? t.dash_trial_plan : t.dash_premium_plan
+                  : t.dash_basic_plan}
               </h2>
             </div>
 
@@ -828,21 +836,21 @@ function BillingTab() {
               <div className="mt-1 space-y-1">
                 <p className="text-amber-100 text-sm flex items-center gap-1.5">
                   <AlertCircle size={14} className="flex-shrink-0" />
-                  Tu acceso expira el{" "}
-                  <strong className="text-white">{expiryDateStr ?? "final del período"}</strong>
+                  {t.dash_access_expires}{" "}
+                  <strong className="text-white">{expiryDateStr ?? t.dash_end_of_period}</strong>
                 </p>
                 <p className="text-amber-200 text-xs">
-                  Puedes seguir usando todas las funciones hasta esa fecha.
+                  {t.dash_keep_using}
                 </p>
               </div>
             ) : isPremium ? (
               <p className="text-green-100 text-sm">
                 {expiryDateStr
-                  ? `Próxima renovación: ${expiryDateStr}`
-                  : "Acceso activo"}
+                  ? `${t.dash_next_renewal} ${expiryDateStr}`
+                  : t.dash_active_access}
               </p>
             ) : (
-              <p className="text-slate-500 text-sm">Funciones básicas de edición PDF</p>
+              <p className="text-slate-500 text-sm">{t.dash_basic_features}</p>
             )}
           </div>
 
@@ -851,10 +859,10 @@ function BillingTab() {
             {isPremium && sub?.plan !== "trial" ? (
               <div>
                 <p className="text-3xl font-bold text-white">19,99€</p>
-                <p className={`text-xs ${sub?.cancelAtPeriodEnd ? "text-amber-200" : "text-green-200"}`}>/ mes</p>
+                <p className={`text-xs ${sub?.cancelAtPeriodEnd ? "text-amber-200" : "text-green-200"}`}>{t.dash_per_month}</p>
               </div>
             ) : !isPremium ? (
-              <p className="text-3xl font-bold text-slate-800">Básico</p>
+              <p className="text-3xl font-bold text-slate-800">{t.dash_basic}</p>
             ) : null}
           </div>
         </div>
@@ -863,18 +871,18 @@ function BillingTab() {
       {/* Manage subscription — cancel button (only if active and NOT already canceling) */}
       {isPremium && !sub?.cancelAtPeriodEnd && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-          <h3 className="font-semibold text-slate-800 mb-1">Gestionar suscripción</h3>
+          <h3 className="font-semibold text-slate-800 mb-1">{t.dash_manage_subscription}</h3>
           <p className="text-sm text-slate-500 mb-4">
-            Si cancelas, seguirás teniendo acceso completo hasta el{" "}
-            <strong>{expiryDateStr ?? "final del período de facturación"}</strong>.
-            No se realizarán más cargos.
+            {t.dash_cancel_keep_access}{" "}
+            <strong>{expiryDateStr ?? t.dash_end_of_period}</strong>.
+            {" "}{t.dash_no_more_charges}
           </p>
           <Button
             variant="outline"
             onClick={() => setShowCancelModal(true)}
             className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-400 transition-colors"
           >
-            Cancelar suscripción
+            {t.dash_cancel_subscription}
           </Button>
         </div>
       )}
@@ -885,12 +893,11 @@ function BillingTab() {
           <AlertCircle size={18} className="text-amber-500 mt-0.5 flex-shrink-0" />
           <div>
             <p className="text-sm font-semibold text-amber-800">
-              Suscripción programada para cancelarse
+              {t.dash_scheduled_cancel}
             </p>
             <p className="text-sm text-amber-700 mt-0.5">
-              Tu acceso estará activo hasta el{" "}
-              <strong>{expiryDateStr ?? "final del período"}</strong>.
-              Después de esa fecha no se realizará ningún cargo adicional.
+              {t.dash_active_until}{" "}
+              <strong>{expiryDateStr ?? t.dash_end_of_period}</strong>.
             </p>
           </div>
         </div>
@@ -899,17 +906,17 @@ function BillingTab() {
       {/* Features comparison (only for basic users) */}
       {!isPremium && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-          <h3 className="font-semibold text-slate-800 mb-4">Funciones disponibles con Premium</h3>
+          <h3 className="font-semibold text-slate-800 mb-4">{t.dash_premium_features}</h3>
           <div className="space-y-2.5">
             {[
-              "Descarga ilimitada de PDFs editados",
-              "Firma digital avanzada",
-              "Protección con contraseña",
-              "Compresión de PDFs",
-              "Conversión PDF a Word, Excel, JPG",
-              "Almacenamiento de documentos en la nube",
-              "Soporte prioritario",
-              "Sin marca de agua",
+              t.dash_feature_unlimited,
+              t.dash_feature_signature,
+              t.dash_feature_password,
+              t.dash_feature_compress,
+              t.dash_feature_convert,
+              t.dash_feature_cloud,
+              t.dash_feature_support,
+              t.dash_feature_watermark,
             ].map((feature) => (
               <div key={feature} className="flex items-center gap-2.5">
                 <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
@@ -927,7 +934,7 @@ function BillingTab() {
               disabled={showInlineCheckout}
             >
               <CreditCard size={16} className="mr-2" />
-              {showInlineCheckout ? "Formulario de pago abierto abajo" : "Suscribirse ahora"}
+              {showInlineCheckout ? t.dash_payment_form_open : t.dash_subscribe_now}
             </Button>
           </div>
         </div>
@@ -939,9 +946,9 @@ function BillingTab() {
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between" style={{ backgroundColor: "#f8fafc" }}>
             <div className="flex items-center gap-2">
               <CreditCard size={18} className="text-green-700" />
-              <h3 className="font-bold text-slate-800">Completa tu suscripción</h3>
+              <h3 className="font-bold text-slate-800">{t.dash_complete_subscription}</h3>
             </div>
-            <button onClick={() => setShowInlineCheckout(false)} className="text-sm text-slate-500 hover:text-slate-700 hover:underline">Cancelar</button>
+            <button onClick={() => setShowInlineCheckout(false)} className="text-sm text-slate-500 hover:text-slate-700 hover:underline">{t.dash_cancel}</button>
           </div>
           <DashboardStripeInline onComplete={handleStripeComplete} />
         </div>
@@ -961,8 +968,8 @@ function BillingTab() {
                 <AlertCircle size={20} className="text-red-500" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-900">¿Cancelar suscripción?</h3>
-                <p className="text-sm text-slate-500 mt-0.5">Esta acción no se puede deshacer.</p>
+                <h3 className="text-lg font-bold text-slate-900">{t.dash_cancel_subscription_q}</h3>
+                <p className="text-sm text-slate-500 mt-0.5">{t.dash_cannot_undo}</p>
               </div>
               <button
                 onClick={() => setShowCancelModal(false)}
@@ -977,17 +984,17 @@ function BillingTab() {
               <div className="flex items-center gap-2">
                 <Check size={15} className="text-green-500 flex-shrink-0" />
                 <p className="text-sm text-slate-700">
-                  Seguirás teniendo acceso hasta el{" "}
-                  <strong>{expiryDateStr ?? "final del período"}</strong>.
+                  {t.dash_keep_access_until}{" "}
+                  <strong>{expiryDateStr ?? t.dash_end_of_period}</strong>.
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <Check size={15} className="text-green-500 flex-shrink-0" />
-                <p className="text-sm text-slate-700">No se realizarán más cargos automáticos.</p>
+                <p className="text-sm text-slate-700">{t.dash_no_auto_charges}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Check size={15} className="text-green-500 flex-shrink-0" />
-                <p className="text-sm text-slate-700">Tus documentos guardados permanecerán accesibles.</p>
+                <p className="text-sm text-slate-700">{t.dash_docs_accessible}</p>
               </div>
             </div>
 
@@ -999,7 +1006,7 @@ function BillingTab() {
                 onClick={() => setShowCancelModal(false)}
                 disabled={cancelMutation.isPending}
               >
-                Mantener suscripción
+                {t.dash_keep_subscription}
               </Button>
               <Button
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white"
@@ -1009,10 +1016,10 @@ function BillingTab() {
                 {cancelMutation.isPending ? (
                   <span className="flex items-center gap-2">
                     <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    Cancelando...
+                    {t.dash_cancelling}
                   </span>
                 ) : (
-                  "Sí, cancelar"
+                  t.dash_yes_cancel
                 )}
               </Button>
             </div>
