@@ -8,6 +8,16 @@ export default function PaymentSuccess() {
   const [, navigate] = useLocation();
   const [countdown, setCountdown] = useState(5);
 
+  // Google Ads conversion tracking
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('event', 'conversion', {
+        'send_to': 'AW-18071860641/pjCqCJ3sr2kcEKHrqqlD',
+        'transaction_id': ''
+      });
+    }
+  }, []);
+
   useEffect(() => {
     // Invalidate subscription status so it refreshes
     utils.subscription.status.invalidate();
