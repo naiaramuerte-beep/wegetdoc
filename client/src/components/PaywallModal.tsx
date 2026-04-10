@@ -55,7 +55,7 @@ function CardBrands() {
 }
 
 // ── Inner payment form (must be inside <Elements>) ──────────────────────
-function PaymentForm({ onSuccess }: { onSuccess: () => void }) {
+function PaymentForm({ onSuccess, userCountry }: { onSuccess: () => void; userCountry: string }) {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
@@ -67,7 +67,19 @@ function PaymentForm({ onSuccess }: { onSuccess: () => void }) {
     if (!stripe || !elements || !accepted) return;
     setSubmitting(true);
     try {
-      const { error } = await stripe.confirmSetup({ elements, redirect: "if_required" });
+      const { error } = await stripe.confirmSetup({
+        elements,
+        redirect: "if_required",
+        confirmParams: {
+          payment_method_data: {
+            billing_details: {
+              address: {
+                country: userCountry,
+              },
+            },
+          },
+        },
+      });
       if (error) {
         toast.error(error.message ?? "Payment failed");
       } else {
@@ -148,10 +160,17 @@ function StripeCheckoutForm({
   const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
 
+  const [userCountry, setUserCountry] = useState("ES");
   const stripeConfigQ = trpc.subscription.stripeConfig.useQuery();
   const createCheckoutSession = trpc.subscription.createCheckoutSession.useMutation();
   const confirmSetup = trpc.subscription.confirmSetup.useMutation();
   const utils = trpc.useUtils();
+
+  useEffect(() => {
+    fetch("/api/geo").then(r => r.json()).then(data => {
+      if (data.country) setUserCountry(data.country.toUpperCase());
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (stripeConfigQ.data?.publishableKey) {
@@ -301,7 +320,7 @@ function StripeCheckoutForm({
           {/* Stripe form */}
           {stripePromise && clientSecret ? (
             <Elements stripe={stripePromise} options={{ clientSecret, locale: "en", appearance: { theme: "stripe", variables: { colorPrimary: "#1B5E20", borderRadius: "10px" } } }}>
-              <PaymentForm onSuccess={handleComplete} />
+              <PaymentForm onSuccess={handleComplete} userCountry={userCountry} />
             </Elements>
           ) : (
             <div className="flex items-center justify-center py-10">
