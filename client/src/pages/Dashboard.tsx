@@ -848,18 +848,14 @@ function BillingTab() {
 
           {/* Price badge */}
           <div className="text-right flex-shrink-0">
-            {isPremium ? (
+            {isPremium && sub?.plan !== "trial" ? (
               <div>
-                <p className="text-3xl font-bold text-white">
-                  {sub?.plan === "trial" ? "0€" : "19,99€"}
-                </p>
-                <p className={`text-xs ${sub?.cancelAtPeriodEnd ? "text-amber-200" : "text-green-200"}`}>
-                  {sub?.plan === "trial" ? "prueba 7 días" : "/ mes"}
-                </p>
+                <p className="text-3xl font-bold text-white">19,99€</p>
+                <p className={`text-xs ${sub?.cancelAtPeriodEnd ? "text-amber-200" : "text-green-200"}`}>/ mes</p>
               </div>
-            ) : (
+            ) : !isPremium ? (
               <p className="text-3xl font-bold text-slate-800">Básico</p>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
