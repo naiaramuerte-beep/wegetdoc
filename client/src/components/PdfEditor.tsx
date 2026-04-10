@@ -650,46 +650,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       onPaywallOpened?.();
 
       console.log("[autoResume] Triggering auto-resume download flow");
-      toast.loading("Guardando documento en tu panel...", { id: "auto-resume" });
 
-      const currentPendingEdited = pendingEditedPdfRef.current;
-      const currentPdfBytes = pdfBytesRef.current;
       const currentIsPremium = isPremiumRef.current;
-
-      // If we have a pending edited PDF from S3 temp, claim it
-      if (currentPendingEdited) {
-        try {
-          const resp = await fetch("/api/documents/claim-temp", {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              tempKey: currentPendingEdited.tempKey,
-              name: currentPendingEdited.name,
-              paymentStatus: currentIsPremium ? "paid" : "pending",
-            }),
-          });
-          if (resp.ok) {
-            const data = await resp.json();
-            if (data.doc?.id) setSavedDocId(data.doc.id);
-          }
-        } catch (err) {
-          console.error("[autoResume] claim-temp failed:", err);
-        }
-        clearPendingEditedPdf();
-      } else if (currentPdfBytes) {
-        try {
-          const out = await buildAnnotatedPdf();
-          if (out) {
-            const result = await autoSaveDocument(out);
-            if (result?.docId) setSavedDocId(result.docId);
-          }
-        } catch (err) {
-          console.error("[autoResume] auto-save failed:", err);
-        }
-      }
-
-      toast.dismiss("auto-resume");
 
       // If premium → download immediately
       if (currentIsPremium) {
@@ -706,7 +668,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         return;
       }
 
-      // Not premium → prepare paywall data and open it
+      // Not premium → open paywall directly (no intermediate loading)
+      const currentPdfBytes = pdfBytesRef.current;
       if (currentPdfBytes) {
         try {
           const out = await buildAnnotatedPdf();
