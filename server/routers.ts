@@ -228,7 +228,7 @@ export const appRouter = router({
       return { success: true };
     }),
 
-    // After payment succeeds: find the active intro subscription, schedule transition to monthly, save to DB
+    // After intro payment succeeds: set default payment method, create monthly subscription, save to DB
     confirmSetup: protectedProcedure.mutation(async ({ ctx }) => {
       const { getStripe } = await import("./_core/stripe");
       const { ENV } = await import("./_core/env");
@@ -246,46 +246,32 @@ export const appRouter = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stripe customer not found" });
       }
 
-      // Find the active intro subscription (created by createCheckoutSession)
-      const subscriptions = await stripe.subscriptions.list({
-        customer: customer.id,
-        status: "active",
-        limit: 1,
-      });
-      const introSub = subscriptions.data[0];
-      if (!introSub) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "No active subscription found" });
+      // Get the payment method saved by the PaymentIntent (setup_future_usage: "off_session")
+      const paymentMethods = await stripe.paymentMethods.list({ customer: customer.id, type: "card", limit: 1 });
+      const pm = paymentMethods.data[0];
+      if (pm) {
+        await stripe.customers.update(customer.id, {
+          invoice_settings: { default_payment_method: pm.id },
+        });
       }
 
-      // Create a schedule from the existing subscription to transition to monthly price
-      const schedule = await stripe.subscriptionSchedules.create({
-        from_subscription: introSub.id,
-      });
-
-      // Update the schedule: keep current intro phase, add monthly phase after it
-      await stripe.subscriptionSchedules.update(schedule.id, {
-        end_behavior: "release",
-        phases: [
-          {
-            items: [{ price: ENV.stripeIntroPriceId, quantity: 1 }],
-            start_date: schedule.phases[0].start_date,
-            end_date: schedule.phases[0].end_date,
-            metadata: { userId: ctx.user.id.toString(), phase: "intro" },
-          },
-          {
-            items: [{ price: ENV.stripePriceId, quantity: 1 }],
-            metadata: { userId: ctx.user.id.toString(), phase: "monthly" },
-          },
-        ],
+      // Create the monthly subscription with a trial period so first charge is delayed
+      // The intro 0,50€ was already charged via PaymentIntent
+      const trialEnd = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
+      const subscription = await stripe.subscriptions.create({
+        customer: customer.id,
+        items: [{ price: ENV.stripePriceId }],
+        trial_end: trialEnd,
+        metadata: { userId: ctx.user.id.toString(), phase: "monthly" },
       });
 
       // Save to DB
       const nowDate = new Date();
-      const phase1End = new Date((schedule.phases[0].end_date ?? 0) * 1000);
+      const phase1End = new Date(trialEnd * 1000);
       await upsertSubscription({
         userId: ctx.user.id,
         stripeCustomerId: customer.id,
-        stripeSubscriptionId: introSub.id,
+        stripeSubscriptionId: subscription.id,
         plan: "trial",
         status: "active",
         currentPeriodStart: nowDate,
@@ -340,27 +326,26 @@ export const appRouter = router({
         });
       }
 
-      // Create Subscription with intro price — default_incomplete means we get
-      // a PaymentIntent that the frontend must confirm (3D Secure shows 0,50€)
-      const subscription = await stripe.subscriptions.create({
+      // STRIPE_INTRO_PRICE_ID is a one-time price (0,50€), so we use a PaymentIntent
+      // instead of a Subscription. The monthly subscription is created in confirmSetup.
+      const introPrice = await stripe.prices.retrieve(ENV.stripeIntroPriceId);
+      const amount = introPrice.unit_amount ?? 50; // fallback 50 cents
+
+      const paymentIntent = await stripe.paymentIntents.create({
         customer: customer.id,
-        items: [{ price: ENV.stripeIntroPriceId }],
-        payment_behavior: "default_incomplete",
-        payment_settings: { save_default_payment_method: "on_subscription" },
+        amount,
+        currency: introPrice.currency ?? "eur",
+        setup_future_usage: "off_session",
         metadata: { userId: ctx.user.id.toString(), phase: "intro" },
-        expand: ["latest_invoice.payment_intent"],
       });
 
-      const invoice = subscription.latest_invoice as any;
-      const paymentIntent = invoice?.payment_intent;
-      if (!paymentIntent?.client_secret) {
+      if (!paymentIntent.client_secret) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create payment intent" });
       }
 
       return {
         clientSecret: paymentIntent.client_secret,
         customerId: customer.id,
-        subscriptionId: subscription.id,
       };
     }),
   }),

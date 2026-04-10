@@ -23,9 +23,9 @@ Online PDF editor SaaS — edit, convert, sign, and protect PDFs in the browser.
 ## Key Architecture
 
 ### Stripe Payment Flow
-1. `createCheckoutSession` creates a **Subscription** with `STRIPE_INTRO_PRICE_ID` (0.50€) and `payment_behavior: "default_incomplete"` — returns the PaymentIntent's client_secret so 3D Secure shows the real amount
-2. Frontend calls `stripe.confirmPayment()` with billing country + postal_code from `/api/geo`
-3. `confirmSetup` mutation finds the active intro subscription, creates a **SubscriptionSchedule** from it to transition to `STRIPE_PRICE_ID` (19.99€/month) after the intro period ends
+1. `createCheckoutSession` creates a **PaymentIntent** for the intro amount (0.50€, read from `STRIPE_INTRO_PRICE_ID` which is a one-time price) with `setup_future_usage: "off_session"` to save the card
+2. Frontend calls `stripe.confirmPayment()` with billing country + postal_code from `/api/geo` — 3D Secure shows 0.50€
+3. `confirmSetup` sets the saved card as default, creates a **Subscription** with `STRIPE_PRICE_ID` (19.99€/month) and `trial_end` 30 days out (first monthly charge delayed since intro was already paid)
 4. PaymentElement hides country and postalCode fields (`"never"`) — values come from geolocation
 
 ### Google OAuth
