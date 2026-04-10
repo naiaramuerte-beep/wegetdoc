@@ -77,9 +77,10 @@ export function registerGoogleOAuthRoutes(app: Express) {
   app.get("/api/auth/google", (req: Request, res: Response) => {
     const origin = (req.query.origin as string) || `${req.protocol}://${req.get("host")}`;
     const returnPath = (req.query.returnPath as string) || "/";
+    const popup = req.query.popup === "1";
 
     // Encode state so callback knows where to redirect after login
-    const stateData = JSON.stringify({ origin, returnPath });
+    const stateData = JSON.stringify({ origin, returnPath, popup });
     const state = Buffer.from(stateData).toString("base64url");
 
     // Use the origin to determine which redirect URI to use
@@ -179,10 +180,27 @@ export function registerGoogleOAuthRoutes(app: Express) {
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
       console.log(`[Google OAuth] User logged in: ${user.email} (${user.openId})`);
-      console.log(`[Google OAuth] State decoded - origin: ${origin}, returnPath: ${returnPath}`);
-      console.log(`[Google OAuth] Cookie set with options:`, JSON.stringify(cookieOptions));
-      console.log(`[Google OAuth] Redirecting to: ${origin}${returnPath}`);
-      // Use full origin + returnPath so user returns to the correct page
+
+      // If this was a popup login, send a page that notifies the opener and closes
+      let isPopup = false;
+      try {
+        const stateData2 = JSON.parse(Buffer.from(state, "base64url").toString("utf-8"));
+        isPopup = stateData2.popup === true;
+      } catch {}
+
+      if (isPopup) {
+        res.send(`<!DOCTYPE html><html><head><title>Login successful</title></head><body><script>
+          if (window.opener) {
+            window.opener.postMessage({ type: "google-auth-success" }, "${origin}");
+            window.close();
+          } else {
+            window.location.href = "${origin}${returnPath}";
+          }
+        </script><p>Login successful. This window will close automatically.</p></body></html>`);
+        return;
+      }
+
+      // Normal redirect flow
       res.redirect(302, `${origin}${returnPath}`);
     } catch (err) {
       console.error("[Google OAuth] Callback error:", err);
