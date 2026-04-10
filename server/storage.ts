@@ -71,12 +71,14 @@ export async function storagePut(
     })
   );
 
-  // Build public URL
-  const fileUrl = publicUrl
-    ? `${publicUrl}/${key}`
-    : `https://${accountId}.r2.cloudflarestorage.com/${bucketName}/${key}`;
-
-  return { key, url: fileUrl };
+  // Build URL — prefer public URL, fall back to signed URL
+  if (publicUrl) {
+    return { key, url: `${publicUrl}/${key}` };
+  }
+  // Generate a presigned URL valid for 7 days (no public URL configured)
+  const command = new GetObjectCommand({ Bucket: bucketName, Key: key });
+  const signedUrl = await getSignedUrl(client, command, { expiresIn: 7 * 24 * 3600 });
+  return { key, url: signedUrl };
 }
 
 export async function storageGet(

@@ -298,14 +298,12 @@ function DocumentsTab() {
   const [, navigate] = useLocation();
   const { setPendingFile, setPendingTool } = usePdfFile();
 
-  // ── Download document as blob to avoid cross-origin download attribute being ignored ──
+  // ── Download document by ID (server fetches from R2 directly) ──
   const handleDownloadDocument = async (doc: any) => {
-    if (!doc.fileUrl) { toast.error(t.dash_cannot_download); return; }
+    if (!doc.id) { toast.error(t.dash_cannot_download); return; }
     try {
       toast.loading(t.dash_preparing_download, { id: "download-doc" });
-      // Use server-side proxy to avoid CORS issues with R2 storage
-      const proxyUrl = `/api/documents/proxy?url=${encodeURIComponent(doc.fileUrl)}`;
-      const response = await fetch(proxyUrl);
+      const response = await fetch(`/api/documents/download/${doc.id}`, { credentials: "include" });
       if (!response.ok) throw new Error(t.dash_download_error);
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
@@ -323,12 +321,10 @@ function DocumentsTab() {
   };
 
   const handleEditDocument = async (doc: any) => {
-    if (!doc.fileUrl) { toast.error(t.dash_cannot_open); return; }
+    if (!doc.id) { toast.error(t.dash_cannot_open); return; }
     try {
       toast.loading(t.dash_loading_doc, { id: "load-doc" });
-      // Use server-side proxy to avoid CORS issues with R2 storage
-      const proxyUrl = `/api/documents/proxy?url=${encodeURIComponent(doc.fileUrl)}`;
-      const response = await fetch(proxyUrl);
+      const response = await fetch(`/api/documents/download/${doc.id}`, { credentials: "include" });
       if (!response.ok) throw new Error(t.dash_download_error);
       const blob = await response.blob();
       const file = new File([blob], doc.name, { type: "application/pdf" });

@@ -9,7 +9,7 @@ import { registerGoogleOAuthRoutes } from "./googleOauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { getBlogPosts, createDocument, userHasActiveSubscription } from "../db";
+import { getBlogPosts, createDocument, userHasActiveSubscription, getDocumentById } from "../db";
 import { storagePut, storageGet } from "../storage";
 import { sdk } from "./sdk";
 import { convertToPdf, isConvertibleType, ACCEPTED_EXTENSIONS } from "../convertToPdf";
@@ -202,7 +202,7 @@ async function startServer() {
       "base-uri 'self'",
       "frame-src 'self' https://*.stripe.com https://www.googletagmanager.com",
       "img-src 'self' data: https://www.googletagmanager.com https://www.google.com",
-      "connect-src 'self' data: https://api.stripe.com https://www.google-analytics.com https://www.googletagmanager.com https://www.google.com",
+      "connect-src 'self' data: https://api.stripe.com https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com",
     ].join("; "));
     next();
   });
@@ -445,6 +445,27 @@ ${allUrls.map(u => `  <url>
     } catch (err) {
       console.error("[AutoSave] Error:", err);
       res.status(500).json({ error: "Auto-save failed" });
+    }
+  });
+
+  // ── Download document by ID (fetches from R2 using fileKey) ──────────────
+  app.get("/api/documents/download/:id", async (req, res) => {
+    try {
+      const user = await sdk.authenticateRequest(req as any);
+      const docId = parseInt(req.params.id, 10);
+      if (!docId) { res.status(400).json({ error: "Invalid id" }); return; }
+      const doc = await getDocumentById(docId, user.id);
+      if (!doc || !doc.fileKey) { res.status(404).json({ error: "Document not found" }); return; }
+      const { url } = await storageGet(doc.fileKey, 300);
+      const response = await fetch(url);
+      if (!response.ok) { res.status(500).json({ error: "Failed to fetch from storage" }); return; }
+      const buffer = Buffer.from(await response.arrayBuffer());
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `inline; filename="${doc.name || "document.pdf"}"`);
+      res.send(buffer);
+    } catch (err) {
+      console.error("[Download] Error:", err);
+      res.status(500).json({ error: "Download failed" });
     }
   });
 
