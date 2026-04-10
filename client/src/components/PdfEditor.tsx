@@ -2107,7 +2107,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
     if (!isAuthenticated) {
       sessionStorage.setItem("cloudpdf_pending_action", "download");
-      if (file) { try { await savePdfToSession(file); } catch {} }
+      // Save edited PDF (not original) so it survives OAuth redirect
+      if (pdfOut) {
+        const b64 = uint8ToBase64(pdfOut);
+        try { await saveEditedPdfToSession(b64, displayName || file?.name || "document.pdf", pdfOut.byteLength); } catch {}
+      }
     }
 
     toast.dismiss(toastId);
@@ -2135,14 +2139,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
     // Step 2: If NOT authenticated → show paywall modal (auth-choice step)
     if (!isAuthenticated) {
-      // Store PDF data so the paywall modal can use it after login
+      // Store edited PDF data so the paywall modal can use it after login
       setPdfDataForPaywall({ base64, name: docName, size: docSize });
       generateAnnotatedThumbnail(pdfOut).then(t => { if (t) setPaywallThumbnail(t); });
       sessionStorage.setItem("cloudpdf_pending_action", "download");
-      // Also save the original PDF file to session so it survives OAuth redirect
-      if (file) {
-        try { await savePdfToSession(file); } catch {}
-      }
+      // Pre-save the edited PDF so it survives OAuth redirect
+      try { await saveEditedPdfToSession(base64, docName, docSize); } catch {}
       toast.dismiss("dl");
       setShowPaywall(true);
       return;

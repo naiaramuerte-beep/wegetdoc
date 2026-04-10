@@ -124,6 +124,9 @@ export function PdfFileProvider({ children }: { children: ReactNode }) {
 
   /** Upload edited PDF to S3 as temp file, then store only the small key in sessionStorage */
   const saveEditedPdfToSession = async (base64: string, name: string, _size: number): Promise<void> => {
+    // Clear original PDF from session — the edited version replaces it
+    sessionStorage.removeItem(SESSION_KEY_PDF);
+    sessionStorage.removeItem(SESSION_KEY_NAME);
     try {
       // Convert base64 to binary and upload to server temp endpoint
       const binary = atob(base64);
