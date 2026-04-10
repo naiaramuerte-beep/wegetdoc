@@ -201,8 +201,8 @@ async function startServer() {
       "object-src 'none'",
       "base-uri 'self'",
       "frame-src 'self' https://*.stripe.com https://www.googletagmanager.com",
-      "img-src 'self' data: https://www.googletagmanager.com",
-      "connect-src 'self' data: https://api.stripe.com https://www.google-analytics.com https://www.googletagmanager.com",
+      "img-src 'self' data: https://www.googletagmanager.com https://www.google.com",
+      "connect-src 'self' data: https://api.stripe.com https://www.google-analytics.com https://www.googletagmanager.com https://www.google.com",
     ].join("; "));
     next();
   });
