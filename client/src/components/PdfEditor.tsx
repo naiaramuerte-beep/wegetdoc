@@ -1365,15 +1365,27 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
+    // Use createImageBitmap to auto-apply EXIF orientation (fixes mobile rotation)
+    const url = URL.createObjectURL(f);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0);
+      const dataUrl = canvas.toDataURL("image/png");
+      URL.revokeObjectURL(url);
+      const aspect = img.naturalWidth / img.naturalHeight;
+      const w = 200;
+      const h = Math.round(w / aspect);
       addAnnotation({
-        type: "image", dataUrl: ev.target?.result as string,
-        x: 80, y: 80, width: 200, height: 150, page: currentPage,
+        type: "image", dataUrl,
+        x: 80, y: 80, width: w, height: h, page: currentPage, rotation: 0,
       });
       toast.success(t.editor_toast_image_added ?? "Image added. Drag it to position.");
     };
-    reader.readAsDataURL(f);
+    img.src = url;
     // Keep image tool active
   };
   // ── Add shapee ─────────────────────────────────────────────────
@@ -1863,16 +1875,33 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const pdfY = height - ann.y - ann.height;
       if (ann.type === "text" && ann.text) {
         page.drawText(ann.text, { x: ann.x, y: pdfY + ann.height / 2, size: ann.fontSize ?? 14, font, color: rgb(0, 0, 0) });
-      } else if (ann.type === "signature" && ann.dataUrl) {
-        const imgBytes = await fetch(ann.dataUrl).then(r => r.arrayBuffer());
-        const img = await doc.embedPng(new Uint8Array(imgBytes));
-        page.drawImage(img, { x: ann.x, y: pdfY, width: ann.width, height: ann.height });
-      } else if (ann.type === "image" && ann.dataUrl) {
-        const imgBytes = await fetch(ann.dataUrl).then(r => r.arrayBuffer());
+      } else if ((ann.type === "signature" || ann.type === "image") && ann.dataUrl) {
+        // If rotated, pre-rotate the image via canvas before embedding
+        let finalDataUrl = ann.dataUrl;
+        let drawW = ann.width, drawH = ann.height;
+        if (ann.rotation && ann.rotation % 360 !== 0) {
+          const tmpImg = await new Promise<HTMLImageElement>((resolve) => {
+            const i = new Image(); i.onload = () => resolve(i); i.src = ann.dataUrl!;
+          });
+          const rad = (ann.rotation * Math.PI) / 180;
+          const cos = Math.abs(Math.cos(rad)), sin = Math.abs(Math.sin(rad));
+          const cw = Math.ceil(tmpImg.width * cos + tmpImg.height * sin);
+          const ch = Math.ceil(tmpImg.width * sin + tmpImg.height * cos);
+          const c = document.createElement("canvas"); c.width = cw; c.height = ch;
+          const ctx = c.getContext("2d")!;
+          ctx.translate(cw / 2, ch / 2);
+          ctx.rotate(rad);
+          ctx.drawImage(tmpImg, -tmpImg.width / 2, -tmpImg.height / 2);
+          finalDataUrl = c.toDataURL("image/png");
+          // Swap dimensions if rotated 90/270
+          if (ann.rotation % 180 !== 0) { drawW = ann.height; drawH = ann.width; }
+        }
+        const imgBytes = await fetch(finalDataUrl).then(r => r.arrayBuffer());
         let img;
         try { img = await doc.embedPng(new Uint8Array(imgBytes)); }
         catch { img = await doc.embedJpg(new Uint8Array(imgBytes)); }
-        page.drawImage(img, { x: ann.x, y: pdfY, width: ann.width, height: ann.height });
+        const finalPdfY = height - ann.y - drawH;
+        page.drawImage(img, { x: ann.x, y: finalPdfY, width: drawW, height: drawH });
       } else if (ann.type === "highlight") {
         page.drawRectangle({ x: ann.x, y: pdfY, width: ann.width, height: ann.height, color: rgb(1, 1, 0), opacity: 0.4 });
       } else if (ann.type === "note" && ann.text) {
@@ -3563,10 +3592,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       </button>
                     )}
                     {ann.type === "signature" && ann.dataUrl && (
-                      <img src={ann.dataUrl} alt="firma" style={{ width: "100%", height: "100%", objectFit: "contain", cursor: "move" }} draggable={false} />
+                      <img src={ann.dataUrl} alt="firma" style={{ width: "100%", height: "100%", objectFit: "contain", cursor: "move", transform: ann.rotation ? `rotate(${ann.rotation}deg)` : undefined }} draggable={false} />
                     )}
                     {ann.type === "image" && ann.dataUrl && (
-                      <img src={ann.dataUrl} alt="img" style={{ width: "100%", height: "100%", objectFit: "contain", cursor: "move" }} draggable={false} />
+                      <img src={ann.dataUrl} alt="img" style={{ width: "100%", height: "100%", objectFit: "contain", cursor: "move", transform: ann.rotation ? `rotate(${ann.rotation}deg)` : undefined }} draggable={false} />
                     )}
                     {ann.type === "text" && (
                       editingTextId === ann.id ? (
@@ -3657,6 +3686,22 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         // Line: thin horizontal bar
                         ...(ann.text === "line" ? { height: 2, marginTop: "50%" } : {}),
                       }} />
+                    )}
+                    {/* Rotate button for images and signatures */}
+                    {selectedId === ann.id && (ann.type === "image" || ann.type === "signature") && (
+                      <button
+                        title="Rotate 90°"
+                        style={{ position: "absolute", left: -10, top: -10, width: 22, height: 22, backgroundColor: "#1B5E20", borderRadius: "50%", cursor: "pointer", zIndex: 31, border: "2px solid white", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAnnotations(prev => prev.map(a => a.id === ann.id ? { ...a, rotation: ((a.rotation ?? 0) + 90) % 360 } : a));
+                          pushHistory(annotationsRef.current);
+                        }}
+                      >
+                        <RotateCw size={11} color="white" />
+                      </button>
                     )}
                     {/* Resize handle */}
                     {selectedId === ann.id && (
