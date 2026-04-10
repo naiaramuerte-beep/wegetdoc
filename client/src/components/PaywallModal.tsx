@@ -129,7 +129,7 @@ function PaymentForm({ onSuccess, userCountry, userPostalCode }: { onSuccess: ()
         ) : (
           <span className="flex items-center justify-center gap-2">
             <Lock className="w-4 h-4" />
-            Pay and subscribe
+            Download PDF
           </span>
         )}
       </button>
