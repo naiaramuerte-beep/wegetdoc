@@ -182,6 +182,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const [showPaywall, setShowPaywall] = useState(false);
   const paywallOpenedRef = useRef(false);
   const [pdfDataForPaywall, setPdfDataForPaywall] = useState<{ base64: string; name: string; size: number } | undefined>(undefined);
+  const [paywallThumbnail, setPaywallThumbnail] = useState<string | undefined>(undefined);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -682,6 +683,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               name: file?.name ?? "document.pdf",
               size: out.byteLength,
             });
+            generateAnnotatedThumbnail(out).then(t => { if (t) setPaywallThumbnail(t); });
           }
         } catch {}
       }
@@ -1836,6 +1838,21 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   };
 
   // ── Build annotated PDF as Uint8Array (shared by download and paywall) ──
+  // Generate a thumbnail of the annotated PDF (first page)
+  const generateAnnotatedThumbnail = async (pdfData: Uint8Array): Promise<string | undefined> => {
+    try {
+      const doc = await pdfjsLib.getDocument({ data: pdfData.slice() }).promise;
+      const page = await doc.getPage(1);
+      const vp = page.getViewport({ scale: 0.5 });
+      const c = document.createElement("canvas");
+      c.width = vp.width; c.height = vp.height;
+      await page.render({ canvas: c, viewport: vp } as any).promise;
+      const thumb = c.toDataURL();
+      doc.destroy();
+      return thumb;
+    } catch { return undefined; }
+  };
+
   const buildAnnotatedPdf = async (): Promise<Uint8Array | null> => {
     if (!pdfBytes) return null;
     // Use .slice() to create a fully independent copy of the bytes.
@@ -2060,6 +2077,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const base64 = uint8ToBase64(pdfOut);
       const docName = displayName || file?.name || "document.pdf";
       setPdfDataForPaywall({ base64, name: docName, size: pdfOut.byteLength });
+      generateAnnotatedThumbnail(pdfOut).then(t => { if (t) setPaywallThumbnail(t); });
     }
 
     if (!isAuthenticated) {
@@ -2094,6 +2112,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     if (!isAuthenticated) {
       // Store PDF data so the paywall modal can use it after login
       setPdfDataForPaywall({ base64, name: docName, size: docSize });
+      generateAnnotatedThumbnail(pdfOut).then(t => { if (t) setPaywallThumbnail(t); });
       sessionStorage.setItem("cloudpdf_pending_action", "download");
       // Also save the original PDF file to session so it survives OAuth redirect
       if (file) {
@@ -2123,6 +2142,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
       // Step 5: Not premium → show paywall with PDF data
       setPdfDataForPaywall({ base64, name: docName, size: docSize });
+      generateAnnotatedThumbnail(pdfOut).then(t => { if (t) setPaywallThumbnail(t); });
       toast.dismiss("dl");
       setShowPaywall(true);
     } catch (err) {
@@ -4012,7 +4032,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         isOpen={showPaywall}
         onClose={() => setShowPaywall(false)}
         pdfData={pdfDataForPaywall}
-        thumbnailUrl={thumbnails[0]}
+        thumbnailUrl={paywallThumbnail ?? thumbnails[0]}
         buildPdfForUpload={async () => {
           if (!pdfBytes) return null;
           try {
