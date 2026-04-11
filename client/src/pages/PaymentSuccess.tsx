@@ -8,11 +8,11 @@ export default function PaymentSuccess() {
   const [, navigate] = useLocation();
   const [countdown, setCountdown] = useState(5);
 
-  // Google Ads conversion tracking
+  // Google Ads conversion tracking (Compra)
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).gtag) {
       (window as any).gtag('event', 'conversion', {
-        'send_to': 'AW-18071860641/pjCqCJ3sr2kcEKHrqqlD',
+        'send_to': 'AW-18071860641/pjCqCJ3srZkcEKHrqqlD',
         'transaction_id': ''
       });
     }
