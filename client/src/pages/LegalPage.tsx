@@ -1,29 +1,34 @@
 /* =============================================================
-   EditorPDF — Página legal dinámica
-   Renderiza contenido Markdown desde la base de datos
+   EditorPDF — Dynamic legal page with i18n support
+   Fetches slug-{lang} first, falls back to slug (Spanish default)
    ============================================================= */
 import { trpc } from "@/lib/trpc";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { FileText } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface LegalPageProps {
   slug: string;
 }
 
 export default function LegalPage({ slug }: LegalPageProps) {
-  const { data: page, isLoading } = trpc.legal.get.useQuery({ slug });
+  const { lang } = useLanguage();
+  // Try language-specific slug first (e.g. "terms-en"), fall back to base slug ("terms" = Spanish)
+  const localizedSlug = lang === "es" ? slug : `${slug}-${lang}`;
+  const { data: localizedPage, isLoading: loadingLocalized } = trpc.legal.get.useQuery({ slug: localizedSlug }, { enabled: lang !== "es" });
+  const { data: fallbackPage, isLoading: loadingFallback } = trpc.legal.get.useQuery({ slug });
 
-  const defaultTitles: Record<string, string> = {
-    privacy: "Política de Privacidad",
-    terms: "Términos de Servicio",
-    cookies: "Política de Cookies",
-    legal: "Aviso Legal",
-    gdpr: "RGPD",
-    refund: "Política de Reembolso",
+  const page = (lang !== "es" && localizedPage) ? localizedPage : fallbackPage;
+  const isLoading = lang !== "es" ? (loadingLocalized || (!localizedPage && loadingFallback)) : loadingFallback;
+
+  const defaultTitles: Record<string, Record<string, string>> = {
+    es: { privacy: "Política de Privacidad", terms: "Términos de Servicio", cookies: "Política de Cookies", legal: "Aviso Legal", gdpr: "RGPD", refund: "Política de Reembolso" },
+    en: { privacy: "Privacy Policy", terms: "Terms of Service", cookies: "Cookie Policy", legal: "Legal Notice", gdpr: "GDPR Compliance", refund: "Refund Policy" },
   };
 
-  const title = page?.title ?? defaultTitles[slug] ?? "Página legal";
+  const titles = defaultTitles[lang] ?? defaultTitles.en ?? {};
+  const title = page?.title ?? titles[slug] ?? "Legal";
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -41,7 +46,7 @@ export default function LegalPage({ slug }: LegalPageProps) {
             <h1 className="text-3xl font-bold text-slate-800 mb-2">{title}</h1>
             {page.updatedAt && (
               <p className="text-sm text-slate-400 mb-8">
-                Última actualización: {new Date(page.updatedAt).toLocaleDateString("es-ES")}
+                {lang === "es" ? "Última actualización" : "Last updated"}: {new Date(page.updatedAt).toLocaleDateString()}
               </p>
             )}
             <div
@@ -53,9 +58,8 @@ export default function LegalPage({ slug }: LegalPageProps) {
           <div className="text-center py-20">
             <FileText size={48} className="text-slate-200 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-slate-600 mb-2">{title}</h2>
-            <p className="text-slate-400">Esta página aún no tiene contenido.</p>
-            <p className="text-slate-400 text-sm mt-1">
-              El administrador puede añadir contenido desde el panel de administración.
+            <p className="text-slate-400">
+              {lang === "es" ? "Esta página aún no tiene contenido." : "This page has no content yet."}
             </p>
           </div>
         )}
