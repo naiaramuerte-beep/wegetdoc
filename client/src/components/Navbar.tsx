@@ -45,8 +45,6 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
 
   const allNavLinks = [
     { href: `/${lang}/#how-it-works`, label: t.nav_how_it_works },
-    { href: `/${lang}/pricing`, label: t.nav_pricing },
-    { href: `/${lang}/blog`, label: "Blog" },
     { href: `/${lang}/#faq`, label: t.nav_faq },
     { href: "#contact", label: t.nav_contact, onClick: () => setContactOpen(true) },
   ];
