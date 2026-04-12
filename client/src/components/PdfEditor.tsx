@@ -2219,12 +2219,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     return (
       <div className="w-full rounded-2xl flex flex-col items-center justify-center py-20 px-8 text-center" style={{ backgroundColor: "#f8fafc", border: "2px solid #e2e8f0" }}>
         {/* Animated PDF icon */}
-        <div className="relative mb-6">
-          <div className="w-20 h-20 rounded-2xl flex items-center justify-center" style={{ backgroundColor: "rgba(27, 94, 32, 0.10)" }}>
-            <FileText className="w-10 h-10 animate-pulse" style={{ color: "#1B5E20" }} />
+        <div className="relative mb-6 w-20 h-20 flex items-center justify-center">
+          <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(27, 94, 32, 0.08)" }}>
+            <FileText className="w-9 h-9" style={{ color: "#1B5E20" }} />
           </div>
-          {/* Spinning ring around icon */}
-          <div className="absolute inset-0 w-20 h-20 rounded-2xl animate-spin" style={{ border: "3px solid transparent", borderTopColor: "#1B5E20", animationDuration: "1.5s" }} />
+          {/* Spinning ring — circular */}
+          <div className="absolute inset-[-4px] rounded-full animate-spin" style={{ border: "3px solid #e2e8f0", borderTopColor: "#1B5E20", animationDuration: "1.2s" }} />
         </div>
         {/* Title */}
         <p className="text-xl font-bold mb-2" style={{ color: "#14532d" }}>
@@ -2260,12 +2260,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     return (
       <div className="w-full rounded-2xl flex flex-col items-center justify-center py-20 px-8 text-center" style={{ backgroundColor: "#f8fafc", border: "2px solid #e2e8f0" }}>
         {/* Animated file icon */}
-        <div className="relative mb-6">
-          <div className="w-20 h-20 rounded-2xl flex items-center justify-center" style={{ backgroundColor: "rgba(27, 94, 32, 0.10)" }}>
-            <FileText className="w-10 h-10 animate-pulse" style={{ color: "#1B5E20" }} />
+        <div className="relative mb-6 w-20 h-20 flex items-center justify-center">
+          <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(27, 94, 32, 0.08)" }}>
+            <FileText className="w-9 h-9" style={{ color: "#1B5E20" }} />
           </div>
-          {/* Spinning ring around icon */}
-          <div className="absolute inset-0 w-20 h-20 rounded-2xl animate-spin" style={{ border: "3px solid transparent", borderTopColor: "#1B5E20", animationDuration: "1.5s" }} />
+          {/* Spinning ring — circular */}
+          <div className="absolute inset-[-4px] rounded-full animate-spin" style={{ border: "3px solid #e2e8f0", borderTopColor: "#1B5E20", animationDuration: "1.2s" }} />
         </div>
         {/* Title */}
         <p className="text-xl font-bold mb-2" style={{ color: "#14532d" }}>
