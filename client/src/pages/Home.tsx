@@ -213,7 +213,7 @@ export default function Home() {
         <div className="container pt-10 pb-0 md:pt-16">
           <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
             {/* Left column (55%) */}
-            <div className="w-full lg:w-[55%] flex flex-col">
+            <div className="w-full lg:w-[55%] flex flex-col items-center text-center lg:items-start lg:text-left">
               <h1
                 className="text-4xl md:text-5xl lg:text-[3.6rem] font-extrabold leading-[1.12] mb-5 tracking-tight"
                 style={{ color: TEXT_MAIN }}
@@ -261,7 +261,7 @@ export default function Home() {
               </div>
 
               {/* Format badges */}
-              <div className="flex flex-wrap items-center gap-1.5 mb-5">
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1.5 mb-5">
                 {["PDF", "Word", "Excel", "PPT", "JPG", "PNG"].map((fmt) => (
                   <span
                     key={fmt}
@@ -276,7 +276,7 @@ export default function Home() {
 
               {/* Social proof inline */}
               {!isFastDoc && (
-                <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs" style={{ color: TEXT_MUTED }}>
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-5 gap-y-2 text-xs" style={{ color: TEXT_MUTED }}>
                   <span className="flex items-center gap-1.5">
                     <span className="flex">
                       {[...Array(5)].map((_, i) => (
