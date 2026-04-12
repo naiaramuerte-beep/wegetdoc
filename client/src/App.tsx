@@ -32,6 +32,8 @@ const CookieBanner = lazy(() => import("./components/CookieBanner"));
 const Blog = lazy(() => import("./pages/Blog"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
 const ToolLanding = lazy(() => import("./pages/ToolLanding"));
+const AdLandingPage = lazy(() => import("./pages/AdLanding"));
+import { AD_PAGES } from "./pages/AdLanding";
 
 function LazyFallback() {
   return (
@@ -120,6 +122,17 @@ function Router() {
       {/* Tool landing redirects without lang prefix */}
       {TOOL_LANDINGS.map(tool => (
         <Route key={`redirect-${tool.slug}`} path={`/${tool.slug}/online`} component={() => <Redirect to={`/en/${tool.slug}/online`} />} />
+      ))}
+
+      {/* Google Ads CPA landing pages — language-prefixed */}
+      {LANGUAGES.map(({ code }) =>
+        AD_PAGES.map(page => (
+          <Route key={`${code}-ad-${page.slug}`} path={`/${code}/${page.slug}`} component={() => <AdLandingPage page={page} />} />
+        ))
+      )}
+      {/* Google Ads CPA landing pages — no lang prefix */}
+      {AD_PAGES.map(page => (
+        <Route key={`ad-redirect-${page.slug}`} path={`/${page.slug}`} component={() => <Redirect to={`/en/${page.slug}`} />} />
       ))}
 
       {/* Legacy routes without lang prefix — redirect to /es/ */}

@@ -110,7 +110,15 @@ const TESTIMONIALS_META = [
   { name: "Ana Martínez",      avatar: "AM", avatarColor: "#4CAF50",  textKey: "testimonial3_text", roleKey: "testimonial3_role" },
 ];
 
-export default function Home() {
+export interface HomeOverrides {
+  heroTitle?: string;
+  heroHighlight?: string;
+  heroSubtitle?: string;
+  metaTitle?: string;
+  metaDesc?: string;
+}
+
+export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) {
   const [activeTab, setActiveTab] = useState<"edit" | "fromPdf" | "toPdf">("edit");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
@@ -130,6 +138,15 @@ export default function Home() {
     let timer = window.setTimeout(tick, 800);
     return () => clearTimeout(timer);
   }, []);
+
+  // Override meta tags for ad landing pages
+  useEffect(() => {
+    if (overrides?.metaTitle) document.title = overrides.metaTitle;
+    if (overrides?.metaDesc) {
+      const desc = document.querySelector('meta[name="description"]');
+      if (desc) desc.setAttribute("content", overrides.metaDesc);
+    }
+  }, [overrides]);
 
   const toolsMap = { edit: TOOLS_EDIT, fromPdf: TOOLS_FROM_PDF, toPdf: TOOLS_TO_PDF };
   const activeTools = toolsMap[activeTab].map((tool) => ({
@@ -218,7 +235,17 @@ export default function Home() {
                 className="text-4xl md:text-5xl lg:text-[3.6rem] font-extrabold leading-[1.12] mb-5 tracking-tight"
                 style={{ color: TEXT_MAIN }}
               >
-                {isFastDoc ? (
+                {overrides?.heroTitle ? (
+                  <>
+                    {overrides.heroTitle}{" "}
+                    {overrides.heroHighlight && (
+                      <span className="relative inline-block pb-1">
+                        <span style={{ color: INDIGO }}>{overrides.heroHighlight}</span>
+                        <span className="absolute bottom-0 left-0 w-full rounded-full" style={{ backgroundColor: "#4ade80", height: "6px", opacity: 0.5 }} />
+                      </span>
+                    )}
+                  </>
+                ) : isFastDoc ? (
                   <>
                     {t.fastdoc_hero_title_1}{" "}
                     <span style={{ color: colors.primary }}>
@@ -245,7 +272,7 @@ export default function Home() {
                 className="text-base md:text-lg leading-relaxed mb-6 max-w-xl"
                 style={{ color: TEXT_MUTED }}
               >
-                {isFastDoc ? t.fastdoc_hero_subtitle : t.hero_subtitle}
+                {overrides?.heroSubtitle ?? (isFastDoc ? t.fastdoc_hero_subtitle : t.hero_subtitle)}
               </p>
 
               {/* CTA button */}
