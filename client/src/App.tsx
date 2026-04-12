@@ -153,7 +153,7 @@ function App() {
         <LanguageProvider>
           <PdfFileProvider>
             <TooltipProvider>
-              <Toaster position="bottom-center" duration={2000} />
+              <Toaster position="top-center" duration={2000} style={{ top: "60px" }} />
               <Suspense fallback={<LazyFallback />}>
                 <Router />
               </Suspense>
