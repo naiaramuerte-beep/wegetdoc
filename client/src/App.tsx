@@ -34,6 +34,7 @@ const BlogPost = lazy(() => import("./pages/BlogPost"));
 const ToolLanding = lazy(() => import("./pages/ToolLanding"));
 const AdLandingPage = lazy(() => import("./pages/AdLanding"));
 import { AD_PAGES } from "./pages/AdLanding";
+const LandingTest = lazy(() => import("./pages/LandingTest"));
 
 function LazyFallback() {
   return (
@@ -122,6 +123,11 @@ function Router() {
       {/* Tool landing redirects without lang prefix */}
       {TOOL_LANDINGS.map(tool => (
         <Route key={`redirect-${tool.slug}`} path={`/${tool.slug}/online`} component={() => <Redirect to={`/en/${tool.slug}/online`} />} />
+      ))}
+
+      {/* Test landing page */}
+      {LANGUAGES.map(({ code }) => (
+        <Route key={`${code}-landing-test`} path={`/${code}/prueba-nueva-landing`} component={LandingTest} />
       ))}
 
       {/* Google Ads CPA landing pages — language-prefixed */}
