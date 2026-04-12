@@ -132,8 +132,20 @@ export default function LandingTest() {
               </p>
             </div>
 
-            {/* Upload zone — like ChatPDF's dashed box with "Suelta un archivo o sube" */}
-            <div className="px-5 pb-5">
+            {/* Upload zone with arrow annotation */}
+            <div className="px-5 pb-5 relative">
+              {/* Handwritten annotation — hidden on small screens */}
+              <div className="hidden md:block absolute -left-36 top-0" style={{ width: "120px" }}>
+                <p className="text-xs font-bold leading-tight text-center" style={{ color: "#64748b", fontFamily: "cursive" }}>
+                  DROP YOUR<br />PDF FILE<br />HERE
+                </p>
+                {/* Curved arrow SVG */}
+                <svg width="80" height="50" viewBox="0 0 80 50" fill="none" className="mx-auto mt-1">
+                  <path d="M20 5 C40 5, 60 10, 70 35" stroke="#7c3aed" strokeWidth="2" fill="none" strokeLinecap="round" />
+                  <path d="M65 28 L70 35 L62 35" fill="#7c3aed" />
+                </svg>
+              </div>
+
               <div
                 className="rounded-xl border-2 border-dashed py-5 px-4 cursor-pointer transition-all duration-200"
                 style={{
@@ -159,30 +171,30 @@ export default function LandingTest() {
       </section>
 
       {/* ═══════════════════════════════════════════════════
-          TRUST LOGOS — like Harvard | Cambridge | Oxford | Stanford
+          TRUST LOGOS — real logos in gray cards
       ═══════════════════════════════════════════════════ */}
       <section className="pt-10 pb-4 md:pt-14 md:pb-6">
-        <div className="max-w-3xl mx-auto px-4">
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <p className="text-xs font-medium mb-5 tracking-wide uppercase" style={{ color: "#cbd5e1" }}>
+            Trusted by teams at
+          </p>
           <div className="flex flex-wrap items-center justify-center gap-3 md:gap-4">
             {[
-              { name: "Google", sub: "" },
-              { name: "Microsoft", sub: "" },
-              { name: "Amazon", sub: "" },
-              { name: "Deloitte", sub: "" },
-            ].map((logo) => (
-              <div key={logo.name}
-                className="flex items-center gap-2 px-5 py-3 rounded-xl border"
-                style={{ borderColor: "#f1f5f9", backgroundColor: "white" }}>
-                {/* Simple text logo — professional look */}
-                <div className="w-8 h-8 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: "#f1f5f9" }}>
-                  <span className="text-xs font-bold" style={{ color: "#94a3b8" }}>
-                    {logo.name[0]}
-                  </span>
-                </div>
-                <span className="text-sm font-bold tracking-tight" style={{ color: "#475569" }}>
-                  {logo.name}
-                </span>
+              { name: "Google", logo: "https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" },
+              { name: "Microsoft", logo: "https://upload.wikimedia.org/wikipedia/commons/9/96/Microsoft_logo_%282012%29.svg" },
+              { name: "Amazon", logo: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg" },
+              { name: "Deloitte", logo: "https://upload.wikimedia.org/wikipedia/commons/5/56/Deloitte.svg" },
+              { name: "Accenture", logo: "https://upload.wikimedia.org/wikipedia/commons/c/cd/Accenture.svg" },
+            ].map((company) => (
+              <div key={company.name}
+                className="flex items-center justify-center px-5 py-3 rounded-xl"
+                style={{ backgroundColor: "#f8fafc", border: "1px solid #f1f5f9" }}>
+                <img
+                  src={company.logo}
+                  alt={company.name}
+                  className="h-6 md:h-7 w-auto object-contain"
+                  style={{ filter: "grayscale(100%) opacity(0.5)" }}
+                />
               </div>
             ))}
           </div>
@@ -190,68 +202,70 @@ export default function LandingTest() {
       </section>
 
       {/* ═══════════════════════════════════════════════════
-          STATS — like ChatPDF's "Preguntas respondidas 1,000,000+" row
+          STATS — Documents / Avatars / Award
       ═══════════════════════════════════════════════════ */}
       <section className="py-6 md:py-8">
-        <div className="max-w-3xl mx-auto px-4 flex flex-wrap items-center justify-center gap-8 md:gap-12">
+        <div className="max-w-3xl mx-auto px-4 flex flex-wrap items-center justify-center gap-10 md:gap-14">
 
-          {/* Stat 1: Documents processed — like "Preguntas respondidas al día" */}
+          {/* Stat 1: Documents processed */}
           <div className="flex flex-col items-center text-center">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center mb-1.5"
+            <div className="w-9 h-9 rounded-full flex items-center justify-center mb-2"
               style={{ backgroundColor: "rgba(27, 94, 32, 0.1)" }}>
               <FileText className="w-4 h-4" style={{ color: colors.primary }} />
             </div>
             <p className="text-xs" style={{ color: "#64748b" }}>Documents processed daily</p>
-            <p className="text-lg font-extrabold" style={{ color: "#0f172a" }}>1,000,000+</p>
+            <p className="text-xl font-extrabold" style={{ color: "#0f172a" }}>1,000,000+</p>
           </div>
 
-          {/* Stat 2: Users — like "Amado por 10M+ usuarios" with avatar circles */}
+          {/* Stat 2: Real avatar photos overlapping */}
           <div className="flex flex-col items-center text-center">
-            {/* Avatar group */}
-            <div className="flex -space-x-2 mb-1.5">
-              {["#1B5E20", "#2E7D32", "#388E3C", "#43A047", "#4CAF50"].map((bg, i) => (
-                <div key={i} className="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold text-white"
-                  style={{ backgroundColor: bg }}>
-                  {["MG", "CR", "AL", "JP", "SM"][i]}
-                </div>
-              ))}
+            <div className="flex -space-x-2.5 mb-2">
+              <img src="https://i.pravatar.cc/150?img=1" alt="" className="w-8 h-8 rounded-full border-2 border-white object-cover" />
+              <img src="https://i.pravatar.cc/150?img=5" alt="" className="w-8 h-8 rounded-full border-2 border-white object-cover" />
+              <img src="https://i.pravatar.cc/150?img=3" alt="" className="w-8 h-8 rounded-full border-2 border-white object-cover" />
+              <img src="https://i.pravatar.cc/150?img=8" alt="" className="w-8 h-8 rounded-full border-2 border-white object-cover" />
+              <img src="https://i.pravatar.cc/150?img=12" alt="" className="w-8 h-8 rounded-full border-2 border-white object-cover" />
             </div>
             <p className="text-xs" style={{ color: "#64748b" }}>
               Loved by <span className="font-bold" style={{ color: "#0f172a" }}>2.3M+</span> users
             </p>
           </div>
 
-          {/* Stat 3: Rating — like "Gen AI 2024 Top 50" */}
+          {/* Stat 3: Award with laurel emojis */}
           <div className="flex flex-col items-center text-center">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center mb-1.5"
-              style={{ backgroundColor: "#fef3c7" }}>
-              <Award className="w-4 h-4" style={{ color: "#d97706" }} />
+            <div className="flex items-center gap-0.5 mb-2 text-lg">
+              <span>🌿</span>
+              <span>🏆</span>
+              <span style={{ transform: "scaleX(-1)" }}>🌿</span>
             </div>
             <p className="text-xs" style={{ color: "#64748b" }}>PDF Editor 2024</p>
-            <p className="text-lg font-extrabold" style={{ color: "#0f172a" }}>Top Rated</p>
+            <p className="text-xl font-extrabold" style={{ color: "#0f172a" }}>Top Rated</p>
           </div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════
-          BIG QUOTE — like ChatPDF's "Es como ChatGPT pero para..."
+          BIG QUOTE — with real photo and gray card background
       ═══════════════════════════════════════════════════ */}
-      <section className="py-10 md:py-14" style={{ backgroundColor: "#fafbfc" }}>
+      <section className="py-10 md:py-14" style={{ backgroundColor: "#f8fafc" }}>
         <div className="max-w-2xl mx-auto px-4 text-center">
-          <p className="text-xl md:text-3xl font-bold leading-snug mb-5" style={{ color: "#0f172a" }}>
+          <span className="text-2xl mb-2 inline-block">❤️</span>
+          <p className="text-xl md:text-3xl font-bold leading-snug mb-6" style={{ color: "#0f172a" }}>
             "It's like having a personal{" "}
             <span className="relative inline-block">
               <span style={{ color: colors.primary }}>document studio</span>
               <span className="absolute bottom-0 left-0 w-full rounded-full" style={{ backgroundColor: "#4ade80", height: "4px", opacity: 0.5 }} />
             </span>
-            ,{" "}right in your browser."
+            , right in your browser."
           </p>
-          {/* Author with avatar */}
+          {/* Author with real photo */}
           <div className="flex items-center justify-center gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white"
-              style={{ backgroundColor: colors.primary }}>
-              JL
-            </div>
+            <img
+              src="https://i.pravatar.cc/150?img=11"
+              alt="Javier Lopez"
+              className="w-11 h-11 rounded-full object-cover border-2 border-white"
+              style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
+            />
             <div className="text-left">
               <p className="text-sm font-bold" style={{ color: "#0f172a" }}>Javier Lopez, PhD</p>
               <p className="text-xs" style={{ color: "#94a3b8" }}>@JavierLopezPhD</p>
@@ -304,9 +318,9 @@ export default function LandingTest() {
         <div className="max-w-4xl mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
-              { name: "Maria G.", role: "Marketing", text: "Finally a PDF editor that works in the browser. I use it daily.", initials: "MG" },
-              { name: "Carlos R.", role: "Designer", text: "Word to PDF conversion keeps all formatting perfectly.", initials: "CR" },
-              { name: "Ana M.", role: "Student", text: "I can sign, merge and compress without installing anything.", initials: "AM" },
+              { name: "Maria G.", role: "Marketing", text: "Finally a PDF editor that works in the browser. I use it daily.", avatar: "https://i.pravatar.cc/150?img=32" },
+              { name: "Carlos R.", role: "Designer", text: "Word to PDF conversion keeps all formatting perfectly.", avatar: "https://i.pravatar.cc/150?img=14" },
+              { name: "Ana M.", role: "Student", text: "I can sign, merge and compress without installing anything.", avatar: "https://i.pravatar.cc/150?img=26" },
             ].map((t, i) => (
               <div key={i} className="rounded-xl border p-4 bg-white" style={{ borderColor: "#f1f5f9" }}>
                 <div className="flex gap-0.5 mb-2">
@@ -314,8 +328,7 @@ export default function LandingTest() {
                 </div>
                 <p className="text-xs mb-3 leading-relaxed" style={{ color: "#475569" }}>"{t.text}"</p>
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
-                    style={{ backgroundColor: colors.primary }}>{t.initials}</div>
+                  <img src={t.avatar} alt={t.name} className="w-8 h-8 rounded-full object-cover" />
                   <div>
                     <p className="text-[11px] font-semibold" style={{ color: "#0f172a" }}>{t.name}</p>
                     <p className="text-[10px]" style={{ color: "#94a3b8" }}>{t.role}</p>
