@@ -1,9 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
 import {
-  Upload, FileText, PenTool, Shield, Zap, Lock, Image,
-  Scissors, Minimize2, Merge, RotateCcw, ArrowRight,
-  Star, Users, Globe, ChevronDown, ChevronUp, Type,
+  Upload, FileText, PenTool, Lock, Image,
+  Scissors, Minimize2, Merge, RotateCcw,
+  Star, ChevronDown, ChevronUp, Type, Award,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -13,17 +13,28 @@ import { colors, brandName } from "@/lib/brand";
 
 const ACCEPTED = "application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.html,.txt,.csv";
 
-// ── Tool pills inside the card ──
+// ── Tool pills (like ChatPDF's Chat/Resumen/Detector IA) ──
 const TOOLS = [
-  { key: "edit",     icon: Type,      label: "Edit PDF",  desc: "Modify text, images and pages of any PDF" },
-  { key: "sign",     icon: PenTool,   label: "Sign",      desc: "Add your digital signature to documents" },
-  { key: "convert",  icon: RotateCcw, label: "Convert",   desc: "PDF to Word, Excel, JPG and back" },
-  { key: "compress", icon: Minimize2, label: "Compress",  desc: "Reduce file size up to 70%" },
-  { key: "merge",    icon: Merge,     label: "Merge",     desc: "Combine multiple PDFs into one" },
-  { key: "split",    icon: Scissors,  label: "Split",     desc: "Extract pages from your PDF" },
-  { key: "protect",  icon: Lock,      label: "Protect",   desc: "Password-protect your files" },
-  { key: "images",   icon: Image,     label: "Images",    desc: "JPG, PNG to PDF instantly" },
+  { key: "edit",     icon: Type,      label: "Edit PDF" },
+  { key: "sign",     icon: PenTool,   label: "Sign" },
+  { key: "convert",  icon: RotateCcw, label: "Convert" },
+  { key: "compress", icon: Minimize2, label: "Compress" },
+  { key: "merge",    icon: Merge,     label: "Merge" },
+  { key: "split",    icon: Scissors,  label: "Split" },
+  { key: "images",   icon: Image,     label: "JPG to PDF" },
+  { key: "protect",  icon: Lock,      label: "Protect" },
 ];
+
+const TOOL_DESC: Record<string, string> = {
+  edit: "Edit any PDF, Word, image or document",
+  sign: "Sign any PDF, contract or document",
+  convert: "Convert any PDF, Word, Excel or image",
+  compress: "Compress any PDF, document or file",
+  merge: "Merge any PDF, document or file",
+  split: "Split any PDF into separate pages",
+  images: "Convert any JPG, PNG or image to PDF",
+  protect: "Protect any PDF with password encryption",
+};
 
 const FAQS = [
   { q: "Is my data secure?", a: "Yes. All files are encrypted and automatically deleted after processing. We never store your documents." },
@@ -65,36 +76,33 @@ export default function LandingTest() {
     if (f) openEditor(f);
   };
 
-  const activeTool = TOOLS.find(t => t.key === activeTab)!;
-
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Navbar />
       <input ref={fileRef} type="file" accept={ACCEPTED} className="hidden" onChange={handleFile} />
 
       {/* ═══════════════════════════════════════════════════
-          HERO — ChatPDF style: title + ONE card with everything
+          HERO — Exact ChatPDF structure
       ═══════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #f0fdf4 0%, #ffffff 50%)" }}>
-        <div className="max-w-4xl mx-auto px-4 pt-10 pb-6 md:pt-16 md:pb-10 text-center">
+      <section className="bg-white">
+        <div className="max-w-4xl mx-auto px-4 pt-10 md:pt-16 text-center">
 
-          {/* Title above the card */}
-          <h1 className="text-3xl md:text-5xl lg:text-[3.2rem] font-extrabold leading-[1.12] tracking-tight mb-3"
-            style={{ color: "#0f172a" }}>
+          {/* Title — like "Herramientas de IA de primera clase" */}
+          <h1 className="text-2xl md:text-4xl lg:text-[2.8rem] font-extrabold leading-[1.15] tracking-tight mb-2">
             <span style={{ color: colors.primary }}>Professional PDF tools</span>
-            <br className="hidden md:block" />
-            {" "}for everyone
+            <br />
+            <span style={{ color: "#0f172a" }}>for businesses and individuals</span>
           </h1>
-          <p className="text-sm md:text-base mb-8" style={{ color: "#64748b" }}>
-            Edit, convert, sign, merge, compress — all from your browser
-          </p>
 
-          {/* ═══ THE CARD — contains pills + description + upload ═══ */}
-          <div className="max-w-2xl mx-auto rounded-2xl bg-white overflow-hidden"
-            style={{ boxShadow: "0 4px 40px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04)" }}>
+          {/* ═══ THE MAIN CARD — like ChatPDF's central card ═══ */}
+          <div className="max-w-2xl mx-auto mt-8 rounded-2xl overflow-hidden"
+            style={{
+              backgroundColor: "white",
+              boxShadow: "0 2px 32px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.03)",
+            }}>
 
-            {/* Tool pills row */}
-            <div className="flex flex-wrap justify-center gap-1 px-4 pt-5 pb-3">
+            {/* Tool pills — like Chat | Resumen | Detector IA | ... */}
+            <div className="flex flex-wrap justify-center gap-1 px-3 pt-4 pb-3">
               {TOOLS.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.key;
@@ -102,51 +110,47 @@ export default function LandingTest() {
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all duration-150"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-150"
                     style={{
                       backgroundColor: isActive ? colors.primary : "transparent",
                       color: isActive ? "white" : "#64748b",
-                      border: isActive ? `1px solid ${colors.primary}` : "1px solid transparent",
                     }}
                   >
-                    <Icon className="w-3 h-3" />
+                    <Icon className="w-3.5 h-3.5" />
                     {tab.label}
                   </button>
                 );
               })}
             </div>
 
-            {/* Divider */}
-            <div className="mx-5" style={{ height: "1px", backgroundColor: "#f1f5f9" }} />
-
-            {/* Description + Upload area inside the card */}
-            <div className="px-5 pt-4 pb-5">
-              {/* Tool description */}
-              <p className="text-sm mb-4" style={{ color: "#475569" }}>
-                {activeTool.desc} — drop any{" "}
-                <span className="font-medium" style={{ color: "#0f172a" }}>file</span>,{" "}
-                <span className="font-medium" style={{ color: "#0f172a" }}>image</span> or{" "}
-                <span className="font-medium" style={{ color: "#0f172a" }}>document</span>
+            {/* Subtitle inside card — like "Chatea con cualquier archivo, video o sitio web" */}
+            <div className="px-6 pt-2 pb-4">
+              <p className="text-base md:text-lg font-bold" style={{ color: "#0f172a" }}>
+                {TOOL_DESC[activeTab]}{" "}
+                <span className="inline-block align-middle">📄</span>{" "}
+                <span className="font-bold" style={{ color: "#0f172a" }}>directly in your browser</span>
               </p>
+            </div>
 
-              {/* Upload zone */}
+            {/* Upload zone — like ChatPDF's dashed box with "Suelta un archivo o sube" */}
+            <div className="px-5 pb-5">
               <div
-                className="rounded-xl border-2 border-dashed py-6 px-4 cursor-pointer transition-all duration-150"
+                className="rounded-xl border-2 border-dashed py-5 px-4 cursor-pointer transition-all duration-200"
                 style={{
-                  borderColor: isDragging ? colors.primary : "#e2e8f0",
-                  backgroundColor: isDragging ? "rgba(27, 94, 32, 0.03)" : "#fafbfc",
+                  borderColor: isDragging ? colors.primary : "#e5e7eb",
+                  backgroundColor: isDragging ? "rgba(27, 94, 32, 0.02)" : "white",
                 }}
                 onClick={() => fileRef.current?.click()}
                 onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={handleDrop}
               >
-                <div className="flex flex-col items-center gap-2">
-                  <Upload className="w-5 h-5" style={{ color: "#94a3b8" }} />
-                  <p className="text-xs" style={{ color: "#64748b" }}>
-                    Drop a file or{" "}
-                    <span className="font-semibold" style={{ color: colors.primary }}>browse</span>
-                  </p>
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-sm" style={{ color: "#9ca3af" }}>Drop a file or</span>
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-md text-sm font-medium border"
+                    style={{ borderColor: "#e5e7eb", color: "#374151", backgroundColor: "#fafafa" }}>
+                    browse <Upload className="w-3.5 h-3.5" />
+                  </span>
                 </div>
               </div>
             </div>
@@ -155,68 +159,102 @@ export default function LandingTest() {
       </section>
 
       {/* ═══════════════════════════════════════════════════
-          TRUST LOGOS — like ChatPDF's university row
+          TRUST LOGOS — like Harvard | Cambridge | Oxford | Stanford
       ═══════════════════════════════════════════════════ */}
-      <section className="py-6 md:py-8">
+      <section className="pt-10 pb-4 md:pt-14 md:pb-6">
         <div className="max-w-3xl mx-auto px-4">
-          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-14 opacity-30">
-            {["Google", "Microsoft", "Amazon", "Deloitte", "Accenture"].map((name) => (
-              <span key={name} className="text-base md:text-lg font-bold tracking-tight" style={{ color: "#334155" }}>
-                {name}
-              </span>
+          <div className="flex flex-wrap items-center justify-center gap-3 md:gap-4">
+            {[
+              { name: "Google", sub: "" },
+              { name: "Microsoft", sub: "" },
+              { name: "Amazon", sub: "" },
+              { name: "Deloitte", sub: "" },
+            ].map((logo) => (
+              <div key={logo.name}
+                className="flex items-center gap-2 px-5 py-3 rounded-xl border"
+                style={{ borderColor: "#f1f5f9", backgroundColor: "white" }}>
+                {/* Simple text logo — professional look */}
+                <div className="w-8 h-8 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: "#f1f5f9" }}>
+                  <span className="text-xs font-bold" style={{ color: "#94a3b8" }}>
+                    {logo.name[0]}
+                  </span>
+                </div>
+                <span className="text-sm font-bold tracking-tight" style={{ color: "#475569" }}>
+                  {logo.name}
+                </span>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════
-          STATS — like ChatPDF's row
+          STATS — like ChatPDF's "Preguntas respondidas 1,000,000+" row
       ═══════════════════════════════════════════════════ */}
-      <section className="py-4 md:py-6">
-        <div className="max-w-3xl mx-auto px-4 flex flex-wrap justify-center gap-10 md:gap-16">
-          {[
-            { icon: FileText, value: "1,000,000+", label: "Documents per day" },
-            { icon: Users, value: "2.3M+", label: "Users worldwide" },
-            { icon: Star, value: "4.8/5", label: "Average rating" },
-          ].map((s, i) => {
-            const Icon = s.icon;
-            return (
-              <div key={i} className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: "rgba(27, 94, 32, 0.08)" }}>
-                  <Icon className="w-4 h-4" style={{ color: colors.primary }} />
+      <section className="py-6 md:py-8">
+        <div className="max-w-3xl mx-auto px-4 flex flex-wrap items-center justify-center gap-8 md:gap-12">
+
+          {/* Stat 1: Documents processed — like "Preguntas respondidas al día" */}
+          <div className="flex flex-col items-center text-center">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center mb-1.5"
+              style={{ backgroundColor: "rgba(27, 94, 32, 0.1)" }}>
+              <FileText className="w-4 h-4" style={{ color: colors.primary }} />
+            </div>
+            <p className="text-xs" style={{ color: "#64748b" }}>Documents processed daily</p>
+            <p className="text-lg font-extrabold" style={{ color: "#0f172a" }}>1,000,000+</p>
+          </div>
+
+          {/* Stat 2: Users — like "Amado por 10M+ usuarios" with avatar circles */}
+          <div className="flex flex-col items-center text-center">
+            {/* Avatar group */}
+            <div className="flex -space-x-2 mb-1.5">
+              {["#1B5E20", "#2E7D32", "#388E3C", "#43A047", "#4CAF50"].map((bg, i) => (
+                <div key={i} className="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold text-white"
+                  style={{ backgroundColor: bg }}>
+                  {["MG", "CR", "AL", "JP", "SM"][i]}
                 </div>
-                <div>
-                  <p className="text-base font-extrabold leading-tight" style={{ color: "#0f172a" }}>{s.value}</p>
-                  <p className="text-[11px]" style={{ color: "#94a3b8" }}>{s.label}</p>
-                </div>
-              </div>
-            );
-          })}
+              ))}
+            </div>
+            <p className="text-xs" style={{ color: "#64748b" }}>
+              Loved by <span className="font-bold" style={{ color: "#0f172a" }}>2.3M+</span> users
+            </p>
+          </div>
+
+          {/* Stat 3: Rating — like "Gen AI 2024 Top 50" */}
+          <div className="flex flex-col items-center text-center">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center mb-1.5"
+              style={{ backgroundColor: "#fef3c7" }}>
+              <Award className="w-4 h-4" style={{ color: "#d97706" }} />
+            </div>
+            <p className="text-xs" style={{ color: "#64748b" }}>PDF Editor 2024</p>
+            <p className="text-lg font-extrabold" style={{ color: "#0f172a" }}>Top Rated</p>
+          </div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════
-          BIG QUOTE — like ChatPDF's "It's like ChatGPT..."
+          BIG QUOTE — like ChatPDF's "Es como ChatGPT pero para..."
       ═══════════════════════════════════════════════════ */}
-      <section className="py-12 md:py-16">
+      <section className="py-10 md:py-14" style={{ backgroundColor: "#fafbfc" }}>
         <div className="max-w-2xl mx-auto px-4 text-center">
           <p className="text-xl md:text-3xl font-bold leading-snug mb-5" style={{ color: "#0f172a" }}>
-            "It's like having a{" "}
+            "It's like having a personal{" "}
             <span className="relative inline-block">
-              <span style={{ color: colors.primary }}>professional design studio</span>
-              <span className="absolute bottom-0 left-0 w-full rounded-full" style={{ backgroundColor: "#4ade80", height: "4px", opacity: 0.4 }} />
+              <span style={{ color: colors.primary }}>document studio</span>
+              <span className="absolute bottom-0 left-0 w-full rounded-full" style={{ backgroundColor: "#4ade80", height: "4px", opacity: 0.5 }} />
             </span>
-            {" "}for all your documents."
+            ,{" "}right in your browser."
           </p>
+          {/* Author with avatar */}
           <div className="flex items-center justify-center gap-3">
             <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white"
               style={{ backgroundColor: colors.primary }}>
               JL
             </div>
             <div className="text-left">
-              <p className="text-sm font-semibold" style={{ color: "#0f172a" }}>Javier Lopez</p>
-              <p className="text-xs" style={{ color: "#94a3b8" }}>Operations Manager</p>
+              <p className="text-sm font-bold" style={{ color: "#0f172a" }}>Javier Lopez, PhD</p>
+              <p className="text-xs" style={{ color: "#94a3b8" }}>@JavierLopezPhD</p>
             </div>
           </div>
         </div>
@@ -225,7 +263,7 @@ export default function LandingTest() {
       {/* ═══════════════════════════════════════════════════
           FEATURES GRID
       ═══════════════════════════════════════════════════ */}
-      <section className="py-12 md:py-16" style={{ backgroundColor: "#fafbfc" }}>
+      <section className="py-12 md:py-16 bg-white">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="text-2xl md:text-3xl font-bold text-center mb-8" style={{ color: "#0f172a" }}>
             Everything you need for your{" "}
@@ -234,11 +272,11 @@ export default function LandingTest() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { icon: Type, title: "Edit text & images", desc: "Modify content directly in PDF" },
-              { icon: PenTool, title: "Sign documents", desc: "Digital signatures in seconds" },
+              { icon: Type, title: "Edit text & images", desc: "Modify content directly" },
+              { icon: PenTool, title: "Sign documents", desc: "Digital signatures" },
               { icon: RotateCcw, title: "Convert formats", desc: "PDF, Word, Excel, JPG" },
               { icon: Minimize2, title: "Compress files", desc: "Up to 70% smaller" },
-              { icon: Merge, title: "Merge PDFs", desc: "Combine into one file" },
+              { icon: Merge, title: "Merge PDFs", desc: "Combine into one" },
               { icon: Scissors, title: "Split pages", desc: "Extract any pages" },
               { icon: Lock, title: "Protect files", desc: "Password encryption" },
               { icon: Image, title: "Image to PDF", desc: "JPG, PNG to PDF" },
@@ -246,7 +284,7 @@ export default function LandingTest() {
               const Icon = f.icon;
               return (
                 <div key={i}
-                  className="rounded-xl border p-4 bg-white cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5"
+                  className="rounded-xl border p-4 cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5"
                   style={{ borderColor: "#f1f5f9" }}
                   onClick={() => fileRef.current?.click()}>
                   <Icon className="w-5 h-5 mb-2" style={{ color: colors.primary }} />
@@ -262,15 +300,15 @@ export default function LandingTest() {
       {/* ═══════════════════════════════════════════════════
           TESTIMONIALS
       ═══════════════════════════════════════════════════ */}
-      <section className="py-12 md:py-16 bg-white">
+      <section className="py-12 md:py-16" style={{ backgroundColor: "#fafbfc" }}>
         <div className="max-w-4xl mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
               { name: "Maria G.", role: "Marketing", text: "Finally a PDF editor that works in the browser. I use it daily.", initials: "MG" },
-              { name: "Carlos R.", role: "Designer", text: "Word to PDF conversion keeps all my formatting perfectly.", initials: "CR" },
+              { name: "Carlos R.", role: "Designer", text: "Word to PDF conversion keeps all formatting perfectly.", initials: "CR" },
               { name: "Ana M.", role: "Student", text: "I can sign, merge and compress without installing anything.", initials: "AM" },
             ].map((t, i) => (
-              <div key={i} className="rounded-xl border p-4" style={{ borderColor: "#f1f5f9" }}>
+              <div key={i} className="rounded-xl border p-4 bg-white" style={{ borderColor: "#f1f5f9" }}>
                 <div className="flex gap-0.5 mb-2">
                   {[...Array(5)].map((_, j) => <Star key={j} className="w-3 h-3 fill-current" style={{ color: "#facc15" }} />)}
                 </div>
@@ -292,12 +330,12 @@ export default function LandingTest() {
       {/* ═══════════════════════════════════════════════════
           FAQ
       ═══════════════════════════════════════════════════ */}
-      <section className="py-12 md:py-16" style={{ backgroundColor: "#fafbfc" }}>
+      <section className="py-12 md:py-16 bg-white">
         <div className="max-w-2xl mx-auto px-4">
           <h2 className="text-2xl md:text-3xl font-bold text-center mb-6" style={{ color: "#0f172a" }}>FAQ</h2>
           <div className="flex flex-col gap-2">
             {FAQS.map((faq, i) => (
-              <div key={i} className="rounded-xl border overflow-hidden bg-white" style={{ borderColor: "#f1f5f9" }}>
+              <div key={i} className="rounded-xl border overflow-hidden" style={{ borderColor: "#f1f5f9" }}>
                 <button className="w-full flex items-center justify-between p-4 text-left"
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}>
                   <span className="text-sm font-semibold" style={{ color: "#0f172a" }}>{faq.q}</span>
@@ -319,7 +357,7 @@ export default function LandingTest() {
       {/* ═══════════════════════════════════════════════════
           BOTTOM CTA
       ═══════════════════════════════════════════════════ */}
-      <section className="py-12 md:py-16 bg-white">
+      <section className="py-12 md:py-16" style={{ backgroundColor: "#fafbfc" }}>
         <div className="max-w-2xl mx-auto px-4 text-center">
           <h2 className="text-2xl md:text-3xl font-bold mb-3" style={{ color: "#0f172a" }}>
             Ready to get started?
