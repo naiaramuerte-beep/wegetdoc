@@ -24,13 +24,13 @@ const ACCEPTED_MIME_TYPES = new Set([
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.ms-powerpoint',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'text/html', 'text/plain',
+  'text/html', 'text/plain', 'text/csv',
   'application/octet-stream',
 ]);
 
 const ACCEPTED_EXTENSIONS = new Set([
   '.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff',
-  '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.html', '.txt',
+  '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.html', '.txt', '.csv',
 ]);
 
 /* Inline SVG logo — EditorPDF cloud icon */
@@ -118,7 +118,7 @@ function EditorUploadZone({ lang }: { lang: string }) {
           {/* Upload zone */}
           <div className="max-w-lg mx-auto">
             <input ref={fileInputRef} type="file"
-              accept="application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.html,.txt"
+              accept="application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.html,.txt,.csv"
               className="hidden" onChange={handleFileInput} />
 
             <div

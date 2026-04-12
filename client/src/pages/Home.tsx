@@ -30,13 +30,13 @@ const ACCEPTED_MIME_TYPES = new Set([
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.ms-powerpoint',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'text/html', 'text/plain',
+  'text/html', 'text/plain', 'text/csv',
   'application/octet-stream',
 ]);
 
 const ACCEPTED_EXTENSIONS = new Set([
   '.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff',
-  '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.html', '.txt',
+  '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.html', '.txt', '.csv',
 ]);
 
 // ─── Design tokens ───────────────────────────────────────────
@@ -218,7 +218,7 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
       <input
         ref={fileInputRef}
         type="file"
-        accept="application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.html,.txt"
+        accept="application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.html,.txt,.csv"
         className="hidden"
         onChange={handleFileInput}
       />

@@ -2319,7 +2319,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           <Upload className="w-4 h-4 inline mr-2" />{t.hero_upload_btn}
         </button>
         <p className="text-xs mt-3" style={{ color: "#94a3b8" }}>{t.hero_max_size}</p>
-        <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.html,.txt" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+        <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.html,.txt,.csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
       </div>
     );
   }
