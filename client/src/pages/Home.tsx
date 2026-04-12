@@ -379,7 +379,7 @@ export default function Home() {
               className="text-3xl md:text-4xl font-bold mb-3"
               style={{ color: TEXT_MAIN }}
             >
-              {t.tools_title}
+              {highlightWords(t.tools_title, ["complete toolkit", "Todas las utilidades", "suite complète", "Alle PDF-Funktionen", "kit completo", "Un kit completo", "Alle professionele", "Kompletny zestaw", "Весь арсенал", "完整的专业"])}
             </h2>
             <p className="text-base max-w-lg mx-auto" style={{ color: TEXT_MUTED }}>
               {t.tools_subtitle}
