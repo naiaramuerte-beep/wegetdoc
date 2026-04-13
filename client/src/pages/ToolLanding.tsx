@@ -32,6 +32,10 @@ export const TOOL_LANDINGS: ToolDef[] = [
   { slug: "word-to-pdf",    editorTool: "word-to-pdf",   i18nPrefix: "landing_word2pdf",    icon: FileText,        accentHue: 220, acceptExtra: ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
   { slug: "split-pdf",      editorTool: "split",         i18nPrefix: "landing_split",       icon: Scissors,        accentHue: 15 },
   { slug: "pdf-converter",  editorTool: "convert-word",  i18nPrefix: "landing_converter",   icon: RotateCcw,       accentHue: 264 },
+  { slug: "image-to-pdf",  editorTool: "jpg-to-pdf",    i18nPrefix: "landing_img2pdf",     icon: ImageIcon,       accentHue: 290, acceptExtra: "image/jpeg,image/png,image/webp,image/gif,image/bmp" },
+  { slug: "png-to-pdf",    editorTool: "jpg-to-pdf",    i18nPrefix: "landing_png2pdf",     icon: ImageIcon,       accentHue: 180, acceptExtra: "image/png,image/webp" },
+  { slug: "jpeg-to-pdf",   editorTool: "jpg-to-pdf",    i18nPrefix: "landing_jpeg2pdf",    icon: ImageIcon,       accentHue: 350, acceptExtra: "image/jpeg" },
+  { slug: "docx-to-pdf",   editorTool: "word-to-pdf",   i18nPrefix: "landing_docx2pdf",    icon: FileText,        accentHue: 210, acceptExtra: ".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
 ];
 
 // ── Component ───────────────────────────────────────────────────

@@ -116,13 +116,13 @@ function Router() {
       {/* Tool landing pages — language-prefixed */}
       {LANGUAGES.map(({ code }) =>
         TOOL_LANDINGS.map(tool => (
-          <Route key={`${code}-${tool.slug}`} path={`/${code}/${tool.slug}/online`} component={() => <ToolLanding tool={tool} />} />
+          <Route key={`${code}-${tool.slug}`} path={`/${code}/${tool.slug}`} component={() => <ToolLanding tool={tool} />} />
         ))
       )}
 
       {/* Tool landing redirects without lang prefix */}
       {TOOL_LANDINGS.map(tool => (
-        <Route key={`redirect-${tool.slug}`} path={`/${tool.slug}/online`} component={() => <Redirect to={`/en/${tool.slug}/online`} />} />
+        <Route key={`redirect-${tool.slug}`} path={`/${tool.slug}`} component={() => <Redirect to={`/en/${tool.slug}`} />} />
       ))}
 
       {/* Test landing page */}
