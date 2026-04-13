@@ -1379,28 +1379,26 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    // Use createImageBitmap to auto-apply EXIF orientation (fixes mobile rotation)
-    const url = URL.createObjectURL(f);
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(img, 0, 0);
-      const dataUrl = canvas.toDataURL("image/png");
-      URL.revokeObjectURL(url);
-      const aspect = img.naturalWidth / img.naturalHeight;
-      const w = 200;
-      const h = Math.round(w / aspect);
-      addAnnotation({
-        type: "image", dataUrl,
-        x: 80, y: 80, width: w, height: h, page: currentPage, rotation: 0,
-      });
-      toast.success(t.editor_toast_image_added ?? "Image added. Drag it to position.");
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const aspect = img.naturalWidth / img.naturalHeight;
+        const w = 200;
+        const h = Math.round(w / aspect);
+        addAnnotation({
+          type: "image", dataUrl,
+          x: 80, y: 80, width: w, height: h, page: currentPage, rotation: 0,
+        });
+        toast.success(t.editor_toast_image_added ?? "Image added. Drag it to position.");
+      };
+      img.onerror = () => {
+        toast.error("Error loading image");
+      };
+      img.src = dataUrl;
     };
-    img.src = url;
-    // Keep image tool active
+    reader.readAsDataURL(f);
   };
   // ── Add shapee ─────────────────────────────────────────────────
   const placeShape = () => {
