@@ -406,6 +406,7 @@ export type TranslationKeys = {
   editor_find: string;
   editor_protect: string;
   editor_compress: string;
+  editor_split: string;
   editor_move: string;
   editor_notes: string;
   editor_download: string;
@@ -971,6 +972,7 @@ export const translations: Translations = {
     editor_find: "Buscar",
     editor_protect: "Bloquear",
     editor_compress: "Reducir",
+    editor_split: "Dividir",
     editor_move: "Desplazar",
     editor_notes: "Notas",
     editor_download: "Descargar",
@@ -1862,6 +1864,7 @@ export const translations: Translations = {
     editor_find: "Find",
     editor_protect: "Encrypt",
     editor_compress: "Compress",
+    editor_split: "Split",
     editor_move: "Reposition",
     editor_notes: "Notes",
     editor_download: "Download",
@@ -2753,6 +2756,7 @@ export const translations: Translations = {
     editor_find: "Chercher",
     editor_protect: "Protéger",
     editor_compress: "Compresser",
+    editor_split: "Diviser",
     editor_move: "Déplacer",
     editor_notes: "Notes",
     editor_download: "Obtenir le fichier",
@@ -3360,6 +3364,7 @@ export const translations: Translations = {
     editor_find: "Suchen",
     editor_protect: "Schützen",
     editor_compress: "Komprimieren",
+    editor_split: "Teilen",
     editor_move: "Verschieben",
     editor_notes: "Notizen",
     editor_download: "Herunterladen",
@@ -3967,6 +3972,7 @@ export const translations: Translations = {
     editor_find: "Buscar",
     editor_protect: "Proteger",
     editor_compress: "Comprimir",
+    editor_split: "Dividir",
     editor_move: "Mover",
     editor_notes: "Notas",
     editor_download: "Baixar",
@@ -4574,6 +4580,7 @@ export const translations: Translations = {
     editor_find: "Cerca",
     editor_protect: "Proteggi",
     editor_compress: "Comprimi",
+    editor_split: "Dividere",
     editor_move: "Sposta",
     editor_notes: "Note",
     editor_download: "Scarica",
@@ -5181,6 +5188,7 @@ export const translations: Translations = {
     editor_find: "Zoeken",
     editor_protect: "Beveiligen",
     editor_compress: "Comprimeren",
+    editor_split: "Splitsen",
     editor_move: "Verplaatsen",
     editor_notes: "Notities",
     editor_download: "Downloaden",
@@ -5788,6 +5796,7 @@ export const translations: Translations = {
     editor_find: "Znajdź",
     editor_protect: "Chroń",
     editor_compress: "Kompresuj",
+    editor_split: "Podziel",
     editor_move: "Przesuń",
     editor_notes: "Notatki",
     editor_download: "Pobierz",
@@ -6395,6 +6404,7 @@ export const translations: Translations = {
     editor_find: "Найти",
     editor_protect: "Защитить",
     editor_compress: "Сжать",
+    editor_split: "Разделить",
     editor_move: "Переместить",
     editor_notes: "Заметки",
     editor_download: "Скачать",
@@ -7002,6 +7012,7 @@ export const translations: Translations = {
     editor_find: "查找",
     editor_protect: "保护",
     editor_compress: "压缩",
+    editor_split: "拆分",
     editor_move: "移动",
     editor_notes: "备注",
     editor_download: "下载",

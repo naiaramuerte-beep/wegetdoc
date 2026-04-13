@@ -87,7 +87,7 @@ type ToolName =
   | "eraser" | "brush" | "image" | "shapes" | "find"
   | "protect" | "compress" | "move" | "notes" | "none"
   | "convert-jpg" | "convert-png" | "convert-word" | "convert-excel" | "convert-ppt" | "convert-html"
-  | "word-to-pdf" | "excel-to-pdf" | "ppt-to-pdf" | "jpg-to-pdf" | "png-to-pdf" | "merge";
+  | "word-to-pdf" | "excel-to-pdf" | "ppt-to-pdf" | "jpg-to-pdf" | "png-to-pdf" | "merge" | "split";
 
 interface NativeTextBlock {
   id: string;
@@ -2892,19 +2892,24 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 <input type="file" accept=".pdf" multiple className="hidden" onChange={mergePdfs} />
               </label>
             </div>
-            {totalPages > 1 && (
-              <div className="border-t pt-3" style={{ borderColor: "#f1f5f9" }}>
-                <p className="text-xs font-medium mb-2" style={{ color: "#2E4A2E" }}>{t.editor_panel_split_at_page}</p>
-                <div className="flex gap-2 items-center">
-                  <input type="number" min={1} max={totalPages - 1} defaultValue={Math.floor(totalPages / 2)} id="splitAt" className="w-16 border rounded px-2 py-1 text-xs" style={{ borderColor: "#cbd5e1" }} />
-                  <button onClick={() => {
-                    const v = Number((document.getElementById("splitAt") as HTMLInputElement).value);
-                    splitPdf(v);
-                  }} className="flex-1 py-1.5 rounded text-xs text-white" style={{ backgroundColor: "#1B5E20" }}>
-                    <Scissors className="w-3 h-3 inline mr-1" />{t.editor_panel_split_btn}
-                  </button>
-                </div>
+          </div>
+        );
+      case "split":
+        return (
+          <div className="p-4 flex flex-col gap-3">
+            <h3 className="font-semibold text-sm" style={{ color: "#0f172a" }}>{t.editor_panel_split_at_page}</h3>
+            {totalPages > 1 ? (
+              <div className="flex gap-2 items-center">
+                <input type="number" min={1} max={totalPages - 1} defaultValue={Math.floor(totalPages / 2)} id="splitAt" className="w-16 border rounded px-2 py-1 text-xs" style={{ borderColor: "#cbd5e1" }} />
+                <button onClick={() => {
+                  const v = Number((document.getElementById("splitAt") as HTMLInputElement).value);
+                  splitPdf(v);
+                }} className="flex-1 py-1.5 rounded text-xs text-white" style={{ backgroundColor: "#1B5E20" }}>
+                  <Scissors className="w-3 h-3 inline mr-1" />{t.editor_panel_split_btn}
+                </button>
               </div>
+            ) : (
+              <p className="text-xs" style={{ color: "#64748b" }}>{(t as any).editor_panel_split_need_pages ?? "The PDF needs at least 2 pages to split."}</p>
             )}
           </div>
         );
@@ -3325,6 +3330,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             { id: "find" as ToolName, icon: Search, label: t.editor_find },
             { id: "protect" as ToolName, icon: Shield, label: t.editor_protect },
             { id: "compress" as ToolName, icon: Minimize2, label: t.editor_compress },
+            { id: "split" as ToolName, icon: Scissors, label: (t as any).editor_split ?? "Split" },
             { id: "move" as ToolName, icon: Move, label: t.editor_move },
             { id: "notes" as ToolName, icon: StickyNote, label: t.editor_notes },
           ].map(({ id, icon, label }) => (
@@ -4003,6 +4009,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             { id: "find" as ToolName, icon: Search, label: t.editor_find },
             { id: "protect" as ToolName, icon: Shield, label: t.editor_protect },
             { id: "compress" as ToolName, icon: Minimize2, label: t.editor_compress },
+            { id: "split" as ToolName, icon: Scissors, label: (t as any).editor_split ?? "Split" },
           ].map(({ id, icon: Icon, label }) => (
             <button
               key={id}
