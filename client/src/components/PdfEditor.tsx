@@ -3028,6 +3028,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   </span>
                 )}
               </div>
+            ) : convertedFromFile?.type.startsWith("image/") ? (
+              <div className="text-xs p-3 rounded-lg" style={{ backgroundColor: "#FFF3E0", color: "#E65100" }}>
+                <p className="font-semibold mb-1">{(t as any).editor_image_no_text_title ?? "This image has no editable text"}</p>
+                <p>{(t as any).editor_image_no_text_desc ?? "Images and scanned PDFs don't contain text layers. Use 'Add Text' to place new text on top of the image."}</p>
+              </div>
             ) : (
               <div className="text-xs p-2 rounded" style={{ backgroundColor: "#ffffff", color: "#94a3b8" }}>
                 {t.editor_loading_text_blocks}
@@ -3296,7 +3301,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               </p>
               <p className="text-xs truncate" style={{ color: "#2E7D32" }}>
                 {convertedFromFile.type.startsWith("image/")
-                  ? (t.editor_image_converted_desc ?? `"${convertedFromFile.name}" se ha convertido a PDF automáticamente. Ya puedes editarlo y descargarlo directamente.`)
+                  ? ((t as any).editor_image_converted_desc_v2 ?? `"${convertedFromFile.name}" se ha convertido a PDF. Puedes añadir texto, firmas e imágenes encima, pero no editar el texto original de la imagen.`)
                   : (t.editor_file_converted_desc ?? `"${convertedFromFile.name}" se ha convertido a PDF automáticamente. Ya puedes editarlo y descargarlo.`)}
               </p>
             </div>
