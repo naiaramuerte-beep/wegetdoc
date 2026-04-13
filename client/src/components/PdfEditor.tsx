@@ -3028,14 +3028,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   </span>
                 )}
               </div>
-            ) : convertedFromFile?.type.startsWith("image/") ? (
-              <div className="text-xs p-3 rounded-lg" style={{ backgroundColor: "#FFF3E0", color: "#E65100" }}>
-                <p className="font-semibold mb-1">{(t as any).editor_image_no_text_title ?? "This image has no editable text"}</p>
-                <p>{(t as any).editor_image_no_text_desc ?? "Images and scanned PDFs don't contain text layers. Use 'Add Text' to place new text on top of the image."}</p>
-              </div>
             ) : (
-              <div className="text-xs p-2 rounded" style={{ backgroundColor: "#ffffff", color: "#94a3b8" }}>
-                {t.editor_loading_text_blocks}
+              <div className="text-xs p-3 rounded-lg" style={{ backgroundColor: "#FFF3E0", color: "#E65100" }}>
+                <p className="font-semibold mb-1">{(t as any).editor_image_no_text_title ?? "This page has no editable text"}</p>
+                <p>{(t as any).editor_image_no_text_desc ?? "This page may be a scanned image. Use 'Add Text' to place new text on top."}</p>
               </div>
             )}
             {/* Instruction when a block is selected */}
