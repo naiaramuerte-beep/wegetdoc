@@ -1861,7 +1861,7 @@ export const translations: Translations = {
     editor_shapes: "Shapes",
     editor_find: "Find",
     editor_protect: "Encrypt",
-    editor_compress: "Optimize",
+    editor_compress: "Compress",
     editor_move: "Reposition",
     editor_notes: "Notes",
     editor_download: "Download",
