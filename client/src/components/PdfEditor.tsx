@@ -2885,13 +2885,16 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 <button onClick={() => convertAllToImages("jpg")} className="flex-1 py-1.5 rounded text-xs border" style={{ borderColor: "#cbd5e1", color: "#64748b" }}>{t.editor_panel_export_all} JPG</button>
               </div>
             </div>
-            <div className="border-t pt-3" style={{ borderColor: "#f1f5f9" }}>
-              <p className="text-xs font-medium mb-2" style={{ color: "#2E4A2E" }}>{t.editor_panel_merge_with_pdf}</p>
-              <label className="flex items-center gap-2 py-2 px-3 rounded border cursor-pointer text-xs" style={{ borderColor: "#cbd5e1", color: "#64748b" }}>
-                <Layers className="w-3 h-3" />{t.editor_panel_select_pdfs}
-                <input type="file" accept=".pdf" multiple className="hidden" onChange={mergePdfs} />
-              </label>
-            </div>
+          </div>
+        );
+      case "merge":
+        return (
+          <div className="p-4 flex flex-col gap-3">
+            <h3 className="font-semibold text-sm" style={{ color: "#0f172a" }}>{t.editor_panel_merge_with_pdf}</h3>
+            <label className="flex items-center gap-2 py-2 px-3 rounded border cursor-pointer text-xs" style={{ borderColor: "#cbd5e1", color: "#64748b" }}>
+              <Layers className="w-3 h-3" />{t.editor_panel_select_pdfs}
+              <input type="file" accept=".pdf" multiple className="hidden" onChange={mergePdfs} />
+            </label>
           </div>
         );
       case "split":
@@ -3330,6 +3333,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             { id: "find" as ToolName, icon: Search, label: t.editor_find },
             { id: "protect" as ToolName, icon: Shield, label: t.editor_protect },
             { id: "compress" as ToolName, icon: Minimize2, label: t.editor_compress },
+            { id: "merge" as ToolName, icon: Layers, label: (t as any).editor_merge ?? "Merge" },
             { id: "split" as ToolName, icon: Scissors, label: (t as any).editor_split ?? "Split" },
             { id: "move" as ToolName, icon: Move, label: t.editor_move },
             { id: "notes" as ToolName, icon: StickyNote, label: t.editor_notes },
@@ -4009,6 +4013,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             { id: "find" as ToolName, icon: Search, label: t.editor_find },
             { id: "protect" as ToolName, icon: Shield, label: t.editor_protect },
             { id: "compress" as ToolName, icon: Minimize2, label: t.editor_compress },
+            { id: "merge" as ToolName, icon: Layers, label: (t as any).editor_merge ?? "Merge" },
             { id: "split" as ToolName, icon: Scissors, label: (t as any).editor_split ?? "Split" },
           ].map(({ id, icon: Icon, label }) => (
             <button

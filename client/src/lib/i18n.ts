@@ -407,6 +407,7 @@ export type TranslationKeys = {
   editor_protect: string;
   editor_compress: string;
   editor_split: string;
+  editor_merge: string;
   editor_move: string;
   editor_notes: string;
   editor_download: string;
@@ -973,6 +974,7 @@ export const translations: Translations = {
     editor_protect: "Bloquear",
     editor_compress: "Reducir",
     editor_split: "Dividir",
+    editor_merge: "Unir",
     editor_move: "Desplazar",
     editor_notes: "Notas",
     editor_download: "Descargar",
@@ -1866,6 +1868,7 @@ export const translations: Translations = {
     editor_compress: "Compress",
     editor_split: "Split",
     editor_move: "Reposition",
+    editor_merge: "Merge",
     editor_notes: "Notes",
     editor_download: "Download",
     editor_undo: "Undo",
@@ -2758,6 +2761,7 @@ export const translations: Translations = {
     editor_compress: "Compresser",
     editor_split: "Diviser",
     editor_move: "Déplacer",
+    editor_merge: "Fusionner",
     editor_notes: "Notes",
     editor_download: "Obtenir le fichier",
     editor_undo: "Annuler",
@@ -3366,6 +3370,7 @@ export const translations: Translations = {
     editor_compress: "Komprimieren",
     editor_split: "Teilen",
     editor_move: "Verschieben",
+    editor_merge: "Zusammenführen",
     editor_notes: "Notizen",
     editor_download: "Herunterladen",
     editor_undo: "Rückgängig",
@@ -3974,6 +3979,7 @@ export const translations: Translations = {
     editor_compress: "Comprimir",
     editor_split: "Dividir",
     editor_move: "Mover",
+    editor_merge: "Unir",
     editor_notes: "Notas",
     editor_download: "Baixar",
     editor_undo: "Desfazer",
@@ -4582,6 +4588,7 @@ export const translations: Translations = {
     editor_compress: "Comprimi",
     editor_split: "Dividere",
     editor_move: "Sposta",
+    editor_merge: "Unire",
     editor_notes: "Note",
     editor_download: "Scarica",
     editor_undo: "Annulla",
@@ -5190,6 +5197,7 @@ export const translations: Translations = {
     editor_compress: "Comprimeren",
     editor_split: "Splitsen",
     editor_move: "Verplaatsen",
+    editor_merge: "Samenvoegen",
     editor_notes: "Notities",
     editor_download: "Downloaden",
     editor_undo: "Ongedaan maken",
@@ -5798,6 +5806,7 @@ export const translations: Translations = {
     editor_compress: "Kompresuj",
     editor_split: "Podziel",
     editor_move: "Przesuń",
+    editor_merge: "Połącz",
     editor_notes: "Notatki",
     editor_download: "Pobierz",
     editor_undo: "Cofnij",
@@ -6406,6 +6415,7 @@ export const translations: Translations = {
     editor_compress: "Сжать",
     editor_split: "Разделить",
     editor_move: "Переместить",
+    editor_merge: "Объединить",
     editor_notes: "Заметки",
     editor_download: "Скачать",
     editor_undo: "Отменить",
@@ -7014,6 +7024,7 @@ export const translations: Translations = {
     editor_compress: "压缩",
     editor_split: "拆分",
     editor_move: "移动",
+    editor_merge: "合并",
     editor_notes: "备注",
     editor_download: "下载",
     editor_undo: "撤销",
