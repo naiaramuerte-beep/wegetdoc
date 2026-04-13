@@ -107,6 +107,7 @@ interface NativeTextBlock {
   pageHeight: number; // page height in PDF points
   page: number; // 1-indexed page number
   fontColor?: string; // hex color e.g. "#000000"
+  fontFamily?: string; // CSS font-family from pdf.js styles
 }
 
 interface Annotation {
@@ -747,6 +748,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const vp = page.getViewport({ scale });
     const content = await page.getTextContent();
     const blocks: NativeTextBlock[] = [];
+    const styles = (content as any).styles ?? {};
     for (const item of content.items as any[]) {
       if (!item.str || !item.str.trim()) continue;
       // item.transform = [a, b, c, d, e, f] where (e,f) is bottom-left in PDF points (from bottom)
@@ -754,6 +756,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const pdfFontSize = Math.sqrt(a * a + b * b); // font size in PDF points
       const pdfPageHeight = vp.height / scale; // page height in PDF points
       const pdfWidth = item.width ?? item.str.length * pdfFontSize * 0.6;
+      // Font family from pdf.js styles
+      const fontFamily = styles[item.fontName]?.fontFamily || "sans-serif";
       // Canvas pixel coords (for overlay display)
       // PDF y is from bottom; canvas y is from top
       const canvasX = e * scale;
@@ -776,6 +780,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         pdfFontSize: Math.max(pdfFontSize, 6),
         pageHeight: pdfPageHeight,
         page: pageNum,
+        fontFamily,
       });
     }
     // Only set blocks for this page if not already loaded (preserve existing edits)
@@ -3799,22 +3804,21 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     position: "absolute",
                     left: block.x,
                     top: block.y,
-                    width: block.width,
-                    height: block.height,
+                    minWidth: block.width,
+                    minHeight: block.height,
                     backgroundColor: "rgba(255,255,255,1)",
                     display: "flex",
                     alignItems: "center",
                     zIndex: 5,
                     pointerEvents: "none",
                     boxSizing: "border-box",
-                    overflow: "hidden",
                   }}
                 >
                   <span style={{
                     fontSize: block.fontSize,
-                    fontFamily: "sans-serif",
+                    fontFamily: block.fontFamily || "sans-serif",
                     color: block.fontColor || "#000",
-                    whiteSpace: "pre-wrap",
+                    whiteSpace: "nowrap",
                     lineHeight: 1,
                   }}>
                     {block.editedStr}
