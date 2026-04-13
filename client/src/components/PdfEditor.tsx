@@ -3792,7 +3792,37 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   </div>
                 ))}
               </div>
-              {/* Native text blocks overlay — only visible when edit-text tool is active */}
+              {/* Edited text blocks — always visible to cover original PDF text */}
+              {activeTool !== "edit-text" && nativeTextBlocks.filter(b => b.editedStr !== undefined).map(block => (
+                <div
+                  key={`edited-${block.id}`}
+                  style={{
+                    position: "absolute",
+                    left: block.x,
+                    top: block.y,
+                    width: block.width,
+                    height: block.height,
+                    backgroundColor: "rgba(255,255,255,1)",
+                    display: "flex",
+                    alignItems: "center",
+                    zIndex: 5,
+                    pointerEvents: "none",
+                    boxSizing: "border-box",
+                    overflow: "hidden",
+                  }}
+                >
+                  <span style={{
+                    fontSize: block.fontSize,
+                    fontFamily: "sans-serif",
+                    color: block.fontColor || "#000",
+                    whiteSpace: "pre-wrap",
+                    lineHeight: 1,
+                  }}>
+                    {block.editedStr}
+                  </span>
+                </div>
+              ))}
+              {/* Native text blocks overlay — interactive when edit-text tool is active */}
               {activeTool === "edit-text" && nativeTextBlocks.map(block => (
                 <div
                   key={block.id}
