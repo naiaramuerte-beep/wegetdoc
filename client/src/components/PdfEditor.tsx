@@ -2174,10 +2174,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
   };
 
-  // ── Apply initialTool when PDF is loaded (always default to "text") ──
+  // ── Apply initialTool when PDF is loaded (default to "edit-text") ──
   useEffect(() => {
     if (!pdfDoc) return;
-    if (!initialTool) { setActiveTool("text"); return; }
+    if (!initialTool) { setActiveTool("edit-text"); return; }
     const toolMap: Record<string, ToolName> = {
       "text": "text", "sign": "sign", "notes": "notes",
       "image": "image", "protect": "protect", "compress": "compress",
@@ -2191,7 +2191,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       "merge": "merge",
     };
     const mapped = toolMap[initialTool];
-    setActiveTool(mapped ?? "text");
+    setActiveTool(mapped ?? "edit-text");
   }, [initialTool, pdfDoc]);
 
   // ── Keyboard shortcuts ────────────────────────────────────────
