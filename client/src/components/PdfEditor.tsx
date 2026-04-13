@@ -804,6 +804,36 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     });
   }, [pdfDoc, scale]);
 
+  // Auto-save edited text when switching away from edit-text tool or changing page
+  const editingBlockIdRef = useRef(editingBlockId);
+  const editingBlockTextRef = useRef(editingBlockText);
+  editingBlockIdRef.current = editingBlockId;
+  editingBlockTextRef.current = editingBlockText;
+
+  useEffect(() => {
+    // When activeTool changes away from edit-text, save any pending edit
+    if (activeTool !== "edit-text" && editingBlockIdRef.current) {
+      const blockId = editingBlockIdRef.current;
+      const text = editingBlockTextRef.current;
+      setAllNativeTextBlocks(prev => {
+        const entries = Array.from(prev.entries());
+        for (const [page, blocks] of entries) {
+          const idx = blocks.findIndex((b: NativeTextBlock) => b.id === blockId);
+          if (idx !== -1) {
+            const updated = blocks.map((b: NativeTextBlock) =>
+              b.id === blockId ? { ...b, editedStr: text, fontColor: editTextColor } : b
+            );
+            const next = new Map(prev);
+            next.set(page, updated);
+            return next;
+          }
+        }
+        return prev;
+      });
+      setEditingBlockId(null);
+    }
+  }, [activeTool, editTextColor]);
+
   // Reload text blocks when page or scale changes while edit-text is active
   useEffect(() => {
     if (activeTool === "edit-text" && pdfDoc) {
