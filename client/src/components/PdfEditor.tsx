@@ -478,16 +478,21 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const renderPage = useCallback(async (pageNum: number) => {
     if (!pdfDoc || !mainCanvasRef.current) return;
     const page = await pdfDoc.getPage(pageNum);
-    const vp = page.getViewport({ scale });
+    const dpr = window.devicePixelRatio || 1;
+    const vp = page.getViewport({ scale: scale * dpr });
     const canvas = mainCanvasRef.current;
     canvas.width = vp.width;
     canvas.height = vp.height;
+    canvas.style.width = `${vp.width / dpr}px`;
+    canvas.style.height = `${vp.height / dpr}px`;
     const ctx = canvas.getContext("2d")!;
     await page.render({ canvas, viewport: vp } as any).promise;
     // Sync drawing canvas size
     if (drawingCanvasRef.current) {
       drawingCanvasRef.current.width = vp.width;
       drawingCanvasRef.current.height = vp.height;
+      drawingCanvasRef.current.style.width = `${vp.width / dpr}px`;
+      drawingCanvasRef.current.style.height = `${vp.height / dpr}px`;
       redrawDrawingCanvas();
     }
   }, [pdfDoc, scale]); // eslint-disable-line react-hooks/exhaustive-deps
