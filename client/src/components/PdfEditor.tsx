@@ -1414,26 +1414,31 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      const img = new Image();
-      img.onload = () => {
-        const aspect = img.naturalWidth / img.naturalHeight;
-        const w = 200;
-        const h = Math.round(w / aspect);
-        addAnnotation({
-          type: "image", dataUrl,
-          x: 80, y: 80, width: w, height: h, page: currentPage, rotation: 0,
-        });
-        toast.success(t.editor_toast_image_added ?? "Image added. Drag it to position.");
-      };
-      img.onerror = () => {
-        toast.error("Error loading image");
-      };
-      img.src = dataUrl;
+    const url = URL.createObjectURL(f);
+    const img = new Image();
+    img.onload = () => {
+      // Convert to PNG via canvas so pdf-lib can always embed it
+      const c = document.createElement("canvas");
+      c.width = img.naturalWidth;
+      c.height = img.naturalHeight;
+      const ctx = c.getContext("2d")!;
+      ctx.drawImage(img, 0, 0);
+      const dataUrl = c.toDataURL("image/png");
+      URL.revokeObjectURL(url);
+      const aspect = img.naturalWidth / img.naturalHeight;
+      const w = 200;
+      const h = Math.round(w / aspect);
+      addAnnotation({
+        type: "image", dataUrl,
+        x: 80, y: 80, width: w, height: h, page: currentPage, rotation: 0,
+      });
+      toast.success(t.editor_toast_image_added ?? "Image added. Drag it to position.");
     };
-    reader.readAsDataURL(f);
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      toast.error("Error loading image");
+    };
+    img.src = url;
   };
   // ── Add shapee ─────────────────────────────────────────────────
   const placeShape = () => {
@@ -1958,12 +1963,22 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           // Swap dimensions if rotated 90/270
           if (ann.rotation % 180 !== 0) { drawW = ann.height; drawH = ann.width; }
         }
-        const imgBytes = await fetch(finalDataUrl).then(r => r.arrayBuffer());
-        let img;
-        try { img = await doc.embedPng(new Uint8Array(imgBytes)); }
-        catch { img = await doc.embedJpg(new Uint8Array(imgBytes)); }
-        const finalPdfY = height - ann.y - drawH;
-        page.drawImage(img, { x: ann.x, y: finalPdfY, width: drawW, height: drawH });
+        try {
+          const imgBytes = await fetch(finalDataUrl).then(r => r.arrayBuffer());
+          const uint8 = new Uint8Array(imgBytes);
+          let img;
+          // Check if PNG (starts with 0x89 0x50) or try both formats
+          if (uint8[0] === 0x89 && uint8[1] === 0x50) {
+            img = await doc.embedPng(uint8);
+          } else {
+            try { img = await doc.embedJpg(uint8); }
+            catch { img = await doc.embedPng(uint8); }
+          }
+          const finalPdfY = height - ann.y - drawH;
+          page.drawImage(img, { x: ann.x, y: finalPdfY, width: drawW, height: drawH });
+        } catch (imgErr) {
+          console.error("[buildAnnotatedPdf] Error embedding image:", imgErr);
+        }
       } else if (ann.type === "highlight") {
         page.drawRectangle({ x: ann.x, y: pdfY, width: ann.width, height: ann.height, color: rgb(1, 1, 0), opacity: 0.4 });
       } else if (ann.type === "note" && ann.text) {
@@ -2007,36 +2022,40 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       pageBlocks.filter(b => b.editedStr !== undefined).forEach(b => editedBlocks.push(b));
     });
     for (const block of editedBlocks) {
-      const page = doc.getPage(block.page - 1);
-      const { width: pageW } = page.getSize();
-      // Use stored PDF point coordinates directly (no scale conversion needed)
-      const pdfX = block.pdfX;
-      const pdfY = block.pdfY;      // baseline y from bottom of page
-      const fontSizePts = block.pdfFontSize;
-      // Cover original text with a wide white rectangle that extends to the right edge of the page
-      // This ensures the original text is fully hidden regardless of its actual width
-      const coverWidth = pageW - pdfX + 10; // extend to right edge of page
-      page.drawRectangle({
-        x: pdfX - 4,
-        y: pdfY - fontSizePts * 0.35,  // extra space below baseline for descenders
-        width: coverWidth,
-        height: fontSizePts * 1.6,      // extra height to cover ascenders and line spacing
-        color: rgb(1, 1, 1),
-        opacity: 1,
-      });
-      // Draw replacement text at the original baseline position
-      const hexColor = block.fontColor ?? "#000000";
-      const tr = parseInt(hexColor.slice(1, 3), 16) / 255;
-      const tg = parseInt(hexColor.slice(3, 5), 16) / 255;
-      const tb = parseInt(hexColor.slice(5, 7), 16) / 255;
-      page.drawText(block.editedStr!, {
-        x: pdfX,
-        y: pdfY,
-        size: fontSizePts,
-        font,
-        color: rgb(tr, tg, tb),
-        maxWidth: coverWidth - 8,
-      });
+      try {
+        const page = doc.getPage(block.page - 1);
+        const { width: pageW } = page.getSize();
+        // Use stored PDF point coordinates directly (no scale conversion needed)
+        const pdfX = block.pdfX;
+        const pdfY = block.pdfY;      // baseline y from bottom of page
+        const fontSizePts = block.pdfFontSize;
+        // Cover original text with a wide white rectangle that extends to the right edge of the page
+        const coverWidth = pageW - pdfX + 10;
+        page.drawRectangle({
+          x: pdfX - 4,
+          y: pdfY - fontSizePts * 0.35,
+          width: coverWidth,
+          height: fontSizePts * 1.6,
+          color: rgb(1, 1, 1),
+          opacity: 1,
+        });
+        // Draw replacement text at the original baseline position
+        const hexColor = block.fontColor && block.fontColor.length === 7 ? block.fontColor : "#000000";
+        const tr = parseInt(hexColor.slice(1, 3), 16) / 255;
+        const tg = parseInt(hexColor.slice(3, 5), 16) / 255;
+        const tb = parseInt(hexColor.slice(5, 7), 16) / 255;
+        // Encode text to remove characters unsupported by Helvetica
+        const safeText = block.editedStr!.replace(/[^\x00-\xFF]/g, "?");
+        page.drawText(safeText, {
+          x: pdfX,
+          y: pdfY,
+          size: fontSizePts,
+          font,
+          color: rgb(isNaN(tr) ? 0 : tr, isNaN(tg) ? 0 : tg, isNaN(tb) ? 0 : tb),
+        });
+      } catch (err) {
+        console.error("[buildAnnotatedPdf] Error applying text edit:", err, block);
+      }
     }
     return doc.save();
   };
@@ -2162,7 +2181,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     try {
       pdfOut = await buildAnnotatedPdf();
       if (!pdfOut) throw new Error("Failed to build PDF");
-    } catch {
+    } catch (err) {
+      console.error("[downloadPdf] buildAnnotatedPdf failed:", err);
       toast.error("Error al generar el PDF", { id: "dl" });
       return;
     }
