@@ -1414,31 +1414,33 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    const url = URL.createObjectURL(f);
-    const img = new Image();
-    img.onload = () => {
-      // Convert to PNG via canvas so pdf-lib can always embed it
-      const c = document.createElement("canvas");
-      c.width = img.naturalWidth;
-      c.height = img.naturalHeight;
-      const ctx = c.getContext("2d")!;
-      ctx.drawImage(img, 0, 0);
-      const dataUrl = c.toDataURL("image/png");
-      URL.revokeObjectURL(url);
-      const aspect = img.naturalWidth / img.naturalHeight;
-      const w = 200;
-      const h = Math.round(w / aspect);
-      addAnnotation({
-        type: "image", dataUrl,
-        x: 80, y: 80, width: w, height: h, page: currentPage, rotation: 0,
-      });
-      toast.success(t.editor_toast_image_added ?? "Image added. Drag it to position.");
+    // Read file as data URL first, then load into Image, then convert to PNG
+    const reader = new FileReader();
+    reader.onload = () => {
+      const rawDataUrl = reader.result as string;
+      const img = new Image();
+      img.onload = () => {
+        // Convert to PNG via canvas so pdf-lib can always embed it
+        const c = document.createElement("canvas");
+        c.width = img.naturalWidth;
+        c.height = img.naturalHeight;
+        const ctx = c.getContext("2d")!;
+        ctx.drawImage(img, 0, 0);
+        const dataUrl = c.toDataURL("image/png");
+        const aspect = img.naturalWidth / img.naturalHeight;
+        const w = 200;
+        const h = Math.round(w / aspect);
+        addAnnotation({
+          type: "image", dataUrl,
+          x: 80, y: 80, width: w, height: h, page: currentPage, rotation: 0,
+        });
+        toast.success(t.editor_toast_image_added ?? "Image added. Drag it to position.");
+      };
+      img.onerror = () => toast.error("Error loading image");
+      img.src = rawDataUrl;
     };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      toast.error("Error loading image");
-    };
-    img.src = url;
+    reader.onerror = () => toast.error("Error reading file");
+    reader.readAsDataURL(f);
   };
   // ── Add shapee ─────────────────────────────────────────────────
   const placeShape = () => {
@@ -1937,37 +1939,36 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const doc = await PDFDocument.load(safeBytes, { ignoreEncryption: true });
     const font = await doc.embedFont(StandardFonts.Helvetica);
     for (const ann of annotations) {
+      try {
       const page = doc.getPage(ann.page - 1);
       const { height } = page.getSize();
       const pdfY = height - ann.y - ann.height;
       if (ann.type === "text" && ann.text) {
         page.drawText(ann.text, { x: ann.x, y: pdfY + ann.height / 2, size: ann.fontSize ?? 14, font, color: rgb(0, 0, 0) });
       } else if ((ann.type === "signature" || ann.type === "image") && ann.dataUrl) {
-        // If rotated, pre-rotate the image via canvas before embedding
-        let finalDataUrl = ann.dataUrl;
-        let drawW = ann.width, drawH = ann.height;
-        if (ann.rotation && ann.rotation % 360 !== 0) {
-          const tmpImg = await new Promise<HTMLImageElement>((resolve) => {
-            const i = new Image(); i.onload = () => resolve(i); i.src = ann.dataUrl!;
-          });
-          const rad = (ann.rotation * Math.PI) / 180;
-          const cos = Math.abs(Math.cos(rad)), sin = Math.abs(Math.sin(rad));
-          const cw = Math.ceil(tmpImg.width * cos + tmpImg.height * sin);
-          const ch = Math.ceil(tmpImg.width * sin + tmpImg.height * cos);
-          const c = document.createElement("canvas"); c.width = cw; c.height = ch;
-          const ctx = c.getContext("2d")!;
-          ctx.translate(cw / 2, ch / 2);
-          ctx.rotate(rad);
-          ctx.drawImage(tmpImg, -tmpImg.width / 2, -tmpImg.height / 2);
-          finalDataUrl = c.toDataURL("image/png");
-          // Swap dimensions if rotated 90/270
-          if (ann.rotation % 180 !== 0) { drawW = ann.height; drawH = ann.width; }
-        }
         try {
+          // If rotated, pre-rotate the image via canvas before embedding
+          let finalDataUrl = ann.dataUrl;
+          let drawW = ann.width, drawH = ann.height;
+          if (ann.rotation && ann.rotation % 360 !== 0) {
+            const tmpImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+              const i = new Image(); i.onload = () => resolve(i); i.onerror = reject; i.src = ann.dataUrl!;
+            });
+            const rad = (ann.rotation * Math.PI) / 180;
+            const cos = Math.abs(Math.cos(rad)), sin = Math.abs(Math.sin(rad));
+            const cw = Math.ceil(tmpImg.width * cos + tmpImg.height * sin);
+            const ch = Math.ceil(tmpImg.width * sin + tmpImg.height * cos);
+            const c = document.createElement("canvas"); c.width = cw; c.height = ch;
+            const ctx = c.getContext("2d")!;
+            ctx.translate(cw / 2, ch / 2);
+            ctx.rotate(rad);
+            ctx.drawImage(tmpImg, -tmpImg.width / 2, -tmpImg.height / 2);
+            finalDataUrl = c.toDataURL("image/png");
+            if (ann.rotation % 180 !== 0) { drawW = ann.height; drawH = ann.width; }
+          }
           const imgBytes = await fetch(finalDataUrl).then(r => r.arrayBuffer());
           const uint8 = new Uint8Array(imgBytes);
           let img;
-          // Check if PNG (starts with 0x89 0x50) or try both formats
           if (uint8[0] === 0x89 && uint8[1] === 0x50) {
             img = await doc.embedPng(uint8);
           } else {
@@ -1977,7 +1978,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           const finalPdfY = height - ann.y - drawH;
           page.drawImage(img, { x: ann.x, y: finalPdfY, width: drawW, height: drawH });
         } catch (imgErr) {
-          console.error("[buildAnnotatedPdf] Error embedding image:", imgErr);
+          console.error("[buildAnnotatedPdf] Error embedding image/signature:", imgErr, ann);
         }
       } else if (ann.type === "highlight") {
         page.drawRectangle({ x: ann.x, y: pdfY, width: ann.width, height: ann.height, color: rgb(1, 1, 0), opacity: 0.4 });
@@ -2013,6 +2014,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           const p2 = ann.points[i];
           page.drawLine({ start: { x: p1.x, y: ph - p1.y }, end: { x: p2.x, y: ph - p2.y }, thickness: ann.strokeWidth ?? 3, color: rgb(r2, g2, b2) });
         }
+      }
+      } catch (annErr) {
+        console.error("[buildAnnotatedPdf] Error processing annotation:", annErr, ann.type, ann);
       }
     }
     // Apply native text edits: cover original text with white rect, draw new text
