@@ -195,14 +195,14 @@ async function startServer() {
     // Content Security Policy
     res.setHeader("Content-Security-Policy", [
       "frame-ancestors 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://www.gstatic.com https://translate.googleapis.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://www.gstatic.com https://translate.googleapis.com https://static.hotjar.com https://script.hotjar.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com https://translate.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com",
+      "font-src 'self' https://fonts.gstatic.com https://script.hotjar.com",
       "object-src 'none'",
       "base-uri 'self'",
-      "frame-src 'self' https://*.stripe.com https://www.googletagmanager.com",
-      "img-src 'self' data: https://www.googletagmanager.com https://www.google.com",
-      "connect-src 'self' data: https://api.stripe.com https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com",
+      "frame-src 'self' https://*.stripe.com https://www.googletagmanager.com https://vars.hotjar.com",
+      "img-src 'self' data: https://www.googletagmanager.com https://www.google.com https://script.hotjar.com",
+      "connect-src 'self' data: https://api.stripe.com https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com",
     ].join("; "));
     next();
   });
