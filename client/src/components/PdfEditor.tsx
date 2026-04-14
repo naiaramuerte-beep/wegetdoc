@@ -576,46 +576,27 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     await document.fonts.ready;
 
     for (const block of editedBlocks) {
-      ctx.save();
-      // Clip to block bounds
-      const bx = block.x * dpr - 1;
-      const by = block.y * dpr - 1;
-      const bw = block.width * dpr + 2;
-      const bh = block.height * dpr + 2;
-      ctx.beginPath();
-      ctx.rect(bx, by, bw, bh);
-      ctx.clip();
-      // White rectangle over original
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(bx, by, bw, bh);
-
-      // Build font string using the REAL pdf.js font name
       const fontSize = block.fontSize * dpr;
       const weight = block.fontWeight || "normal";
-      const style = block.fontStyle || "normal";
-      // Try the pdf.js loaded font first, fallback to generic family
+      const fStyle = block.fontStyle || "normal";
       const pdfFont = block.pdfFontName ? `"${block.pdfFontName}"` : "";
       const fallback = block.fontFamily || "sans-serif";
-      const fontStr = pdfFont
-        ? `${style} ${weight} ${fontSize}px ${pdfFont}, ${fallback}`
-        : `${style} ${weight} ${fontSize}px ${fallback}`;
-
-      // Verify font is available
-      let finalFont = fontStr;
+      let finalFont = pdfFont
+        ? `${fStyle} ${weight} ${fontSize}px ${pdfFont}, ${fallback}`
+        : `${fStyle} ${weight} ${fontSize}px ${fallback}`;
       if (pdfFont && !document.fonts.check(`${fontSize}px ${pdfFont}`)) {
-        finalFont = `${style} ${weight} ${fontSize}px ${fallback}`;
+        finalFont = `${fStyle} ${weight} ${fontSize}px ${fallback}`;
       }
 
-      ctx.fillStyle = block.originalColor || "#000000";
+      // Calculate wrapped lines first to know actual height needed
+      ctx.save();
       ctx.font = finalFont;
-      ctx.textBaseline = "top";
-
       const lineH = (block.lineHeight ?? fontSize * 1.5) * dpr;
       const maxW = block.width * dpr;
       const rawLines = block.editedStr!.split("\n");
-      // Word-wrap each line to fit within block width
       const wrappedLines: string[] = [];
       for (const rawLine of rawLines) {
+        if (!rawLine) { wrappedLines.push(""); continue; }
         const words = rawLine.split(" ");
         let currentLine = "";
         for (const word of words) {
@@ -629,6 +610,27 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         }
         if (currentLine) wrappedLines.push(currentLine);
       }
+      ctx.restore();
+
+      const actualHeight = Math.max(block.height * dpr, wrappedLines.length * lineH + 4);
+
+      // Step 1: White rectangle — extends to full page width to cover all original text
+      // No clip here so it fully covers any text bleeding beyond block bounds
+      ctx.save();
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(
+        block.x * dpr - 4,
+        block.y * dpr - 2,
+        ctx.canvas.width - block.x * dpr + 8, // extend to right edge
+        actualHeight + 4
+      );
+      ctx.restore();
+
+      // Step 2: Draw replacement text (no clip needed, white rect already covers)
+      ctx.save();
+      ctx.fillStyle = block.originalColor || "#000000";
+      ctx.font = finalFont;
+      ctx.textBaseline = "top";
       for (let i = 0; i < wrappedLines.length; i++) {
         ctx.fillText(wrappedLines[i], block.x * dpr, block.y * dpr + i * lineH + 2);
       }
@@ -4363,20 +4365,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                             const normalize = (s: string) => s.replace(/\s+/g, " ").trim();
                             const originalText = block.editedStr ?? block.str;
                             if (normalize(newText) !== normalize(originalText)) {
-                              // Estimate new height: count wrapped lines
-                              const lines = newText.split("\n");
-                              const charsPerLine = Math.max(1, Math.floor(block.width / (block.fontSize * 0.6)));
-                              let totalLines = 0;
-                              for (const line of lines) {
-                                totalLines += Math.max(1, Math.ceil(line.length / charsPerLine));
-                              }
-                              const newHeight = Math.max(block.height, totalLines * (block.lineHeight ?? block.fontSize * 1.5));
-
                               setAllNativeTextBlocks(prev => {
                                 const pageBlocks = prev.get(block.page) ?? [];
                                 const updated = pageBlocks.map((b: NativeTextBlock) =>
                                   b.id === block.id
-                                    ? { ...b, editedStr: newText, height: newHeight }
+                                    ? { ...b, editedStr: newText }
                                     : b
                                 );
                                 const next = new Map(prev);
