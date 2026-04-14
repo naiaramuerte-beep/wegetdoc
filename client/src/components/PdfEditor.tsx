@@ -564,6 +564,23 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     canvas.style.height = `${vp.height / dpr}px`;
     const ctx = canvas.getContext("2d")!;
     await page.render({ canvas, viewport: vp } as any).promise;
+
+    // Apply edited text blocks: paint white over original, draw replacement text
+    const editedBlocks = (allNativeTextBlocks.get(pageNum) ?? []).filter(b => b.editedStr !== undefined);
+    for (const block of editedBlocks) {
+      // Cover original text with white rectangle (in canvas pixel coordinates, scaled by dpr)
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(block.x * dpr, block.y * dpr, block.width * dpr, block.height * dpr);
+      // Draw replacement text
+      ctx.fillStyle = block.fontColor || "#000";
+      ctx.font = `${block.fontSize * dpr}px "${block.pdfFontName}", ${block.fontFamily || "sans-serif"}`;
+      const lines = (block.editedStr!).split("\n");
+      const lineH = block.fontSize * dpr * 1.3;
+      for (let i = 0; i < lines.length; i++) {
+        ctx.fillText(lines[i], block.x * dpr, block.y * dpr + block.fontSize * dpr + i * lineH);
+      }
+    }
+
     // Sync drawing canvas size
     if (drawingCanvasRef.current) {
       drawingCanvasRef.current.width = vp.width;
@@ -572,7 +589,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       drawingCanvasRef.current.style.height = `${vp.height / dpr}px`;
       redrawDrawingCanvas();
     }
-  }, [pdfDoc, scale]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pdfDoc, scale, allNativeTextBlocks]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   useEffect(() => { renderPage(currentPage); }, [renderPage, currentPage]);
@@ -4086,25 +4103,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   </div>
                 ))}
               </div>
-              {/* Edited block indicators — subtle border to show which blocks were modified */}
-              {activeTool !== "edit-text" && nativeTextBlocks.filter(b => b.editedStr !== undefined).map(block => (
-                <div
-                  key={`edited-${block.id}`}
-                  style={{
-                    position: "absolute",
-                    left: block.x - 2,
-                    top: block.y - 2,
-                    width: block.width + 4,
-                    height: block.height + 4,
-                    border: "2px dashed #1565C0",
-                    borderRadius: 3,
-                    zIndex: 5,
-                    pointerEvents: "none",
-                    boxSizing: "border-box",
-                    opacity: 0.5,
-                  }}
-                />
-              ))}
+              {/* No overlay needed — edited text is rendered directly on the canvas */}
               {/* Native text blocks overlay — edit-text tool active */}
               {activeTool === "edit-text" && nativeTextBlocks.map(block => {
                 const isEditing = editingBlockId === block.id;
