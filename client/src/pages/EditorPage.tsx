@@ -89,7 +89,7 @@ function EditorUploadZone({ lang }: { lang: string }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <Navbar />
+      <Navbar hideLogoLink />
 
       {/* Hero with upload zone — white background matching home */}
       <section className="relative overflow-hidden flex-1 bg-white">

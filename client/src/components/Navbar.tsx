@@ -23,7 +23,7 @@ const TEXT_MAIN = "#0f172a";
 const TEXT_MUTED = "#64748b";
 const BORDER = "#e2e8f0";
 
-export default function Navbar({ compact }: { compact?: boolean } = {}) {
+export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; hideLogoLink?: boolean } = {}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
@@ -83,24 +83,33 @@ export default function Navbar({ compact }: { compact?: boolean } = {}) {
         <div className={`container flex items-center h-14 md:h-16 ${isFastDoc ? "md:grid md:grid-cols-[auto_1fr_auto]" : "justify-between"}`}>
 
           {/* ── Logo ── */}
-          <Link href={`/${lang}`} className="flex items-center gap-2 group shrink-0">
-            {/* Cloud + PDF icon */}
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: colors.gradient }}
-            >
-              <FileText className="w-4 h-4 text-white" />
-            </div>
-            <span>
-              <span className="font-semibold text-lg" style={{ color: TEXT_MAIN }}>{logoParts[0]}</span>
-              <span
-                className="font-extrabold text-lg"
-                style={{ color: "#1B5E20" }}
+          {hideLogoLink ? (
+            <div className="flex items-center gap-2 shrink-0">
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{ background: colors.gradient }}
               >
-                {logoParts[1]}
+                <FileText className="w-4 h-4 text-white" />
+              </div>
+              <span>
+                <span className="font-semibold text-lg" style={{ color: TEXT_MAIN }}>{logoParts[0]}</span>
+                <span className="font-extrabold text-lg" style={{ color: "#1B5E20" }}>{logoParts[1]}</span>
               </span>
-            </span>
-          </Link>
+            </div>
+          ) : (
+            <Link href={`/${lang}`} className="flex items-center gap-2 group shrink-0">
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{ background: colors.gradient }}
+              >
+                <FileText className="w-4 h-4 text-white" />
+              </div>
+              <span>
+                <span className="font-semibold text-lg" style={{ color: TEXT_MAIN }}>{logoParts[0]}</span>
+                <span className="font-extrabold text-lg" style={{ color: "#1B5E20" }}>{logoParts[1]}</span>
+              </span>
+            </Link>
+          )}
 
           {/* ── Desktop Nav ── */}
           <nav className={`hidden md:flex items-center gap-1 ${isFastDoc ? "justify-center" : ""}`}>
