@@ -111,6 +111,7 @@ interface NativeTextBlock {
   fontFamily?: string; // CSS generic family fallback (serif, sans-serif)
   fontWeight?: string; // "bold" or "normal"
   fontStyle?: string; // "italic" or "normal"
+  lineHeight?: number; // line height in canvas pixels (extracted from PDF)
   pdfFontName?: string; // pdf.js loaded font name (e.g. "g_d0_f1") — matches @font-face
 }
 
@@ -581,9 +582,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       ctx.font = `${style} ${weight} ${fontSize}px ${block.fontFamily || "sans-serif"}`;
       ctx.textBaseline = "top";
       const lines = block.editedStr!.split("\n");
-      // Calculate line height from original block: total height / number of original lines
-      const originalLines = block.str.split("\n").length;
-      const lineH = originalLines > 1 ? (block.height * dpr) / originalLines : fontSize * 1.5;
+      const lineH = (block.lineHeight ?? fontSize * 1.5) * dpr;
       for (let i = 0; i < lines.length; i++) {
         ctx.fillText(lines[i], block.x * dpr, block.y * dpr + i * lineH + 2);
       }
@@ -963,6 +962,16 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const maxBottom = Math.max(...para.map(l => l.canvasY + l.canvasH));
       const first = para[0];
       const lastLine = para[para.length - 1];
+      // Calculate real line height from Y positions of consecutive lines
+      let realLineHeight = first.fontSize * 1.5; // fallback
+      if (para.length >= 2) {
+        // Use average distance between consecutive lines
+        let totalGap = 0;
+        for (let i = 1; i < para.length; i++) {
+          totalGap += Math.abs(para[i].canvasY - para[i - 1].canvasY);
+        }
+        realLineHeight = totalGap / (para.length - 1);
+      }
       blocks.push({
         id: Math.random().toString(36).slice(2),
         str: combinedStr,
@@ -981,6 +990,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         fontWeight: first.fontWeight,
         fontStyle: first.fontStyle,
         originalColor: first.originalColor,
+        lineHeight: realLineHeight,
         pdfFontName: first.pdfFontName,
       });
     }
