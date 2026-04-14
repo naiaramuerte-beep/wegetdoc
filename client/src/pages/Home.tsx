@@ -228,7 +228,7 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
       ══════════════════════════════════════════════════════════ */}
       <section className="bg-white">
         <div className="container pt-10 pb-12 md:pt-16 md:pb-16">
-          <div className="flex flex-col items-center gap-10">
+          <div className="flex flex-col items-center gap-6">
             {/* Centered content */}
             <div className="w-full max-w-2xl flex flex-col items-center text-center">
               <h1
@@ -277,7 +277,7 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
 
               {/* Social proof inline */}
               {!isFastDoc && (
-                <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs mb-10" style={{ color: TEXT_MUTED }}>
+                <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs mb-2" style={{ color: TEXT_MUTED }}>
                   <span className="flex items-center gap-1.5">
                     <span className="flex">
                       {[...Array(5)].map((_, i) => (
