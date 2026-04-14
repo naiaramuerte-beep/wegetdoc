@@ -581,7 +581,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       ctx.font = `${style} ${weight} ${fontSize}px ${block.fontFamily || "sans-serif"}`;
       ctx.textBaseline = "top";
       const lines = block.editedStr!.split("\n");
-      const lineH = fontSize * 1.3;
+      // Calculate line height from original block: total height / number of original lines
+      const originalLines = block.str.split("\n").length;
+      const lineH = originalLines > 1 ? (block.height * dpr) / originalLines : fontSize * 1.5;
       for (let i = 0; i < lines.length; i++) {
         ctx.fillText(lines[i], block.x * dpr, block.y * dpr + i * lineH + 2);
       }
