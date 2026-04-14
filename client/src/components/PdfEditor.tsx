@@ -992,7 +992,26 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       return;
     }
 
-    const cssHeight = pdfPageHeight * scale; // matches canvas.style.height
+    // Get actual canvas CSS dimensions for coordinate mapping
+    const canvasEl = mainCanvasRef.current;
+    const canvasCSSWidth = canvasEl ? parseFloat(canvasEl.style.width) : pdfPageHeight * scale;
+    const canvasCSSHeight = canvasEl ? parseFloat(canvasEl.style.height) : pdfPageHeight * scale;
+    const pageWidth = vp.width / (scale * (window.devicePixelRatio || 1)) * scale; // PDF page width in points * scale... no, let's get it properly
+    const pdfPageWidth = vp.width / scale; // PDF width in points (vp.width = pdfWidth * scale)
+
+    // DIAGNOSTIC — raw numbers from MuPDF and canvas
+    if (mupdfBlocks.length > 0) {
+      const fb = mupdfBlocks[0];
+      console.log("DIAGNOSTIC - first block raw:", JSON.stringify(fb));
+      console.log("DIAGNOSTIC - pdfPageWidth:", pdfPageWidth, "pdfPageHeight:", pdfPageHeight);
+      console.log("DIAGNOSTIC - canvasCSSWidth:", canvasCSSWidth, "canvasCSSHeight:", canvasCSSHeight);
+      console.log("DIAGNOSTIC - canvas.width (px):", canvasEl?.width, "canvas.height (px):", canvasEl?.height);
+      console.log("DIAGNOSTIC - scale:", scale, "dpr:", window.devicePixelRatio);
+      console.log("DIAGNOSTIC - computed top:", (pdfPageHeight - fb.y - fb.height) * (canvasCSSHeight / pdfPageHeight));
+      console.log("DIAGNOSTIC - computed left:", fb.x * (canvasCSSWidth / pdfPageWidth));
+    }
+
+    const cssHeight = pdfPageHeight * scale;
     const blocks: NativeTextBlock[] = mupdfBlocks.map((mb: any) => {
       const canvasX = mb.x * scale;
       const canvasW = mb.width * scale;
