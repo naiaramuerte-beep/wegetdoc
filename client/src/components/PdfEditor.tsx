@@ -1894,8 +1894,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         pages.forEach(p => merged.addPage(p));
       }
       const out = await merged.save();
-      const blob = new Blob([out.buffer as ArrayBuffer], { type: "application/pdf" });
-      await guardedDownload(blob, "merged.pdf", "merge");
+      // Reload the merged PDF into the editor instead of downloading
+      const mergedBytes = new Uint8Array(out);
+      const mergedBlob = new Blob([mergedBytes], { type: "application/pdf" });
+      const mergedFile = new File([mergedBlob], "merged.pdf", { type: "application/pdf" });
+      await loadPdf(mergedFile);
+      setAnnotations([]);
+      setAllNativeTextBlocks(new Map());
+      toast.success("PDFs fusionados correctamente", { id: "merge" });
     } catch {
       toast.error("Error al fusionar", { id: "merge" });
     }
