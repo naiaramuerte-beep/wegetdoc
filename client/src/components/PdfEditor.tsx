@@ -992,12 +992,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       return;
     }
 
-    const canvasHeight = pdfPageHeight * scale;
+    const cssHeight = pdfPageHeight * scale; // matches canvas.style.height
     const blocks: NativeTextBlock[] = mupdfBlocks.map((mb: any) => {
       const canvasX = mb.x * scale;
-      const canvasH = Math.max(mb.height * scale, mb.fontSize * scale * 1.4);
-      const canvasY = canvasHeight - (mb.y * scale + canvasH);
       const canvasW = mb.width * scale;
+      const canvasH = Math.max(mb.height * scale, mb.fontSize * scale * 1.4);
+      const canvasY = cssHeight - (mb.y + mb.height) * scale;
       return {
         id: Math.random().toString(36).slice(2),
         str: mb.str,
@@ -4446,7 +4446,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     }}
                   />
                 ) : (
-                  /* Not editing: transparent border overlay, canvas text visible underneath */
+                  /* Not editing: thin border, transparent — click to edit */
                   <div
                     key={block.id}
                     style={{
@@ -4456,12 +4456,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       width: block.width,
                       height: block.height,
                       cursor: "text",
-                      border: "1.5px dashed rgba(21, 101, 192, 0.35)",
+                      border: "1px dashed rgba(21, 101, 192, 0.2)",
                       backgroundColor: "transparent",
                       borderRadius: 2,
                       zIndex: 25,
                       boxSizing: "border-box",
                     }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.border = "2px solid rgba(21, 101, 192, 0.5)"; (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(21, 101, 192, 0.03)"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.border = "1px dashed rgba(21, 101, 192, 0.2)"; (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; }}
                     onClick={(e) => {
                       e.stopPropagation();
                       setEditingBlockId(block.id);
