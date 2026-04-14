@@ -992,11 +992,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       return;
     }
 
+    const canvasHeight = pdfPageHeight * scale;
     const blocks: NativeTextBlock[] = mupdfBlocks.map((mb: any) => {
       const canvasX = mb.x * scale;
-      const canvasY = (pdfPageHeight - mb.y) * scale - mb.fontSize * scale;
-      const canvasW = mb.width * scale;
       const canvasH = Math.max(mb.height * scale, mb.fontSize * scale * 1.4);
+      const canvasY = canvasHeight - (mb.y * scale + canvasH);
+      const canvasW = mb.width * scale;
       return {
         id: Math.random().toString(36).slice(2),
         str: mb.str,
