@@ -4054,162 +4054,73 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   </span>
                 </div>
               ))}
-              {/* Native text blocks overlay — interactive when edit-text tool is active */}
+              {/* Native text blocks overlay — inline contentEditable when edit-text tool is active */}
               {activeTool === "edit-text" && nativeTextBlocks.map(block => (
                 <div
                   key={block.id}
+                  contentEditable
+                  suppressContentEditableWarning
+                  spellCheck={false}
                   style={{
                     position: "absolute",
                     left: block.x,
                     top: block.y,
                     width: block.width,
-                    height: block.height,
+                    minHeight: block.height,
                     cursor: "text",
                     border: editingBlockId === block.id
                       ? "2px solid #1565C0"
                       : block.editedStr !== undefined
-                        ? "2px dashed #1E88E5"
-                        : "1.5px dashed rgba(27, 94, 32, 0.6)",
+                        ? "1.5px dashed #1E88E5"
+                        : "1.5px dashed rgba(21, 101, 192, 0.3)",
                     backgroundColor: editingBlockId === block.id
-                      ? "rgba(255,255,255,0.95)"
+                      ? "rgba(255,255,255,1)"
                       : block.editedStr !== undefined
-                        ? "rgba(255,255,255,0.95)"
-                        : "transparent",
+                        ? "rgba(255,255,255,1)"
+                        : "rgba(255,255,255,0.01)",
                     borderRadius: 2,
                     zIndex: editingBlockId === block.id ? 30 : 25,
                     boxSizing: "border-box",
-                    overflow: editingBlockId === block.id ? "visible" : "hidden",
-                    display: "flex",
-                    alignItems: "center",
+                    padding: "2px 4px",
+                    fontSize: block.fontSize,
+                    fontFamily: block.fontFamily || "sans-serif",
+                    color: block.fontColor || "#000",
+                    lineHeight: 1.3,
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                    outline: "none",
                   }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (editingBlockId !== block.id) {
-                      setEditingBlockId(block.id);
-                      setEditingBlockText(block.editedStr ?? block.str);
-                      setShowMobilePanel(true);
+                  onFocus={() => {
+                    setEditingBlockId(block.id);
+                    setEditingBlockText(block.editedStr ?? block.str);
+                  }}
+                  onBlur={(e) => {
+                    const newText = e.currentTarget.innerText;
+                    if (newText !== block.str) {
+                      setAllNativeTextBlocks(prev => {
+                        const pageBlocks = prev.get(block.page) ?? [];
+                        const updated = pageBlocks.map((b: NativeTextBlock) =>
+                          b.id === block.id
+                            ? { ...b, editedStr: newText, fontColor: editTextColor }
+                            : b
+                        );
+                        const next = new Map(prev);
+                        next.set(block.page, updated);
+                        return next;
+                      });
                     }
+                    setEditingBlockId(null);
                   }}
-                  title={block.editedStr !== undefined ? `Editado: "${block.editedStr}"` : `Clic para editar: "${block.str}"`}
-                >
-                  {/* Inline editor: floating popup above the block */}
-                  {editingBlockId === block.id ? (
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: 0,
-                        top: block.height + 4,
-                        minWidth: Math.max(block.width, 200),
-                        background: "white",
-                        border: "2px solid #1565C0",
-                        borderRadius: 6,
-                        padding: 8,
-                        zIndex: 100,
-                        boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 6,
-                      }}
-                      onMouseDown={e => e.stopPropagation()}
-                      onClick={e => e.stopPropagation()}
-                    >
-                      <input
-                        autoFocus
-                        value={editingBlockText}
-                        onChange={e => setEditingBlockText(e.target.value)}
-                        onKeyDown={e => {
-                          if (e.key === "Enter") {
-                            setAllNativeTextBlocks(prev => {
-                              const pageBlocks = prev.get(block.page) ?? [];
-                              const updated = pageBlocks.map((b: NativeTextBlock) =>
-                                b.id === block.id
-                                  ? { ...b, editedStr: editingBlockText, fontColor: editTextColor }
-                                  : b
-                              );
-                              const next = new Map(prev);
-                              next.set(block.page, updated);
-                              return next;
-                            });
-                            setEditingBlockId(null);
-                            toast.success("Texto actualizado");
-                          } else if (e.key === "Escape") {
-                            setEditingBlockId(null);
-                          }
-                          e.stopPropagation();
-                        }}
-                        onClick={e => e.stopPropagation()}
-                        style={{
-                          width: "100%",
-                          fontSize: 13,
-                          color: editTextColor,
-                          background: "#f8f9ff",
-                          border: "1px solid #cbd5e1",
-                          borderRadius: 4,
-                          outline: "none",
-                          padding: "4px 6px",
-                          fontFamily: "Helvetica, Arial, sans-serif",
-                          boxSizing: "border-box",
-                        }}
-                      />
-                      <div style={{ display: "flex", gap: 4 }}>
-                        <button
-                          onMouseDown={e => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setAllNativeTextBlocks(prev => {
-                              const pageBlocks = prev.get(block.page) ?? [];
-                              const updated = pageBlocks.map((b: NativeTextBlock) =>
-                                b.id === block.id
-                                  ? { ...b, editedStr: editingBlockText, fontColor: editTextColor }
-                                  : b
-                              );
-                              const next = new Map(prev);
-                              next.set(block.page, updated);
-                              return next;
-                            });
-                            setEditingBlockId(null);
-                            toast.success("Texto actualizado");
-                          }}
-                          style={{
-                            flex: 1, padding: "3px 0", borderRadius: 4,
-                            background: "#1565C0", color: "white",
-                            border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
-                          }}
-                        >
-                          {t.editor_save_btn}
-                        </button>
-                        <button
-                          onMouseDown={e => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setEditingBlockId(null);
-                          }}
-                          style={{
-                            flex: 1, padding: "3px 0", borderRadius: 4,
-                            background: "transparent", color: "#64748b",
-                            border: "1px solid #cbd5e1", cursor: "pointer", fontSize: 12,
-                          }}
-                        >
-                          {t.editor_cancel_btn}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    /* Show edited text preview or original text */
-                    <span style={{
-                      fontSize: Math.min(block.fontSize, 12),
-                      color: block.editedStr !== undefined ? (block.fontColor ?? editTextColor) : "transparent",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      padding: "0 2px",
-                      fontWeight: 500,
-                      width: "100%",
-                    }}>
-                      {block.editedStr ?? block.str}
-                    </span>
-                  )}
-                </div>
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      (e.currentTarget as HTMLElement).blur();
+                    }
+                    e.stopPropagation();
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  dangerouslySetInnerHTML={{ __html: (block.editedStr ?? block.str).replace(/\n/g, "<br>") }}
+                />
               ))}
             </div>
           </div>
