@@ -584,92 +584,28 @@ ${allUrls.map(u => `  <url>
       if (!["docx", "xlsx", "pptx"].includes(format)) {
         res.status(400).json({ error: "Unsupported format" }); return;
       }
-      const { execFile } = await import("child_process");
-      const { promisify } = await import("util");
-      const { tmpdir } = await import("os");
-      const { join } = await import("path");
-      const { writeFile, readFile, unlink } = await import("fs/promises");
-      const execFileAsync = promisify(execFile);
-      const ts = Date.now();
-      const tmpIn = join(tmpdir(), `export_in_${ts}.pdf`);
-      const tmpOut = join(tmpdir(), `export_out_${ts}.${format}`);
-      const tmpPy = join(tmpdir(), `export_${ts}.py`);
-      await writeFile(tmpIn, file.buffer);
-      let pyLines: string[];
-      if (format === "docx") {
-        pyLines = [
-          "from pdf2docx import Converter",
-          "import sys",
-          "cv = Converter(sys.argv[1])",
-          "cv.convert(sys.argv[2], start=0, end=None)",
-          "cv.close()",
-        ];
-      } else if (format === "xlsx") {
-        pyLines = [
-          "import fitz, openpyxl, sys",
-          "doc = fitz.open(sys.argv[1])",
-          "wb = openpyxl.Workbook()",
-          "ws = wb.active",
-          "for page_num in range(len(doc)):",
-          "    page = doc[page_num]",
-          "    tabs = page.find_tables()",
-          "    found = False",
-          "    for tab in tabs:",
-          "        found = True",
-          "        for row in tab.extract():",
-          "            ws.append([cell if cell else '' for cell in row])",
-          "    if not found:",
-          "        text = page.get_text()",
-          "        for line in text.split('\\n'):",
-          "            if line.strip():",
-          "                ws.append([line.strip()])",
-          "wb.save(sys.argv[2])",
-        ];
-      } else {
-        // pptx via LibreOffice WASM converter
-        try {
-          const { createWorkerConverter } = await import("@matbee/libreoffice-converter/server");
-          const converter = await createWorkerConverter();
-          const result = await converter.convert(file.buffer, { outputFormat: "pptx" });
-          await converter.destroy();
-          const originalName = (req.body.filename as string) || file.originalname || "document.pdf";
-          const baseName = originalName.replace(/\.pdf$/i, "");
-          res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
-          res.setHeader("Content-Disposition", `attachment; filename="${baseName}.pptx"`);
-          res.send(Buffer.from(result.data));
-          return;
-        } catch (wasmErr) {
-          console.error("[Export] WASM PPTX conversion failed:", wasmErr);
-          res.status(500).json({ error: "PPTX export not available" });
-          return;
-        }
-      }
-      await writeFile(tmpPy, pyLines.join("\n"));
-      const cleanEnv = { ...process.env };
-      delete cleanEnv.PYTHONHOME;
-      delete cleanEnv.PYTHONPATH;
-      delete cleanEnv.NUITKA_PYTHONPATH;
+      const originalName = (req.body.filename as string) || file.originalname || "document.pdf";
+      const baseName = originalName.replace(/\.pdf$/i, "");
+      const mimeTypes: Record<string, string> = {
+        docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      };
+
+      // Use LibreOffice WASM converter for all formats
+      const { createWorkerConverter } = await import("@matbee/libreoffice-converter/server");
+      const converter = await createWorkerConverter();
       try {
-        await execFileAsync("python3", [tmpPy, tmpIn, tmpOut], { timeout: 120000, env: cleanEnv });
-        const outputBytes = await readFile(tmpOut);
-        const originalName2 = (req.body.filename as string) || file.originalname || "document.pdf";
-        const baseName = originalName2.replace(/\.pdf$/i, "");
-        const mimeTypes: Record<string, string> = {
-          docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-          pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        };
+        const result = await converter.convert(file.buffer, { outputFormat: format as any });
         res.setHeader("Content-Type", mimeTypes[format]);
         res.setHeader("Content-Disposition", `attachment; filename="${baseName}.${format}"`);
-        res.send(outputBytes);
+        res.send(Buffer.from(result.data));
       } finally {
-        unlink(tmpIn).catch(() => {});
-        unlink(tmpOut).catch(() => {});
-        unlink(tmpPy).catch(() => {});
+        await converter.destroy();
       }
     } catch (err) {
       console.error("[Export] Error:", err);
-      res.status(500).json({ error: "Failed to export PDF" });
+      res.status(500).json({ error: `Export to ${req.body.format} failed. Please try again.` });
     }
   });
 
