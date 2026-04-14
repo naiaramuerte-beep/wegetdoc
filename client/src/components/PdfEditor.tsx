@@ -4086,31 +4086,24 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   </div>
                 ))}
               </div>
-              {/* Edited text overlays — uses pdf.js loaded font for exact match */}
-              {nativeTextBlocks.filter(b => b.editedStr !== undefined).map(block => (
+              {/* Edited block indicators — subtle border to show which blocks were modified */}
+              {activeTool !== "edit-text" && nativeTextBlocks.filter(b => b.editedStr !== undefined).map(block => (
                 <div
                   key={`edited-${block.id}`}
                   style={{
                     position: "absolute",
-                    left: block.x,
-                    top: block.y,
-                    width: block.width,
-                    height: block.height,
-                    backgroundColor: "#fff",
+                    left: block.x - 2,
+                    top: block.y - 2,
+                    width: block.width + 4,
+                    height: block.height + 4,
+                    border: "2px dashed #1565C0",
+                    borderRadius: 3,
                     zIndex: 5,
                     pointerEvents: "none",
                     boxSizing: "border-box",
-                    overflow: "hidden",
-                    fontSize: block.fontSize,
-                    fontFamily: `"${block.pdfFontName}", ${block.fontFamily || "sans-serif"}`,
-                    color: block.fontColor || "#000",
-                    lineHeight: 1.4,
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
+                    opacity: 0.5,
                   }}
-                >
-                  {block.editedStr}
-                </div>
+                />
               ))}
               {/* Native text blocks overlay — edit-text tool active */}
               {activeTool === "edit-text" && nativeTextBlocks.map(block => {
