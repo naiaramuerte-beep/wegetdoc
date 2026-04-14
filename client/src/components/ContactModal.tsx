@@ -71,8 +71,8 @@ export default function ContactModal({ open, onClose }: ContactModalProps) {
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-              <MessageSquare size={20} className="text-green-700" />
+            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+              <MessageSquare size={20} className="text-blue-700" />
             </div>
             <div>
               <h2 className="font-bold text-slate-800 text-lg">Contacto</h2>
@@ -87,14 +87,14 @@ export default function ContactModal({ open, onClose }: ContactModalProps) {
         {sent ? (
           /* Success state */
           <div className="p-8 text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Check size={28} className="text-green-600" />
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Check size={28} className="text-blue-600" />
             </div>
             <h3 className="text-xl font-bold text-slate-800 mb-2">¡Mensaje enviado!</h3>
             <p className="text-slate-500 mb-6">
               Hemos recibido tu mensaje y te responderemos lo antes posible en <strong>{form.email}</strong>.
             </p>
-            <Button onClick={handleClose} className="bg-green-700 hover:bg-green-800 text-white px-8">
+            <Button onClick={handleClose} className="bg-blue-700 hover:bg-blue-800 text-white px-8">
               Cerrar
             </Button>
           </div>
@@ -133,8 +133,8 @@ export default function ContactModal({ open, onClose }: ContactModalProps) {
                     onClick={() => setForm({ ...form, reason: r })}
                     className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
                       form.reason === r
-                        ? "bg-green-700 text-white border-green-700"
-                        : "border-slate-200 text-slate-600 hover:border-green-300 hover:text-green-700"
+                        ? "bg-blue-700 text-white border-blue-700"
+                        : "border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-700"
                     }`}
                   >
                     {r}
@@ -169,7 +169,7 @@ export default function ContactModal({ open, onClose }: ContactModalProps) {
               <Button
                 type="submit"
                 disabled={sendMutation.isPending}
-                className="flex-1 bg-green-700 hover:bg-green-800 text-white"
+                className="flex-1 bg-blue-700 hover:bg-blue-800 text-white"
               >
                 {sendMutation.isPending ? (
                   <>Enviando...</>

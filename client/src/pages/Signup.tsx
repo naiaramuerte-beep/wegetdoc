@@ -29,7 +29,7 @@ export default function Signup() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4 py-12"
-      style={{ backgroundColor: "#14532d" }}
+      style={{ backgroundColor: "#0D47A1" }}
     >
       <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-0 rounded-2xl overflow-hidden"
         style={{ boxShadow: "0 24px 64px rgba(13, 51, 17, 0.5)" }}
@@ -43,14 +43,14 @@ export default function Signup() {
             <div className="flex items-center gap-2 mb-8">
               <div
                 className="w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: "#1B5E20" }}
+                style={{ backgroundColor: "#1565C0" }}
               >
                 <FileText className="w-4 h-4 text-white" />
               </div>
               <span
                 className="text-xl font-bold tracking-tight text-white"
               >
-                WeGet<span style={{ color: "#1B5E20" }}>Doc</span>
+                WeGet<span style={{ color: "#1565C0" }}>Doc</span>
               </span>
             </div>
 
@@ -73,7 +73,7 @@ export default function Signup() {
                     className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
                     style={{ backgroundColor: "rgba(76, 175, 80, 0.2)" }}
                   >
-                    <Check className="w-3 h-3" style={{ color: "#4CAF50" }} />
+                    <Check className="w-3 h-3" style={{ color: "#42A5F5" }} />
                   </div>
                   <span
                     className="text-sm"
@@ -91,11 +91,11 @@ export default function Signup() {
             style={{ color: "#64748b" }}
           >
             Al crear tu cuenta, aceptas nuestras{" "}
-            <a href="/terms" className="underline" style={{ color: "#1B5E20" }}>
+            <a href="/terms" className="underline" style={{ color: "#1565C0" }}>
               Condiciones de servicio
             </a>{" "}
             y{" "}
-            <a href="/privacy" className="underline" style={{ color: "#1B5E20" }}>
+            <a href="/privacy" className="underline" style={{ color: "#1565C0" }}>
               Normas de privacidad
             </a>
             .
@@ -137,7 +137,7 @@ export default function Signup() {
                   color: "#0f172a",
                 }}
                 onFocus={(e) =>
-                  (e.currentTarget.style.borderColor = "#1B5E20")
+                  (e.currentTarget.style.borderColor = "#1565C0")
                 }
                 onBlur={(e) =>
                   (e.currentTarget.style.borderColor = "#e2e8f0")
@@ -164,7 +164,7 @@ export default function Signup() {
                   color: "#0f172a",
                 }}
                 onFocus={(e) =>
-                  (e.currentTarget.style.borderColor = "#1B5E20")
+                  (e.currentTarget.style.borderColor = "#1565C0")
                 }
                 onBlur={(e) =>
                   (e.currentTarget.style.borderColor = "#e2e8f0")
@@ -192,7 +192,7 @@ export default function Signup() {
                     color: "#0f172a",
                   }}
                   onFocus={(e) =>
-                    (e.currentTarget.style.borderColor = "#1B5E20")
+                    (e.currentTarget.style.borderColor = "#1565C0")
                   }
                   onBlur={(e) =>
                     (e.currentTarget.style.borderColor = "#e2e8f0")
@@ -213,13 +213,13 @@ export default function Signup() {
               type="submit"
               className="w-full py-3 rounded-xl font-semibold text-sm text-white transition-all duration-200 mt-2"
               style={{
-                backgroundColor: "#1B5E20",
+                backgroundColor: "#1565C0",
               }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "#14532d")
+                (e.currentTarget.style.backgroundColor = "#0D47A1")
               }
               onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "#1B5E20")
+                (e.currentTarget.style.backgroundColor = "#1565C0")
               }
             >
               Registrarme
@@ -234,7 +234,7 @@ export default function Signup() {
             <Link
               href="/login"
               className="font-semibold transition-colors duration-200"
-              style={{ color: "#1B5E20" }}
+              style={{ color: "#1565C0" }}
             >
               Acceder a tu cuenta
             </Link>

@@ -51,7 +51,7 @@ const SURFACE    = "#ffffff";
 const GRAD = `linear-gradient(135deg, ${INDIGO}, ${VIOLET})`;
 
 /** Highlight specific words in a title with a colored underline */
-function highlightWords(text: string, words: string[], color = "#4ade80") {
+function highlightWords(text: string, words: string[], color = "#60a5fa") {
   const parts: React.ReactNode[] = [];
   let remaining = text;
   let key = 0;
@@ -85,29 +85,29 @@ const TOOLS_EDIT = [
   { icon: Minimize2,      label_key: "tool_compress",   tool: "compress",     color: "#f1f5f9", iconColor: INDIGO },
 ];
 const TOOLS_FROM_PDF = [
-  { icon: FileText,        label_key: "tool_pdf_word",  tool: "convert-word",  color: "#f1f5f9", iconColor: "#1B5E20" },
-  { icon: FileSpreadsheet, label_key: "tool_pdf_excel", tool: "convert-excel", color: "#f1f5f9", iconColor: "#1B5E20" },
-  { icon: Presentation,    label_key: "tool_pdf_ppt",   tool: "convert-ppt",   color: "#f1f5f9", iconColor: "#1B5E20" },
-  { icon: FileImage,       label_key: "tool_pdf_jpg",   tool: "convert-jpg",   color: "#f1f5f9", iconColor: "#1B5E20" },
-  { icon: FileImage,       label_key: "tool_pdf_png",   tool: "convert-png",   color: "#f1f5f9", iconColor: "#1B5E20" },
-  { icon: FileCode,        label_key: "tool_pdf_html",  tool: "convert-html",  color: "#f1f5f9", iconColor: "#1B5E20" },
+  { icon: FileText,        label_key: "tool_pdf_word",  tool: "convert-word",  color: "#f1f5f9", iconColor: "#1565C0" },
+  { icon: FileSpreadsheet, label_key: "tool_pdf_excel", tool: "convert-excel", color: "#f1f5f9", iconColor: "#1565C0" },
+  { icon: Presentation,    label_key: "tool_pdf_ppt",   tool: "convert-ppt",   color: "#f1f5f9", iconColor: "#1565C0" },
+  { icon: FileImage,       label_key: "tool_pdf_jpg",   tool: "convert-jpg",   color: "#f1f5f9", iconColor: "#1565C0" },
+  { icon: FileImage,       label_key: "tool_pdf_png",   tool: "convert-png",   color: "#f1f5f9", iconColor: "#1565C0" },
+  { icon: FileCode,        label_key: "tool_pdf_html",  tool: "convert-html",  color: "#f1f5f9", iconColor: "#1565C0" },
 ];
 const TOOLS_TO_PDF = [
-  { icon: FileText,        label_key: "tool_word_pdf",  tool: "word-to-pdf",  color: "#f8fafc", iconColor: "#16a34a" },
-  { icon: FileSpreadsheet, label_key: "tool_excel_pdf", tool: "excel-to-pdf", color: "#f8fafc", iconColor: "#16a34a" },
-  { icon: Presentation,    label_key: "tool_ppt_pdf",   tool: "ppt-to-pdf",   color: "#f8fafc", iconColor: "#16a34a" },
-  { icon: FileImage,       label_key: "tool_jpg_pdf",   tool: "jpg-to-pdf",   color: "#f8fafc", iconColor: "#16a34a" },
-  { icon: FileImage,       label_key: "tool_png_pdf",   tool: "png-to-pdf",   color: "#f8fafc", iconColor: "#16a34a" },
-  { icon: FileCode,        label_key: "tool_html_pdf",  tool: "html-to-pdf",  color: "#f8fafc", iconColor: "#16a34a" },
+  { icon: FileText,        label_key: "tool_word_pdf",  tool: "word-to-pdf",  color: "#f8fafc", iconColor: "#2563EB" },
+  { icon: FileSpreadsheet, label_key: "tool_excel_pdf", tool: "excel-to-pdf", color: "#f8fafc", iconColor: "#2563EB" },
+  { icon: Presentation,    label_key: "tool_ppt_pdf",   tool: "ppt-to-pdf",   color: "#f8fafc", iconColor: "#2563EB" },
+  { icon: FileImage,       label_key: "tool_jpg_pdf",   tool: "jpg-to-pdf",   color: "#f8fafc", iconColor: "#2563EB" },
+  { icon: FileImage,       label_key: "tool_png_pdf",   tool: "png-to-pdf",   color: "#f8fafc", iconColor: "#2563EB" },
+  { icon: FileCode,        label_key: "tool_html_pdf",  tool: "html-to-pdf",  color: "#f8fafc", iconColor: "#2563EB" },
 ];
 
 const FILE_FREE_TOOLS = ["jpg-to-pdf", "png-to-pdf", "word-to-pdf", "excel-to-pdf", "ppt-to-pdf", "html-to-pdf"];
 
 // ─── Testimonials ─────────────────────────────────────────────
 const TESTIMONIALS_META = [
-  { name: "María García",      avatar: "MG", avatarColor: "#1B5E20", textKey: "testimonial1_text", roleKey: "testimonial1_role" },
-  { name: "Carlos Rodríguez",  avatar: "CR", avatarColor: "#1B5E20", textKey: "testimonial2_text", roleKey: "testimonial2_role" },
-  { name: "Ana Martínez",      avatar: "AM", avatarColor: "#4CAF50",  textKey: "testimonial3_text", roleKey: "testimonial3_role" },
+  { name: "María García",      avatar: "MG", avatarColor: "#1565C0", textKey: "testimonial1_text", roleKey: "testimonial1_role" },
+  { name: "Carlos Rodríguez",  avatar: "CR", avatarColor: "#1565C0", textKey: "testimonial2_text", roleKey: "testimonial2_role" },
+  { name: "Ana Martínez",      avatar: "AM", avatarColor: "#42A5F5",  textKey: "testimonial3_text", roleKey: "testimonial3_role" },
 ];
 
 export interface HomeOverrides {
@@ -241,7 +241,7 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
                     {overrides.heroHighlight && (
                       <span className="relative inline-block pb-1">
                         <span style={{ color: INDIGO }}>{overrides.heroHighlight}</span>
-                        <span className="absolute bottom-0 left-0 w-full rounded-full" style={{ backgroundColor: "#4ade80", height: "6px", opacity: 0.5 }} />
+                        <span className="absolute bottom-0 left-0 w-full rounded-full" style={{ backgroundColor: "#60a5fa", height: "6px", opacity: 0.5 }} />
                       </span>
                     )}
                   </>
@@ -259,7 +259,7 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
                       <span style={{ color: INDIGO }}>PDF</span>
                       <span
                         className="absolute bottom-0 left-0 w-full rounded-full"
-                        style={{ backgroundColor: "#4ade80", height: "6px", opacity: 0.5 }}
+                        style={{ backgroundColor: "#60a5fa", height: "6px", opacity: 0.5 }}
                       />
                     </span>{" "}
                     <span style={{ color: INDIGO }}>
@@ -538,7 +538,7 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
                   title: t.benefit1_title,
                   desc: t.benefit1_desc,
                   color: "#f1f5f9",
-                  iconColor: "#1B5E20",
+                  iconColor: "#1565C0",
                   points: [(t as any).benefit1_point1, (t as any).benefit1_point2, (t as any).benefit1_point3],
                 },
                 {
@@ -546,7 +546,7 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
                   title: t.benefit2_title,
                   desc: t.benefit2_desc,
                   color: "#f8fafc",
-                  iconColor: "#16a34a",
+                  iconColor: "#2563EB",
                   points: [(t as any).benefit2_point1, (t as any).benefit2_point2, (t as any).benefit2_point3],
                 },
                 {
@@ -681,13 +681,13 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
                 icon: Shield,
                 title: (t as any).security_ssl_title,
                 desc: (t as any).security_ssl_desc,
-                color: "#16a34a",
+                color: "#2563EB",
               },
               {
                 icon: Trash2,
                 title: (t as any).security_delete_title,
                 desc: (t as any).security_delete_desc,
-                color: "#1B5E20",
+                color: "#1565C0",
               },
               {
                 icon: Globe,

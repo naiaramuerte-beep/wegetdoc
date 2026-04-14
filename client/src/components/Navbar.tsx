@@ -93,7 +93,7 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
               </div>
               <span>
                 <span className="font-semibold text-lg" style={{ color: TEXT_MAIN }}>{logoParts[0]}</span>
-                <span className="font-extrabold text-lg" style={{ color: "#1B5E20" }}>{logoParts[1]}</span>
+                <span className="font-extrabold text-lg" style={{ color: "#1565C0" }}>{logoParts[1]}</span>
               </span>
             </div>
           ) : (
@@ -106,7 +106,7 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
               </div>
               <span>
                 <span className="font-semibold text-lg" style={{ color: TEXT_MAIN }}>{logoParts[0]}</span>
-                <span className="font-extrabold text-lg" style={{ color: "#1B5E20" }}>{logoParts[1]}</span>
+                <span className="font-extrabold text-lg" style={{ color: "#1565C0" }}>{logoParts[1]}</span>
               </span>
             </Link>
           )}
@@ -265,7 +265,7 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
                             <button
                               onClick={() => setUserMenuOpen(false)}
                               className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors text-left"
-                              style={{ color: "#1B5E20" }}
+                              style={{ color: "#1565C0" }}
                               onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f8fafc"; }}
                               onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
                             >

@@ -140,7 +140,7 @@ export default function BlogPost() {
 
       <main className="flex-1">
         {/* Article header */}
-        <header className="py-12 md:py-16 border-b border-border" style={{ background: "linear-gradient(135deg, #14532d 0%, #1B5E20 100%)" }}>
+        <header className="py-12 md:py-16 border-b border-border" style={{ background: "linear-gradient(135deg, #0D47A1 0%, #1565C0 100%)" }}>
           <div className="container max-w-3xl">
             <button
               onClick={() => navigate("/blog")}
@@ -149,7 +149,7 @@ export default function BlogPost() {
               <ArrowLeft size={14} /> Volver al blog
             </button>
             <div className="flex items-center gap-3 mb-4 flex-wrap">
-              <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-green-500/20 text-green-300 capitalize">
+              <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300 capitalize">
                 {post.category}
               </span>
               <span className="flex items-center gap-1 text-xs text-slate-400">
@@ -206,7 +206,7 @@ export default function BlogPost() {
             {/* CTA */}
             <div
               className="mt-10 rounded-2xl p-6 md:p-8 text-center"
-              style={{ background: "linear-gradient(135deg, #14532d 0%, #1B5E20 100%)" }}
+              style={{ background: "linear-gradient(135deg, #0D47A1 0%, #1565C0 100%)" }}
             >
               <h3 className="text-xl font-bold text-white mb-2">¿Listo para editar tu PDF?</h3>
               <p className="text-slate-300 mb-5 text-sm">
@@ -215,7 +215,7 @@ export default function BlogPost() {
               <button
                 onClick={() => navigate("/")}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white transition-all hover:opacity-90"
-                style={{ background: "#1B5E20" }}
+                style={{ background: "#1565C0" }}
               >
                 Editar PDF ahora <ArrowRight size={16} />
               </button>

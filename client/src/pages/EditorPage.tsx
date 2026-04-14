@@ -38,7 +38,7 @@ const LogoSvg = () => (
   <svg width="26" height="18" viewBox="0 0 32 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
     <path d="M25.5 12.5C25.5 12.5 26 12 26 11c0-2.8-2.2-5-5-5-.5 0-1 .1-1.5.2C18.3 3.7 15.9 2 13 2 9.4 2 6.5 4.9 6.5 8.5c0 .2 0 .4 0 .6C4.5 9.6 3 11.4 3 13.5 3 16 5 18 7.5 18h16c2.2 0 4-1.8 4-4 0-1.5-.8-2.8-2-3.5z" fill={colors.light} />
     <rect x="13" y="6" width="6" height="8" rx="0.8" fill="white" fillOpacity="0.9" />
-    <path d="M16.5 6V6L19 8.5H16.5V6Z" fill="#1B5E20" />
+    <path d="M16.5 6V6L19 8.5H16.5V6Z" fill="#1565C0" />
   </svg>
 );
 
@@ -57,9 +57,9 @@ function EditorUploadZone({ lang }: { lang: string }) {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const navy = "#14532d";
-  const blue = "#1B5E20";
-  const blueLight = "#4CAF50";
+  const navy = "#0D47A1";
+  const blue = "#1565C0";
+  const blueLight = "#42A5F5";
 
   const openEditor = useCallback((file: File) => {
     const ext = '.' + file.name.split('.').pop()?.toLowerCase();
@@ -184,11 +184,11 @@ export default function EditorPage() {
   if (isRestoringFromSession) {
     return (
       <div className="flex flex-col min-h-screen" style={{ backgroundColor: "#f8fafc" }}>
-        <div className="flex items-center px-4 h-12 border-b" style={{ backgroundColor: "#14532d", borderColor: "#1e293b" }}>
+        <div className="flex items-center px-4 h-12 border-b" style={{ backgroundColor: "#0D47A1", borderColor: "#1e293b" }}>
           <div className="flex items-center gap-1"><LogoSvg /><LogoText /></div>
         </div>
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center" style={{ color: "#1B5E20" }}>
+          <div className="text-center" style={{ color: "#1565C0" }}>
             <div className="w-8 h-8 border-2 border-current border-t-transparent rounded-full animate-spin mx-auto mb-3" />
             <p className="text-sm font-medium">Loading document...</p>
           </div>
@@ -206,7 +206,7 @@ export default function EditorPage() {
     <div className="flex flex-col" style={{ height: "100dvh", overflow: "hidden" }}>
       {/* ── Custom Editor Header Bar ── */}
       <div className="flex items-center justify-between px-3 md:px-4 h-11 md:h-12 shrink-0 border-b"
-        style={{ backgroundColor: "#14532d", borderColor: "#1e293b" }}>
+        style={{ backgroundColor: "#0D47A1", borderColor: "#1e293b" }}>
         {/* Left: Logo */}
         <button onClick={handleClose} className="flex items-center gap-1 shrink-0 hover:opacity-80 transition-opacity" title="Back to home">
           <LogoSvg />
@@ -223,7 +223,7 @@ export default function EditorPage() {
                 className="bg-white/10 text-white text-sm px-2 py-0.5 rounded border border-white/20 outline-none focus:border-white/40 min-w-[120px] max-w-[300px]"
                 />
               <button onMouseDown={e => { e.preventDefault(); confirmEdit(); }} className="p-0.5 rounded hover:bg-white/10 transition-colors" title="Confirm">
-                <Check className="w-3.5 h-3.5" style={{ color: "#4CAF50" }} />
+                <Check className="w-3.5 h-3.5" style={{ color: "#42A5F5" }} />
               </button>
             </div>
           ) : (

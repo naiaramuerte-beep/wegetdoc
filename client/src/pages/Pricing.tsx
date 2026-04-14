@@ -109,7 +109,7 @@ export default function Pricing() {
               className="relative rounded-2xl p-8 flex flex-col"
               style={{
                 backgroundColor: "#FFFFFF",
-                border: "2px solid #1B5E20",
+                border: "2px solid #1565C0",
                 boxShadow: "0 0 0 4px rgba(27, 94, 32, 0.08)",
               }}
             >
@@ -117,7 +117,7 @@ export default function Pricing() {
                 <span
                   className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold text-white"
                   style={{
-                    backgroundColor: "#1B5E20",
+                    backgroundColor: "#1565C0",
                   }}
                 >
                   <Zap className="w-3 h-3" />
@@ -130,7 +130,7 @@ export default function Pricing() {
                   className="w-8 h-8 rounded-lg flex items-center justify-center"
                   style={{ backgroundColor: "rgba(27, 94, 32, 0.1)" }}
                 >
-                  <Zap className="w-4 h-4" style={{ color: "#1B5E20" }} />
+                  <Zap className="w-4 h-4" style={{ color: "#1565C0" }} />
                 </div>
                 <h2
                   className="text-xl font-bold"
@@ -165,13 +165,13 @@ export default function Pricing() {
               <button
                 className="w-full py-3 rounded-xl font-semibold text-sm text-white transition-all duration-200"
                 style={{
-                  backgroundColor: showCheckout ? "#1B5E20" : "#14532d",
+                  backgroundColor: showCheckout ? "#1565C0" : "#0D47A1",
                 }}
                 onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = "#1B5E20")
+                  (e.currentTarget.style.backgroundColor = "#1565C0")
                 }
                 onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = showCheckout ? "#1B5E20" : "#14532d")
+                  (e.currentTarget.style.backgroundColor = showCheckout ? "#1565C0" : "#0D47A1")
                 }
                 onClick={handleSubscribe}
               >
@@ -193,7 +193,7 @@ export default function Pricing() {
                   className="w-8 h-8 rounded-lg flex items-center justify-center"
                   style={{ backgroundColor: "rgba(13, 51, 17, 0.08)" }}
                 >
-                  <Crown className="w-4 h-4" style={{ color: "#14532d" }} />
+                  <Crown className="w-4 h-4" style={{ color: "#0D47A1" }} />
                 </div>
                 <h2
                   className="text-xl font-bold"
@@ -235,16 +235,16 @@ export default function Pricing() {
                 className="w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200"
                 style={{
                   backgroundColor: "transparent",
-                  border: "2px solid #14532d",
-                  color: "#14532d",
+                  border: "2px solid #0D47A1",
+                  color: "#0D47A1",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#14532d";
+                  e.currentTarget.style.backgroundColor = "#0D47A1";
                   e.currentTarget.style.color = "white";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.color = "#14532d";
+                  e.currentTarget.style.color = "#0D47A1";
                 }}
                 onClick={handleSubscribe}
               >
@@ -262,7 +262,7 @@ export default function Pricing() {
             <div
               className="rounded-2xl overflow-hidden"
               style={{
-                border: "2px solid #1B5E20",
+                border: "2px solid #1565C0",
                 backgroundColor: "#FFFFFF",
                 boxShadow: "0 4px 24px rgba(13, 51, 17, 0.1)",
               }}
@@ -271,7 +271,7 @@ export default function Pricing() {
                 className="px-6 py-4 border-b flex items-center gap-3"
                 style={{ borderColor: "#e2e8f0", backgroundColor: "#f8fafc" }}
               >
-                <CreditCard className="w-5 h-5" style={{ color: "#1B5E20" }} />
+                <CreditCard className="w-5 h-5" style={{ color: "#1565C0" }} />
                 <h3
                   className="text-lg font-bold"
                   style={{ color: "#0f172a" }}
@@ -325,7 +325,7 @@ export default function Pricing() {
               </div>
               <div
                 className="text-sm font-semibold text-center"
-                style={{ color: "#1B5E20",  }}
+                style={{ color: "#1565C0",  }}
               >
                 {t.pricing_trial_name}
               </div>
@@ -355,14 +355,14 @@ export default function Pricing() {
                 </div>
                 <div className="flex justify-center">
                   {feature.trial ? (
-                    <Check className="w-4 h-4" style={{ color: "#1B5E20" }} />
+                    <Check className="w-4 h-4" style={{ color: "#1565C0" }} />
                   ) : (
                     <X className="w-4 h-4" style={{ color: "#cbd5e1" }} />
                   )}
                 </div>
                 <div className="flex justify-center">
                   {feature.monthly ? (
-                    <Check className="w-4 h-4" style={{ color: "#1B5E20" }} />
+                    <Check className="w-4 h-4" style={{ color: "#1565C0" }} />
                   ) : (
                     <X className="w-4 h-4" style={{ color: "#cbd5e1" }} />
                   )}
@@ -404,7 +404,7 @@ export default function Pricing() {
                     {faq.question}
                   </span>
                   {openFaq === i ? (
-                    <ChevronUp className="w-4 h-4 flex-shrink-0" style={{ color: "#1B5E20" }} />
+                    <ChevronUp className="w-4 h-4 flex-shrink-0" style={{ color: "#1565C0" }} />
                   ) : (
                     <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: "#64748b" }} />
                   )}
@@ -460,7 +460,7 @@ function PricingPaymentForm({ onSuccess }: { onSuccess: () => void }) {
         type="submit"
         disabled={!stripe || submitting}
         className="w-full mt-4 py-3 rounded-xl text-white font-semibold text-sm transition-colors disabled:opacity-50"
-        style={{ backgroundColor: "#1B5E20" }}
+        style={{ backgroundColor: "#1565C0" }}
       >
         {submitting ? (
           <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> {t.paywall_processing}</span>
@@ -505,7 +505,7 @@ function StripeInlineCheckout() {
   if (!stripePromise || !clientSecret) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#1B5E20" }} />
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#1565C0" }} />
         <span className="ml-3 text-sm" style={{ color: "#64748b" }}>
           Cargando formulario de pago...
         </span>

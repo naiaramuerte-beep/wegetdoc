@@ -148,14 +148,14 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
                 value={forgotEmail}
                 onChange={(e) => setForgotEmail(e.target.value)}
                 required
-                className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 bg-gray-50"
+                className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 bg-gray-50"
               />
             </div>
             <button
               type="submit"
               disabled={isLoading}
               className="w-full py-2.5 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all"
-              style={{ backgroundColor: isLoading ? "#9ca3af" : "#1B5E20" }}
+              style={{ backgroundColor: isLoading ? "#9ca3af" : "#1565C0" }}
             >
               {isLoading && <Loader2 size={15} className="animate-spin" />}
               Send reset link
@@ -163,7 +163,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
             <button
               type="button"
               onClick={() => setMode("login")}
-              className="text-sm text-center text-gray-500 hover:text-green-700"
+              className="text-sm text-center text-gray-500 hover:text-blue-700"
             >
               Back to Login
             </button>
@@ -179,7 +179,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
                   placeholder="Full name (optional)"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 bg-gray-50"
+                  className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 bg-gray-50"
                 />
               </div>
             )}
@@ -193,7 +193,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 bg-gray-50"
+                className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 bg-gray-50"
               />
             </div>
 
@@ -207,7 +207,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full pl-9 pr-10 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 bg-gray-50"
+                className="w-full pl-9 pr-10 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 bg-gray-50"
               />
               <button
                 type="button"

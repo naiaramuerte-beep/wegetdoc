@@ -28,7 +28,7 @@ export async function sendSubscriptionConfirmationEmail(params: {
 <head><meta charset="utf-8"></head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #0f172a;">
   <div style="text-align: center; margin-bottom: 32px;">
-    <h1 style="color: #1B5E20; font-size: 24px; margin: 0;">EditorPDF</h1>
+    <h1 style="color: #1565C0; font-size: 24px; margin: 0;">EditorPDF</h1>
   </div>
 
   <h2 style="font-size: 20px; margin-bottom: 16px;">¡Hola ${userName}!</h2>
@@ -63,7 +63,7 @@ export async function sendSubscriptionConfirmationEmail(params: {
   </p>
 
   <div style="text-align: center; margin: 24px 0;">
-    <a href="${cancelUrl}" style="display: inline-block; background: #1B5E20; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">
+    <a href="${cancelUrl}" style="display: inline-block; background: #1565C0; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">
       Gestionar suscripción
     </a>
   </div>

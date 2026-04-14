@@ -183,7 +183,7 @@ export default function UploadZone({ onFileSelect, compact = false }: UploadZone
         compact ? "p-6" : "p-10 md:p-16"
       }`}
       style={{
-        border: `2px dashed ${isDragging ? "#1B5E20" : "rgba(27, 94, 32, 0.4)"}`,
+        border: `2px dashed ${isDragging ? "#1565C0" : "rgba(27, 94, 32, 0.4)"}`,
         backgroundColor: isDragging
           ? "rgba(27, 94, 32, 0.06)"
           : "#FFFFFF",
@@ -234,7 +234,7 @@ export default function UploadZone({ onFileSelect, compact = false }: UploadZone
               style={{
                 width: compact ? "1.5rem" : "2.25rem",
                 height: compact ? "1.5rem" : "2.25rem",
-                color: "#1B5E20",
+                color: "#1565C0",
               }}
             />
           </div>
@@ -245,7 +245,7 @@ export default function UploadZone({ onFileSelect, compact = false }: UploadZone
           <p
             className={`font-semibold ${compact ? "text-base" : "text-xl"}`}
             style={{
-              color: "#1B5E20",
+              color: "#1565C0",
             }}
           >
             {isDragging ? txt.drop : txt.drag}
@@ -264,13 +264,13 @@ export default function UploadZone({ onFileSelect, compact = false }: UploadZone
             compact ? "px-4 py-2 text-sm" : "px-6 py-3 text-sm"
           }`}
           style={{
-            backgroundColor: "#14532d",
+            backgroundColor: "#0D47A1",
           }}
           onMouseEnter={(e) =>
-            (e.currentTarget.style.backgroundColor = "#1B5E20")
+            (e.currentTarget.style.backgroundColor = "#1565C0")
           }
           onMouseLeave={(e) =>
-            (e.currentTarget.style.backgroundColor = "#14532d")
+            (e.currentTarget.style.backgroundColor = "#0D47A1")
           }
           onClick={(e) => {
             e.stopPropagation();

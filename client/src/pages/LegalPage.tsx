@@ -50,7 +50,7 @@ export default function LegalPage({ slug }: LegalPageProps) {
               </p>
             )}
             <div
-              className="prose prose-slate max-w-none prose-headings:font-semibold prose-a:text-green-700"
+              className="prose prose-slate max-w-none prose-headings:font-semibold prose-a:text-blue-700"
               dangerouslySetInnerHTML={{ __html: contentToHtml(page.content ?? "") }}
             />
           </article>

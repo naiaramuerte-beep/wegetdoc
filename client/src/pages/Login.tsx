@@ -21,7 +21,7 @@ export default function Login() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4"
-      style={{ backgroundColor: "#14532d" }}
+      style={{ backgroundColor: "#0D47A1" }}
     >
       <div
         className="w-full max-w-md rounded-2xl p-8"
@@ -34,7 +34,7 @@ export default function Login() {
         <div className="flex items-center gap-2 mb-8">
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: "#1B5E20" }}
+            style={{ backgroundColor: "#1565C0" }}
           >
             <FileText className="w-4 h-4 text-white" />
           </div>
@@ -42,7 +42,7 @@ export default function Login() {
             className="text-xl font-bold tracking-tight"
             style={{ color: "#0f172a" }}
           >
-            WeGet<span style={{ color: "#1B5E20" }}>Doc</span>
+            WeGet<span style={{ color: "#1565C0" }}>Doc</span>
           </span>
         </div>
 
@@ -79,7 +79,7 @@ export default function Login() {
                 color: "#0f172a",
               }}
               onFocus={(e) =>
-                (e.currentTarget.style.borderColor = "#1B5E20")
+                (e.currentTarget.style.borderColor = "#1565C0")
               }
               onBlur={(e) =>
                 (e.currentTarget.style.borderColor = "#e2e8f0")
@@ -107,7 +107,7 @@ export default function Login() {
                   color: "#0f172a",
                 }}
                 onFocus={(e) =>
-                  (e.currentTarget.style.borderColor = "#1B5E20")
+                  (e.currentTarget.style.borderColor = "#1565C0")
                 }
                 onBlur={(e) =>
                   (e.currentTarget.style.borderColor = "#e2e8f0")
@@ -128,7 +128,7 @@ export default function Login() {
             <a
               href="#"
               className="text-xs transition-colors duration-200"
-              style={{ color: "#1B5E20" }}
+              style={{ color: "#1565C0" }}
             >
               ¿No recuerdas tus credenciales?
             </a>
@@ -138,13 +138,13 @@ export default function Login() {
             type="submit"
             className="w-full py-3 rounded-xl font-semibold text-sm text-white transition-all duration-200"
             style={{
-              backgroundColor: "#1B5E20",
+              backgroundColor: "#1565C0",
             }}
             onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#14532d")
+              (e.currentTarget.style.backgroundColor = "#0D47A1")
             }
             onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "#1B5E20")
+              (e.currentTarget.style.backgroundColor = "#1565C0")
             }
           >
             Acceder
@@ -159,7 +159,7 @@ export default function Login() {
           <Link
             href="/signup"
             className="font-semibold transition-colors duration-200"
-            style={{ color: "#1B5E20" }}
+            style={{ color: "#1565C0" }}
           >
             Crea tu cuenta
           </Link>

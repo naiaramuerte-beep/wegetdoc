@@ -57,7 +57,7 @@ export default function PaymentSuccess() {
         className="w-20 h-20 rounded-full flex items-center justify-center mb-6"
         style={{ backgroundColor: "rgba(27, 94, 32, 0.12)" }}
       >
-        <CheckCircle className="w-10 h-10" style={{ color: "#1B5E20" }} />
+        <CheckCircle className="w-10 h-10" style={{ color: "#1565C0" }} />
       </div>
 
       <h1
@@ -81,8 +81,8 @@ export default function PaymentSuccess() {
           border: "1px solid rgba(27, 94, 32, 0.20)",
         }}
       >
-        <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" style={{ color: "#1B5E20" }} />
-        <span className="text-sm font-medium" style={{ color: "#2E4A2E" }}>
+        <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" style={{ color: "#1565C0" }} />
+        <span className="text-sm font-medium" style={{ color: "#1A3A5C" }}>
           Redirigiendo en <strong>{countdown}</strong>s...
         </span>
       </div>
@@ -93,7 +93,7 @@ export default function PaymentSuccess() {
           onClick={handleGoNow}
           className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-white font-semibold text-sm transition-all duration-200"
           style={{
-            backgroundColor: "#1B5E20",
+            backgroundColor: "#1565C0",
           }}
         >
           <Upload className="w-4 h-4" />
@@ -125,7 +125,7 @@ export default function PaymentSuccess() {
             "Acceder a tus documentos en cualquier momento",
           ].map((item, i) => (
             <li key={i} className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: "#1B5E20" }} />
+              <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: "#1565C0" }} />
               {item}
             </li>
           ))}

@@ -42,11 +42,11 @@ interface ToolGroup {
   tools: ToolDef[];
 }
 
-const EDIT_COLOR = "#1B5E20";
+const EDIT_COLOR = "#1565C0";
 const EDIT_BG = "rgba(27, 94, 32, 0.08)";
-const ORG_COLOR = "#1B5E20";
+const ORG_COLOR = "#1565C0";
 const ORG_BG = "rgba(212, 160, 23, 0.08)";
-const FROM_COLOR = "#2E7D32";
+const FROM_COLOR = "#1E88E5";
 const FROM_BG = "rgba(46, 125, 50, 0.08)";
 const TO_COLOR = "#A67C00";
 const TO_BG = "rgba(166, 124, 0, 0.08)";

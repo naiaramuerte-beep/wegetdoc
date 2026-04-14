@@ -75,7 +75,7 @@ export default function Admin() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#0f1117" }}>
-        <div className="w-8 h-8 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -87,7 +87,7 @@ export default function Admin() {
         <button
           onClick={() => navigate("/")}
           className="px-4 py-2 rounded-lg text-sm font-medium text-white"
-          style={{ backgroundColor: "#1B5E20" }}
+          style={{ backgroundColor: "#1565C0" }}
         >
           Volver al inicio
         </button>
@@ -152,7 +152,7 @@ export default function Admin() {
                 onClick={() => setTab(t.id)}
                 className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-left transition-colors w-full"
                 style={{
-                  backgroundColor: tab === t.id ? "#14532d" : "transparent",
+                  backgroundColor: tab === t.id ? "#0D47A1" : "transparent",
                   color: tab === t.id ? "white" : "#94a3b8",
                 }}
                 onMouseEnter={(e) => { if (tab !== t.id) e.currentTarget.style.backgroundColor = "#1e2433"; }}
@@ -174,7 +174,7 @@ export default function Admin() {
               <h2 className="text-lg font-semibold text-white">Resumen general</h2>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                  { label: "Total usuarios", value: stats?.totalUsers ?? "—", icon: <Users size={20} />, color: "#1B5E20" },
+                  { label: "Total usuarios", value: stats?.totalUsers ?? "—", icon: <Users size={20} />, color: "#1565C0" },
                   { label: "Suscripciones activas", value: stats?.activeSubscriptions ?? "—", icon: <CreditCard size={20} />, color: "#10b981" },
                   { label: "Documentos", value: stats?.totalDocuments ?? "—", icon: <FileText size={20} />, color: "#8b5cf6" },
                   { label: "Mensajes sin leer", value: stats?.unreadMessages ?? "—", icon: <MessageSquare size={20} />, color: "#f59e0b" },
@@ -209,7 +209,7 @@ export default function Admin() {
                 <button
                   onClick={() => setTab("billing")}
                   className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors"
-                  style={{ backgroundColor: "#1B5E20" }}
+                  style={{ backgroundColor: "#1565C0" }}
                 >
                   Ver estadísticas de facturación →
                 </button>
@@ -224,7 +224,7 @@ export default function Admin() {
 
               {billingQ.isLoading ? (
                 <div className="flex items-center justify-center h-40">
-                  <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : billing ? (
                 <>
@@ -243,7 +243,7 @@ export default function Admin() {
                         value: formatEur(billing.arr),
                         sub: "Ingresos anuales recurrentes",
                         icon: <DollarSign size={18} />,
-                        color: "#1B5E20",
+                        color: "#1565C0",
                       },
                       {
                         label: "Suscripciones activas",
@@ -313,8 +313,8 @@ export default function Admin() {
                       <AreaChart data={billing.monthlyRevenue}>
                         <defs>
                           <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#1B5E20" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#1B5E20" stopOpacity={0} />
+                            <stop offset="5%" stopColor="#1565C0" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#1565C0" stopOpacity={0} />
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#1e2433" />
@@ -335,7 +335,7 @@ export default function Admin() {
                         <Area
                           type="monotone"
                           dataKey="revenue"
-                          stroke="#1B5E20"
+                          stroke="#1565C0"
                           fill="url(#revGrad)"
                           strokeWidth={2}
                         />
@@ -387,7 +387,7 @@ export default function Admin() {
                     placeholder="Buscar por email..."
                     value={userSearch}
                     onChange={(e) => setUserSearch(e.target.value)}
-                    className="pl-8 pr-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-green-600"
+                    className="pl-8 pr-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600"
                     style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#131720" }}
                   />
                 </div>
@@ -493,7 +493,7 @@ export default function Admin() {
                             {u.email && (
                               <a
                                 href={`mailto:${u.email}`}
-                                className="p-1.5 rounded transition-colors hover:bg-gray-700 text-gray-400 hover:text-green-400"
+                                className="p-1.5 rounded transition-colors hover:bg-gray-700 text-gray-400 hover:text-blue-400"
                               >
                                 <Mail size={14} />
                               </a>
@@ -597,7 +597,7 @@ export default function Admin() {
                       className="rounded-xl border p-4 cursor-pointer transition-colors"
                       style={{
                         backgroundColor: msg.read ? "#131720" : "#1a1f2e",
-                        borderColor: msg.read ? "#1e2433" : "#1B5E2040",
+                        borderColor: msg.read ? "#1e2433" : "#1565C040",
                       }}
                       onClick={() => {
                         setExpandedMsg(expandedMsg === msg.id ? null : msg.id);
@@ -607,7 +607,7 @@ export default function Admin() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           {!msg.read && (
-                            <div className="w-2 h-2 rounded-full bg-green-600 flex-shrink-0" />
+                            <div className="w-2 h-2 rounded-full bg-blue-600 flex-shrink-0" />
                           )}
                           <div>
                             <p className="text-sm font-medium text-white">
@@ -634,7 +634,7 @@ export default function Admin() {
                           <a
                             href={`mailto:${msg.email}?subject=Re: ${msg.subject}`}
                             className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors"
-                            style={{ backgroundColor: "#1B5E20" }}
+                            style={{ backgroundColor: "#1565C0" }}
                             onClick={(e) => e.stopPropagation()}
                           >
                             <Mail size={12} />
@@ -661,7 +661,7 @@ export default function Admin() {
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-white">
                       Editando:{" "}
-                      <span className="text-green-400">{editingLegal}</span>
+                      <span className="text-blue-400">{editingLegal}</span>
                     </h3>
                     <button
                       onClick={() => setEditingLegal(null)}
@@ -676,7 +676,7 @@ export default function Admin() {
                       type="text"
                       value={legalTitle}
                       onChange={(e) => setLegalTitle(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-green-600"
+                      className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600"
                       style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
                     />
                   </div>
@@ -688,7 +688,7 @@ export default function Admin() {
                       value={legalContent}
                       onChange={(e) => setLegalContent(e.target.value)}
                       rows={16}
-                      className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-green-600 font-mono resize-y"
+                      className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600 font-mono resize-y"
                       style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
                     />
                   </div>
@@ -702,7 +702,7 @@ export default function Admin() {
                     }
                     disabled={saveLegalMut.isPending}
                     className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors"
-                    style={{ backgroundColor: "#1B5E20" }}
+                    style={{ backgroundColor: "#1565C0" }}
                   >
                     {saveLegalMut.isPending ? "Guardando..." : "Guardar cambios"}
                   </button>
@@ -738,7 +738,7 @@ export default function Admin() {
                             setLegalContent(existing?.content ?? "");
                           }}
                           className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors"
-                          style={{ backgroundColor: "#1B5E20" }}
+                          style={{ backgroundColor: "#1565C0" }}
                         >
                           Editar
                         </button>
@@ -830,13 +830,13 @@ function SettingRow({
           setSaved(false);
         }}
         placeholder={placeholder}
-        className="flex-1 px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-green-600"
+        className="flex-1 px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600"
         style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
       />
       <button
         onClick={handleSave}
         className="px-3 py-2 rounded-lg text-xs font-medium text-white transition-colors flex-shrink-0"
-        style={{ backgroundColor: saved ? "#10b981" : "#1B5E20" }}
+        style={{ backgroundColor: saved ? "#10b981" : "#1565C0" }}
       >
         {saved ? "✓ Guardado" : "Guardar"}
       </button>

@@ -227,7 +227,7 @@ export async function sendCancellationEmail({
               <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;margin-bottom:24px;">
                 <tr>
                   <td style="padding:20px 24px;">
-                    <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#166534;text-transform:uppercase;letter-spacing:0.5px;">✅ Tu acceso continúa</p>
+                    <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#1976D2;text-transform:uppercase;letter-spacing:0.5px;">✅ Tu acceso continúa</p>
                     <p style="margin:0;color:#15803d;font-size:15px;line-height:1.6;">
                       Aunque has cancelado, seguirás teniendo acceso completo a todas las funciones de ${brandName} hasta el <strong>${formattedDate}</strong>. No se realizará ningún cargo adicional.
                     </p>

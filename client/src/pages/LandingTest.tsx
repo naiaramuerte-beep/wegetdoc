@@ -254,7 +254,7 @@ export default function LandingTest() {
             "It's like having a personal{" "}
             <span className="relative inline-block">
               <span style={{ color: colors.primary }}>document studio</span>
-              <span className="absolute bottom-0 left-0 w-full rounded-full" style={{ backgroundColor: "#4ade80", height: "4px", opacity: 0.5 }} />
+              <span className="absolute bottom-0 left-0 w-full rounded-full" style={{ backgroundColor: "#60a5fa", height: "4px", opacity: 0.5 }} />
             </span>
             , right in your browser."
           </p>

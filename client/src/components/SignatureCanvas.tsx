@@ -180,7 +180,7 @@ const SignatureCanvas = React.memo(function SignatureCanvas({
           type="button"
           onClick={handlePlace}
           className="flex-1 py-1.5 rounded text-xs font-medium text-white"
-          style={{ background: "#1B5E20" }}
+          style={{ background: "#1565C0" }}
         >
           {placeLabel}
         </button>

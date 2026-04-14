@@ -102,7 +102,7 @@ function PaymentForm({ onSuccess, userCountry, userPostalCode }: { onSuccess: ()
         type="submit"
         disabled={!stripe || submitting}
         className="w-full py-3.5 rounded-xl text-white font-bold text-sm transition-all duration-200 disabled:opacity-40"
-        style={{ backgroundColor: "#1B5E20" }}
+        style={{ backgroundColor: "#1565C0" }}
       >
         {submitting ? (
           <span className="flex items-center justify-center gap-2">
@@ -233,7 +233,7 @@ function StripeCheckoutForm({
       <div className="hidden md:flex flex-col items-center justify-center bg-[#f4f5f7] p-8" style={{ minWidth: 260, maxWidth: 280 }}>
         {/* Header */}
         <div className="flex items-center gap-2 mb-5 w-full">
-          <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+          <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
             <Check className="w-3.5 h-3.5 text-white" />
           </div>
           <p className="text-sm font-semibold text-slate-800">Your document is ready!</p>
@@ -280,13 +280,13 @@ function StripeCheckoutForm({
               return (
                 <div key={step.key} className="flex items-center gap-2">
                   {idx < curr ? (
-                    <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center"><Check className="w-2.5 h-2.5 text-white" /></div>
+                    <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center"><Check className="w-2.5 h-2.5 text-white" /></div>
                   ) : idx === curr ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-[#1B5E20]" />
+                    <Loader2 className="w-4 h-4 animate-spin text-[#1565C0]" />
                   ) : (
                     <div className="w-4 h-4 rounded-full border-2 border-slate-200" />
                   )}
-                  <span className={`text-xs font-medium ${idx < curr ? "text-green-600" : idx === curr ? "text-[#1B5E20]" : "text-slate-300"}`}>
+                  <span className={`text-xs font-medium ${idx < curr ? "text-blue-600" : idx === curr ? "text-[#1565C0]" : "text-slate-300"}`}>
                     {step.label}
                   </span>
                 </div>
@@ -300,19 +300,19 @@ function StripeCheckoutForm({
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
         <div className="px-6 py-5 space-y-5">
           {/* Pricing breakdown */}
-          <div className="rounded-xl p-5 text-center" style={{ background: "linear-gradient(135deg, #1B5E20, #166534)" }}>
-            <p className="text-sm text-green-100 mb-1">{t.paywall_your_pdf}</p>
+          <div className="rounded-xl p-5 text-center" style={{ background: "linear-gradient(135deg, #1565C0, #1976D2)" }}>
+            <p className="text-sm text-blue-100 mb-1">{t.paywall_your_pdf}</p>
             <p className="text-3xl font-extrabold text-white tracking-tight">{t.paywall_only_for}</p>
           </div>
 
           {/* Stripe form */}
           {stripePromise && clientSecret ? (
-            <Elements stripe={stripePromise} options={{ clientSecret, locale: "en", appearance: { theme: "stripe", variables: { colorPrimary: "#1B5E20", borderRadius: "10px" } } }}>
+            <Elements stripe={stripePromise} options={{ clientSecret, locale: "en", appearance: { theme: "stripe", variables: { colorPrimary: "#1565C0", borderRadius: "10px" } } }}>
               <PaymentForm onSuccess={handleComplete} userCountry={userCountry} userPostalCode={userPostalCode} />
             </Elements>
           ) : (
             <div className="flex items-center justify-center py-10">
-              <Loader2 className="w-7 h-7 animate-spin text-[#1B5E20]" />
+              <Loader2 className="w-7 h-7 animate-spin text-[#1565C0]" />
             </div>
           )}
         </div>
@@ -440,7 +440,7 @@ export default function PaywallModal({
         {currentStep === "auth-choice" && (
           <div className="p-8">
             <div className="text-center mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-[#1B5E20] flex items-center justify-center mx-auto mb-4">
+              <div className="w-14 h-14 rounded-2xl bg-[#1565C0] flex items-center justify-center mx-auto mb-4">
                 <CreditCard className="w-7 h-7 text-white" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">{t.paywall_create_account}</h2>
@@ -479,7 +479,7 @@ export default function PaywallModal({
         {currentStep === "email-form" && (
           <div className="p-8">
             <div className="text-center mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-[#1B5E20] flex items-center justify-center mx-auto mb-4">
+              <div className="w-14 h-14 rounded-2xl bg-[#1565C0] flex items-center justify-center mx-auto mb-4">
                 <Lock className="w-7 h-7 text-white" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">{emailMode === "register" ? t.paywall_register : t.paywall_login}</h2>
@@ -487,21 +487,21 @@ export default function PaywallModal({
             </div>
             <div className="max-w-sm mx-auto space-y-3">
               {emailMode === "register" && (
-                <input type="text" value={nameInput} onChange={(e) => setNameInput(e.target.value)} placeholder={t.paywall_name} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B5E20]" />
+                <input type="text" value={nameInput} onChange={(e) => setNameInput(e.target.value)} placeholder={t.paywall_name} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1565C0]" />
               )}
-              <input type="email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} placeholder="you@email.com" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B5E20]" />
+              <input type="email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} placeholder="you@email.com" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1565C0]" />
               <div className="relative">
-                <input type={showPassword ? "text" : "password"} value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} placeholder={t.paywall_password} className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B5E20]" onKeyDown={(e) => e.key === "Enter" && handleEmailSubmit()} />
+                <input type={showPassword ? "text" : "password"} value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} placeholder={t.paywall_password} className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-[#1565C0]" onKeyDown={(e) => e.key === "Enter" && handleEmailSubmit()} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
               {emailMode === "register" && <p className="text-xs text-gray-400">{t.paywall_password_min}</p>}
-              <button onClick={handleEmailSubmit} disabled={emailLoading} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#1B5E20] text-white font-bold text-sm hover:bg-[#14532d] transition-colors disabled:opacity-60">
+              <button onClick={handleEmailSubmit} disabled={emailLoading} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#1565C0] text-white font-bold text-sm hover:bg-[#0D47A1] transition-colors disabled:opacity-60">
                 {emailLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> {emailMode === "register" ? t.paywall_registering : t.paywall_logging_in}</> : <><ArrowRight className="w-4 h-4" /> {emailMode === "register" ? t.paywall_register : t.paywall_login}</>}
               </button>
               <div className="text-center text-sm text-gray-500 pt-1">
-                {emailMode === "register" ? <>{t.paywall_have_account}{" "}<button onClick={() => setEmailMode("login")} className="text-[#1B5E20] font-semibold hover:underline">{t.paywall_login}</button></> : <>{t.paywall_no_account}{" "}<button onClick={() => setEmailMode("register")} className="text-[#1B5E20] font-semibold hover:underline">{t.paywall_register}</button></>}
+                {emailMode === "register" ? <>{t.paywall_have_account}{" "}<button onClick={() => setEmailMode("login")} className="text-[#1565C0] font-semibold hover:underline">{t.paywall_login}</button></> : <>{t.paywall_no_account}{" "}<button onClick={() => setEmailMode("register")} className="text-[#1565C0] font-semibold hover:underline">{t.paywall_register}</button></>}
               </div>
               <button onClick={() => setStep("auth-choice")} className="w-full text-sm text-gray-400 hover:text-gray-700 py-2 transition-colors">{t.paywall_back}</button>
             </div>
