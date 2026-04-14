@@ -584,20 +584,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
     renderTaskRef.current = null;
 
-    // Apply edited text blocks on canvas
-    const editedBlocks = (allNativeTextBlocksRef.current.get(pageNum) ?? []).filter(b => b.editedStr !== undefined);
-    for (const block of editedBlocks) {
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(block.x * dpr, block.y * dpr, block.width * dpr, block.height * dpr);
-      ctx.fillStyle = block.fontColor || "#000";
-      ctx.font = `${block.fontSize * dpr}px "${block.pdfFontName}", ${block.fontFamily || "sans-serif"}`;
-      const lines = (block.editedStr!).split("\n");
-      const lineH = block.fontSize * dpr * 1.3;
-      for (let i = 0; i < lines.length; i++) {
-        ctx.fillText(lines[i], block.x * dpr, block.y * dpr + block.fontSize * dpr + i * lineH);
-      }
-    }
-
     // Sync drawing canvas size
     if (drawingCanvasRef.current) {
       drawingCanvasRef.current.width = vp.width;
@@ -610,13 +596,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
 
   useEffect(() => { renderPage(currentPage); }, [renderPage, currentPage]);
-
-  // Re-render canvas when text edits change (to show replacements)
-  useEffect(() => {
-    if (pdfDoc && mainCanvasRef.current && !editingBlockId) {
-      renderPage(currentPage);
-    }
-  }, [allNativeTextBlocks]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Force render when pdfDoc first becomes available OR when canvas mounts
   useEffect(() => {
