@@ -127,6 +127,9 @@ interface Annotation {
   color?: string;
   fontSize?: number;
   fontFamily?: string;
+  fontWeight?: string;
+  fontStyle?: string;
+  textDecoration?: string;
   opacity?: number;
   rotation?: number;
   points?: { x: number; y: number }[];
@@ -215,6 +218,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const [textColor, setTextColor] = useState("#000000");
   const [textSize, setTextSize] = useState(14);
   const [textBold, setTextBold] = useState(false);
+  const [textItalic, setTextItalic] = useState(false);
+  const [textUnderline, setTextUnderline] = useState(false);
+  const [textStrikethrough, setTextStrikethrough] = useState(false);
   const [textFont, setTextFont] = useState("Arial, sans-serif");
   const [clickToPlaceText, setClickToPlaceText] = useState(false);
   const [editingTextId, setEditingTextId] = useState<string | null>(null); // inline text editing
@@ -1637,6 +1643,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       width: Math.max(100, textInput.length * (textSize * 0.6)),
       height: textSize + 8, page: currentPage,
       color: textColor, fontSize: textSize, fontFamily: textFont,
+      fontWeight: textBold ? "bold" : "normal",
+      fontStyle: textItalic ? "italic" : "normal",
+      textDecoration: [textUnderline ? "underline" : "", textStrikethrough ? "line-through" : ""].filter(Boolean).join(" ") || "none",
     });
     setTextInput("");
     toast.success(t.editor_toast_image_added ?? "Text added. Drag it to position.");
@@ -2940,6 +2949,33 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 ))}
               </select>
             </div>
+            {/* Bold / Italic / Underline / Strikethrough */}
+            <div className="flex gap-1">
+              {[
+                { key: "bold", label: "B", state: isEditingExisting ? selectedTextAnn.fontWeight === "bold" : textBold, btnStyle: { fontWeight: "bold" } as React.CSSProperties,
+                  toggle: () => { const v = !textBold; setTextBold(v); if (isEditingExisting) updateSelectedTextProp({ fontWeight: v ? "bold" : "normal" }); } },
+                { key: "italic", label: "I", state: isEditingExisting ? selectedTextAnn.fontStyle === "italic" : textItalic, btnStyle: { fontStyle: "italic" } as React.CSSProperties,
+                  toggle: () => { const v = !textItalic; setTextItalic(v); if (isEditingExisting) updateSelectedTextProp({ fontStyle: v ? "italic" : "normal" }); } },
+                { key: "underline", label: "U", state: isEditingExisting ? selectedTextAnn.textDecoration?.includes("underline") : textUnderline, btnStyle: { textDecoration: "underline" } as React.CSSProperties,
+                  toggle: () => { const v = !textUnderline; setTextUnderline(v); if (isEditingExisting) updateSelectedTextProp({ textDecoration: v ? "underline" : "none" }); } },
+                { key: "strike", label: "S", state: isEditingExisting ? selectedTextAnn.textDecoration?.includes("line-through") : textStrikethrough, btnStyle: { textDecoration: "line-through" } as React.CSSProperties,
+                  toggle: () => { const v = !textStrikethrough; setTextStrikethrough(v); if (isEditingExisting) updateSelectedTextProp({ textDecoration: v ? "line-through" : "none" }); } },
+              ].map(btn => (
+                <button
+                  key={btn.key}
+                  onClick={btn.toggle}
+                  className="w-8 h-8 rounded border flex items-center justify-center text-sm transition-colors"
+                  style={{
+                    borderColor: btn.state ? "#1565C0" : "#cbd5e1",
+                    backgroundColor: btn.state ? "#f0f7ff" : "white",
+                    color: btn.state ? "#1565C0" : "#64748b",
+                    ...btn.btnStyle,
+                  }}
+                >
+                  {btn.label}
+                </button>
+              ))}
+            </div>
             <div className="flex gap-2 items-center">
               <label className="text-xs" style={{ color: "#64748b" }}>Color</label>
               <input
@@ -4096,6 +4132,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                             fontSize: ann.fontSize ?? 14,
                             color: ann.color ?? "#000",
                             fontFamily: ann.fontFamily ?? "Arial, sans-serif",
+                            fontWeight: ann.fontWeight ?? "normal",
+                            fontStyle: ann.fontStyle ?? "normal",
+                            textDecoration: ann.textDecoration ?? "none",
                             whiteSpace: "pre-wrap",
                             display: "block",
                             lineHeight: 1.3,
@@ -4114,7 +4153,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         />
                       ) : (
                         <span
-                          style={{ fontSize: ann.fontSize ?? 14, color: ann.color ?? "#000", fontFamily: ann.fontFamily ?? "Arial, sans-serif", whiteSpace: "pre-wrap", display: "block", lineHeight: 1.2, cursor: "move", minHeight: "1em" }}
+                          style={{ fontSize: ann.fontSize ?? 14, color: ann.color ?? "#000", fontFamily: ann.fontFamily ?? "Arial, sans-serif", fontWeight: ann.fontWeight ?? "normal", fontStyle: ann.fontStyle ?? "normal", textDecoration: ann.textDecoration ?? "none", whiteSpace: "pre-wrap", display: "block", lineHeight: 1.2, cursor: "move", minHeight: "1em" }}
                           onDoubleClick={(e) => {
                             e.stopPropagation();
                             setEditingTextId(ann.id);
