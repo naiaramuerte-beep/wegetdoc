@@ -556,6 +556,33 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const allNativeTextBlocksRef = useRef(allNativeTextBlocks);
   allNativeTextBlocksRef.current = allNativeTextBlocks;
 
+  // Paint edited text blocks on canvas: white rect over original + replacement text
+  const applyTextEditsToCanvas = useCallback((ctx: CanvasRenderingContext2D, pageNum: number, dpr: number) => {
+    const editedBlocks = (allNativeTextBlocksRef.current.get(pageNum) ?? []).filter(b => b.editedStr !== undefined);
+    for (const block of editedBlocks) {
+      // White rectangle to cover original text
+      ctx.save();
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(
+        block.x * dpr - 1,
+        block.y * dpr - 1,
+        block.width * dpr + 2,
+        block.height * dpr + 2
+      );
+      // Draw replacement text line by line
+      const fontSize = block.fontSize * dpr;
+      ctx.fillStyle = block.fontColor || "#000";
+      ctx.font = `${fontSize}px ${block.fontFamily || "sans-serif"}`;
+      ctx.textBaseline = "top";
+      const lines = block.editedStr!.split("\n");
+      const lineH = fontSize * 1.3;
+      for (let i = 0; i < lines.length; i++) {
+        ctx.fillText(lines[i], block.x * dpr, block.y * dpr + i * lineH + 2);
+      }
+      ctx.restore();
+    }
+  }, []);
+
   const renderTaskRef = useRef<any>(null);
 
   const renderPage = useCallback(async (pageNum: number) => {
@@ -584,6 +611,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
     renderTaskRef.current = null;
 
+    // Paint edited text blocks over the canvas
+    applyTextEditsToCanvas(ctx, pageNum, dpr);
+
     // Sync drawing canvas size
     if (drawingCanvasRef.current) {
       drawingCanvasRef.current.width = vp.width;
@@ -596,6 +626,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
 
   useEffect(() => { renderPage(currentPage); }, [renderPage, currentPage]);
+
+  // Re-render when text edits change to show replacements on canvas
+  useEffect(() => {
+    if (pdfDoc && mainCanvasRef.current && !editingBlockId) {
+      renderPage(currentPage);
+    }
+  }, [allNativeTextBlocks]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Force render when pdfDoc first becomes available OR when canvas mounts
   useEffect(() => {
