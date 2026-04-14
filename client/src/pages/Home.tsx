@@ -303,7 +303,7 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
 
               {/* Social proof inline */}
               {!isFastDoc && (
-                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-5 gap-y-2 text-xs mb-6" style={{ color: TEXT_MUTED }}>
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-5 gap-y-2 text-xs mb-10" style={{ color: TEXT_MUTED }}>
                   <span className="flex items-center gap-1.5">
                     <span className="flex">
                       {[...Array(5)].map((_, i) => (
