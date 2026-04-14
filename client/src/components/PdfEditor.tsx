@@ -4144,20 +4144,18 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       outline: "none",
                     }}
                     onBlur={(e) => {
-                      const newText = e.currentTarget.innerText;
-                      if (newText !== block.str) {
-                        setAllNativeTextBlocks(prev => {
-                          const pageBlocks = prev.get(block.page) ?? [];
-                          const updated = pageBlocks.map((b: NativeTextBlock) =>
-                            b.id === block.id
-                              ? { ...b, editedStr: newText, fontColor: editTextColor }
-                              : b
-                          );
-                          const next = new Map(prev);
-                          next.set(block.page, updated);
-                          return next;
-                        });
-                      }
+                      const newText = (e.currentTarget as HTMLElement).innerText;
+                      setAllNativeTextBlocks(prev => {
+                        const pageBlocks = prev.get(block.page) ?? [];
+                        const updated = pageBlocks.map((b: NativeTextBlock) =>
+                          b.id === block.id
+                            ? { ...b, editedStr: newText, fontColor: editTextColor }
+                            : b
+                        );
+                        const next = new Map(prev);
+                        next.set(block.page, updated);
+                        return next;
+                      });
                       setEditingBlockId(null);
                     }}
                     onKeyDown={(e) => {
@@ -4166,8 +4164,20 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     }}
                     onClick={(e) => e.stopPropagation()}
                     onMouseDown={(e) => e.stopPropagation()}
-                    ref={(el) => { if (el && !el.dataset.focused) { el.dataset.focused = "1"; el.focus(); } }}
-                    dangerouslySetInnerHTML={{ __html: (block.editedStr ?? block.str).replace(/\n/g, "<br>") }}
+                    ref={(el) => {
+                      if (el && !el.dataset.init) {
+                        el.dataset.init = "1";
+                        el.innerText = block.editedStr ?? block.str;
+                        el.focus();
+                        // Place cursor at end
+                        const range = document.createRange();
+                        range.selectNodeContents(el);
+                        range.collapse(false);
+                        const sel = window.getSelection();
+                        sel?.removeAllRanges();
+                        sel?.addRange(range);
+                      }
+                    }}
                   />
                 ) : (
                   /* Not editing: transparent border overlay, canvas text visible underneath */
