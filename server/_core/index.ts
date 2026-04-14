@@ -574,6 +574,197 @@ ${allUrls.map(u => `  <url>
     }
   });
 
+  // ── REST endpoint for PDF text blocks extraction via MuPDF ──────────────────────
+  const blocksUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
+  app.post("/api/pdf/blocks", blocksUpload.single("file"), async (req, res) => {
+    try {
+      const file = req.file;
+      if (!file) { res.status(400).json({ error: "No file" }); return; }
+      const pageNum = parseInt(req.body.page ?? "0", 10); // 0-indexed
+
+      const mupdf = await import("mupdf");
+      const doc = mupdf.Document.openDocument(file.buffer, "application/pdf");
+      const pageCount = doc.countPages();
+      if (pageNum < 0 || pageNum >= pageCount) {
+        doc.destroy();
+        res.status(400).json({ error: "Invalid page number" });
+        return;
+      }
+
+      const page = doc.loadPage(pageNum);
+      const stext = page.toStructuredText("preserve-whitespace");
+
+      // Walk structured text to extract characters with full style info
+      interface CharInfo {
+        c: string;
+        x: number; y: number;
+        fontSize: number;
+        fontName: string;
+        isBold: boolean;
+        isItalic: boolean;
+        isSerif: boolean;
+        color: string;
+      }
+      const chars: CharInfo[] = [];
+
+      stext.walk({
+        onChar(c: string, origin: any, font: any, size: number, quad: any, color: any) {
+          let r = 0, g = 0, b = 0;
+          if (Array.isArray(color)) {
+            if (color.length === 1) { r = g = b = color[0]; }
+            else if (color.length === 3) { [r, g, b] = color; }
+            else if (color.length === 4) {
+              const [cc, mm, yy, kk] = color;
+              r = (1 - cc) * (1 - kk); g = (1 - mm) * (1 - kk); b = (1 - yy) * (1 - kk);
+            }
+          }
+          const hex = `#${Math.round(r * 255).toString(16).padStart(2, "0")}${Math.round(g * 255).toString(16).padStart(2, "0")}${Math.round(b * 255).toString(16).padStart(2, "0")}`;
+          chars.push({
+            c,
+            x: origin[0],
+            y: origin[1],
+            fontSize: size,
+            fontName: font.getName?.() || "unknown",
+            isBold: font.isBold?.() ?? false,
+            isItalic: font.isItalic?.() ?? false,
+            isSerif: font.isSerif?.() ?? false,
+            color: hex,
+          });
+        },
+      });
+
+      // Group consecutive chars with same style into line-level blocks
+      interface LineBlock {
+        str: string;
+        x: number; y: number;
+        fontSize: number;
+        fontName: string;
+        isBold: boolean;
+        isItalic: boolean;
+        fontFamily: string;
+        color: string;
+        width: number;
+      }
+      const lineBlocks: LineBlock[] = [];
+      let cur: { chars: string[]; x: number; y: number; fontSize: number; fontName: string; isBold: boolean; isItalic: boolean; isSerif: boolean; color: string; lastX: number } | null = null;
+
+      for (const ch of chars) {
+        if (cur && cur.fontName === ch.fontName && cur.color === ch.color
+          && Math.abs(cur.fontSize - ch.fontSize) < 0.5
+          && Math.abs(cur.y - ch.y) < ch.fontSize * 0.5) {
+          cur.chars.push(ch.c);
+          cur.lastX = ch.x;
+        } else {
+          if (cur && cur.chars.length > 0) {
+            const str = cur.chars.join("");
+            if (str.trim()) {
+              lineBlocks.push({
+                str, x: cur.x, y: cur.y, fontSize: cur.fontSize,
+                fontName: cur.fontName, isBold: cur.isBold, isItalic: cur.isItalic,
+                fontFamily: cur.isSerif ? "serif" : "sans-serif",
+                color: cur.color,
+                width: Math.max(cur.lastX - cur.x + cur.fontSize * 0.6, str.length * cur.fontSize * 0.5),
+              });
+            }
+          }
+          cur = { chars: [ch.c], x: ch.x, y: ch.y, fontSize: ch.fontSize, fontName: ch.fontName, isBold: ch.isBold, isItalic: ch.isItalic, isSerif: ch.isSerif, color: ch.color, lastX: ch.x };
+        }
+      }
+      if (cur && cur.chars.length > 0) {
+        const str = cur.chars.join("");
+        if (str.trim()) {
+          lineBlocks.push({
+            str, x: cur.x, y: cur.y, fontSize: cur.fontSize,
+            fontName: cur.fontName, isBold: cur.isBold, isItalic: cur.isItalic,
+            fontFamily: cur.isSerif ? "serif" : "sans-serif",
+            color: cur.color,
+            width: Math.max(cur.lastX - cur.x + cur.fontSize * 0.6, str.length * cur.fontSize * 0.5),
+          });
+        }
+      }
+
+      // Group line blocks into paragraphs (same X alignment, consecutive Y, same font)
+      interface ParagraphBlock {
+        str: string;
+        x: number; y: number;
+        width: number; height: number;
+        fontSize: number;
+        fontName: string;
+        fontFamily: string;
+        isBold: boolean;
+        isItalic: boolean;
+        color: string;
+        lineHeight: number;
+      }
+      const paragraphs: ParagraphBlock[] = [];
+      let paraLines: LineBlock[] = [];
+
+      for (const lb of lineBlocks) {
+        if (paraLines.length > 0) {
+          const prev = paraLines[paraLines.length - 1];
+          const sameFont = Math.abs(lb.fontSize - prev.fontSize) < 1;
+          const sameX = Math.abs(lb.x - paraLines[0].x) < 20;
+          const yGap = lb.y - prev.y;
+          const normalGap = yGap > 0 && yGap < prev.fontSize * 2.5;
+          if (sameFont && sameX && normalGap) {
+            paraLines.push(lb);
+            continue;
+          }
+        }
+        // Flush previous paragraph
+        if (paraLines.length > 0) {
+          const first = paraLines[0];
+          const last = paraLines[paraLines.length - 1];
+          const lh = paraLines.length > 1 ? (last.y - first.y) / (paraLines.length - 1) : first.fontSize * 1.4;
+          paragraphs.push({
+            str: paraLines.map(l => l.str).join("\n"),
+            x: Math.min(...paraLines.map(l => l.x)),
+            y: first.y,
+            width: Math.max(...paraLines.map(l => l.width)),
+            height: last.y - first.y + last.fontSize * 1.4,
+            fontSize: first.fontSize,
+            fontName: first.fontName,
+            fontFamily: first.fontFamily,
+            isBold: first.isBold,
+            isItalic: first.isItalic,
+            color: first.color,
+            lineHeight: lh,
+          });
+        }
+        paraLines = [lb];
+      }
+      // Flush last paragraph
+      if (paraLines.length > 0) {
+        const first = paraLines[0];
+        const last = paraLines[paraLines.length - 1];
+        const lh = paraLines.length > 1 ? (last.y - first.y) / (paraLines.length - 1) : first.fontSize * 1.4;
+        paragraphs.push({
+          str: paraLines.map(l => l.str).join("\n"),
+          x: Math.min(...paraLines.map(l => l.x)),
+          y: first.y,
+          width: Math.max(...paraLines.map(l => l.width)),
+          height: last.y - first.y + last.fontSize * 1.4,
+          fontSize: first.fontSize,
+          fontName: first.fontName,
+          fontFamily: first.fontFamily,
+          isBold: first.isBold,
+          isItalic: first.isItalic,
+          color: first.color,
+          lineHeight: lh,
+        });
+      }
+
+      stext.destroy();
+      page.destroy();
+      doc.destroy();
+
+      res.json({ blocks: paragraphs, pageCount });
+    } catch (err) {
+      console.error("[PDF Blocks] Error:", err);
+      res.status(500).json({ error: "Failed to extract text blocks" });
+    }
+  });
+
   // ── REST endpoint for PDF export (PDF → Word/Excel/PPT) ─────────────────────────
   const exportUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
   app.post("/api/documents/export", exportUpload.single("file"), async (req, res) => {

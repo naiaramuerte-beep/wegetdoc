@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { extractTextStyles, type TextBlockStyle } from "@/lib/mupdfStyles";
+// MuPDF text extraction now handled by backend endpoint /api/pdf/blocks
 import PaywallModal from "./PaywallModal";
 import { encryptPDF } from "@pdfsmaller/pdf-encrypt-lite";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -958,163 +958,66 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run ONLY on mount
 
-  // ── Load native text blocks for Edit-Text tool ──────────────
+  // ── Load native text blocks via MuPDF backend ──────────────
   const loadNativeTextBlocks = useCallback(async (pageNum: number) => {
-    if (!pdfDoc) return;
+    if (!pdfDoc || !pdfBytes) return;
     const page = await pdfDoc.getPage(pageNum);
     const vp = page.getViewport({ scale });
-    const content = await page.getTextContent();
-    const styles = (content as any).styles ?? {};
     const pdfPageHeight = vp.height / scale;
 
-    // Step 1: Group text items into paragraphs using pdf.js EOL markers
-    // pdf.js items with hasEOL=true mark end-of-line. Empty items (str="") between
-    // text items indicate paragraph breaks. We also break on font size changes.
-    interface LineItem {
-      str: string;
-      pdfX: number; pdfY: number; pdfWidth: number; pdfFontSize: number;
-      canvasX: number; canvasY: number; canvasW: number; canvasH: number;
-      fontFamily: string; fontSize: number; pdfFontName: string;
-      fontWeight: string; fontStyle: string; originalColor: string;
+    // Send PDF to backend MuPDF endpoint for clean text extraction
+    const formData = new FormData();
+    const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
+    formData.append("file", blob, "doc.pdf");
+    formData.append("page", String(pageNum - 1)); // backend is 0-indexed
+
+    let mupdfBlocks: any[] = [];
+    try {
+      const resp = await fetch("/api/pdf/blocks", { method: "POST", body: formData });
+      if (resp.ok) {
+        const data = await resp.json();
+        mupdfBlocks = data.blocks ?? [];
+      }
+    } catch (err) {
+      console.warn("[loadNativeTextBlocks] MuPDF backend failed:", err);
     }
-    const allItems = content.items as any[];
-    const paragraphs: LineItem[][] = [];
-    let currentPara: LineItem[] = [];
 
-    for (let i = 0; i < allItems.length; i++) {
-      const item = allItems[i];
-      if (!item.str || !item.str.trim()) {
-        if (currentPara.length > 0) {
-          paragraphs.push(currentPara);
-          currentPara = [];
-        }
-        continue;
-      }
-      const [a, b, , , e, f] = item.transform as number[];
-      const pdfFontSize = Math.sqrt(a * a + b * b);
-      const pdfWidth = item.width ?? item.str.length * pdfFontSize * 0.6;
-      const styleObj = styles[item.fontName];
-      const fontFamily = styleObj?.fontFamily || "sans-serif";
-      const pdfFontName = item.fontName || "";
-      // Detect bold/italic from font name + font family strings
-      const searchStr = (pdfFontName + " " + fontFamily).toLowerCase();
-      const fontWeight = searchStr.includes("bold") || searchStr.includes("black") || searchStr.includes("heavy") ? "bold" : "normal";
-      const fontStyle = searchStr.includes("italic") || searchStr.includes("oblique") ? "italic" : "normal";
-      // Color will be sampled from the rendered canvas in renderPage
-      const originalColor = "";
-      const canvasX = e * scale;
-      const canvasY = (pdfPageHeight - f) * scale - pdfFontSize * scale;
-      const canvasW = pdfWidth * scale;
-      const canvasH = pdfFontSize * scale * 1.4;
-      const lineItem: LineItem = {
-        str: item.str, pdfX: e, pdfY: f, pdfWidth, pdfFontSize, fontFamily, pdfFontName,
-        canvasX, canvasY, canvasW, canvasH, fontSize: pdfFontSize * scale,
-        fontWeight, fontStyle, originalColor,
-      };
-
-      // Break paragraph on: font size change, large X shift, or large vertical gap
-      if (currentPara.length > 0) {
-        const prev = currentPara[currentPara.length - 1];
-        const sizeChanged = Math.abs(lineItem.fontSize - prev.fontSize) > 2;
-        const bigXShift = Math.abs(lineItem.canvasX - prev.canvasX) > prev.canvasW * 0.8 && Math.abs(lineItem.canvasX - currentPara[0].canvasX) > 40;
-        const bigYGap = lineItem.canvasY - (prev.canvasY + prev.canvasH) > prev.canvasH * 1.5;
-        if (sizeChanged || bigXShift || bigYGap) {
-          paragraphs.push(currentPara);
-          currentPara = [];
-        }
-      }
-      currentPara.push(lineItem);
-    }
-    if (currentPara.length > 0) paragraphs.push(currentPara);
-
-    // Step 2: Build NativeTextBlock per paragraph
-    const blocks: NativeTextBlock[] = [];
-    for (const para of paragraphs) {
-      // Join items: use space for same-line items, newline for different lines
-      let combinedStr = "";
-      for (let i = 0; i < para.length; i++) {
-        if (i === 0) {
-          combinedStr = para[i].str;
-        } else {
-          const prev = para[i - 1];
-          const curr = para[i];
-          // If Y position changed significantly, it's a new line
-          const isNewLine = Math.abs(curr.canvasY - prev.canvasY) > prev.canvasH * 0.3;
-          combinedStr += isNewLine ? "\n" + curr.str : " " + curr.str;
-        }
-      }
-      const minX = Math.min(...para.map(l => l.canvasX));
-      const minY = Math.min(...para.map(l => l.canvasY));
-      const maxRight = Math.max(...para.map(l => l.canvasX + l.canvasW));
-      const maxBottom = Math.max(...para.map(l => l.canvasY + l.canvasH));
-      const first = para[0];
-      const lastLine = para[para.length - 1];
-      // Calculate real line height from Y positions of consecutive lines
-      let realLineHeight = first.fontSize * 1.5; // fallback
-      if (para.length >= 2) {
-        // Use average distance between consecutive lines
-        let totalGap = 0;
-        for (let i = 1; i < para.length; i++) {
-          totalGap += Math.abs(para[i].canvasY - para[i - 1].canvasY);
-        }
-        realLineHeight = totalGap / (para.length - 1);
-      }
-      blocks.push({
+    // Convert MuPDF blocks (PDF coordinates) to canvas pixel coordinates
+    const blocks: NativeTextBlock[] = mupdfBlocks.map((mb: any) => {
+      const canvasX = mb.x * scale;
+      const canvasY = (pdfPageHeight - mb.y) * scale - mb.fontSize * scale;
+      const canvasW = mb.width * scale;
+      const canvasH = mb.height * scale;
+      return {
         id: Math.random().toString(36).slice(2),
-        str: combinedStr,
-        x: minX,
-        y: minY,
-        width: Math.max(maxRight - minX, 20),
-        height: Math.max(maxBottom - minY, 14),
-        fontSize: first.fontSize,
-        pdfX: first.pdfX,
-        pdfY: lastLine.pdfY,
-        pdfWidth: Math.max(first.pdfWidth, 10),
-        pdfFontSize: Math.max(first.pdfFontSize, 6),
+        str: mb.str,
+        x: canvasX,
+        y: canvasY,
+        width: Math.max(canvasW, 20),
+        height: Math.max(canvasH, mb.fontSize * scale * 1.4),
+        fontSize: mb.fontSize * scale,
+        pdfX: mb.x,
+        pdfY: mb.y,
+        pdfWidth: Math.max(mb.width, 10),
+        pdfFontSize: mb.fontSize,
         pageHeight: pdfPageHeight,
         page: pageNum,
-        fontFamily: first.fontFamily,
-        fontWeight: first.fontWeight,
-        fontStyle: first.fontStyle,
-        originalColor: first.originalColor,
-        lineHeight: realLineHeight,
-        pdfFontName: first.pdfFontName,
-      });
-    }
-    // Enrich blocks with real styles from MuPDF (font name, bold, italic, color)
-    if (pdfBytes) {
-      try {
-        const mupdfStyles = await extractTextStyles(pdfBytes, pageNum - 1);
-        if (mupdfStyles.length > 0) {
-          for (const block of blocks) {
-            // Find best matching MuPDF style by position (closest Y, then X)
-            const firstLine = block.str.split("\n")[0] || "";
-            const match = mupdfStyles.find(ms =>
-              ms.str.includes(firstLine.slice(0, 15)) ||
-              (Math.abs(ms.y - block.pdfY) < block.pdfFontSize * 2 && Math.abs(ms.x - block.pdfX) < 5)
-            );
-            if (match) {
-              block.fontWeight = match.isBold ? "bold" : "normal";
-              block.fontStyle = match.isItalic ? "italic" : "normal";
-              block.originalColor = match.color;
-              block.fontFamily = match.fontFamily;
-              // Keep pdfFontName from pdf.js (it's the @font-face name for canvas)
-            }
-          }
-        }
-      } catch (err) {
-        console.warn("[loadNativeTextBlocks] MuPDF style extraction failed, using fallback:", err);
-      }
-    }
+        fontFamily: mb.fontFamily || "sans-serif",
+        fontWeight: mb.isBold ? "bold" : "normal",
+        fontStyle: mb.isItalic ? "italic" : "normal",
+        originalColor: mb.color || "#000000",
+        lineHeight: mb.lineHeight * scale,
+        pdfFontName: mb.fontName || "",
+      };
+    });
 
-    // Only set blocks for this page if not already loaded (preserve existing edits)
+    // Merge with existing blocks to preserve edits
     setAllNativeTextBlocks(prev => {
       const existing = prev.get(pageNum);
       if (existing && existing.length > 0) {
-        // Merge: keep editedStr from existing blocks matched by str+position
         const merged = blocks.map(newBlock => {
           const match = existing.find(
-            ex => ex.str === newBlock.str && Math.abs(ex.x - newBlock.x) < 2 && Math.abs(ex.y - newBlock.y) < 2
+            ex => ex.str === newBlock.str && Math.abs(ex.x - newBlock.x) < 5 && Math.abs(ex.y - newBlock.y) < 5
           );
           return match ? { ...newBlock, editedStr: match.editedStr, fontColor: match.fontColor } : newBlock;
         });
@@ -1126,7 +1029,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       next.set(pageNum, blocks);
       return next;
     });
-  }, [pdfDoc, scale]);
+  }, [pdfDoc, pdfBytes, scale]);
 
   // Auto-save edited text when switching away from edit-text tool or changing page
   const editingBlockIdRef = useRef(editingBlockId);
