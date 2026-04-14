@@ -4083,33 +4083,27 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   </div>
                 ))}
               </div>
-              {/* Edited text blocks — always visible to cover original PDF text */}
+              {/* Edited text indicator — small badge on edited blocks (no overlay to avoid font mismatch) */}
               {activeTool !== "edit-text" && nativeTextBlocks.filter(b => b.editedStr !== undefined).map(block => (
                 <div
                   key={`edited-${block.id}`}
                   style={{
                     position: "absolute",
-                    left: block.x,
-                    top: block.y,
-                    minWidth: block.width,
-                    minHeight: block.height,
-                    backgroundColor: "rgba(255,255,255,1)",
+                    left: block.x + block.width - 18,
+                    top: block.y - 6,
+                    width: 16,
+                    height: 16,
+                    borderRadius: "50%",
+                    backgroundColor: "#1565C0",
                     display: "flex",
                     alignItems: "center",
+                    justifyContent: "center",
                     zIndex: 5,
                     pointerEvents: "none",
-                    boxSizing: "border-box",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
                   }}
                 >
-                  <span style={{
-                    fontSize: block.fontSize,
-                    fontFamily: block.fontFamily || "sans-serif",
-                    color: block.fontColor || "#000",
-                    whiteSpace: "nowrap",
-                    lineHeight: 1,
-                  }}>
-                    {block.editedStr}
-                  </span>
+                  <span style={{ color: "#fff", fontSize: 9, fontWeight: 700 }}>✎</span>
                 </div>
               ))}
               {/* Native text blocks overlay — edit-text tool active */}
