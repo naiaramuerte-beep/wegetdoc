@@ -14,7 +14,7 @@ import {
   Minimize2, Move, StickyNote, FileText, Trash2, RotateCw,
   Plus, Scissors, Layers, X, Upload, Check, Eye, EyeOff,
   AlignLeft, Bold, Italic, Underline, ChevronDown, Lock, Unlock,
-  Save, CheckCircle, Info,
+  Save, CheckCircle, Info, RefreshCw,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -87,7 +87,7 @@ type ToolName =
   | "eraser" | "brush" | "image" | "shapes" | "find"
   | "protect" | "compress" | "move" | "notes" | "none"
   | "convert-jpg" | "convert-png" | "convert-word" | "convert-excel" | "convert-ppt" | "convert-html"
-  | "word-to-pdf" | "excel-to-pdf" | "ppt-to-pdf" | "jpg-to-pdf" | "png-to-pdf" | "merge" | "split";
+  | "word-to-pdf" | "excel-to-pdf" | "ppt-to-pdf" | "jpg-to-pdf" | "png-to-pdf" | "merge" | "split" | "convert";
 
 interface NativeTextBlock {
   id: string;
@@ -3378,6 +3378,57 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           </div>
         );
       }
+      case "convert": {
+        const convertOptions = [
+          { label: "Word (.docx)", fmt: "docx" as const, icon: FileText, desc: t.editor_panel_convert_desc_word ?? "Convert PDF to editable Word document" },
+          { label: "Excel (.xlsx)", fmt: "xlsx" as const, icon: FileText, desc: t.editor_panel_convert_desc_excel ?? "Extract tables to Excel spreadsheet" },
+          { label: "PowerPoint (.pptx)", fmt: "pptx" as const, icon: FileText, desc: t.editor_panel_convert_desc_ppt ?? "Convert PDF slides to PowerPoint" },
+          { label: "JPG", fmt: "jpg" as const, icon: ImageIcon, desc: (t as any).editor_panel_convert_desc_jpg ?? "Export pages as JPG images" },
+          { label: "PNG", fmt: "png" as const, icon: ImageIcon, desc: (t as any).editor_panel_convert_desc_png ?? "Export pages as PNG images" },
+        ];
+        return (
+          <div className="p-4 flex flex-col gap-3">
+            <h3 className="font-semibold text-sm" style={{ color: "#0f172a" }}>{(t as any).editor_convert ?? "Convert PDF"}</h3>
+            <p className="text-xs" style={{ color: "#64748b" }}>{(t as any).editor_convert_desc ?? "Choose the format to convert your PDF to:"}</p>
+            {isExporting && (
+              <div className="flex flex-col gap-1.5">
+                <div className="flex justify-between text-xs" style={{ color: "#64748b" }}>
+                  <span>{exportProgress < 100 ? (t.editor_panel_exporting ?? "Converting...") : "Done!"}</span>
+                  <span>{Math.round(exportProgress)}%</span>
+                </div>
+                <div className="w-full rounded-full overflow-hidden" style={{ height: 6, backgroundColor: "#f1f5f9" }}>
+                  <div className="h-full rounded-full transition-all duration-200" style={{ width: `${exportProgress}%`, backgroundColor: exportProgress === 100 ? "#42A5F5" : "#1565C0" }} />
+                </div>
+              </div>
+            )}
+            <div className="flex flex-col gap-2">
+              {convertOptions.map(opt => (
+                <button
+                  key={opt.fmt}
+                  onClick={() => {
+                    if (opt.fmt === "jpg" || opt.fmt === "png") {
+                      convertAllToImages(opt.fmt);
+                    } else {
+                      exportPdf(opt.fmt);
+                    }
+                  }}
+                  disabled={!pdfBytes || isExporting}
+                  className="flex items-center gap-3 p-3 rounded-lg border text-left transition-all hover:shadow-sm disabled:opacity-50"
+                  style={{ borderColor: "#e2e8f0" }}
+                >
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#f0f7ff" }}>
+                    <opt.icon className="w-4 h-4" style={{ color: "#1565C0" }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium" style={{ color: "#0f172a" }}>PDF → {opt.label}</p>
+                    <p className="text-[11px] truncate" style={{ color: "#94a3b8" }}>{opt.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      }
       case "merge":
         return (
           <div className="p-4 flex flex-col gap-3">
@@ -3577,6 +3628,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             { id: "find" as ToolName, icon: Search, label: t.editor_find },
             { id: "protect" as ToolName, icon: Shield, label: t.editor_protect },
             { id: "compress" as ToolName, icon: Minimize2, label: t.editor_compress },
+            { id: "convert" as ToolName, icon: RefreshCw, label: (t as any).editor_convert ?? "Convert" },
             { id: "merge" as ToolName, icon: Layers, label: (t as any).editor_merge ?? "Merge" },
             { id: "split" as ToolName, icon: Scissors, label: (t as any).editor_split ?? "Split" },
             { id: "move" as ToolName, icon: Move, label: t.editor_move },
@@ -4211,6 +4263,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             { id: "find" as ToolName, icon: Search, label: t.editor_find },
             { id: "protect" as ToolName, icon: Shield, label: t.editor_protect },
             { id: "compress" as ToolName, icon: Minimize2, label: t.editor_compress },
+            { id: "convert" as ToolName, icon: RefreshCw, label: (t as any).editor_convert ?? "Convert" },
             { id: "merge" as ToolName, icon: Layers, label: (t as any).editor_merge ?? "Merge" },
             { id: "split" as ToolName, icon: Scissors, label: (t as any).editor_split ?? "Split" },
           ].map(({ id, icon: Icon, label }) => (
