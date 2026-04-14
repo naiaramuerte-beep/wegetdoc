@@ -822,40 +822,83 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const page = await pdfDoc.getPage(pageNum);
     const vp = page.getViewport({ scale });
     const content = await page.getTextContent();
-    const blocks: NativeTextBlock[] = [];
     const styles = (content as any).styles ?? {};
+    const pdfPageHeight = vp.height / scale;
+
+    // Step 1: Parse individual text items into line-level entries
+    interface LineItem {
+      str: string;
+      pdfX: number; pdfY: number; pdfWidth: number; pdfFontSize: number;
+      canvasX: number; canvasY: number; canvasW: number; canvasH: number;
+      fontFamily: string; fontSize: number;
+    }
+    const lines: LineItem[] = [];
     for (const item of content.items as any[]) {
       if (!item.str || !item.str.trim()) continue;
-      // item.transform = [a, b, c, d, e, f] where (e,f) is bottom-left in PDF points (from bottom)
       const [a, b, , , e, f] = item.transform as number[];
-      const pdfFontSize = Math.sqrt(a * a + b * b); // font size in PDF points
-      const pdfPageHeight = vp.height / scale; // page height in PDF points
+      const pdfFontSize = Math.sqrt(a * a + b * b);
       const pdfWidth = item.width ?? item.str.length * pdfFontSize * 0.6;
-      // Font family from pdf.js styles
       const fontFamily = styles[item.fontName]?.fontFamily || "sans-serif";
-      // Canvas pixel coords (for overlay display)
-      // PDF y is from bottom; canvas y is from top
       const canvasX = e * scale;
       const canvasY = (pdfPageHeight - f) * scale - pdfFontSize * scale;
       const canvasW = pdfWidth * scale;
       const canvasH = pdfFontSize * scale * 1.4;
+      lines.push({
+        str: item.str, pdfX: e, pdfY: f, pdfWidth, pdfFontSize, fontFamily,
+        canvasX, canvasY, canvasW, canvasH, fontSize: pdfFontSize * scale,
+      });
+    }
+
+    // Step 2: Sort lines top-to-bottom (by canvasY), then left-to-right
+    lines.sort((a, b) => a.canvasY - b.canvasY || a.canvasX - b.canvasX);
+
+    // Step 3: Group lines into paragraphs
+    // Lines belong to the same paragraph if:
+    // - Vertical gap <= 1.8x line height
+    // - Left margin is within 40px (canvas px) of the paragraph's first line
+    // - Same font size (within 1px tolerance)
+    const paragraphs: LineItem[][] = [];
+    for (const line of lines) {
+      let merged = false;
+      for (const para of paragraphs) {
+        const lastLine = para[para.length - 1];
+        const vertGap = line.canvasY - (lastLine.canvasY + lastLine.canvasH);
+        const leftAligned = Math.abs(line.canvasX - para[0].canvasX) < 40;
+        const sameSize = Math.abs(line.fontSize - lastLine.fontSize) < 1;
+        if (vertGap >= 0 && vertGap < lastLine.canvasH * 1.8 && leftAligned && sameSize) {
+          para.push(line);
+          merged = true;
+          break;
+        }
+      }
+      if (!merged) paragraphs.push([line]);
+    }
+
+    // Step 4: Build NativeTextBlock per paragraph
+    const blocks: NativeTextBlock[] = [];
+    for (const para of paragraphs) {
+      const combinedStr = para.map(l => l.str).join("\n");
+      const minX = Math.min(...para.map(l => l.canvasX));
+      const minY = Math.min(...para.map(l => l.canvasY));
+      const maxRight = Math.max(...para.map(l => l.canvasX + l.canvasW));
+      const maxBottom = Math.max(...para.map(l => l.canvasY + l.canvasH));
+      const first = para[0];
+      const lastLine = para[para.length - 1];
       blocks.push({
         id: Math.random().toString(36).slice(2),
-        str: item.str,
-        // Canvas coords
-        x: canvasX,
-        y: canvasY,
-        width: Math.max(canvasW, 20),
-        height: Math.max(canvasH, 14),
-        fontSize: pdfFontSize * scale,
-        // PDF point coords (used directly at export — no scale conversion needed)
-        pdfX: e,
-        pdfY: f,           // baseline y from bottom of page (PDF coordinate system)
-        pdfWidth: Math.max(pdfWidth, 10),
-        pdfFontSize: Math.max(pdfFontSize, 6),
+        str: combinedStr,
+        x: minX,
+        y: minY,
+        width: Math.max(maxRight - minX, 20),
+        height: Math.max(maxBottom - minY, 14),
+        fontSize: first.fontSize,
+        pdfX: first.pdfX,
+        pdfY: lastLine.pdfY,
+        pdfWidth: Math.max(first.pdfWidth, 10),
+        pdfFontSize: Math.max(first.pdfFontSize, 6),
         pageHeight: pdfPageHeight,
         page: pageNum,
-        fontFamily,
+        fontFamily: first.fontFamily,
       });
     }
     // Only set blocks for this page if not already loaded (preserve existing edits)
@@ -2103,35 +2146,44 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     for (const block of editedBlocks) {
       try {
         const page = doc.getPage(block.page - 1);
-        const { width: pageW } = page.getSize();
-        // Use stored PDF point coordinates directly (no scale conversion needed)
-        const pdfX = block.pdfX;
-        const pdfY = block.pdfY;      // baseline y from bottom of page
+        const { width: pageW, height: pageH } = page.getSize();
         const fontSizePts = block.pdfFontSize;
-        // Cover original text with a wide white rectangle that extends to the right edge of the page
-        const coverWidth = pageW - pdfX + 10;
+        const lineHeight = fontSizePts * 1.4;
+
+        // Cover original paragraph area with white rectangle
+        // block.y is canvas top, block.height is canvas height — convert to PDF coords
+        const coverTop = pageH - (block.y / scale);
+        const coverBottom = pageH - ((block.y + block.height) / scale);
+        const coverWidth = pageW - block.pdfX + 10;
         page.drawRectangle({
-          x: pdfX - 4,
-          y: pdfY - fontSizePts * 0.35,
+          x: block.pdfX - 4,
+          y: coverBottom - fontSizePts * 0.3,
           width: coverWidth,
-          height: fontSizePts * 1.6,
+          height: (coverTop - coverBottom) + fontSizePts * 0.6,
           color: rgb(1, 1, 1),
           opacity: 1,
         });
-        // Draw replacement text at the original baseline position
+
+        // Draw replacement text line by line
         const hexColor = block.fontColor && block.fontColor.length === 7 ? block.fontColor : "#000000";
         const tr = parseInt(hexColor.slice(1, 3), 16) / 255;
         const tg = parseInt(hexColor.slice(3, 5), 16) / 255;
         const tb = parseInt(hexColor.slice(5, 7), 16) / 255;
-        // Encode text to remove characters unsupported by Helvetica
-        const safeText = block.editedStr!.replace(/[^\x00-\xFF]/g, "?");
-        page.drawText(safeText, {
-          x: pdfX,
-          y: pdfY,
-          size: fontSizePts,
-          font,
-          color: rgb(isNaN(tr) ? 0 : tr, isNaN(tg) ? 0 : tg, isNaN(tb) ? 0 : tb),
-        });
+        const textColor = rgb(isNaN(tr) ? 0 : tr, isNaN(tg) ? 0 : tg, isNaN(tb) ? 0 : tb);
+        const editedLines = block.editedStr!.split("\n");
+        // Start from the top of the paragraph
+        const startY = coverTop - fontSizePts;
+        for (let i = 0; i < editedLines.length; i++) {
+          const safeText = editedLines[i].replace(/[^\x00-\xFF]/g, "?");
+          if (!safeText.trim()) continue;
+          page.drawText(safeText, {
+            x: block.pdfX,
+            y: startY - i * lineHeight,
+            size: fontSizePts,
+            font,
+            color: textColor,
+          });
+        }
       } catch (err) {
         console.error("[buildAnnotatedPdf] Error applying text edit:", err, block);
       }
