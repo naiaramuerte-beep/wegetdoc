@@ -618,6 +618,23 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
     renderTaskRef.current = null;
 
+    // Sample original text colors from the rendered canvas before painting over
+    const blocks = allNativeTextBlocksRef.current.get(pageNum) ?? [];
+    for (const block of blocks) {
+      if (!block.originalColor || block.originalColor === "#000000") {
+        // Sample pixel color at the middle of the first line of text
+        const sx = Math.round((block.x + 5) * dpr);
+        const sy = Math.round((block.y + block.fontSize * 0.5) * dpr);
+        if (sx > 0 && sy > 0 && sx < canvas.width && sy < canvas.height) {
+          const pixel = ctx.getImageData(sx, sy, 1, 1).data;
+          // Only use if it's not white/near-white (background)
+          if (pixel[0] < 240 || pixel[1] < 240 || pixel[2] < 240) {
+            block.originalColor = `#${pixel[0].toString(16).padStart(2, "0")}${pixel[1].toString(16).padStart(2, "0")}${pixel[2].toString(16).padStart(2, "0")}`;
+          }
+        }
+      }
+    }
+
     // Paint edited text blocks over the canvas
     applyTextEditsToCanvas(ctx, pageNum, dpr);
 
@@ -918,18 +935,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const [a, b, , , e, f] = item.transform as number[];
       const pdfFontSize = Math.sqrt(a * a + b * b);
       const pdfWidth = item.width ?? item.str.length * pdfFontSize * 0.6;
-      const fontFamily = styles[item.fontName]?.fontFamily || "sans-serif";
+      const styleObj = styles[item.fontName];
+      const fontFamily = styleObj?.fontFamily || "sans-serif";
       const pdfFontName = item.fontName || "";
-      // Detect bold/italic from font name (e.g. "TimesNewRoman-Bold", "Arial-BoldItalic")
-      const fnLower = pdfFontName.toLowerCase();
-      const fontWeight = fnLower.includes("bold") || fnLower.includes("black") || fnLower.includes("heavy") ? "bold" : "normal";
-      const fontStyle = fnLower.includes("italic") || fnLower.includes("oblique") ? "italic" : "normal";
-      // Extract original color from pdf.js item (if available via the color property)
-      let originalColor = "#000000";
-      if (item.color) {
-        const { r, g, b: bl } = item.color;
-        originalColor = `#${Math.round(r).toString(16).padStart(2, "0")}${Math.round(g).toString(16).padStart(2, "0")}${Math.round(bl).toString(16).padStart(2, "0")}`;
-      }
+      // Detect bold/italic: check both fontName and fontFamily for keywords
+      const searchStr = (pdfFontName + " " + fontFamily).toLowerCase();
+      const fontWeight = searchStr.includes("bold") || searchStr.includes("black") || searchStr.includes("heavy") ? "bold" : "normal";
+      const fontStyle = searchStr.includes("italic") || searchStr.includes("oblique") ? "italic" : "normal";
+      // Color will be sampled from the rendered canvas (set later)
+      const originalColor = "#000000";
       const canvasX = e * scale;
       const canvasY = (pdfPageHeight - f) * scale - pdfFontSize * scale;
       const canvasW = pdfWidth * scale;
