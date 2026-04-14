@@ -275,32 +275,6 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
                 {overrides?.heroSubtitle ?? (isFastDoc ? t.fastdoc_hero_subtitle : t.hero_subtitle)}
               </p>
 
-              {/* CTA button */}
-              <div className="mb-4">
-                <button
-                  className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
-                  style={{ backgroundColor: INDIGO, boxShadow: `0 4px 16px rgba(0, 0, 0, 0.18)` }}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="w-4 h-4" />
-                  {t.hero_upload_btn}
-                </button>
-              </div>
-
-              {/* Format badges */}
-              <div className="flex flex-wrap items-center justify-center gap-1.5 mb-5">
-                {["PDF", "Word", "Excel", "PPT", "JPG", "PNG"].map((fmt) => (
-                  <span
-                    key={fmt}
-                    className="text-xs px-2.5 py-0.5 rounded-md font-medium border"
-                    style={{ backgroundColor: "white", borderColor: BORDER, color: TEXT_MUTED }}
-                  >
-                    {fmt}
-                  </span>
-                ))}
-                <span className="text-xs ml-1" style={{ color: TEXT_LIGHT }}>{t.hero_max_size}</span>
-              </div>
-
               {/* Social proof inline */}
               {!isFastDoc && (
                 <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs mb-10" style={{ color: TEXT_MUTED }}>
@@ -323,20 +297,19 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
               )}
             </div>
 
-            {/* Upload drop zone — centered */}
-            <div className="w-full max-w-lg">
+            {/* Upload drop zone — centered with CTA + badges inside */}
+            <div className="w-full max-w-xl">
               <div
                 onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
                 onDragLeave={() => setIsDraggingOver(false)}
                 onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className="cursor-pointer rounded-2xl border-2 border-dashed transition-all duration-300"
+                className="rounded-2xl border-2 border-dashed transition-all duration-300"
                 style={{
-                  borderColor: isDraggingOver ? INDIGO : "rgba(0, 0, 0, 0.20)",
-                  backgroundColor: isDraggingOver ? "#f8fafc" : "white",
+                  borderColor: isDraggingOver ? INDIGO : "rgba(0, 0, 0, 0.15)",
+                  backgroundColor: isDraggingOver ? "#f0f7ff" : "#fafbfc",
                   boxShadow: isDraggingOver
-                    ? `0 0 0 5px rgba(0, 0, 0, 0.06), 0 12px 48px rgba(0, 0, 0, 0.10)`
-                    : "0 4px 32px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.03)",
+                    ? `0 0 0 5px rgba(21, 101, 192, 0.08)`
+                    : "none",
                 }}
               >
                 <div className="flex flex-col items-center gap-4 px-6 py-10">
@@ -346,14 +319,32 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
                   >
                     <FileText className="w-7 h-7 text-white" />
                   </div>
-                  <div className="text-center">
-                    <p className="font-bold text-base mb-1" style={{ color: TEXT_MAIN }}>
-                      {t.hero_drag_here}
-                    </p>
-                    <p className="text-sm" style={{ color: TEXT_LIGHT }}>
-                      {t.hero_auto_convert}
-                    </p>
+                  <p className="font-bold text-base" style={{ color: TEXT_MAIN }}>
+                    {t.hero_drag_here}
+                  </p>
+                  <p className="text-sm" style={{ color: TEXT_LIGHT }}>
+                    {(t as any).hero_or ?? "or"}
+                  </p>
+                  <button
+                    className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-bold text-white text-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+                    style={{ backgroundColor: INDIGO, boxShadow: `0 4px 16px rgba(0, 0, 0, 0.18)` }}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="w-4 h-4" />
+                    {t.hero_upload_btn}
+                  </button>
+                  <div className="flex flex-wrap items-center justify-center gap-1.5 mt-2">
+                    {["PDF", "Word", "Excel", "PPT", "JPG", "PNG"].map((fmt) => (
+                      <span
+                        key={fmt}
+                        className="text-xs px-2.5 py-0.5 rounded-md font-medium border"
+                        style={{ backgroundColor: "white", borderColor: BORDER, color: TEXT_MUTED }}
+                      >
+                        {fmt}
+                      </span>
+                    ))}
                   </div>
+                  <span className="text-xs" style={{ color: TEXT_LIGHT }}>{t.hero_max_size}</span>
                 </div>
               </div>
             </div>
