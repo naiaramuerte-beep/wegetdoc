@@ -401,6 +401,81 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
   };
 
+  // ── localStorage persistence for unregistered users ──────────
+  const LS_KEY = "pdfpro_editor_draft";
+  const saveDraftToLocalStorage = useCallback(() => {
+    if (isAuthenticated) return; // only for unregistered users
+    if (!pdfBytes || !file) return;
+    try {
+      // Save annotations and native text edits
+      const textEdits: Record<string, { editedStr: string; fontColor?: string }> = {};
+      allNativeTextBlocks.forEach((blocks, page) => {
+        blocks.forEach(b => {
+          if (b.editedStr !== undefined) {
+            textEdits[`${page}_${b.pdfX.toFixed(1)}_${b.pdfY.toFixed(1)}_${b.str}`] = {
+              editedStr: b.editedStr,
+              fontColor: b.fontColor,
+            };
+          }
+        });
+      });
+      const draft = {
+        v: 1,
+        ts: Date.now(),
+        fileName: file.name,
+        fileSize: file.size,
+        annotations: annotations.filter(a => a.type !== "drawing" || (a.points && a.points.length > 1)),
+        textEdits,
+      };
+      localStorage.setItem(LS_KEY, JSON.stringify(draft));
+      // Save PDF bytes separately (can be large)
+      let b64 = "";
+      const chunkSize = 8192;
+      for (let i = 0; i < pdfBytes.length; i += chunkSize) {
+        b64 += String.fromCharCode.apply(null, Array.from(pdfBytes.slice(i, i + chunkSize)));
+      }
+      b64 = btoa(b64);
+      localStorage.setItem(LS_KEY + "_pdf", b64);
+    } catch {
+      // Quota exceeded — silently ignore
+    }
+  }, [isAuthenticated, pdfBytes, file, annotations, allNativeTextBlocks]);
+
+  const loadDraftFromLocalStorage = useCallback((): {
+    pdfFile: File;
+    annotations: Annotation[];
+    textEdits: Record<string, { editedStr: string; fontColor?: string }>;
+  } | null => {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      const pdfB64 = localStorage.getItem(LS_KEY + "_pdf");
+      if (!raw || !pdfB64) return null;
+      const draft = JSON.parse(raw);
+      // Expire drafts older than 24h
+      if (Date.now() - draft.ts > 24 * 60 * 60 * 1000) {
+        localStorage.removeItem(LS_KEY);
+        localStorage.removeItem(LS_KEY + "_pdf");
+        return null;
+      }
+      // Reconstruct PDF file from base64
+      const bytes = Uint8Array.from(atob(pdfB64), c => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const pdfFile = new File([blob], draft.fileName || "document.pdf", { type: "application/pdf" });
+      return {
+        pdfFile,
+        annotations: draft.annotations ?? [],
+        textEdits: draft.textEdits ?? {},
+      };
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const clearDraft = useCallback(() => {
+    localStorage.removeItem(LS_KEY);
+    localStorage.removeItem(LS_KEY + "_pdf");
+  }, []);
+
   // ── Load PDF ─────────────────────────────────────────────────
   const loadPdf = useCallback(async (f: File) => {
     setIsLoadingPdf(true);
@@ -2255,6 +2330,54 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const mapped = toolMap[initialTool];
     setActiveTool(mapped ?? "edit-text");
   }, [initialTool, pdfDoc]);
+
+  // ── Auto-save draft to localStorage (unregistered users) ─────
+  const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (isAuthenticated || !pdfBytes) return;
+    // Debounce: save 2s after last change
+    if (draftSaveTimerRef.current) clearTimeout(draftSaveTimerRef.current);
+    draftSaveTimerRef.current = setTimeout(saveDraftToLocalStorage, 2000);
+    return () => { if (draftSaveTimerRef.current) clearTimeout(draftSaveTimerRef.current); };
+  }, [annotations, allNativeTextBlocks, saveDraftToLocalStorage, isAuthenticated, pdfBytes]);
+
+  // ── Restore draft on mount (unregistered users) ─────────────
+  const draftRestoredRef = useRef(false);
+  useEffect(() => {
+    if (draftRestoredRef.current || initialFile || file) return;
+    const draft = loadDraftFromLocalStorage();
+    if (!draft) return;
+    draftRestoredRef.current = true;
+    // Load the saved PDF
+    loadPdf(draft.pdfFile).then(() => {
+      // Restore annotations
+      if (draft.annotations.length > 0) {
+        setAnnotations(draft.annotations);
+      }
+      // Restore native text edits — apply after text blocks are loaded
+      if (Object.keys(draft.textEdits).length > 0) {
+        setTimeout(() => {
+          setAllNativeTextBlocks(prev => {
+            const next = new Map(prev);
+            for (const [page, blocks] of Array.from(next.entries())) {
+              const updated = blocks.map((b: NativeTextBlock) => {
+                const key = `${page}_${b.pdfX.toFixed(1)}_${b.pdfY.toFixed(1)}_${b.str}`;
+                const edit = draft.textEdits[key];
+                return edit ? { ...b, editedStr: edit.editedStr, fontColor: edit.fontColor } : b;
+              });
+              next.set(page, updated);
+            }
+            return next;
+          });
+        }, 500);
+      }
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Clear draft when user registers/logs in
+  useEffect(() => {
+    if (isAuthenticated) clearDraft();
+  }, [isAuthenticated, clearDraft]);
 
   // ── Keyboard shortcuts ────────────────────────────────────────
   useEffect(() => {
