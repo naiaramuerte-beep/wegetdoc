@@ -290,6 +290,33 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [editingBlockText, setEditingBlockText] = useState("");
   const [editTextColor, setEditTextColor] = useState("#000000");
+  const editContentRef = useRef<HTMLDivElement | null>(null);
+
+  // Apply a CSS style to the active contentEditable div in real-time
+  const applyEditStyle = useCallback((prop: string, value: string) => {
+    const el = editContentRef.current;
+    if (!el) return;
+    (el.style as any)[prop] = value;
+    // Also update the block in state for export
+    if (editingBlockId) {
+      setAllNativeTextBlocks(prev => {
+        const pageBlocks = prev.get(currentPage) ?? [];
+        const propMap: Record<string, string> = {
+          fontWeight: "fontWeight", fontStyle: "fontStyle",
+          color: "originalColor", fontSize: "fontSize",
+          textAlign: "textAlign",
+        };
+        const blockProp = propMap[prop];
+        if (!blockProp) return prev;
+        const updated = pageBlocks.map((b: NativeTextBlock) =>
+          b.id === editingBlockId ? { ...b, [blockProp]: prop === "fontSize" ? parseFloat(value) : value } : b
+        );
+        const next = new Map(prev);
+        next.set(currentPage, updated);
+        return next;
+      });
+    }
+  }, [editingBlockId, currentPage]);
   // Derived: blocks for the current page
   const nativeTextBlocks = allNativeTextBlocks.get(currentPage) ?? [];
 
@@ -3456,44 +3483,135 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               </div>
             )}
 
-            {/* Properties panel — shown when a block is selected */}
+            {/* Interactive properties panel — shown when a block is selected */}
             {editBlock && (
               <>
-                <div className="text-xs font-medium" style={{ color: "#1565C0" }}>
+                <div className="text-xs font-medium mb-1" style={{ color: "#1565C0" }}>
                   {(t as any).editor_block_properties ?? "Block properties"}
                 </div>
-                {/* Font family */}
-                <div className="flex items-center gap-2">
-                  <label className="text-xs shrink-0" style={{ color: "#64748b" }}>Font</label>
-                  <span className="text-xs px-2 py-1 rounded border truncate flex-1" style={{ borderColor: "#e2e8f0", fontFamily: editBlock.fontFamily }}>
-                    {editBlock.pdfFontName || editBlock.fontFamily || "sans-serif"}
-                  </span>
+
+                {/* Font family selector */}
+                <div>
+                  <label className="text-[10px] block mb-0.5" style={{ color: "#94a3b8" }}>Font</label>
+                  <select
+                    value={editBlock.fontFamily || "sans-serif"}
+                    onChange={(e) => applyEditStyle("fontFamily", e.target.value)}
+                    className="w-full border rounded px-2 py-1 text-xs"
+                    style={{ borderColor: "#e2e8f0" }}
+                  >
+                    <option value="sans-serif">Sans-serif</option>
+                    <option value="serif">Serif</option>
+                    <option value="monospace">Monospace</option>
+                    <option value="Arial, sans-serif">Arial</option>
+                    <option value="'Times New Roman', serif">Times New Roman</option>
+                    <option value="'Courier New', monospace">Courier New</option>
+                    <option value="Georgia, serif">Georgia</option>
+                    <option value="Verdana, sans-serif">Verdana</option>
+                  </select>
                 </div>
-                {/* Font size */}
-                <div className="flex items-center gap-2">
-                  <label className="text-xs shrink-0" style={{ color: "#64748b" }}>Size</label>
-                  <span className="text-xs font-semibold" style={{ color: "#0f172a" }}>{Math.round(editBlock.pdfFontSize)}pt</span>
+
+                {/* Font size + Color row */}
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <label className="text-[10px] block mb-0.5" style={{ color: "#94a3b8" }}>Size (pt)</label>
+                    <input
+                      type="number"
+                      value={Math.round(editBlock.pdfFontSize)}
+                      onChange={(e) => {
+                        const newSize = Number(e.target.value);
+                        if (newSize > 0 && newSize <= 200) {
+                          const canvasSize = newSize * scale;
+                          applyEditStyle("fontSize", `${canvasSize}px`);
+                          // Update pdfFontSize in the block
+                          setAllNativeTextBlocks(prev => {
+                            const pageBlocks = prev.get(currentPage) ?? [];
+                            const updated = pageBlocks.map((b: NativeTextBlock) =>
+                              b.id === editingBlockId ? { ...b, pdfFontSize: newSize, fontSize: canvasSize } : b
+                            );
+                            const next = new Map(prev);
+                            next.set(currentPage, updated);
+                            return next;
+                          });
+                        }
+                      }}
+                      min={4} max={200}
+                      className="w-full border rounded px-2 py-1 text-xs"
+                      style={{ borderColor: "#e2e8f0" }}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] block mb-0.5" style={{ color: "#94a3b8" }}>Color</label>
+                    <input
+                      type="color"
+                      value={editBlock.originalColor || "#000000"}
+                      onChange={(e) => applyEditStyle("color", e.target.value)}
+                      className="w-8 h-8 rounded cursor-pointer border-0"
+                    />
+                  </div>
                 </div>
-                {/* Color */}
-                <div className="flex items-center gap-2">
-                  <label className="text-xs shrink-0" style={{ color: "#64748b" }}>Color</label>
-                  <span className="w-6 h-6 rounded border" style={{ backgroundColor: editBlock.originalColor || "#000", borderColor: "#e2e8f0" }} />
-                  <span className="text-xs" style={{ color: "#64748b" }}>{editBlock.originalColor || "#000000"}</span>
+
+                {/* Bold / Italic / Underline toggles */}
+                <div>
+                  <label className="text-[10px] block mb-1" style={{ color: "#94a3b8" }}>Style</label>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => {
+                        const newVal = editBlock.fontWeight === "bold" ? "normal" : "bold";
+                        applyEditStyle("fontWeight", newVal);
+                      }}
+                      className="w-8 h-8 rounded border flex items-center justify-center text-sm font-bold transition-colors"
+                      style={{
+                        borderColor: editBlock.fontWeight === "bold" ? "#1565C0" : "#e2e8f0",
+                        backgroundColor: editBlock.fontWeight === "bold" ? "#f0f7ff" : "white",
+                        color: editBlock.fontWeight === "bold" ? "#1565C0" : "#94a3b8",
+                      }}
+                    >B</button>
+                    <button
+                      onClick={() => {
+                        const newVal = editBlock.fontStyle === "italic" ? "normal" : "italic";
+                        applyEditStyle("fontStyle", newVal);
+                      }}
+                      className="w-8 h-8 rounded border flex items-center justify-center text-sm italic transition-colors"
+                      style={{
+                        borderColor: editBlock.fontStyle === "italic" ? "#1565C0" : "#e2e8f0",
+                        backgroundColor: editBlock.fontStyle === "italic" ? "#f0f7ff" : "white",
+                        color: editBlock.fontStyle === "italic" ? "#1565C0" : "#94a3b8",
+                      }}
+                    >I</button>
+                    <button
+                      onClick={() => {
+                        const el = editContentRef.current;
+                        if (el) {
+                          const current = el.style.textDecoration;
+                          el.style.textDecoration = current === "underline" ? "none" : "underline";
+                        }
+                      }}
+                      className="w-8 h-8 rounded border flex items-center justify-center text-sm underline transition-colors"
+                      style={{ borderColor: "#e2e8f0", color: "#94a3b8" }}
+                    >U</button>
+                  </div>
                 </div>
-                {/* Style badges */}
-                <div className="flex gap-1.5">
-                  {editBlock.fontWeight === "bold" && (
-                    <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ backgroundColor: "#f0f7ff", color: "#1565C0", border: "1px solid #1565C0" }}>Bold</span>
-                  )}
-                  {editBlock.fontStyle === "italic" && (
-                    <span className="text-xs italic px-2 py-0.5 rounded" style={{ backgroundColor: "#f0f7ff", color: "#1565C0", border: "1px solid #1565C0" }}>Italic</span>
-                  )}
-                  {editBlock.fontWeight !== "bold" && editBlock.fontStyle !== "italic" && (
-                    <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: "#f8fafc", color: "#94a3b8", border: "1px solid #e2e8f0" }}>Regular</span>
-                  )}
+
+                {/* Alignment */}
+                <div>
+                  <label className="text-[10px] block mb-1" style={{ color: "#94a3b8" }}>Align</label>
+                  <div className="flex gap-1">
+                    {(["left", "center", "right", "justify"] as const).map(align => (
+                      <button
+                        key={align}
+                        onClick={() => applyEditStyle("textAlign", align)}
+                        className="flex-1 h-7 rounded border flex items-center justify-center text-[10px] transition-colors"
+                        style={{ borderColor: "#e2e8f0", color: "#64748b" }}
+                        title={align}
+                      >
+                        {align === "left" ? "⫷" : align === "center" ? "≡" : align === "right" ? "⫸" : "⊞"}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="border-t pt-2 mt-1 text-xs" style={{ borderColor: "#f1f5f9", color: "#94a3b8" }}>
-                  {(t as any).editor_edit_inline_tip ?? "Edit text directly in the blue box on the PDF. Click outside to save."}
+
+                <div className="border-t pt-2 text-[10px]" style={{ borderColor: "#f1f5f9", color: "#94a3b8" }}>
+                  {(t as any).editor_edit_inline_tip ?? "Edit text in the blue box. Click outside to save."}
                 </div>
               </>
             )}
@@ -4386,6 +4504,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     onClick={(e) => e.stopPropagation()}
                     onMouseDown={(e) => e.stopPropagation()}
                     ref={(el) => {
+                      editContentRef.current = el;
                       if (el && !el.dataset.init) {
                         el.dataset.init = "1";
                         const textContent = block.editedStr ?? block.str;
