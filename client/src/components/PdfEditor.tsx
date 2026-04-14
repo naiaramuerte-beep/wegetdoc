@@ -825,16 +825,30 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const styles = (content as any).styles ?? {};
     const pdfPageHeight = vp.height / scale;
 
-    // Step 1: Parse individual text items into line-level entries
+    // Step 1: Group text items into paragraphs using pdf.js EOL markers
+    // pdf.js items with hasEOL=true mark end-of-line. Empty items (str="") between
+    // text items indicate paragraph breaks. We also break on font size changes.
     interface LineItem {
       str: string;
       pdfX: number; pdfY: number; pdfWidth: number; pdfFontSize: number;
       canvasX: number; canvasY: number; canvasW: number; canvasH: number;
       fontFamily: string; fontSize: number;
     }
-    const lines: LineItem[] = [];
-    for (const item of content.items as any[]) {
-      if (!item.str || !item.str.trim()) continue;
+    const allItems = content.items as any[];
+    const paragraphs: LineItem[][] = [];
+    let currentPara: LineItem[] = [];
+
+    for (let i = 0; i < allItems.length; i++) {
+      const item = allItems[i];
+      // Empty items or EOL-only items mark paragraph boundaries
+      if (!item.str || !item.str.trim()) {
+        // If we have accumulated lines, close the paragraph
+        if (currentPara.length > 0) {
+          paragraphs.push(currentPara);
+          currentPara = [];
+        }
+        continue;
+      }
       const [a, b, , , e, f] = item.transform as number[];
       const pdfFontSize = Math.sqrt(a * a + b * b);
       const pdfWidth = item.width ?? item.str.length * pdfFontSize * 0.6;
@@ -843,38 +857,24 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const canvasY = (pdfPageHeight - f) * scale - pdfFontSize * scale;
       const canvasW = pdfWidth * scale;
       const canvasH = pdfFontSize * scale * 1.4;
-      lines.push({
+      const lineItem: LineItem = {
         str: item.str, pdfX: e, pdfY: f, pdfWidth, pdfFontSize, fontFamily,
         canvasX, canvasY, canvasW, canvasH, fontSize: pdfFontSize * scale,
-      });
-    }
+      };
 
-    // Step 2: Sort lines top-to-bottom (by canvasY), then left-to-right
-    lines.sort((a, b) => a.canvasY - b.canvasY || a.canvasX - b.canvasX);
-
-    // Step 3: Group lines into paragraphs
-    // Lines belong to the same paragraph if:
-    // - Vertical gap <= 0.8x line height (tight — splits at paragraph breaks)
-    // - Left margin is within 40px (canvas px) of the paragraph's first line
-    // - Same font size (within 1px tolerance)
-    const paragraphs: LineItem[][] = [];
-    for (const line of lines) {
-      let merged = false;
-      for (const para of paragraphs) {
-        const lastLine = para[para.length - 1];
-        const vertGap = line.canvasY - (lastLine.canvasY + lastLine.canvasH);
-        const leftAligned = Math.abs(line.canvasX - para[0].canvasX) < 40;
-        const sameSize = Math.abs(line.fontSize - lastLine.fontSize) < 1;
-        if (vertGap >= -2 && vertGap < lastLine.canvasH * 0.8 && leftAligned && sameSize) {
-          para.push(line);
-          merged = true;
-          break;
+      // Break paragraph on font size change
+      if (currentPara.length > 0) {
+        const prev = currentPara[currentPara.length - 1];
+        if (Math.abs(lineItem.fontSize - prev.fontSize) > 2) {
+          paragraphs.push(currentPara);
+          currentPara = [];
         }
       }
-      if (!merged) paragraphs.push([line]);
+      currentPara.push(lineItem);
     }
+    if (currentPara.length > 0) paragraphs.push(currentPara);
 
-    // Step 4: Build NativeTextBlock per paragraph
+    // Step 2: Build NativeTextBlock per paragraph
     const blocks: NativeTextBlock[] = [];
     for (const para of paragraphs) {
       const combinedStr = para.map(l => l.str).join("\n");
