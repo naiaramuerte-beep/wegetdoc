@@ -4336,7 +4336,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       position: "absolute",
                       left: block.x,
                       top: block.y,
-                      minWidth: block.width,
+                      width: block.width,
+                      maxWidth: block.width,
                       minHeight: block.height,
                       cursor: "text",
                       border: "2px solid #1565C0",
@@ -4352,15 +4353,18 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       color: block.originalColor || "#000",
                       lineHeight: block.lineHeight ? `${block.lineHeight}px` : "1.4",
                       whiteSpace: "pre-wrap",
-                      wordBreak: "break-word",
+                      wordWrap: "break-word",
+                      overflowWrap: "break-word",
                       outline: "none",
                       boxShadow: "0 2px 12px rgba(21,101,192,0.15)",
                     }}
                     onBlur={(e) => {
-                      const newText = (e.currentTarget as HTMLElement).innerText;
+                      const el = e.currentTarget as HTMLElement;
+                      const newText = el.innerText;
+                      const savedOriginal = el.dataset.originalText ?? "";
+                      // Only save if text actually changed from what was loaded
                       const normalize = (s: string) => s.replace(/\s+/g, " ").trim();
-                      const originalText = block.editedStr ?? block.str;
-                      if (normalize(newText) !== normalize(originalText)) {
+                      if (normalize(newText) !== normalize(savedOriginal)) {
                         setAllNativeTextBlocks(prev => {
                           const pageBlocks = prev.get(block.page) ?? [];
                           const updated = pageBlocks.map((b: NativeTextBlock) =>
@@ -4384,7 +4388,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     ref={(el) => {
                       if (el && !el.dataset.init) {
                         el.dataset.init = "1";
-                        el.innerText = block.editedStr ?? block.str;
+                        const textContent = block.editedStr ?? block.str;
+                        el.innerText = textContent;
+                        // Store the original text for comparison on blur
+                        el.dataset.originalText = textContent;
                         el.focus();
                         const range = document.createRange();
                         range.selectNodeContents(el);
