@@ -958,60 +958,120 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run ONLY on mount
 
-  // ── Load native text blocks via MuPDF backend ──────────────
+  // ── Load native text blocks for Edit-Text tool ──────────────
   const loadNativeTextBlocks = useCallback(async (pageNum: number) => {
-    if (!pdfDoc || !pdfBytes) return;
+    if (!pdfDoc) return;
     const page = await pdfDoc.getPage(pageNum);
     const vp = page.getViewport({ scale });
+    const content = await page.getTextContent({ disableCombineTextItems: false } as any);
+    const styles = (content as any).styles ?? {};
     const pdfPageHeight = vp.height / scale;
 
-    // Send PDF to backend MuPDF endpoint for clean text extraction
-    const formData = new FormData();
-    const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
-    formData.append("file", blob, "doc.pdf");
-    formData.append("page", String(pageNum - 1)); // backend is 0-indexed
+    // Group text items into paragraphs using empty items as separators
+    const allItems = content.items as any[];
+    const paragraphs: Array<any[]> = [];
+    let currentPara: any[] = [];
 
-    let mupdfBlocks: any[] = [];
-    try {
-      const resp = await fetch("/api/pdf/blocks", { method: "POST", body: formData });
-      if (resp.ok) {
-        const data = await resp.json();
-        mupdfBlocks = data.blocks ?? [];
+    for (const item of allItems) {
+      if (!item.str || !item.str.trim()) {
+        if (currentPara.length > 0) {
+          paragraphs.push(currentPara);
+          currentPara = [];
+        }
+        continue;
       }
-    } catch (err) {
-      console.warn("[loadNativeTextBlocks] MuPDF backend failed:", err);
+      // Break on font size change or large position shift
+      if (currentPara.length > 0) {
+        const prev = currentPara[currentPara.length - 1];
+        const [,,,, pe, pf] = prev.transform as number[];
+        const [a2, b2,,, e2, f2] = item.transform as number[];
+        const prevSize = Math.sqrt(prev.transform[0] ** 2 + prev.transform[1] ** 2);
+        const curSize = Math.sqrt(a2 ** 2 + b2 ** 2);
+        const prevY = (pdfPageHeight - pf) * scale;
+        const curY = (pdfPageHeight - f2) * scale;
+        const prevX = pe * scale;
+        const curX = e2 * scale;
+        if (Math.abs(curSize - prevSize) > 2 || Math.abs(curX - prevX) > prev.width * scale * 0.8 && Math.abs(curX - currentPara[0].transform[4] * scale) > 40 || curY - prevY > prevSize * scale * 2.5) {
+          paragraphs.push(currentPara);
+          currentPara = [];
+        }
+      }
+      currentPara.push(item);
     }
+    if (currentPara.length > 0) paragraphs.push(currentPara);
 
-    // Convert MuPDF blocks (PDF coordinates) to canvas pixel coordinates
-    const blocks: NativeTextBlock[] = mupdfBlocks.map((mb: any) => {
-      const canvasX = mb.x * scale;
-      const canvasY = (pdfPageHeight - mb.y) * scale - mb.fontSize * scale;
-      const canvasW = mb.width * scale;
-      const canvasH = mb.height * scale;
-      return {
+    // Build NativeTextBlock per paragraph
+    const blocks: NativeTextBlock[] = [];
+    for (const para of paragraphs) {
+      // Join items on same line with space, different lines with newline
+      let combinedStr = "";
+      for (let i = 0; i < para.length; i++) {
+        if (i === 0) { combinedStr = para[i].str; continue; }
+        const [,,,, , pf] = para[i - 1].transform;
+        const [,,,, , cf] = para[i].transform;
+        const prevSize = Math.sqrt(para[i-1].transform[0] ** 2 + para[i-1].transform[1] ** 2);
+        const isNewLine = Math.abs(pf - cf) > prevSize * 0.3;
+        combinedStr += isNewLine ? "\n" + para[i].str : " " + para[i].str;
+      }
+
+      const first = para[0];
+      const last = para[para.length - 1];
+      const [a, b,,, e, f] = first.transform;
+      const fontSize = Math.sqrt(a * a + b * b);
+      const pdfWidth = first.width ?? first.str.length * fontSize * 0.6;
+      const fontFamily = styles[first.fontName]?.fontFamily || "sans-serif";
+      const pdfFontName = first.fontName || "";
+      const searchStr = (pdfFontName + " " + fontFamily).toLowerCase();
+
+      // Calculate bounding box from all items
+      const positions = para.map((item: any) => {
+        const [ia, ib,,, ie, iff] = item.transform;
+        const iSize = Math.sqrt(ia * ia + ib * ib);
+        const iWidth = item.width ?? item.str.length * iSize * 0.6;
+        return {
+          x: ie * scale,
+          y: (pdfPageHeight - iff) * scale - iSize * scale,
+          w: iWidth * scale,
+          h: iSize * scale * 1.4,
+        };
+      });
+      const minX = Math.min(...positions.map((p: any) => p.x));
+      const minY = Math.min(...positions.map((p: any) => p.y));
+      const maxR = Math.max(...positions.map((p: any) => p.x + p.w));
+      const maxB = Math.max(...positions.map((p: any) => p.y + p.h));
+
+      // Line height from consecutive items
+      let lineH = fontSize * scale * 1.5;
+      if (para.length >= 2) {
+        let total = 0;
+        for (let i = 1; i < para.length; i++) {
+          total += Math.abs(positions[i].y - positions[i-1].y);
+        }
+        lineH = total / (para.length - 1) || lineH;
+      }
+
+      blocks.push({
         id: Math.random().toString(36).slice(2),
-        str: mb.str,
-        x: canvasX,
-        y: canvasY,
-        width: Math.max(canvasW, 20),
-        height: Math.max(canvasH, mb.fontSize * scale * 1.4),
-        fontSize: mb.fontSize * scale,
-        pdfX: mb.x,
-        pdfY: mb.y,
-        pdfWidth: Math.max(mb.width, 10),
-        pdfFontSize: mb.fontSize,
+        str: combinedStr,
+        x: minX, y: minY,
+        width: Math.max(maxR - minX, 20),
+        height: Math.max(maxB - minY, 14),
+        fontSize: fontSize * scale,
+        pdfX: e, pdfY: last.transform[5],
+        pdfWidth: Math.max(pdfWidth, 10),
+        pdfFontSize: Math.max(fontSize, 6),
         pageHeight: pdfPageHeight,
         page: pageNum,
-        fontFamily: mb.fontFamily || "sans-serif",
-        fontWeight: mb.isBold ? "bold" : "normal",
-        fontStyle: mb.isItalic ? "italic" : "normal",
-        originalColor: mb.color || "#000000",
-        lineHeight: mb.lineHeight * scale,
-        pdfFontName: mb.fontName || "",
-      };
-    });
+        fontFamily,
+        fontWeight: searchStr.includes("bold") || searchStr.includes("black") ? "bold" : "normal",
+        fontStyle: searchStr.includes("italic") || searchStr.includes("oblique") ? "italic" : "normal",
+        originalColor: "#000000",
+        lineHeight: lineH,
+        pdfFontName,
+      });
+    }
 
-    // Merge with existing blocks to preserve edits
+    // Merge with existing to preserve edits
     setAllNativeTextBlocks(prev => {
       const existing = prev.get(pageNum);
       if (existing && existing.length > 0) {
@@ -1029,7 +1089,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       next.set(pageNum, blocks);
       return next;
     });
-  }, [pdfDoc, pdfBytes, scale]);
+  }, [pdfDoc, scale]);
 
   // Auto-save edited text when switching away from edit-text tool or changing page
   const editingBlockIdRef = useRef(editingBlockId);
