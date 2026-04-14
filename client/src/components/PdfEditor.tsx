@@ -4145,17 +4145,20 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     }}
                     onBlur={(e) => {
                       const newText = (e.currentTarget as HTMLElement).innerText;
-                      setAllNativeTextBlocks(prev => {
-                        const pageBlocks = prev.get(block.page) ?? [];
-                        const updated = pageBlocks.map((b: NativeTextBlock) =>
-                          b.id === block.id
-                            ? { ...b, editedStr: newText, fontColor: editTextColor }
-                            : b
-                        );
-                        const next = new Map(prev);
-                        next.set(block.page, updated);
-                        return next;
-                      });
+                      // Only save if text actually changed from the original
+                      if (newText.trim() !== block.str.trim()) {
+                        setAllNativeTextBlocks(prev => {
+                          const pageBlocks = prev.get(block.page) ?? [];
+                          const updated = pageBlocks.map((b: NativeTextBlock) =>
+                            b.id === block.id
+                              ? { ...b, editedStr: newText, fontColor: editTextColor }
+                              : b
+                          );
+                          const next = new Map(prev);
+                          next.set(block.page, updated);
+                          return next;
+                        });
+                      }
                       setEditingBlockId(null);
                     }}
                     onKeyDown={(e) => {
