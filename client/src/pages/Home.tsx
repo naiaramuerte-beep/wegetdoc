@@ -116,6 +116,7 @@ export interface HomeOverrides {
   heroSubtitle?: string;
   metaTitle?: string;
   metaDesc?: string;
+  editorTool?: string;
 }
 
 export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) {
@@ -181,14 +182,14 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (f) openEditor(f);
+    if (f) openEditor(f, overrides?.editorTool);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDraggingOver(false);
     const f = e.dataTransfer.files[0];
-    if (f) openEditor(f);
+    if (f) openEditor(f, overrides?.editorTool);
   };
 
   const scrollToEditor = (tool?: string) => {

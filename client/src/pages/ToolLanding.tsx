@@ -7,12 +7,13 @@ import Home from "./Home";
 export interface ToolDef {
   slug: string;
   i18nPrefix: string;
+  editorTool?: string;
 }
 
 export const TOOL_LANDINGS: ToolDef[] = [
   { slug: "pdf-to-word",   i18nPrefix: "landing_pdf2word" },
   { slug: "pdf-editor",    i18nPrefix: "landing_editor" },
-  { slug: "merge-pdf",     i18nPrefix: "landing_merge" },
+  { slug: "merge-pdf",     i18nPrefix: "landing_merge", editorTool: "merge" },
   { slug: "compress-pdf",  i18nPrefix: "landing_compress" },
   { slug: "jpg-to-pdf",    i18nPrefix: "landing_jpg2pdf" },
   { slug: "pdf-to-jpg",    i18nPrefix: "landing_pdf2jpg" },
@@ -45,6 +46,7 @@ export default function ToolLanding({ tool }: { tool: ToolDef }) {
         heroSubtitle: tr("subtitle"),
         metaTitle: tr("meta_title") || `${tr("h1")} | ${brandName}`,
         metaDesc: tr("meta_desc") || tr("subtitle"),
+        editorTool: tool.editorTool,
       }}
     />
   );
