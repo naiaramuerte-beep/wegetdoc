@@ -18,7 +18,8 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import WebViewer from "@pdftron/webviewer";
+// WebViewer import disabled — static files too large for git (177MB)
+// import WebViewer from "@pdftron/webviewer";
 import PaywallModal from "./PaywallModal";
 import { encryptPDF } from "@pdfsmaller/pdf-encrypt-lite";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -1094,64 +1095,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
   }, [activeTool, editTextColor]);
 
-  // Initialize Apryse WebViewer when edit-text is activated
-  useEffect(() => {
-    if (activeTool !== "edit-text" || !pdfBytes || !webviewerContainerRef.current) {
-      // Destroy WebViewer when leaving edit-text mode
-      if (webviewerInstanceRef.current && activeTool !== "edit-text") {
-        webviewerInstanceRef.current = null;
-        setWebviewerReady(false);
-        if (webviewerContainerRef.current) {
-          webviewerContainerRef.current.innerHTML = "";
-        }
-      }
-      return;
-    }
-    // Don't re-init if already loaded
-    if (webviewerInstanceRef.current) return;
-
-    const container = webviewerContainerRef.current;
-    container.innerHTML = ""; // Clear any previous content
-
-    // Create a blob URL from the PDF bytes
-    const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
-    const pdfUrl = URL.createObjectURL(blob);
-
-    WebViewer({
-      path: "/webviewer",
-      licenseKey: "demo:1776209607211:632da47a03000000006982b900f2497bc31cb286c164c436388427a662",
-      initialDoc: pdfUrl,
-      disabledElements: [
-        "header", "toolsHeader", "leftPanel", "searchPanel",
-        "notesPanel", "menuButton", "leftPanelButton",
-        "viewControlsButton", "zoomControls",
-      ],
-    }, container).then((instance: any) => {
-      const { UI, Core } = instance;
-      // Enable content editing (inline text editing with real fonts)
-      UI.enableFeatures([UI.Feature.ContentEdit]);
-      webviewerInstanceRef.current = instance;
-      setWebviewerReady(true);
-
-      // When user saves edits in WebViewer, update pdfBytes
-      Core.documentViewer.addEventListener("documentLoaded", () => {
-        console.log("[WebViewer] Document loaded, ContentEdit enabled");
-      });
-
-      // Cleanup blob URL
-      URL.revokeObjectURL(pdfUrl);
-    }).catch((err: any) => {
-      console.error("[WebViewer] Failed to initialize:", err);
-      toast.error("Text editor failed to load");
-    });
-
-    return () => {
-      if (webviewerInstanceRef.current) {
-        webviewerInstanceRef.current = null;
-        setWebviewerReady(false);
-      }
-    };
-  }, [activeTool, pdfBytes]); // eslint-disable-line react-hooks/exhaustive-deps
+  // WebViewer integration disabled — static files too large for git deploy
+  // Text editing uses MuPDF backend + contentEditable overlays instead
 
   // Handle file drop / select — auto-converts non-PDF files to PDF via server
   const handleFile = useCallback(async (f: File) => {
@@ -4132,17 +4077,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             </div>
           </div>
 
-          {/* Apryse WebViewer for text editing — shown when edit-text is active */}
-          {activeTool === "edit-text" && (
-            <div
-              ref={webviewerContainerRef}
-              className="flex-1 overflow-hidden"
-              style={{ display: activeTool === "edit-text" ? "flex" : "none", minHeight: "100%" }}
-            />
-          )}
-
-          {/* PDF canvas + annotation overlay — hidden when WebViewer is active */}
-          <div className="flex-1 overflow-auto flex items-start justify-center p-3 md:p-6 pb-[140px] md:pb-6" style={{ display: activeTool === "edit-text" ? "none" : undefined }}>
+          {/* PDF canvas + annotation overlay */}
+          <div className="flex-1 overflow-auto flex items-start justify-center p-3 md:p-6 pb-[140px] md:pb-6">
             <div
               className="relative shadow-xl"
               ref={viewerRef}
