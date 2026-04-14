@@ -854,7 +854,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
     // Step 3: Group lines into paragraphs
     // Lines belong to the same paragraph if:
-    // - Vertical gap <= 1.8x line height
+    // - Vertical gap <= 0.8x line height (tight — splits at paragraph breaks)
     // - Left margin is within 40px (canvas px) of the paragraph's first line
     // - Same font size (within 1px tolerance)
     const paragraphs: LineItem[][] = [];
@@ -865,7 +865,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         const vertGap = line.canvasY - (lastLine.canvasY + lastLine.canvasH);
         const leftAligned = Math.abs(line.canvasX - para[0].canvasX) < 40;
         const sameSize = Math.abs(line.fontSize - lastLine.fontSize) < 1;
-        if (vertGap >= 0 && vertGap < lastLine.canvasH * 1.8 && leftAligned && sameSize) {
+        if (vertGap >= -2 && vertGap < lastLine.canvasH * 0.8 && leftAligned && sameSize) {
           para.push(line);
           merged = true;
           break;
