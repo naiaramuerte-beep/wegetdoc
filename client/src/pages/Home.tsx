@@ -224,13 +224,13 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
       />
 
       {/* ══════════════════════════════════════════════════════════
-          HERO — Two columns
+          HERO — Single centered column
       ══════════════════════════════════════════════════════════ */}
       <section className="bg-white">
         <div className="container pt-10 pb-0 md:pt-16">
-          <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
-            {/* Left column (55%) */}
-            <div className="w-full lg:w-[55%] flex flex-col items-center text-center lg:items-start lg:text-left">
+          <div className="flex flex-col items-center gap-10">
+            {/* Centered content */}
+            <div className="w-full max-w-2xl flex flex-col items-center text-center">
               <h1
                 className="text-4xl md:text-5xl lg:text-[3.6rem] font-extrabold leading-[1.12] mb-5 tracking-tight"
                 style={{ color: TEXT_MAIN }}
@@ -288,7 +288,7 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
               </div>
 
               {/* Format badges */}
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1.5 mb-5">
+              <div className="flex flex-wrap items-center justify-center gap-1.5 mb-5">
                 {["PDF", "Word", "Excel", "PPT", "JPG", "PNG"].map((fmt) => (
                   <span
                     key={fmt}
@@ -303,7 +303,7 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
 
               {/* Social proof inline */}
               {!isFastDoc && (
-                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-5 gap-y-2 text-xs mb-10" style={{ color: TEXT_MUTED }}>
+                <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs mb-10" style={{ color: TEXT_MUTED }}>
                   <span className="flex items-center gap-1.5">
                     <span className="flex">
                       {[...Array(5)].map((_, i) => (
@@ -323,8 +323,8 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
               )}
             </div>
 
-            {/* Right column (45%) — Upload drop zone */}
-            <div className="w-full lg:w-[45%]">
+            {/* Upload drop zone — centered */}
+            <div className="w-full max-w-lg">
               <div
                 onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
                 onDragLeave={() => setIsDraggingOver(false)}
