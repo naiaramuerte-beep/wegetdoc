@@ -552,8 +552,19 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   }, []);
 
   // ── Render page ───────────────────────────────────────────────
+  // Keep a ref to allNativeTextBlocks so renderPage can read it without re-creating
+  const allNativeTextBlocksRef = useRef(allNativeTextBlocks);
+  allNativeTextBlocksRef.current = allNativeTextBlocks;
+
+  const renderTaskRef = useRef<any>(null);
+
   const renderPage = useCallback(async (pageNum: number) => {
     if (!pdfDoc || !mainCanvasRef.current) return;
+    // Cancel any pending render
+    if (renderTaskRef.current) {
+      try { renderTaskRef.current.cancel(); } catch {}
+      renderTaskRef.current = null;
+    }
     const page = await pdfDoc.getPage(pageNum);
     const dpr = window.devicePixelRatio || 1;
     const vp = page.getViewport({ scale: scale * dpr });
@@ -563,15 +574,21 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     canvas.style.width = `${vp.width / dpr}px`;
     canvas.style.height = `${vp.height / dpr}px`;
     const ctx = canvas.getContext("2d")!;
-    await page.render({ canvas, viewport: vp } as any).promise;
+    const task = page.render({ canvas, viewport: vp } as any);
+    renderTaskRef.current = task;
+    try {
+      await task.promise;
+    } catch (e: any) {
+      if (e?.name === "RenderingCancelledException") return;
+      throw e;
+    }
+    renderTaskRef.current = null;
 
-    // Apply edited text blocks: paint white over original, draw replacement text
-    const editedBlocks = (allNativeTextBlocks.get(pageNum) ?? []).filter(b => b.editedStr !== undefined);
+    // Apply edited text blocks on canvas
+    const editedBlocks = (allNativeTextBlocksRef.current.get(pageNum) ?? []).filter(b => b.editedStr !== undefined);
     for (const block of editedBlocks) {
-      // Cover original text with white rectangle (in canvas pixel coordinates, scaled by dpr)
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(block.x * dpr, block.y * dpr, block.width * dpr, block.height * dpr);
-      // Draw replacement text
       ctx.fillStyle = block.fontColor || "#000";
       ctx.font = `${block.fontSize * dpr}px "${block.pdfFontName}", ${block.fontFamily || "sans-serif"}`;
       const lines = (block.editedStr!).split("\n");
@@ -589,10 +606,17 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       drawingCanvasRef.current.style.height = `${vp.height / dpr}px`;
       redrawDrawingCanvas();
     }
-  }, [pdfDoc, scale, allNativeTextBlocks]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pdfDoc, scale]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   useEffect(() => { renderPage(currentPage); }, [renderPage, currentPage]);
+
+  // Re-render canvas when text edits change (to show replacements)
+  useEffect(() => {
+    if (pdfDoc && mainCanvasRef.current && !editingBlockId) {
+      renderPage(currentPage);
+    }
+  }, [allNativeTextBlocks]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Force render when pdfDoc first becomes available OR when canvas mounts
   useEffect(() => {
