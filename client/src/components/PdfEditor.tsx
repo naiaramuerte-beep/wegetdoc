@@ -951,10 +951,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         fontWeight, fontStyle, originalColor,
       };
 
-      // Break paragraph on font size change
+      // Break paragraph on: font size change, large X shift, or large vertical gap
       if (currentPara.length > 0) {
         const prev = currentPara[currentPara.length - 1];
-        if (Math.abs(lineItem.fontSize - prev.fontSize) > 2) {
+        const sizeChanged = Math.abs(lineItem.fontSize - prev.fontSize) > 2;
+        const bigXShift = Math.abs(lineItem.canvasX - prev.canvasX) > prev.canvasW * 0.8 && Math.abs(lineItem.canvasX - currentPara[0].canvasX) > 40;
+        const bigYGap = lineItem.canvasY - (prev.canvasY + prev.canvasH) > prev.canvasH * 1.5;
+        if (sizeChanged || bigXShift || bigYGap) {
           paragraphs.push(currentPara);
           currentPara = [];
         }
