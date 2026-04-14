@@ -610,10 +610,27 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       ctx.font = finalFont;
       ctx.textBaseline = "top";
 
-      const lines = block.editedStr!.split("\n");
       const lineH = (block.lineHeight ?? fontSize * 1.5) * dpr;
-      for (let i = 0; i < lines.length; i++) {
-        ctx.fillText(lines[i], block.x * dpr, block.y * dpr + i * lineH + 2);
+      const maxW = block.width * dpr;
+      const rawLines = block.editedStr!.split("\n");
+      // Word-wrap each line to fit within block width
+      const wrappedLines: string[] = [];
+      for (const rawLine of rawLines) {
+        const words = rawLine.split(" ");
+        let currentLine = "";
+        for (const word of words) {
+          const testLine = currentLine ? currentLine + " " + word : word;
+          if (ctx.measureText(testLine).width > maxW && currentLine) {
+            wrappedLines.push(currentLine);
+            currentLine = word;
+          } else {
+            currentLine = testLine;
+          }
+        }
+        if (currentLine) wrappedLines.push(currentLine);
+      }
+      for (let i = 0; i < wrappedLines.length; i++) {
+        ctx.fillText(wrappedLines[i], block.x * dpr, block.y * dpr + i * lineH + 2);
       }
       ctx.restore();
     }
@@ -1425,7 +1442,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   }, [activeTool, getCanvasPos, currentBrushPoints, dragPreview, currentPage, brushColor, brushSize, highlightColor, pushHistory]);
 
   const undo = useCallback(() => {
-    if (historyIndex <= 0) { setAnnotations([]); return; }
+    if (historyIndex < 0) return;
+    if (historyIndex === 0) { setAnnotations([]); setHistoryIndex(-1); return; }
     const prev = history[historyIndex - 1];
     setAnnotations(prev.annotations);
     setHistoryIndex(i => i - 1);
@@ -2718,7 +2736,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       <div className="flex flex-wrap gap-1.5 p-3 border-b" style={{ borderColor: "#f1f5f9", backgroundColor: "#f8fafc" }}>
         <button
           onClick={undo}
-          disabled={historyIndex <= 0}
+          disabled={historyIndex < 0}
           title={t.editor_undo_tooltip}
           className="flex-1 min-w-0 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-medium border transition-all disabled:opacity-40"
           style={{ borderColor: "#cbd5e1", color: "#1A3A5C", backgroundColor: "#fff" }}
@@ -3775,7 +3793,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       {/* ── TOP TOOLBAR — desktop only ── */}
       <div className="hidden md:flex items-center gap-1 px-3 py-1.5 border-b min-w-0" style={{ backgroundColor: "#FFFFFF", borderColor: "#f1f5f9" }}>
         {/* Undo / Redo */}
-        <button title={t.editor_undo + " (Ctrl+Z)"} onClick={undo} disabled={historyIndex <= 0} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
+        <button title={t.editor_undo + " (Ctrl+Z)"} onClick={undo} disabled={historyIndex < 0} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
           <Undo2 className="w-4 h-4" style={{ color: "#1A3A5C" }} />
         </button>
         <button title={t.editor_redo + " (Ctrl+Y)"} onClick={redo} disabled={historyIndex >= history.length - 1} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
