@@ -1030,7 +1030,19 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     // Step 2: Build NativeTextBlock per paragraph
     const blocks: NativeTextBlock[] = [];
     for (const para of paragraphs) {
-      const combinedStr = para.map(l => l.str).join("\n");
+      // Join items: use space for same-line items, newline for different lines
+      let combinedStr = "";
+      for (let i = 0; i < para.length; i++) {
+        if (i === 0) {
+          combinedStr = para[i].str;
+        } else {
+          const prev = para[i - 1];
+          const curr = para[i];
+          // If Y position changed significantly, it's a new line
+          const isNewLine = Math.abs(curr.canvasY - prev.canvasY) > prev.canvasH * 0.3;
+          combinedStr += isNewLine ? "\n" + curr.str : " " + curr.str;
+        }
+      }
       const minX = Math.min(...para.map(l => l.canvasX));
       const minY = Math.min(...para.map(l => l.canvasY));
       const maxRight = Math.max(...para.map(l => l.canvasX + l.canvasW));
@@ -4542,6 +4554,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       e.stopPropagation();
                       setEditingBlockId(block.id);
                       setEditingBlockText(block.editedStr ?? block.str);
+                      setShowMobilePanel(true);
                     }}
                   />
                 );
