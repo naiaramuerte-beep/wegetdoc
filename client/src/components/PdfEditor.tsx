@@ -994,10 +994,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
     // Get actual canvas CSS dimensions for coordinate mapping
     const canvasEl = mainCanvasRef.current;
-    const canvasCSSWidth = canvasEl ? parseFloat(canvasEl.style.width) : pdfPageHeight * scale;
-    const canvasCSSHeight = canvasEl ? parseFloat(canvasEl.style.height) : pdfPageHeight * scale;
-    const pageWidth = vp.width / (scale * (window.devicePixelRatio || 1)) * scale; // PDF page width in points * scale... no, let's get it properly
-    const pdfPageWidth = vp.width / scale; // PDF width in points (vp.width = pdfWidth * scale)
+    const rect = canvasEl?.getBoundingClientRect();
+    const canvasCSSWidth = rect?.width ?? 714;
+    const canvasCSSHeight = rect?.height ?? 1010;
+    const dpr = window.devicePixelRatio || 1;
+    const pdfPageWidth = vp.width / (scale * dpr); // PDF width in points
 
     // DIAGNOSTIC — raw numbers from MuPDF and canvas
     if (mupdfBlocks.length > 0) {
