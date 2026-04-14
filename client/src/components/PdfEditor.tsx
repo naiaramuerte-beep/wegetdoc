@@ -564,15 +564,18 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const applyTextEditsToCanvas = useCallback((ctx: CanvasRenderingContext2D, pageNum: number, dpr: number) => {
     const editedBlocks = (allNativeTextBlocksRef.current.get(pageNum) ?? []).filter(b => b.editedStr !== undefined);
     for (const block of editedBlocks) {
-      // White rectangle to cover original text
       ctx.save();
+      // Clip to block bounds so text never overflows
+      const bx = block.x * dpr - 1;
+      const by = block.y * dpr - 1;
+      const bw = block.width * dpr + 2;
+      const bh = block.height * dpr + 2;
+      ctx.beginPath();
+      ctx.rect(bx, by, bw, bh);
+      ctx.clip();
+      // White rectangle to cover original text
       ctx.fillStyle = "#ffffff";
-      ctx.fillRect(
-        block.x * dpr - 1,
-        block.y * dpr - 1,
-        block.width * dpr + 2,
-        block.height * dpr + 2
-      );
+      ctx.fillRect(bx, by, bw, bh);
       // Draw replacement text line by line, preserving original styles
       const fontSize = block.fontSize * dpr;
       const color = block.originalColor || "#000000";
@@ -635,9 +638,17 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           }
         }
         if (samples.length > 0) {
-          // Use the darkest sample (most likely text, not anti-alias blend)
-          const darkest = samples.reduce((a, b) => (a[0] + a[1] + a[2] < b[0] + b[1] + b[2]) ? a : b);
-          block.originalColor = `#${darkest[0].toString(16).padStart(2, "0")}${darkest[1].toString(16).padStart(2, "0")}${darkest[2].toString(16).padStart(2, "0")}`;
+          // Find the most saturated pixel (pure text color, not anti-aliased blend with white)
+          const saturation = (r: number, g: number, b: number) => {
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            return max === 0 ? 0 : (max - min) / max;
+          };
+          // For colored text: pick most saturated. For black text: pick darkest.
+          const hasSaturated = samples.some(s => saturation(s[0], s[1], s[2]) > 0.15);
+          const best = hasSaturated
+            ? samples.reduce((a, b) => saturation(a[0], a[1], a[2]) > saturation(b[0], b[1], b[2]) ? a : b)
+            : samples.reduce((a, b) => (a[0] + a[1] + a[2] < b[0] + b[1] + b[2]) ? a : b);
+          block.originalColor = `#${best[0].toString(16).padStart(2, "0")}${best[1].toString(16).padStart(2, "0")}${best[2].toString(16).padStart(2, "0")}`;
         } else {
           block.originalColor = "#000000";
         }
