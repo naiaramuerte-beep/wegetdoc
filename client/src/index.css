@@ -58,8 +58,8 @@
   --color-sidebar-ring: var(--sidebar-ring);
 
   /* Custom brand tokens — Clean White */
-  --color-green-brand: #1B5E20;
-  --color-green-brand-hover: #14532d;
+  --color-green-brand: #1565C0;
+  --color-green-brand-hover: #0D47A1;
   --color-green-50: #f8fafc;
   --color-green-100: #f1f5f9;
   --color-surface: #ffffff;
@@ -74,7 +74,7 @@
   --card-foreground: #0f172a;
   --popover: #FFFFFF;
   --popover-foreground: #0f172a;
-  --primary: #1B5E20;
+  --primary: #1565C0;
   --primary-foreground: #FFFFFF;
   --secondary: #f8fafc;
   --secondary-foreground: #0f172a;
@@ -86,20 +86,20 @@
   --destructive-foreground: #FFFFFF;
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #1B5E20;
-  --chart-1: #1B5E20;
+  --ring: #1565C0;
+  --chart-1: #1565C0;
   --chart-2: #22c55e;
-  --chart-3: #4CAF50;
+  --chart-3: #42A5F5;
   --chart-4: #86efac;
-  --chart-5: #14532d;
+  --chart-5: #0D47A1;
   --sidebar: #0f172a;
   --sidebar-foreground: #f1f5f9;
-  --sidebar-primary: #1B5E20;
+  --sidebar-primary: #1565C0;
   --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: #1e293b;
   --sidebar-accent-foreground: #f1f5f9;
   --sidebar-border: #1e293b;
-  --sidebar-ring: #1B5E20;
+  --sidebar-ring: #1565C0;
 }
 
 @layer base {
@@ -157,18 +157,18 @@
 
   /* Green primary */
   .bg-indigo-brand {
-    background-color: #1B5E20;
+    background-color: #1565C0;
   }
   .text-indigo-brand {
-    color: #1B5E20;
+    color: #1565C0;
   }
   .border-indigo-brand {
-    border-color: #1B5E20;
+    border-color: #1565C0;
   }
 
   /* Gradient text utility */
   .gradient-text {
-    background: linear-gradient(135deg, #1B5E20, #166534);
+    background: linear-gradient(135deg, #1565C0, #1976D2);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -184,9 +184,9 @@
 
   .upload-zone:hover,
   .upload-zone.drag-over {
-    border-color: rgba(27, 94, 32, 0.6);
+    border-color: rgba(21, 101, 192, 0.6);
     background: #f8fafc;
-    box-shadow: 0 0 0 6px rgba(27, 94, 32, 0.05);
+    box-shadow: 0 0 0 6px rgba(21, 101, 192, 0.05);
   }
 
   /* Card hover lift */
@@ -207,14 +207,14 @@
 
   /* Gradient button */
   .btn-gradient {
-    background: #1B5E20;
+    background: #1565C0;
     color: white;
     transition: all 0.2s ease;
-    box-shadow: 0 4px 15px rgba(27, 94, 32, 0.25);
+    box-shadow: 0 4px 15px rgba(21, 101, 192, 0.25);
   }
   .btn-gradient:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(27, 94, 32, 0.35);
+    box-shadow: 0 8px 25px rgba(21, 101, 192, 0.35);
   }
 
   /* Section alternating bg */
@@ -256,13 +256,13 @@
 
   /* Step connector */
   .step-line {
-    background: rgba(27, 94, 32, 0.2);
+    background: rgba(21, 101, 192, 0.2);
   }
 
   /* Pricing card popular */
   .pricing-popular {
-    border: 2px solid #1B5E20;
-    box-shadow: 0 0 0 4px rgba(27, 94, 32, 0.06);
+    border: 2px solid #1565C0;
+    box-shadow: 0 0 0 4px rgba(21, 101, 192, 0.06);
   }
 
   /* Accordion smooth */
