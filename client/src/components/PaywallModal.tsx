@@ -229,14 +229,37 @@ function StripeCheckoutForm({
 
   return (
     <div className="flex flex-col md:flex-row min-h-0">
-      {/* ── Left: PDF Preview ── */}
+      {/* ── Left / Top: PDF Preview ── */}
+      {/* Mobile: horizontal compact bar | Desktop: vertical sidebar */}
+      <div className="flex items-center gap-3 bg-[#f4f5f7] p-3 md:hidden">
+        <div
+          className="w-14 h-20 rounded border border-slate-200 bg-white shadow-sm overflow-hidden flex items-center justify-center flex-shrink-0"
+        >
+          {thumbnailUrl ? (
+            <img src={thumbnailUrl} alt="Preview" className="w-full h-full object-contain" />
+          ) : (
+            <div className="flex items-center justify-center w-full h-full">
+              <span className="text-red-400 text-[8px] font-bold">PDF</span>
+            </div>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 mb-1">
+            <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+              <Check className="w-2.5 h-2.5 text-white" />
+            </div>
+            <p className="text-xs font-semibold text-slate-800">{(t as any).paywall_doc_ready ?? "Your document is ready!"}</p>
+          </div>
+          <p className="text-[11px] text-slate-500 truncate">{pdfData?.name ?? "document.pdf"}</p>
+        </div>
+      </div>
       <div className="hidden md:flex flex-col items-center justify-center bg-[#f4f5f7] p-8" style={{ minWidth: 260, maxWidth: 280 }}>
         {/* Header */}
         <div className="flex items-center gap-2 mb-5 w-full">
           <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
             <Check className="w-3.5 h-3.5 text-white" />
           </div>
-          <p className="text-sm font-semibold text-slate-800">Your document is ready!</p>
+          <p className="text-sm font-semibold text-slate-800">{(t as any).paywall_doc_ready ?? "Your document is ready!"}</p>
         </div>
         {/* PDF thumbnail */}
         <div
