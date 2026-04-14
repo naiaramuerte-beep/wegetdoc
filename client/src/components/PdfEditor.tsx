@@ -4162,8 +4162,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     }}
                     onBlur={(e) => {
                       const newText = (e.currentTarget as HTMLElement).innerText;
-                      // Only save if text actually changed from the original
-                      if (newText.trim() !== block.str.trim()) {
+                      // Normalize whitespace for comparison to avoid false positives
+                      const normalize = (s: string) => s.replace(/\s+/g, " ").trim();
+                      const originalText = block.editedStr ?? block.str;
+                      if (normalize(newText) !== normalize(originalText)) {
                         setAllNativeTextBlocks(prev => {
                           const pageBlocks = prev.get(block.page) ?? [];
                           const updated = pageBlocks.map((b: NativeTextBlock) =>
