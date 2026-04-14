@@ -4120,7 +4120,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       left: block.x,
                       top: block.y,
                       width: block.width,
-                      minHeight: block.height,
+                      height: block.height,
                       cursor: "text",
                       border: "2px solid #1565C0",
                       backgroundColor: "#fff",
@@ -4135,6 +4135,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       whiteSpace: "pre-wrap",
                       wordBreak: "break-word",
                       outline: "none",
+                      overflow: "auto",
                     }}
                     onBlur={(e) => {
                       const newText = (e.currentTarget as HTMLElement).innerText;
