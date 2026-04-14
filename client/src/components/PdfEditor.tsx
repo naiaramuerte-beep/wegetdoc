@@ -4054,69 +4054,88 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   </span>
                 </div>
               ))}
-              {/* Native text blocks overlay — inline contentEditable when edit-text tool is active */}
-              {activeTool === "edit-text" && nativeTextBlocks.map(block => (
-                <div
-                  key={block.id}
-                  contentEditable
-                  suppressContentEditableWarning
-                  spellCheck={false}
-                  style={{
-                    position: "absolute",
-                    left: block.x,
-                    top: block.y,
-                    width: block.width,
-                    minHeight: block.height,
-                    cursor: "text",
-                    border: editingBlockId === block.id
-                      ? "2px solid #1565C0"
-                      : "1.5px dashed rgba(21, 101, 192, 0.3)",
-                    backgroundColor: "#fff",
-                    borderRadius: 2,
-                    zIndex: editingBlockId === block.id ? 30 : 25,
-                    boxSizing: "border-box",
-                    padding: 0,
-                    fontSize: block.fontSize,
-                    fontFamily: block.fontFamily || "sans-serif",
-                    color: block.fontColor || "#000",
-                    lineHeight: 1.4,
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                    outline: "none",
-                    overflow: "hidden",
-                  }}
-                  onFocus={() => {
-                    setEditingBlockId(block.id);
-                    setEditingBlockText(block.editedStr ?? block.str);
-                  }}
-                  onBlur={(e) => {
-                    const newText = e.currentTarget.innerText;
-                    if (newText !== block.str) {
-                      setAllNativeTextBlocks(prev => {
-                        const pageBlocks = prev.get(block.page) ?? [];
-                        const updated = pageBlocks.map((b: NativeTextBlock) =>
-                          b.id === block.id
-                            ? { ...b, editedStr: newText, fontColor: editTextColor }
-                            : b
-                        );
-                        const next = new Map(prev);
-                        next.set(block.page, updated);
-                        return next;
-                      });
-                    }
-                    setEditingBlockId(null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Escape") {
-                      (e.currentTarget as HTMLElement).blur();
-                    }
-                    e.stopPropagation();
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  dangerouslySetInnerHTML={{ __html: (block.editedStr ?? block.str).replace(/\n/g, "<br>") }}
-                />
-              ))}
+              {/* Native text blocks overlay — edit-text tool active */}
+              {activeTool === "edit-text" && nativeTextBlocks.map(block => {
+                const isEditing = editingBlockId === block.id;
+                return isEditing ? (
+                  /* Active editing: contentEditable with white bg covering canvas text */
+                  <div
+                    key={block.id}
+                    contentEditable
+                    suppressContentEditableWarning
+                    spellCheck={false}
+                    style={{
+                      position: "absolute",
+                      left: block.x,
+                      top: block.y,
+                      width: block.width,
+                      minHeight: block.height,
+                      cursor: "text",
+                      border: "2px solid #1565C0",
+                      backgroundColor: "#fff",
+                      borderRadius: 2,
+                      zIndex: 30,
+                      boxSizing: "border-box",
+                      padding: 0,
+                      fontSize: block.fontSize,
+                      fontFamily: block.fontFamily || "sans-serif",
+                      color: block.fontColor || "#000",
+                      lineHeight: 1.4,
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                      outline: "none",
+                    }}
+                    onBlur={(e) => {
+                      const newText = e.currentTarget.innerText;
+                      if (newText !== block.str) {
+                        setAllNativeTextBlocks(prev => {
+                          const pageBlocks = prev.get(block.page) ?? [];
+                          const updated = pageBlocks.map((b: NativeTextBlock) =>
+                            b.id === block.id
+                              ? { ...b, editedStr: newText, fontColor: editTextColor }
+                              : b
+                          );
+                          const next = new Map(prev);
+                          next.set(block.page, updated);
+                          return next;
+                        });
+                      }
+                      setEditingBlockId(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") (e.currentTarget as HTMLElement).blur();
+                      e.stopPropagation();
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    ref={(el) => { if (el && !el.dataset.focused) { el.dataset.focused = "1"; el.focus(); } }}
+                    dangerouslySetInnerHTML={{ __html: (block.editedStr ?? block.str).replace(/\n/g, "<br>") }}
+                  />
+                ) : (
+                  /* Not editing: transparent border overlay, canvas text visible underneath */
+                  <div
+                    key={block.id}
+                    style={{
+                      position: "absolute",
+                      left: block.x,
+                      top: block.y,
+                      width: block.width,
+                      height: block.height,
+                      cursor: "text",
+                      border: "1.5px dashed rgba(21, 101, 192, 0.35)",
+                      backgroundColor: "transparent",
+                      borderRadius: 2,
+                      zIndex: 25,
+                      boxSizing: "border-box",
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingBlockId(block.id);
+                      setEditingBlockText(block.editedStr ?? block.str);
+                    }}
+                  />
+                );
+              })}
             </div>
           </div>
         </div>
