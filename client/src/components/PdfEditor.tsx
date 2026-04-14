@@ -618,23 +618,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
     renderTaskRef.current = null;
 
-    // Sample original text colors from the rendered canvas before painting over
-    const blocks = allNativeTextBlocksRef.current.get(pageNum) ?? [];
-    for (const block of blocks) {
-      if (!block.originalColor || block.originalColor === "#000000") {
-        // Sample pixel color at the middle of the first line of text
-        const sx = Math.round((block.x + 5) * dpr);
-        const sy = Math.round((block.y + block.fontSize * 0.5) * dpr);
-        if (sx > 0 && sy > 0 && sx < canvas.width && sy < canvas.height) {
-          const pixel = ctx.getImageData(sx, sy, 1, 1).data;
-          // Only use if it's not white/near-white (background)
-          if (pixel[0] < 240 || pixel[1] < 240 || pixel[2] < 240) {
-            block.originalColor = `#${pixel[0].toString(16).padStart(2, "0")}${pixel[1].toString(16).padStart(2, "0")}${pixel[2].toString(16).padStart(2, "0")}`;
-          }
-        }
-      }
-    }
-
     // Paint edited text blocks over the canvas
     applyTextEditsToCanvas(ctx, pageNum, dpr);
 
@@ -917,6 +900,43 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       fontFamily: string; fontSize: number; pdfFontName: string;
       fontWeight: string; fontStyle: string; originalColor: string;
     }
+    // Extract font styles (bold/italic) and colors from the operator list
+    // This is the only reliable way to get these from pdf.js
+    const fontStyleMap = new Map<string, { bold: boolean; italic: boolean; actualName: string }>();
+    const textColorList: Array<[number, number, number]> = []; // color per showText call
+    try {
+      const ops = await page.getOperatorList();
+      const OPS = (await import("pdfjs-dist")).OPS;
+      let curColor: [number, number, number] = [0, 0, 0];
+      let curFontRef = "";
+      for (let i = 0; i < ops.fnArray.length; i++) {
+        const fn = ops.fnArray[i];
+        const args = ops.argsArray[i];
+        if (fn === OPS.setFillRGBColor) {
+          curColor = [Math.round(args[0] * 255), Math.round(args[1] * 255), Math.round(args[2] * 255)];
+        } else if (fn === OPS.setFillGray) {
+          const g = Math.round(args[0] * 255);
+          curColor = [g, g, g];
+        } else if (fn === OPS.setFillCMYKColor) {
+          const [c, m, y, k] = args;
+          curColor = [Math.round(255 * (1 - c) * (1 - k)), Math.round(255 * (1 - m) * (1 - k)), Math.round(255 * (1 - y) * (1 - k))];
+        } else if (fn === OPS.setFont) {
+          curFontRef = args[0];
+          if (!fontStyleMap.has(curFontRef)) {
+            const nameLower = curFontRef.toLowerCase();
+            fontStyleMap.set(curFontRef, {
+              bold: nameLower.includes("bold") || nameLower.includes("black") || nameLower.includes("heavy"),
+              italic: nameLower.includes("italic") || nameLower.includes("oblique"),
+              actualName: curFontRef,
+            });
+          }
+        } else if (fn === OPS.showText || fn === OPS.showSpacedText) {
+          textColorList.push([...curColor]);
+        }
+      }
+    } catch {}
+
+    let textColorIdx = 0;
     const allItems = content.items as any[];
     const paragraphs: LineItem[][] = [];
     let currentPara: LineItem[] = [];
@@ -925,11 +945,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const item = allItems[i];
       // Empty items or EOL-only items mark paragraph boundaries
       if (!item.str || !item.str.trim()) {
-        // If we have accumulated lines, close the paragraph
         if (currentPara.length > 0) {
           paragraphs.push(currentPara);
           currentPara = [];
         }
+        // Still count non-empty items for color index matching
+        if (item.str !== undefined) textColorIdx++;
         continue;
       }
       const [a, b, , , e, f] = item.transform as number[];
@@ -938,12 +959,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const styleObj = styles[item.fontName];
       const fontFamily = styleObj?.fontFamily || "sans-serif";
       const pdfFontName = item.fontName || "";
-      // Detect bold/italic: check both fontName and fontFamily for keywords
+      // Get bold/italic from operator list font data
+      const fontInfo = fontStyleMap.get(pdfFontName);
       const searchStr = (pdfFontName + " " + fontFamily).toLowerCase();
-      const fontWeight = searchStr.includes("bold") || searchStr.includes("black") || searchStr.includes("heavy") ? "bold" : "normal";
-      const fontStyle = searchStr.includes("italic") || searchStr.includes("oblique") ? "italic" : "normal";
-      // Color will be sampled from the rendered canvas (set later)
-      const originalColor = "#000000";
+      const fontWeight = fontInfo?.bold || searchStr.includes("bold") || searchStr.includes("black") ? "bold" : "normal";
+      const fontStyle = fontInfo?.italic || searchStr.includes("italic") || searchStr.includes("oblique") ? "italic" : "normal";
+      // Get color from operator list (matched by order)
+      const clr = textColorList[textColorIdx] ?? [0, 0, 0];
+      const originalColor = `#${clr[0].toString(16).padStart(2, "0")}${clr[1].toString(16).padStart(2, "0")}${clr[2].toString(16).padStart(2, "0")}`;
+      textColorIdx++;
       const canvasX = e * scale;
       const canvasY = (pdfPageHeight - f) * scale - pdfFontSize * scale;
       const canvasW = pdfWidth * scale;
@@ -4216,7 +4240,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         position: "absolute",
                         left: Math.max(0, block.x - 4),
                         top: block.y + block.height + 6,
-                        width: Math.max(block.width + 8, 280),
+                        width: Math.max(block.width + 8, 320),
                         zIndex: 30,
                         backgroundColor: "#fff",
                         border: "2px solid #1565C0",
@@ -4230,6 +4254,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       onClick={(e) => e.stopPropagation()}
                       onMouseDown={(e) => e.stopPropagation()}
                     >
+                      {/* Style indicators */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 11, color: "#64748b" }}>{Math.round(block.pdfFontSize)}pt</span>
+                        <span style={{ fontSize: 11, color: "#64748b", fontFamily: block.fontFamily }}>{block.fontFamily}</span>
+                        {block.fontWeight === "bold" && <span style={{ fontSize: 11, fontWeight: "bold", color: "#1565C0", padding: "1px 4px", backgroundColor: "#f0f7ff", borderRadius: 3 }}>B</span>}
+                        {block.fontStyle === "italic" && <span style={{ fontSize: 11, fontStyle: "italic", color: "#1565C0", padding: "1px 4px", backgroundColor: "#f0f7ff", borderRadius: 3 }}>I</span>}
+                        <span style={{ width: 14, height: 14, borderRadius: 3, backgroundColor: block.originalColor || "#000", border: "1px solid #e2e8f0", flexShrink: 0 }} title={block.originalColor} />
+                      </div>
                       <textarea
                         autoFocus
                         defaultValue={block.editedStr ?? block.str}
@@ -4245,8 +4277,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                           maxHeight: 200,
                           resize: "vertical",
                           fontSize: 13,
-                          fontFamily: "system-ui, sans-serif",
-                          color: "#0f172a",
+                          fontWeight: block.fontWeight || "normal",
+                          fontStyle: block.fontStyle || "normal",
+                          fontFamily: block.fontFamily || "system-ui, sans-serif",
+                          color: block.originalColor || "#0f172a",
                           border: "1px solid #e2e8f0",
                           borderRadius: 4,
                           padding: "6px 8px",
