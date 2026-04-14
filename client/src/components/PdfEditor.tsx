@@ -560,38 +560,90 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const allNativeTextBlocksRef = useRef(allNativeTextBlocks);
   allNativeTextBlocksRef.current = allNativeTextBlocks;
 
-  // Paint edited text blocks on canvas: white rect over original + replacement text
-  const applyTextEditsToCanvas = useCallback((ctx: CanvasRenderingContext2D, pageNum: number, dpr: number) => {
-    const editedBlocks = (allNativeTextBlocksRef.current.get(pageNum) ?? []).filter(b => b.editedStr !== undefined);
-    for (const block of editedBlocks) {
-      ctx.save();
-      // Clip to block bounds so text never overflows
-      const bx = block.x * dpr - 1;
-      const by = block.y * dpr - 1;
-      const bw = block.width * dpr + 2;
-      const bh = block.height * dpr + 2;
-      ctx.beginPath();
-      ctx.rect(bx, by, bw, bh);
-      ctx.clip();
-      // White rectangle to cover original text
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(bx, by, bw, bh);
-      // Draw replacement text line by line, preserving original styles
-      const fontSize = block.fontSize * dpr;
-      const color = block.originalColor || "#000000";
-      const weight = block.fontWeight || "normal";
-      const style = block.fontStyle || "normal";
-      ctx.fillStyle = color;
-      ctx.font = `${style} ${weight} ${fontSize}px ${block.fontFamily || "sans-serif"}`;
-      ctx.textBaseline = "top";
-      const lines = block.editedStr!.split("\n");
-      const lineH = (block.lineHeight ?? fontSize * 1.5) * dpr;
-      for (let i = 0; i < lines.length; i++) {
-        ctx.fillText(lines[i], block.x * dpr, block.y * dpr + i * lineH + 2);
+  // Apply text edits to the actual PDF bytes using pdf-lib, then reload into pdf.js
+  const applyTextEditsToPdf = useCallback(async () => {
+    if (!pdfBytes) return;
+    const editedBlocks: NativeTextBlock[] = [];
+    allNativeTextBlocksRef.current.forEach(pageBlocks => {
+      pageBlocks.filter(b => b.editedStr !== undefined).forEach(b => editedBlocks.push(b));
+    });
+    if (editedBlocks.length === 0) return;
+
+    try {
+      const safeBytes = pdfBytes.slice();
+      const doc = await PDFDocument.load(safeBytes, { ignoreEncryption: true });
+      const font = await doc.embedFont(StandardFonts.Helvetica);
+      const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
+      const fontItalic = await doc.embedFont(StandardFonts.HelveticaOblique);
+      const fontBoldItalic = await doc.embedFont(StandardFonts.HelveticaBoldOblique);
+
+      for (const block of editedBlocks) {
+        try {
+          const page = doc.getPage(block.page - 1);
+          const { width: pageW, height: pageH } = page.getSize();
+          const fontSizePts = block.pdfFontSize;
+          const lineHeight = block.lineHeight ? block.lineHeight / scale : fontSizePts * 1.5;
+
+          // Cover original text area
+          const coverTop = pageH - (block.y / scale);
+          const coverBottom = pageH - ((block.y + block.height) / scale);
+          const coverWidth = pageW - block.pdfX + 10;
+          page.drawRectangle({
+            x: block.pdfX - 2,
+            y: coverBottom - fontSizePts * 0.3,
+            width: coverWidth,
+            height: (coverTop - coverBottom) + fontSizePts * 0.6,
+            color: rgb(1, 1, 1),
+            opacity: 1,
+          });
+
+          // Choose font based on weight/style
+          const isBold = block.fontWeight === "bold";
+          const isItalic = block.fontStyle === "italic";
+          const useFont = isBold && isItalic ? fontBoldItalic : isBold ? fontBold : isItalic ? fontItalic : font;
+
+          // Parse color
+          const hexColor = block.originalColor && block.originalColor.length === 7 ? block.originalColor : "#000000";
+          const cr = parseInt(hexColor.slice(1, 3), 16) / 255;
+          const cg = parseInt(hexColor.slice(3, 5), 16) / 255;
+          const cb = parseInt(hexColor.slice(5, 7), 16) / 255;
+          const textColor = rgb(isNaN(cr) ? 0 : cr, isNaN(cg) ? 0 : cg, isNaN(cb) ? 0 : cb);
+
+          // Draw replacement text
+          const editedLines = block.editedStr!.split("\n");
+          const startY = coverTop - fontSizePts;
+          for (let i = 0; i < editedLines.length; i++) {
+            const safeText = editedLines[i].replace(/[^\x00-\xFF]/g, "?");
+            if (!safeText.trim()) continue;
+            page.drawText(safeText, {
+              x: block.pdfX,
+              y: startY - i * lineHeight,
+              size: fontSizePts,
+              font: useFont,
+              color: textColor,
+            });
+          }
+        } catch (err) {
+          console.error("[applyTextEditsToPdf] Error on block:", err);
+        }
       }
-      ctx.restore();
+
+      // Save modified PDF and reload into pdf.js
+      const newBytes = await doc.save();
+      const newUint8 = new Uint8Array(newBytes);
+      setPdfBytes(newUint8);
+      // Reload pdf.js document from modified bytes
+      const newDoc = await pdfjsLib.getDocument({ data: newUint8.slice() }).promise;
+      setPdfDoc(newDoc);
+      // Clear text blocks so they get re-extracted from the modified PDF
+      setAllNativeTextBlocks(new Map());
+      // Re-render
+      setTimeout(() => renderPage(currentPage), 100);
+    } catch (err) {
+      console.error("[applyTextEditsToPdf] Error:", err);
+      toast.error("Error applying text edits");
     }
-  }, []);
+  }, [pdfBytes, scale, currentPage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const renderTaskRef = useRef<any>(null);
 
@@ -621,29 +673,26 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
     renderTaskRef.current = null;
 
-    // Sample text colors from the rendered canvas (before painting edits)
+    // Sample text colors from the rendered canvas
     const pageBlocks = allNativeTextBlocksRef.current.get(pageNum) ?? [];
     for (const block of pageBlocks) {
       if (!block.originalColor) {
-        // Sample several pixels along the text to find the dominant non-white color
         const samples: Array<[number, number, number]> = [];
         const sy = Math.round((block.y + block.fontSize * 0.4) * dpr);
         for (let dx = 5; dx < Math.min(block.width, 60); dx += 8) {
           const sx = Math.round((block.x + dx) * dpr);
           if (sx > 0 && sy > 0 && sx < canvas.width && sy < canvas.height) {
             const p = ctx.getImageData(sx, sy, 1, 1).data;
-            if (p[0] < 230 || p[1] < 230 || p[2] < 230) { // not white/near-white
+            if (p[0] < 230 || p[1] < 230 || p[2] < 230) {
               samples.push([p[0], p[1], p[2]]);
             }
           }
         }
         if (samples.length > 0) {
-          // Find the most saturated pixel (pure text color, not anti-aliased blend with white)
           const saturation = (r: number, g: number, b: number) => {
             const max = Math.max(r, g, b), min = Math.min(r, g, b);
             return max === 0 ? 0 : (max - min) / max;
           };
-          // For colored text: pick most saturated. For black text: pick darkest.
           const hasSaturated = samples.some(s => saturation(s[0], s[1], s[2]) > 0.15);
           const best = hasSaturated
             ? samples.reduce((a, b) => saturation(a[0], a[1], a[2]) > saturation(b[0], b[1], b[2]) ? a : b)
@@ -654,9 +703,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         }
       }
     }
-
-    // Paint edited text blocks over the canvas
-    applyTextEditsToCanvas(ctx, pageNum, dpr);
 
     // Sync drawing canvas size
     if (drawingCanvasRef.current) {
@@ -670,13 +716,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
 
   useEffect(() => { renderPage(currentPage); }, [renderPage, currentPage]);
-
-  // Re-render when text edits change to show replacements on canvas
-  useEffect(() => {
-    if (pdfDoc && mainCanvasRef.current && !editingBlockId) {
-      renderPage(currentPage);
-    }
-  }, [allNativeTextBlocks]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Force render when pdfDoc first becomes available OR when canvas mounts
   useEffect(() => {
@@ -4309,6 +4348,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                                 next.set(block.page, updated);
                                 return next;
                               });
+                              // Apply edit to actual PDF and reload
+                              setTimeout(() => applyTextEditsToPdf(), 50);
                               toast.success((t as any).editor_text_saved ?? "Text saved");
                             }
                             setEditingBlockId(null);
