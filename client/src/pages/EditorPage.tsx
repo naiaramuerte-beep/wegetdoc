@@ -166,6 +166,7 @@ export default function EditorPage() {
   const [, navigate] = useLocation();
   const { lang } = useLanguage();
   const isFileFree = pendingTool ? FILE_FREE_TOOLS.includes(pendingTool) : false;
+  const hasDraft = Boolean(localStorage.getItem("pdfpro_editor_draft"));
 
   /* Editable filename */
   const [fileName, setFileName] = useState("document.pdf");
@@ -197,8 +198,8 @@ export default function EditorPage() {
     );
   }
 
-  /* No file loaded — show upload zone (for direct access from Google Ads etc.) */
-  if (!pendingFile && !isFileFree && !pendingPaywall) {
+  /* No file loaded and no draft — show upload zone (for direct access from Google Ads etc.) */
+  if (!pendingFile && !isFileFree && !pendingPaywall && !hasDraft) {
     return <EditorUploadZone lang={lang} />;
   }
 
