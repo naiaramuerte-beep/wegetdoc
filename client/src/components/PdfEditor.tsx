@@ -560,90 +560,57 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const allNativeTextBlocksRef = useRef(allNativeTextBlocks);
   allNativeTextBlocksRef.current = allNativeTextBlocks;
 
-  // Apply text edits to the actual PDF bytes using pdf-lib, then reload into pdf.js
-  const applyTextEditsToPdf = useCallback(async () => {
-    if (!pdfBytes) return;
-    const editedBlocks: NativeTextBlock[] = [];
-    allNativeTextBlocksRef.current.forEach(pageBlocks => {
-      pageBlocks.filter(b => b.editedStr !== undefined).forEach(b => editedBlocks.push(b));
-    });
+  // Paint edited text on canvas using the REAL pdf.js loaded fonts
+  const applyTextEditsToCanvas = useCallback(async (ctx: CanvasRenderingContext2D, pageNum: number, dpr: number) => {
+    const editedBlocks = (allNativeTextBlocksRef.current.get(pageNum) ?? []).filter(b => b.editedStr !== undefined);
     if (editedBlocks.length === 0) return;
 
-    try {
-      const safeBytes = pdfBytes.slice();
-      const doc = await PDFDocument.load(safeBytes, { ignoreEncryption: true });
-      const font = await doc.embedFont(StandardFonts.Helvetica);
-      const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
-      const fontItalic = await doc.embedFont(StandardFonts.HelveticaOblique);
-      const fontBoldItalic = await doc.embedFont(StandardFonts.HelveticaBoldOblique);
+    // Wait for all pdf.js fonts to be loaded
+    await document.fonts.ready;
 
-      for (const block of editedBlocks) {
-        try {
-          const page = doc.getPage(block.page - 1);
-          const { width: pageW, height: pageH } = page.getSize();
-          const fontSizePts = block.pdfFontSize;
-          const lineHeight = block.lineHeight ? block.lineHeight / scale : fontSizePts * 1.5;
+    for (const block of editedBlocks) {
+      ctx.save();
+      // Clip to block bounds
+      const bx = block.x * dpr - 1;
+      const by = block.y * dpr - 1;
+      const bw = block.width * dpr + 2;
+      const bh = block.height * dpr + 2;
+      ctx.beginPath();
+      ctx.rect(bx, by, bw, bh);
+      ctx.clip();
+      // White rectangle over original
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(bx, by, bw, bh);
 
-          // Cover original text area
-          const coverTop = pageH - (block.y / scale);
-          const coverBottom = pageH - ((block.y + block.height) / scale);
-          const coverWidth = pageW - block.pdfX + 10;
-          page.drawRectangle({
-            x: block.pdfX - 2,
-            y: coverBottom - fontSizePts * 0.3,
-            width: coverWidth,
-            height: (coverTop - coverBottom) + fontSizePts * 0.6,
-            color: rgb(1, 1, 1),
-            opacity: 1,
-          });
+      // Build font string using the REAL pdf.js font name
+      const fontSize = block.fontSize * dpr;
+      const weight = block.fontWeight || "normal";
+      const style = block.fontStyle || "normal";
+      // Try the pdf.js loaded font first, fallback to generic family
+      const pdfFont = block.pdfFontName ? `"${block.pdfFontName}"` : "";
+      const fallback = block.fontFamily || "sans-serif";
+      const fontStr = pdfFont
+        ? `${style} ${weight} ${fontSize}px ${pdfFont}, ${fallback}`
+        : `${style} ${weight} ${fontSize}px ${fallback}`;
 
-          // Choose font based on weight/style
-          const isBold = block.fontWeight === "bold";
-          const isItalic = block.fontStyle === "italic";
-          const useFont = isBold && isItalic ? fontBoldItalic : isBold ? fontBold : isItalic ? fontItalic : font;
-
-          // Parse color
-          const hexColor = block.originalColor && block.originalColor.length === 7 ? block.originalColor : "#000000";
-          const cr = parseInt(hexColor.slice(1, 3), 16) / 255;
-          const cg = parseInt(hexColor.slice(3, 5), 16) / 255;
-          const cb = parseInt(hexColor.slice(5, 7), 16) / 255;
-          const textColor = rgb(isNaN(cr) ? 0 : cr, isNaN(cg) ? 0 : cg, isNaN(cb) ? 0 : cb);
-
-          // Draw replacement text
-          const editedLines = block.editedStr!.split("\n");
-          const startY = coverTop - fontSizePts;
-          for (let i = 0; i < editedLines.length; i++) {
-            const safeText = editedLines[i].replace(/[^\x00-\xFF]/g, "?");
-            if (!safeText.trim()) continue;
-            page.drawText(safeText, {
-              x: block.pdfX,
-              y: startY - i * lineHeight,
-              size: fontSizePts,
-              font: useFont,
-              color: textColor,
-            });
-          }
-        } catch (err) {
-          console.error("[applyTextEditsToPdf] Error on block:", err);
-        }
+      // Verify font is available
+      let finalFont = fontStr;
+      if (pdfFont && !document.fonts.check(`${fontSize}px ${pdfFont}`)) {
+        finalFont = `${style} ${weight} ${fontSize}px ${fallback}`;
       }
 
-      // Save modified PDF and reload into pdf.js
-      const newBytes = await doc.save();
-      const newUint8 = new Uint8Array(newBytes);
-      setPdfBytes(newUint8);
-      // Reload pdf.js document from modified bytes
-      const newDoc = await pdfjsLib.getDocument({ data: newUint8.slice() }).promise;
-      setPdfDoc(newDoc);
-      // Clear text blocks so they get re-extracted from the modified PDF
-      setAllNativeTextBlocks(new Map());
-      // Re-render
-      setTimeout(() => renderPage(currentPage), 100);
-    } catch (err) {
-      console.error("[applyTextEditsToPdf] Error:", err);
-      toast.error("Error applying text edits");
+      ctx.fillStyle = block.originalColor || "#000000";
+      ctx.font = finalFont;
+      ctx.textBaseline = "top";
+
+      const lines = block.editedStr!.split("\n");
+      const lineH = (block.lineHeight ?? fontSize * 1.5) * dpr;
+      for (let i = 0; i < lines.length; i++) {
+        ctx.fillText(lines[i], block.x * dpr, block.y * dpr + i * lineH + 2);
+      }
+      ctx.restore();
     }
-  }, [pdfBytes, scale, currentPage]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const renderTaskRef = useRef<any>(null);
 
@@ -703,6 +670,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         }
       }
     }
+
+    // Paint text edits on canvas using real pdf.js fonts
+    await applyTextEditsToCanvas(ctx, pageNum, dpr);
 
     // Sync drawing canvas size
     if (drawingCanvasRef.current) {
@@ -4348,9 +4318,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                                 next.set(block.page, updated);
                                 return next;
                               });
-                              // Apply edit to actual PDF and reload
-                              setTimeout(() => applyTextEditsToPdf(), 50);
                               toast.success((t as any).editor_text_saved ?? "Text saved");
+                              // Re-render to show the edit on canvas
+                              setTimeout(() => renderPage(currentPage), 50);
                             }
                             setEditingBlockId(null);
                           }}
