@@ -4363,11 +4363,20 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                             const normalize = (s: string) => s.replace(/\s+/g, " ").trim();
                             const originalText = block.editedStr ?? block.str;
                             if (normalize(newText) !== normalize(originalText)) {
+                              // Estimate new height: count wrapped lines
+                              const lines = newText.split("\n");
+                              const charsPerLine = Math.max(1, Math.floor(block.width / (block.fontSize * 0.6)));
+                              let totalLines = 0;
+                              for (const line of lines) {
+                                totalLines += Math.max(1, Math.ceil(line.length / charsPerLine));
+                              }
+                              const newHeight = Math.max(block.height, totalLines * (block.lineHeight ?? block.fontSize * 1.5));
+
                               setAllNativeTextBlocks(prev => {
                                 const pageBlocks = prev.get(block.page) ?? [];
                                 const updated = pageBlocks.map((b: NativeTextBlock) =>
                                   b.id === block.id
-                                    ? { ...b, editedStr: newText }
+                                    ? { ...b, editedStr: newText, height: newHeight }
                                     : b
                                 );
                                 const next = new Map(prev);
