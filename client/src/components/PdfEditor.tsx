@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { extractTextStyles, type TextBlockStyle } from "@/lib/mupdfStyles";
 import PaywallModal from "./PaywallModal";
 import { encryptPDF } from "@pdfsmaller/pdf-encrypt-lite";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -640,37 +641,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
     renderTaskRef.current = null;
 
-    // Sample text colors from the rendered canvas
-    const pageBlocks = allNativeTextBlocksRef.current.get(pageNum) ?? [];
-    for (const block of pageBlocks) {
-      if (!block.originalColor) {
-        const samples: Array<[number, number, number]> = [];
-        const sy = Math.round((block.y + block.fontSize * 0.4) * dpr);
-        for (let dx = 5; dx < Math.min(block.width, 60); dx += 8) {
-          const sx = Math.round((block.x + dx) * dpr);
-          if (sx > 0 && sy > 0 && sx < canvas.width && sy < canvas.height) {
-            const p = ctx.getImageData(sx, sy, 1, 1).data;
-            if (p[0] < 230 || p[1] < 230 || p[2] < 230) {
-              samples.push([p[0], p[1], p[2]]);
-            }
-          }
-        }
-        if (samples.length > 0) {
-          const saturation = (r: number, g: number, b: number) => {
-            const max = Math.max(r, g, b), min = Math.min(r, g, b);
-            return max === 0 ? 0 : (max - min) / max;
-          };
-          const hasSaturated = samples.some(s => saturation(s[0], s[1], s[2]) > 0.15);
-          const best = hasSaturated
-            ? samples.reduce((a, b) => saturation(a[0], a[1], a[2]) > saturation(b[0], b[1], b[2]) ? a : b)
-            : samples.reduce((a, b) => (a[0] + a[1] + a[2] < b[0] + b[1] + b[2]) ? a : b);
-          block.originalColor = `#${best[0].toString(16).padStart(2, "0")}${best[1].toString(16).padStart(2, "0")}${best[2].toString(16).padStart(2, "0")}`;
-        } else {
-          block.originalColor = "#000000";
-        }
-      }
-    }
-
     // Paint text edits on canvas using real pdf.js fonts
     await applyTextEditsToCanvas(ctx, pageNum, dpr);
 
@@ -1035,6 +1005,32 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         pdfFontName: first.pdfFontName,
       });
     }
+    // Enrich blocks with real styles from MuPDF (font name, bold, italic, color)
+    if (pdfBytes) {
+      try {
+        const mupdfStyles = await extractTextStyles(pdfBytes, pageNum - 1);
+        if (mupdfStyles.length > 0) {
+          for (const block of blocks) {
+            // Find best matching MuPDF style by position (closest Y, then X)
+            const firstLine = block.str.split("\n")[0] || "";
+            const match = mupdfStyles.find(ms =>
+              ms.str.includes(firstLine.slice(0, 15)) ||
+              (Math.abs(ms.y - block.pdfY) < block.pdfFontSize * 2 && Math.abs(ms.x - block.pdfX) < 5)
+            );
+            if (match) {
+              block.fontWeight = match.isBold ? "bold" : "normal";
+              block.fontStyle = match.isItalic ? "italic" : "normal";
+              block.originalColor = match.color;
+              block.fontFamily = match.fontFamily;
+              block.pdfFontName = match.fontName;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("[loadNativeTextBlocks] MuPDF style extraction failed, using fallback:", err);
+      }
+    }
+
     // Only set blocks for this page if not already loaded (preserve existing edits)
     setAllNativeTextBlocks(prev => {
       const existing = prev.get(pageNum);

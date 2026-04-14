@@ -226,6 +226,9 @@ importers:
       multer:
         specifier: ^2.1.1
         version: 2.1.1
+      mupdf:
+        specifier: ^1.27.0
+        version: 1.27.0
       mysql2:
         specifier: ^3.15.0
         version: 3.19.1(@types/node@24.7.0)
@@ -4250,6 +4253,9 @@ packages:
   multer@2.1.1:
     resolution: {integrity: sha512-mo+QTzKlx8R7E5ylSXxWzGoXoZbOsRMpyitcht8By2KHvMbf3tjwosZ/Mu/XYU6UuJ3VZnODIrak5ZrPiPyB6A==}
     engines: {node: '>= 10.16.0'}
+
+  mupdf@1.27.0:
+    resolution: {integrity: sha512-vEPUYwZeu5NgiFLz4e20R7Vp2pNY7szirGEvTxHyQQpQs6ab4DeGdonwT6sH1JZG5EhyHSrojZrZn2/0ee6qZQ==}
 
   mysql2@3.19.1:
     resolution: {integrity: sha512-yn4zh+Uxu5J3Zvi6Ao96lJ7BSBRkspHflWQAmOPND+htbpIKDQw99TTvPzgihKO/QyMickZopO4OsnixnpcUwA==}
@@ -9603,6 +9609,8 @@ snapshots:
       busboy: 1.6.0
       concat-stream: 2.0.0
       type-is: 1.6.18
+
+  mupdf@1.27.0: {}
 
   mysql2@3.19.1(@types/node@24.7.0):
     dependencies:
