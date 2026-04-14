@@ -960,6 +960,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
   // ── Load native text blocks via MuPDF backend ──────────────
   const loadNativeTextBlocks = useCallback(async (pageNum: number) => {
+    console.log("[edit-text] loadNativeTextBlocks called, page:", pageNum, "pdfDoc:", !!pdfDoc, "pdfBytes:", !!pdfBytes);
     if (!pdfDoc || !pdfBytes) return;
     const page = await pdfDoc.getPage(pageNum);
     const vp = page.getViewport({ scale });
@@ -973,13 +974,22 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     let mupdfBlocks: any[] = [];
     try {
       const resp = await fetch("/api/pdf/blocks", { method: "POST", body: formData });
+      console.log("[edit-text] fetch response status:", resp.status);
       if (resp.ok) {
         const data = await resp.json();
         mupdfBlocks = data.blocks ?? [];
+        console.log("[edit-text] blocks received:", mupdfBlocks.length, mupdfBlocks.slice(0, 2));
+      } else {
+        console.error("[edit-text] fetch failed:", resp.status, await resp.text().catch(() => ""));
       }
     } catch (err) {
-      console.warn("[loadNativeTextBlocks] MuPDF backend unavailable:", err);
-      return; // Don't clear existing blocks on error
+      console.error("[edit-text] MuPDF backend error:", err);
+      return;
+    }
+
+    if (mupdfBlocks.length === 0) {
+      console.warn("[edit-text] No blocks returned from backend");
+      return;
     }
 
     const blocks: NativeTextBlock[] = mupdfBlocks.map((mb: any) => {
@@ -1061,11 +1071,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
   // Reload text blocks when page or scale changes while edit-text is active
   useEffect(() => {
-    if (activeTool === "edit-text" && pdfDoc) {
+    if (activeTool === "edit-text" && pdfDoc && pdfBytes) {
+      console.log("[edit-text] useEffect triggered, loading blocks for page", currentPage);
       loadNativeTextBlocks(currentPage);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTool, currentPage, scale, pdfDoc]);
+  }, [activeTool, currentPage, scale, pdfDoc, pdfBytes, loadNativeTextBlocks]);
 
   // Handle file drop / select — auto-converts non-PDF files to PDF via server
   const handleFile = useCallback(async (f: File) => {
@@ -4354,7 +4364,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               </div>
               {/* No overlay needed — edited text is rendered directly on the canvas */}
               {/* Native text blocks overlay — edit-text tool active */}
-              {activeTool === "edit-text" && nativeTextBlocks.map(block => {
+              {activeTool === "edit-text" && (console.log("[edit-text] rendering", nativeTextBlocks.length, "blocks"), nativeTextBlocks).map(block => {
                 const isEditing = editingBlockId === block.id;
                 return isEditing ? (
                   /* WYSIWYG contentEditable overlay — positioned exactly over the text */
