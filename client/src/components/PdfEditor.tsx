@@ -1022,7 +1022,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               block.fontStyle = match.isItalic ? "italic" : "normal";
               block.originalColor = match.color;
               block.fontFamily = match.fontFamily;
-              block.pdfFontName = match.fontName;
+              // Keep pdfFontName from pdf.js (it's the @font-face name for canvas)
             }
           }
         }

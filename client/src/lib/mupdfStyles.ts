@@ -59,7 +59,23 @@ export async function extractTextStyles(
 
     stext.walk({
       onChar(c: string, origin: [number, number], font: any, size: number, quad: any, color: any) {
-        const [r, g, b] = Array.isArray(color) ? color : [0, 0, 0];
+        // Color can be: [gray], [r,g,b], or [c,m,y,k]
+        let r = 0, g = 0, b = 0;
+        if (Array.isArray(color)) {
+          if (color.length === 1) {
+            // Grayscale
+            r = g = b = color[0];
+          } else if (color.length === 3) {
+            // RGB
+            [r, g, b] = color;
+          } else if (color.length === 4) {
+            // CMYK to RGB
+            const [cc, mm, yy, kk] = color;
+            r = (1 - cc) * (1 - kk);
+            g = (1 - mm) * (1 - kk);
+            b = (1 - yy) * (1 - kk);
+          }
+        }
         const hexColor = `#${Math.round(r * 255).toString(16).padStart(2, "0")}${Math.round(g * 255).toString(16).padStart(2, "0")}${Math.round(b * 255).toString(16).padStart(2, "0")}`;
         chars.push({
           c,
