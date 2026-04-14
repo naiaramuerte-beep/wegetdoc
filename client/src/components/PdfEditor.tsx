@@ -1011,12 +1011,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       console.log("DIAGNOSTIC - computed left:", fb.x * (canvasCSSWidth / pdfPageWidth));
     }
 
-    const cssHeight = pdfPageHeight * scale;
+    const scaleX = canvasCSSWidth / pdfPageWidth;
+    const scaleY = canvasCSSHeight / pdfPageHeight;
     const blocks: NativeTextBlock[] = mupdfBlocks.map((mb: any) => {
-      const canvasX = mb.x * scale;
-      const canvasW = mb.width * scale;
-      const canvasH = Math.max(mb.height * scale, mb.fontSize * scale * 1.4);
-      const canvasY = cssHeight - (mb.y + mb.height) * scale;
+      const canvasX = mb.x * scaleX;
+      const canvasY = mb.y * scaleY;
+      const canvasW = mb.width * scaleX;
+      const canvasH = Math.max(mb.height * scaleY, mb.fontSize * scaleY * 1.4);
       return {
         id: Math.random().toString(36).slice(2),
         str: mb.str,
@@ -1024,7 +1025,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         y: canvasY,
         width: Math.max(canvasW, 20),
         height: Math.max(canvasH, 14),
-        fontSize: mb.fontSize * scale,
+        fontSize: mb.fontSize * scaleY,
         pdfX: mb.x,
         pdfY: mb.y,
         pdfWidth: Math.max(mb.width, 10),
@@ -1035,7 +1036,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         fontWeight: mb.isBold ? "bold" : "normal",
         fontStyle: mb.isItalic ? "italic" : "normal",
         originalColor: mb.color || "#000000",
-        lineHeight: (mb.lineHeight || mb.fontSize * 1.4) * scale,
+        lineHeight: (mb.lineHeight || mb.fontSize * 1.4) * scaleY,
         pdfFontName: mb.fontName || "",
       };
     });
