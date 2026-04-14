@@ -4070,25 +4070,20 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     cursor: "text",
                     border: editingBlockId === block.id
                       ? "2px solid #1565C0"
-                      : block.editedStr !== undefined
-                        ? "1.5px dashed #1E88E5"
-                        : "1.5px dashed rgba(21, 101, 192, 0.3)",
-                    backgroundColor: editingBlockId === block.id
-                      ? "rgba(255,255,255,1)"
-                      : block.editedStr !== undefined
-                        ? "rgba(255,255,255,1)"
-                        : "rgba(255,255,255,0.01)",
+                      : "1.5px dashed rgba(21, 101, 192, 0.3)",
+                    backgroundColor: "#fff",
                     borderRadius: 2,
                     zIndex: editingBlockId === block.id ? 30 : 25,
                     boxSizing: "border-box",
-                    padding: "2px 4px",
+                    padding: 0,
                     fontSize: block.fontSize,
                     fontFamily: block.fontFamily || "sans-serif",
                     color: block.fontColor || "#000",
-                    lineHeight: 1.3,
+                    lineHeight: 1.4,
                     whiteSpace: "pre-wrap",
                     wordBreak: "break-word",
                     outline: "none",
+                    overflow: "hidden",
                   }}
                   onFocus={() => {
                     setEditingBlockId(block.id);
