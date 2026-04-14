@@ -575,7 +575,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       );
       // Draw replacement text line by line, preserving original styles
       const fontSize = block.fontSize * dpr;
-      const color = block.fontColor || block.originalColor || "#000";
+      const color = block.originalColor || "#000000";
       const weight = block.fontWeight || "normal";
       const style = block.fontStyle || "normal";
       ctx.fillStyle = color;
@@ -617,6 +617,32 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       throw e;
     }
     renderTaskRef.current = null;
+
+    // Sample text colors from the rendered canvas (before painting edits)
+    const pageBlocks = allNativeTextBlocksRef.current.get(pageNum) ?? [];
+    for (const block of pageBlocks) {
+      if (!block.originalColor) {
+        // Sample several pixels along the text to find the dominant non-white color
+        const samples: Array<[number, number, number]> = [];
+        const sy = Math.round((block.y + block.fontSize * 0.4) * dpr);
+        for (let dx = 5; dx < Math.min(block.width, 60); dx += 8) {
+          const sx = Math.round((block.x + dx) * dpr);
+          if (sx > 0 && sy > 0 && sx < canvas.width && sy < canvas.height) {
+            const p = ctx.getImageData(sx, sy, 1, 1).data;
+            if (p[0] < 230 || p[1] < 230 || p[2] < 230) { // not white/near-white
+              samples.push([p[0], p[1], p[2]]);
+            }
+          }
+        }
+        if (samples.length > 0) {
+          // Use the darkest sample (most likely text, not anti-alias blend)
+          const darkest = samples.reduce((a, b) => (a[0] + a[1] + a[2] < b[0] + b[1] + b[2]) ? a : b);
+          block.originalColor = `#${darkest[0].toString(16).padStart(2, "0")}${darkest[1].toString(16).padStart(2, "0")}${darkest[2].toString(16).padStart(2, "0")}`;
+        } else {
+          block.originalColor = "#000000";
+        }
+      }
+    }
 
     // Paint edited text blocks over the canvas
     applyTextEditsToCanvas(ctx, pageNum, dpr);
@@ -900,57 +926,17 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       fontFamily: string; fontSize: number; pdfFontName: string;
       fontWeight: string; fontStyle: string; originalColor: string;
     }
-    // Extract font styles (bold/italic) and colors from the operator list
-    // This is the only reliable way to get these from pdf.js
-    const fontStyleMap = new Map<string, { bold: boolean; italic: boolean; actualName: string }>();
-    const textColorList: Array<[number, number, number]> = []; // color per showText call
-    try {
-      const ops = await page.getOperatorList();
-      const OPS = (await import("pdfjs-dist")).OPS;
-      let curColor: [number, number, number] = [0, 0, 0];
-      let curFontRef = "";
-      for (let i = 0; i < ops.fnArray.length; i++) {
-        const fn = ops.fnArray[i];
-        const args = ops.argsArray[i];
-        if (fn === OPS.setFillRGBColor) {
-          curColor = [Math.round(args[0] * 255), Math.round(args[1] * 255), Math.round(args[2] * 255)];
-        } else if (fn === OPS.setFillGray) {
-          const g = Math.round(args[0] * 255);
-          curColor = [g, g, g];
-        } else if (fn === OPS.setFillCMYKColor) {
-          const [c, m, y, k] = args;
-          curColor = [Math.round(255 * (1 - c) * (1 - k)), Math.round(255 * (1 - m) * (1 - k)), Math.round(255 * (1 - y) * (1 - k))];
-        } else if (fn === OPS.setFont) {
-          curFontRef = args[0];
-          if (!fontStyleMap.has(curFontRef)) {
-            const nameLower = curFontRef.toLowerCase();
-            fontStyleMap.set(curFontRef, {
-              bold: nameLower.includes("bold") || nameLower.includes("black") || nameLower.includes("heavy"),
-              italic: nameLower.includes("italic") || nameLower.includes("oblique"),
-              actualName: curFontRef,
-            });
-          }
-        } else if (fn === OPS.showText || fn === OPS.showSpacedText) {
-          textColorList.push([...curColor]);
-        }
-      }
-    } catch {}
-
-    let textColorIdx = 0;
     const allItems = content.items as any[];
     const paragraphs: LineItem[][] = [];
     let currentPara: LineItem[] = [];
 
     for (let i = 0; i < allItems.length; i++) {
       const item = allItems[i];
-      // Empty items or EOL-only items mark paragraph boundaries
       if (!item.str || !item.str.trim()) {
         if (currentPara.length > 0) {
           paragraphs.push(currentPara);
           currentPara = [];
         }
-        // Still count non-empty items for color index matching
-        if (item.str !== undefined) textColorIdx++;
         continue;
       }
       const [a, b, , , e, f] = item.transform as number[];
@@ -959,15 +945,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const styleObj = styles[item.fontName];
       const fontFamily = styleObj?.fontFamily || "sans-serif";
       const pdfFontName = item.fontName || "";
-      // Get bold/italic from operator list font data
-      const fontInfo = fontStyleMap.get(pdfFontName);
+      // Detect bold/italic from font name + font family strings
       const searchStr = (pdfFontName + " " + fontFamily).toLowerCase();
-      const fontWeight = fontInfo?.bold || searchStr.includes("bold") || searchStr.includes("black") ? "bold" : "normal";
-      const fontStyle = fontInfo?.italic || searchStr.includes("italic") || searchStr.includes("oblique") ? "italic" : "normal";
-      // Get color from operator list (matched by order)
-      const clr = textColorList[textColorIdx] ?? [0, 0, 0];
-      const originalColor = `#${clr[0].toString(16).padStart(2, "0")}${clr[1].toString(16).padStart(2, "0")}${clr[2].toString(16).padStart(2, "0")}`;
-      textColorIdx++;
+      const fontWeight = searchStr.includes("bold") || searchStr.includes("black") || searchStr.includes("heavy") ? "bold" : "normal";
+      const fontStyle = searchStr.includes("italic") || searchStr.includes("oblique") ? "italic" : "normal";
+      // Color will be sampled from the rendered canvas in renderPage
+      const originalColor = "";
       const canvasX = e * scale;
       const canvasY = (pdfPageHeight - f) * scale - pdfFontSize * scale;
       const canvasW = pdfWidth * scale;
