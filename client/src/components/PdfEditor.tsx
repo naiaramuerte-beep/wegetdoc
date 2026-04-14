@@ -106,8 +106,11 @@ interface NativeTextBlock {
   pdfFontSize: number; // font size in PDF points
   pageHeight: number; // page height in PDF points
   page: number; // 1-indexed page number
-  fontColor?: string; // hex color e.g. "#000000"
+  fontColor?: string; // hex color set by user when editing
+  originalColor?: string; // original text color from PDF
   fontFamily?: string; // CSS generic family fallback (serif, sans-serif)
+  fontWeight?: string; // "bold" or "normal"
+  fontStyle?: string; // "italic" or "normal"
   pdfFontName?: string; // pdf.js loaded font name (e.g. "g_d0_f1") — matches @font-face
 }
 
@@ -569,10 +572,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         block.width * dpr + 2,
         block.height * dpr + 2
       );
-      // Draw replacement text line by line
+      // Draw replacement text line by line, preserving original styles
       const fontSize = block.fontSize * dpr;
-      ctx.fillStyle = block.fontColor || "#000";
-      ctx.font = `${fontSize}px ${block.fontFamily || "sans-serif"}`;
+      const color = block.fontColor || block.originalColor || "#000";
+      const weight = block.fontWeight || "normal";
+      const style = block.fontStyle || "normal";
+      ctx.fillStyle = color;
+      ctx.font = `${style} ${weight} ${fontSize}px ${block.fontFamily || "sans-serif"}`;
       ctx.textBaseline = "top";
       const lines = block.editedStr!.split("\n");
       const lineH = fontSize * 1.3;
@@ -891,6 +897,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       pdfX: number; pdfY: number; pdfWidth: number; pdfFontSize: number;
       canvasX: number; canvasY: number; canvasW: number; canvasH: number;
       fontFamily: string; fontSize: number; pdfFontName: string;
+      fontWeight: string; fontStyle: string; originalColor: string;
     }
     const allItems = content.items as any[];
     const paragraphs: LineItem[][] = [];
@@ -911,14 +918,25 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const pdfFontSize = Math.sqrt(a * a + b * b);
       const pdfWidth = item.width ?? item.str.length * pdfFontSize * 0.6;
       const fontFamily = styles[item.fontName]?.fontFamily || "sans-serif";
+      const pdfFontName = item.fontName || "";
+      // Detect bold/italic from font name (e.g. "TimesNewRoman-Bold", "Arial-BoldItalic")
+      const fnLower = pdfFontName.toLowerCase();
+      const fontWeight = fnLower.includes("bold") || fnLower.includes("black") || fnLower.includes("heavy") ? "bold" : "normal";
+      const fontStyle = fnLower.includes("italic") || fnLower.includes("oblique") ? "italic" : "normal";
+      // Extract original color from pdf.js item (if available via the color property)
+      let originalColor = "#000000";
+      if (item.color) {
+        const { r, g, b: bl } = item.color;
+        originalColor = `#${Math.round(r).toString(16).padStart(2, "0")}${Math.round(g).toString(16).padStart(2, "0")}${Math.round(bl).toString(16).padStart(2, "0")}`;
+      }
       const canvasX = e * scale;
       const canvasY = (pdfPageHeight - f) * scale - pdfFontSize * scale;
       const canvasW = pdfWidth * scale;
       const canvasH = pdfFontSize * scale * 1.4;
-      const pdfFontName = item.fontName || "";
       const lineItem: LineItem = {
         str: item.str, pdfX: e, pdfY: f, pdfWidth, pdfFontSize, fontFamily, pdfFontName,
         canvasX, canvasY, canvasW, canvasH, fontSize: pdfFontSize * scale,
+        fontWeight, fontStyle, originalColor,
       };
 
       // Break paragraph on font size change
@@ -958,6 +976,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         pageHeight: pdfPageHeight,
         page: pageNum,
         fontFamily: first.fontFamily,
+        fontWeight: first.fontWeight,
+        fontStyle: first.fontStyle,
+        originalColor: first.originalColor,
         pdfFontName: first.pdfFontName,
       });
     }
@@ -999,7 +1020,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           const idx = blocks.findIndex((b: NativeTextBlock) => b.id === blockId);
           if (idx !== -1) {
             const updated = blocks.map((b: NativeTextBlock) =>
-              b.id === blockId ? { ...b, editedStr: text, fontColor: editTextColor } : b
+              b.id === blockId ? { ...b, editedStr: text } : b
             );
             const next = new Map(prev);
             next.set(page, updated);
@@ -4227,7 +4248,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                                 const pageBlocks = prev.get(block.page) ?? [];
                                 const updated = pageBlocks.map((b: NativeTextBlock) =>
                                   b.id === block.id
-                                    ? { ...b, editedStr: newText, fontColor: editTextColor }
+                                    ? { ...b, editedStr: newText }
                                     : b
                                 );
                                 const next = new Map(prev);
