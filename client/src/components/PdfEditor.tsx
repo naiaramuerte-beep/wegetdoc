@@ -3443,44 +3443,81 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             </div>
           </div>
         );
-      case "edit-text":
+      case "edit-text": {
+        const editBlock = editingBlockId ? nativeTextBlocks.find(b => b.id === editingBlockId) : null;
         return (
           <div className="flex flex-col">
             <div className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "#0f172a" }}>{t.editor_panel_edit_native_text}</h3>
-            <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "rgba(27, 94, 32, 0.08)", color: "#0f172a" }}>
-              {t.editor_edittext_hint}
-            </div>
-            {/* Color picker for replacement text */}
-            <div className="flex gap-2 items-center">
-              <label className="text-xs" style={{ color: "#64748b" }}>{t.editor_panel_text_color}</label>
-              <input type="color" value={editTextColor} onChange={e => setEditTextColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0" />
-            </div>
+
+            {!editBlock && (
+              <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "rgba(21, 101, 192, 0.06)", color: "#0f172a" }}>
+                {t.editor_edittext_hint ?? "Click on any text block in the PDF to edit it in-place."}
+              </div>
+            )}
+
+            {/* Properties panel — shown when a block is selected */}
+            {editBlock && (
+              <>
+                <div className="text-xs font-medium" style={{ color: "#1565C0" }}>
+                  {(t as any).editor_block_properties ?? "Block properties"}
+                </div>
+                {/* Font family */}
+                <div className="flex items-center gap-2">
+                  <label className="text-xs shrink-0" style={{ color: "#64748b" }}>Font</label>
+                  <span className="text-xs px-2 py-1 rounded border truncate flex-1" style={{ borderColor: "#e2e8f0", fontFamily: editBlock.fontFamily }}>
+                    {editBlock.pdfFontName || editBlock.fontFamily || "sans-serif"}
+                  </span>
+                </div>
+                {/* Font size */}
+                <div className="flex items-center gap-2">
+                  <label className="text-xs shrink-0" style={{ color: "#64748b" }}>Size</label>
+                  <span className="text-xs font-semibold" style={{ color: "#0f172a" }}>{Math.round(editBlock.pdfFontSize)}pt</span>
+                </div>
+                {/* Color */}
+                <div className="flex items-center gap-2">
+                  <label className="text-xs shrink-0" style={{ color: "#64748b" }}>Color</label>
+                  <span className="w-6 h-6 rounded border" style={{ backgroundColor: editBlock.originalColor || "#000", borderColor: "#e2e8f0" }} />
+                  <span className="text-xs" style={{ color: "#64748b" }}>{editBlock.originalColor || "#000000"}</span>
+                </div>
+                {/* Style badges */}
+                <div className="flex gap-1.5">
+                  {editBlock.fontWeight === "bold" && (
+                    <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ backgroundColor: "#f0f7ff", color: "#1565C0", border: "1px solid #1565C0" }}>Bold</span>
+                  )}
+                  {editBlock.fontStyle === "italic" && (
+                    <span className="text-xs italic px-2 py-0.5 rounded" style={{ backgroundColor: "#f0f7ff", color: "#1565C0", border: "1px solid #1565C0" }}>Italic</span>
+                  )}
+                  {editBlock.fontWeight !== "bold" && editBlock.fontStyle !== "italic" && (
+                    <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: "#f8fafc", color: "#94a3b8", border: "1px solid #e2e8f0" }}>Regular</span>
+                  )}
+                </div>
+                <div className="border-t pt-2 mt-1 text-xs" style={{ borderColor: "#f1f5f9", color: "#94a3b8" }}>
+                  {(t as any).editor_edit_inline_tip ?? "Edit text directly in the blue box on the PDF. Click outside to save."}
+                </div>
+              </>
+            )}
+
             {/* Block count */}
             {nativeTextBlocks.length > 0 ? (
-              <div className="text-xs p-2 rounded" style={{ backgroundColor: "#ffffff", color: "#64748b" }}>
-                {nativeTextBlocks.length} {t.editor_text_blocks_detected}
+              <div className="text-xs p-2 rounded" style={{ backgroundColor: "#f8fafc", color: "#64748b" }}>
+                {nativeTextBlocks.length} {t.editor_text_blocks_detected ?? "text blocks"}
                 {nativeTextBlocks.filter(b => b.editedStr !== undefined).length > 0 && (
-                  <span className="ml-1 font-semibold" style={{ color: "#1E88E5" }}>
-                    ({nativeTextBlocks.filter(b => b.editedStr !== undefined).length} {t.editor_edited_label})
+                  <span className="ml-1 font-semibold" style={{ color: "#1565C0" }}>
+                    ({nativeTextBlocks.filter(b => b.editedStr !== undefined).length} {t.editor_edited_label ?? "edited"})
                   </span>
                 )}
               </div>
             ) : (
               <div className="text-xs p-3 rounded-lg" style={{ backgroundColor: "#FFF3E0", color: "#E65100" }}>
-                <p className="font-semibold mb-1">{(t as any).editor_image_no_text_title ?? "This page has no editable text"}</p>
-                <p>{(t as any).editor_image_no_text_desc ?? "This page may be a scanned image. Use 'Add Text' to place new text on top."}</p>
-              </div>
-            )}
-            {/* Instruction when a block is selected */}
-            {editingBlockId && (
-              <div className="p-2 rounded text-xs" style={{ backgroundColor: "rgba(27, 94, 32, 0.1)", color: "#0f172a" }}>
-                {t.editor_panel_edit_inline_hint}
+                <p className="font-semibold mb-1">{(t as any).editor_image_no_text_title ?? "No editable text"}</p>
+                <p>{(t as any).editor_image_no_text_desc ?? "This page may be a scanned image."}</p>
               </div>
             )}
             </div>
           </div>
         );
+      }
       case "move": {
         const movePageAnns = annotations.filter(a => a.page === currentPage && a.type !== "drawing" && a.type !== "eraser");
         const selectedAnn = selectedId ? movePageAnns.find(a => a.id === selectedId) : null;
@@ -4289,132 +4326,75 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               {activeTool === "edit-text" && nativeTextBlocks.map(block => {
                 const isEditing = editingBlockId === block.id;
                 return isEditing ? (
-                  /* Active editing: highlight block + floating textarea below */
-                  <div key={block.id}>
-                    {/* Highlight border on the original text */}
-                    <div style={{
+                  /* WYSIWYG contentEditable overlay — positioned exactly over the text */
+                  <div
+                    key={block.id}
+                    contentEditable
+                    suppressContentEditableWarning
+                    spellCheck={false}
+                    style={{
                       position: "absolute",
-                      left: block.x - 2,
-                      top: block.y - 2,
-                      width: block.width + 4,
-                      height: block.height + 4,
+                      left: block.x,
+                      top: block.y,
+                      minWidth: block.width,
+                      minHeight: block.height,
+                      cursor: "text",
                       border: "2px solid #1565C0",
-                      borderRadius: 3,
-                      zIndex: 29,
-                      pointerEvents: "none",
-                      backgroundColor: "rgba(21, 101, 192, 0.05)",
-                    }} />
-                    {/* Floating editor below the block */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: Math.max(0, block.x - 4),
-                        top: block.y + block.height + 6,
-                        width: Math.max(block.width + 8, 320),
-                        zIndex: 30,
-                        backgroundColor: "#fff",
-                        border: "2px solid #1565C0",
-                        borderRadius: 8,
-                        boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-                        padding: 8,
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 6,
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      onMouseDown={(e) => e.stopPropagation()}
-                    >
-                      {/* Style indicators */}
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 11, color: "#64748b" }}>{Math.round(block.pdfFontSize)}pt</span>
-                        <span style={{ fontSize: 11, color: "#64748b", fontFamily: block.fontFamily }}>{block.fontFamily}</span>
-                        {block.fontWeight === "bold" && <span style={{ fontSize: 11, fontWeight: "bold", color: "#1565C0", padding: "1px 4px", backgroundColor: "#f0f7ff", borderRadius: 3 }}>B</span>}
-                        {block.fontStyle === "italic" && <span style={{ fontSize: 11, fontStyle: "italic", color: "#1565C0", padding: "1px 4px", backgroundColor: "#f0f7ff", borderRadius: 3 }}>I</span>}
-                        <span style={{ width: 14, height: 14, borderRadius: 3, backgroundColor: block.originalColor || "#000", border: "1px solid #e2e8f0", flexShrink: 0 }} title={block.originalColor} />
-                      </div>
-                      <textarea
-                        autoFocus
-                        defaultValue={block.editedStr ?? block.str}
-                        onKeyDown={(e) => {
-                          if (e.key === "Escape") {
-                            setEditingBlockId(null);
-                          }
-                          e.stopPropagation();
-                        }}
-                        style={{
-                          width: "100%",
-                          minHeight: 60,
-                          maxHeight: 200,
-                          resize: "vertical",
-                          fontSize: 13,
-                          fontWeight: block.fontWeight || "normal",
-                          fontStyle: block.fontStyle || "normal",
-                          fontFamily: block.fontFamily || "system-ui, sans-serif",
-                          color: block.originalColor || "#0f172a",
-                          border: "1px solid #e2e8f0",
-                          borderRadius: 4,
-                          padding: "6px 8px",
-                          outline: "none",
-                          lineHeight: 1.5,
-                        }}
-                        ref={(el) => {
-                          if (el && !el.dataset.init) {
-                            el.dataset.init = "1";
-                            el.focus();
-                            el.setSelectionRange(el.value.length, el.value.length);
-                          }
-                        }}
-                      />
-                      <div style={{ display: "flex", gap: 4 }}>
-                        <button
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            const textarea = e.currentTarget.parentElement?.previousElementSibling as HTMLTextAreaElement;
-                            const newText = textarea?.value ?? "";
-                            const normalize = (s: string) => s.replace(/\s+/g, " ").trim();
-                            const originalText = block.editedStr ?? block.str;
-                            if (normalize(newText) !== normalize(originalText)) {
-                              setAllNativeTextBlocks(prev => {
-                                const pageBlocks = prev.get(block.page) ?? [];
-                                const updated = pageBlocks.map((b: NativeTextBlock) =>
-                                  b.id === block.id
-                                    ? { ...b, editedStr: newText }
-                                    : b
-                                );
-                                const next = new Map(prev);
-                                next.set(block.page, updated);
-                                return next;
-                              });
-                              toast.success((t as any).editor_text_saved ?? "Text saved");
-                              // Bake edit into PDF and reload for clean rendering
-                              setTimeout(() => bakeTextEditsIntoPdf(), 100);
-                            }
-                            setEditingBlockId(null);
-                          }}
-                          style={{
-                            flex: 1, padding: "6px 0", borderRadius: 6,
-                            background: "#1565C0", color: "white",
-                            border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
-                          }}
-                        >
-                          {(t as any).editor_save_btn ?? "Save"}
-                        </button>
-                        <button
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            setEditingBlockId(null);
-                          }}
-                          style={{
-                            flex: 1, padding: "6px 0", borderRadius: 6,
-                            background: "transparent", color: "#64748b",
-                            border: "1px solid #e2e8f0", cursor: "pointer", fontSize: 12,
-                          }}
-                        >
-                          {(t as any).editor_cancel_btn ?? "Cancel"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                      backgroundColor: "rgba(255,255,255,0.97)",
+                      borderRadius: 2,
+                      zIndex: 30,
+                      boxSizing: "border-box",
+                      padding: "1px 2px",
+                      fontSize: block.fontSize,
+                      fontFamily: `"${block.pdfFontName}", ${block.fontFamily || "sans-serif"}`,
+                      fontWeight: block.fontWeight || "normal",
+                      fontStyle: block.fontStyle || "normal",
+                      color: block.originalColor || "#000",
+                      lineHeight: block.lineHeight ? `${block.lineHeight}px` : "1.4",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                      outline: "none",
+                      boxShadow: "0 2px 12px rgba(21,101,192,0.15)",
+                    }}
+                    onBlur={(e) => {
+                      const newText = (e.currentTarget as HTMLElement).innerText;
+                      const normalize = (s: string) => s.replace(/\s+/g, " ").trim();
+                      const originalText = block.editedStr ?? block.str;
+                      if (normalize(newText) !== normalize(originalText)) {
+                        setAllNativeTextBlocks(prev => {
+                          const pageBlocks = prev.get(block.page) ?? [];
+                          const updated = pageBlocks.map((b: NativeTextBlock) =>
+                            b.id === block.id ? { ...b, editedStr: newText } : b
+                          );
+                          const next = new Map(prev);
+                          next.set(block.page, updated);
+                          return next;
+                        });
+                        toast.success((t as any).editor_text_saved ?? "Text saved");
+                        setTimeout(() => bakeTextEditsIntoPdf(), 100);
+                      }
+                      setEditingBlockId(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") (e.currentTarget as HTMLElement).blur();
+                      e.stopPropagation();
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    ref={(el) => {
+                      if (el && !el.dataset.init) {
+                        el.dataset.init = "1";
+                        el.innerText = block.editedStr ?? block.str;
+                        el.focus();
+                        const range = document.createRange();
+                        range.selectNodeContents(el);
+                        range.collapse(false);
+                        const sel = window.getSelection();
+                        sel?.removeAllRanges();
+                        sel?.addRange(range);
+                      }
+                    }}
+                  />
                 ) : (
                   /* Not editing: transparent border overlay, canvas text visible underneath */
                   <div
