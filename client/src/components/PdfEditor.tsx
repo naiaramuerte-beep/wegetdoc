@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-// MuPDF text extraction now handled by backend endpoint /api/pdf/blocks
+import WebViewer from "@pdftron/webviewer";
 import PaywallModal from "./PaywallModal";
 import { encryptPDF } from "@pdfsmaller/pdf-encrypt-lite";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -285,12 +285,16 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const [noteText, setNoteText] = useState("");
 
   // Edit-text tool state
-  // allNativeTextBlocks: Map<pageNum, NativeTextBlock[]> — persists edits across page navigation
   const [allNativeTextBlocks, setAllNativeTextBlocks] = useState<Map<number, NativeTextBlock[]>>(new Map());
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [editingBlockText, setEditingBlockText] = useState("");
   const [editTextColor, setEditTextColor] = useState("#000000");
   const editContentRef = useRef<HTMLDivElement | null>(null);
+
+  // Apryse WebViewer for text editing
+  const webviewerContainerRef = useRef<HTMLDivElement | null>(null);
+  const webviewerInstanceRef = useRef<any>(null);
+  const [webviewerReady, setWebviewerReady] = useState(false);
 
   // Apply a CSS style to the active contentEditable div in real-time
   const applyEditStyle = useCallback((prop: string, value: string) => {
@@ -994,11 +998,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
     // Get actual canvas CSS dimensions for coordinate mapping
     const canvasEl = mainCanvasRef.current;
-    const rect = canvasEl?.getBoundingClientRect();
-    const canvasCSSWidth = rect?.width ?? 714;
-    const canvasCSSHeight = rect?.height ?? 1010;
-    const dpr = window.devicePixelRatio || 1;
-    const pdfPageWidth = vp.width / (scale * dpr); // PDF width in points
+    const rect = canvasEl!.getBoundingClientRect();
+    const canvasCSSWidth = rect.width;
+    const canvasCSSHeight = rect.height;
+    const pdfPageWidth = vp.width / scale; // PDF width in points
 
     // DIAGNOSTIC — raw numbers from MuPDF and canvas
     if (mupdfBlocks.length > 0) {
@@ -1091,13 +1094,64 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
   }, [activeTool, editTextColor]);
 
-  // Reload text blocks when page or scale changes while edit-text is active
+  // Initialize Apryse WebViewer when edit-text is activated
   useEffect(() => {
-    if (activeTool === "edit-text" && pdfDoc && pdfBytes) {
-      console.log("[edit-text] useEffect triggered, loading blocks for page", currentPage);
-      loadNativeTextBlocks(currentPage);
+    if (activeTool !== "edit-text" || !pdfBytes || !webviewerContainerRef.current) {
+      // Destroy WebViewer when leaving edit-text mode
+      if (webviewerInstanceRef.current && activeTool !== "edit-text") {
+        webviewerInstanceRef.current = null;
+        setWebviewerReady(false);
+        if (webviewerContainerRef.current) {
+          webviewerContainerRef.current.innerHTML = "";
+        }
+      }
+      return;
     }
-  }, [activeTool, currentPage, scale, pdfDoc, pdfBytes, loadNativeTextBlocks]);
+    // Don't re-init if already loaded
+    if (webviewerInstanceRef.current) return;
+
+    const container = webviewerContainerRef.current;
+    container.innerHTML = ""; // Clear any previous content
+
+    // Create a blob URL from the PDF bytes
+    const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
+    const pdfUrl = URL.createObjectURL(blob);
+
+    WebViewer({
+      path: "/webviewer",
+      licenseKey: "demo:1776209607211:632da47a03000000006982b900f2497bc31cb286c164c436388427a662",
+      initialDoc: pdfUrl,
+      disabledElements: [
+        "header", "toolsHeader", "leftPanel", "searchPanel",
+        "notesPanel", "menuButton", "leftPanelButton",
+        "viewControlsButton", "zoomControls",
+      ],
+    }, container).then((instance: any) => {
+      const { UI, Core } = instance;
+      // Enable content editing (inline text editing with real fonts)
+      UI.enableFeatures([UI.Feature.ContentEdit]);
+      webviewerInstanceRef.current = instance;
+      setWebviewerReady(true);
+
+      // When user saves edits in WebViewer, update pdfBytes
+      Core.documentViewer.addEventListener("documentLoaded", () => {
+        console.log("[WebViewer] Document loaded, ContentEdit enabled");
+      });
+
+      // Cleanup blob URL
+      URL.revokeObjectURL(pdfUrl);
+    }).catch((err: any) => {
+      console.error("[WebViewer] Failed to initialize:", err);
+      toast.error("Text editor failed to load");
+    });
+
+    return () => {
+      if (webviewerInstanceRef.current) {
+        webviewerInstanceRef.current = null;
+        setWebviewerReady(false);
+      }
+    };
+  }, [activeTool, pdfBytes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle file drop / select — auto-converts non-PDF files to PDF via server
   const handleFile = useCallback(async (f: File) => {
@@ -4078,8 +4132,17 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             </div>
           </div>
 
-          {/* PDF canvas + annotation overlay */}
-          <div className="flex-1 overflow-auto flex items-start justify-center p-3 md:p-6 pb-[140px] md:pb-6">
+          {/* Apryse WebViewer for text editing — shown when edit-text is active */}
+          {activeTool === "edit-text" && (
+            <div
+              ref={webviewerContainerRef}
+              className="flex-1 overflow-hidden"
+              style={{ display: activeTool === "edit-text" ? "flex" : "none", minHeight: "100%" }}
+            />
+          )}
+
+          {/* PDF canvas + annotation overlay — hidden when WebViewer is active */}
+          <div className="flex-1 overflow-auto flex items-start justify-center p-3 md:p-6 pb-[140px] md:pb-6" style={{ display: activeTool === "edit-text" ? "none" : undefined }}>
             <div
               className="relative shadow-xl"
               ref={viewerRef}
@@ -4467,7 +4530,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     }}
                   />
                 ) : (
-                  /* Not editing: thin border, transparent — click to edit */
+                  /* Not editing: thin border, pointer-events none */
                   <div
                     key={block.id}
                     style={{
@@ -4476,20 +4539,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       top: block.y,
                       width: block.width,
                       height: block.height,
-                      cursor: "text",
-                      border: "1px dashed rgba(21, 101, 192, 0.2)",
+                      border: "1px dashed rgba(21, 101, 192, 0.25)",
                       backgroundColor: "transparent",
                       borderRadius: 2,
                       zIndex: 25,
                       boxSizing: "border-box",
-                    }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.border = "2px solid rgba(21, 101, 192, 0.5)"; (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(21, 101, 192, 0.03)"; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.border = "1px dashed rgba(21, 101, 192, 0.2)"; (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditingBlockId(block.id);
-                      setEditingBlockText(block.editedStr ?? block.str);
-                      setShowMobilePanel(true);
+                      pointerEvents: "none",
                     }}
                   />
                 );
