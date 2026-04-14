@@ -107,7 +107,8 @@ interface NativeTextBlock {
   pageHeight: number; // page height in PDF points
   page: number; // 1-indexed page number
   fontColor?: string; // hex color e.g. "#000000"
-  fontFamily?: string; // CSS font-family from pdf.js styles
+  fontFamily?: string; // CSS generic family fallback (serif, sans-serif)
+  pdfFontName?: string; // pdf.js loaded font name (e.g. "g_d0_f1") — matches @font-face
 }
 
 interface Annotation {
@@ -832,7 +833,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       str: string;
       pdfX: number; pdfY: number; pdfWidth: number; pdfFontSize: number;
       canvasX: number; canvasY: number; canvasW: number; canvasH: number;
-      fontFamily: string; fontSize: number;
+      fontFamily: string; fontSize: number; pdfFontName: string;
     }
     const allItems = content.items as any[];
     const paragraphs: LineItem[][] = [];
@@ -857,8 +858,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const canvasY = (pdfPageHeight - f) * scale - pdfFontSize * scale;
       const canvasW = pdfWidth * scale;
       const canvasH = pdfFontSize * scale * 1.4;
+      const pdfFontName = item.fontName || "";
       const lineItem: LineItem = {
-        str: item.str, pdfX: e, pdfY: f, pdfWidth, pdfFontSize, fontFamily,
+        str: item.str, pdfX: e, pdfY: f, pdfWidth, pdfFontSize, fontFamily, pdfFontName,
         canvasX, canvasY, canvasW, canvasH, fontSize: pdfFontSize * scale,
       };
 
@@ -899,6 +901,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         pageHeight: pdfPageHeight,
         page: pageNum,
         fontFamily: first.fontFamily,
+        pdfFontName: first.pdfFontName,
       });
     }
     // Only set blocks for this page if not already loaded (preserve existing edits)
@@ -4083,27 +4086,30 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   </div>
                 ))}
               </div>
-              {/* Edited text indicator — small badge on edited blocks (no overlay to avoid font mismatch) */}
-              {activeTool !== "edit-text" && nativeTextBlocks.filter(b => b.editedStr !== undefined).map(block => (
+              {/* Edited text overlays — uses pdf.js loaded font for exact match */}
+              {nativeTextBlocks.filter(b => b.editedStr !== undefined).map(block => (
                 <div
                   key={`edited-${block.id}`}
                   style={{
                     position: "absolute",
-                    left: block.x + block.width - 18,
-                    top: block.y - 6,
-                    width: 16,
-                    height: 16,
-                    borderRadius: "50%",
-                    backgroundColor: "#1565C0",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
+                    left: block.x,
+                    top: block.y,
+                    width: block.width,
+                    height: block.height,
+                    backgroundColor: "#fff",
                     zIndex: 5,
                     pointerEvents: "none",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                    boxSizing: "border-box",
+                    overflow: "hidden",
+                    fontSize: block.fontSize,
+                    fontFamily: `"${block.pdfFontName}", ${block.fontFamily || "sans-serif"}`,
+                    color: block.fontColor || "#000",
+                    lineHeight: 1.4,
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
                   }}
                 >
-                  <span style={{ color: "#fff", fontSize: 9, fontWeight: 700 }}>✎</span>
+                  {block.editedStr}
                 </div>
               ))}
               {/* Native text blocks overlay — edit-text tool active */}
@@ -4130,7 +4136,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       boxSizing: "border-box",
                       padding: 0,
                       fontSize: block.fontSize,
-                      fontFamily: block.fontFamily || "sans-serif",
+                      fontFamily: `"${block.pdfFontName}", ${block.fontFamily || "sans-serif"}`,
                       color: block.fontColor || "#000",
                       lineHeight: 1.4,
                       whiteSpace: "pre-wrap",
