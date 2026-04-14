@@ -227,7 +227,7 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
           HERO — Single centered column
       ══════════════════════════════════════════════════════════ */}
       <section className="bg-white">
-        <div className="container pt-10 pb-0 md:pt-16">
+        <div className="container pt-10 pb-12 md:pt-16 md:pb-16">
           <div className="flex flex-col items-center gap-10">
             {/* Centered content */}
             <div className="w-full max-w-2xl flex flex-col items-center text-center">
