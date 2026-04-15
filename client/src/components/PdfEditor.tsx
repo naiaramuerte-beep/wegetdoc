@@ -4069,7 +4069,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     left: block.x,
                     top: block.y,
                     width: block.width,
-                    minHeight: block.height,
+                    height: block.height,
                     cursor: "text",
                     border: editingBlockId === block.id
                       ? "2px solid #1565C0"
@@ -4084,6 +4084,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     borderRadius: 2,
                     zIndex: editingBlockId === block.id ? 30 : 25,
                     boxSizing: "border-box",
+                    overflow: "hidden",
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
