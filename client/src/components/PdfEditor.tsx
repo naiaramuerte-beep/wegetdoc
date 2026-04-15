@@ -2330,7 +2330,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       "convert-word": "convert-word", "convert-excel": "convert-excel",
       "convert-ppt": "convert-ppt", "convert-html": "convert-html",
       "jpg-to-pdf": "jpg-to-pdf", "png-to-pdf": "png-to-pdf",
-      "merge": "merge", "split": "split", "convert": "convert",
+      "merge": "merge", "split": "split",
     };
     const mapped = toolMap[initialTool];
     setActiveTool(mapped ?? "edit-text");
@@ -4106,7 +4106,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                           }
                         }}
                         style={{
-                          width: "100%",
+                          width: block.width,
+                          maxWidth: block.width,
                           minHeight: Math.max(block.height, 30),
                           fontSize: 13,
                           color: editTextColor,
@@ -4118,7 +4119,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                           fontFamily: "Helvetica, Arial, sans-serif",
                           boxSizing: "border-box",
                           overflow: "hidden",
+                          overflowX: "hidden",
                           resize: "none",
+                          whiteSpace: "pre-wrap",
+                          wordWrap: "break-word",
                         }}
                       />
                       <div style={{ display: "flex", gap: 4 }}>
