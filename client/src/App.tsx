@@ -35,6 +35,7 @@ const ToolLanding = lazy(() => import("./pages/ToolLanding"));
 const AdLandingPage = lazy(() => import("./pages/AdLanding"));
 import { AD_PAGES } from "./pages/AdLanding";
 const LandingTest = lazy(() => import("./pages/LandingTest"));
+// const EditorTest = lazy(() => import("./pages/EditorTest")); // removed
 
 function LazyFallback() {
   return (
@@ -158,6 +159,7 @@ function Router() {
       <Route path="/cancelar-suscripcion" component={() => <Redirect to="/es/cancelar-suscripcion" />} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
+      {/* /editor-test removed */}
 
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

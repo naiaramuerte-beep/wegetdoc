@@ -6,7 +6,8 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { logoParts, colors } from "@/lib/brand";
 import { useLocation } from "wouter";
-import PdfEditor from "@/components/PdfEditor";
+// import PdfEditor from "@/components/PdfEditor"; // Old editor — kept but disconnected
+import WebViewerEditor from "@/components/WebViewerEditor";
 import { usePdfFile } from "@/contexts/PdfFileContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Navbar from "@/components/Navbar";
@@ -203,55 +204,37 @@ export default function EditorPage() {
     return <EditorUploadZone lang={lang} />;
   }
 
-  return (
-    <div className="flex flex-col" style={{ height: "100dvh", overflow: "hidden" }}>
-      {/* ── Custom Editor Header Bar ── */}
-      <div className="flex items-center justify-between px-3 md:px-4 h-11 md:h-12 shrink-0 border-b"
-        style={{ backgroundColor: "#0D47A1", borderColor: "#1e293b" }}>
-        {/* Left: Logo */}
-        <button onClick={handleClose} className="flex items-center gap-1 shrink-0 hover:opacity-80 transition-opacity" title="Back to home">
-          <LogoSvg />
-          <LogoText />
-        </button>
-        {/* Center: Editable filename */}
-        <div className="flex items-center gap-1.5 min-w-0 max-w-[50%]">
-          {isEditingName ? (
-            <div className="flex items-center gap-1">
-              <input ref={nameInputRef} type="text" value={editNameValue}
-                onChange={e => setEditNameValue(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") confirmEdit(); if (e.key === "Escape") setIsEditingName(false); }}
-                onBlur={confirmEdit}
-                className="bg-white/10 text-white text-sm px-2 py-0.5 rounded border border-white/20 outline-none focus:border-white/40 min-w-[120px] max-w-[300px]"
-                />
-              <button onMouseDown={e => { e.preventDefault(); confirmEdit(); }} className="p-0.5 rounded hover:bg-white/10 transition-colors" title="Confirm">
-                <Check className="w-3.5 h-3.5" style={{ color: "#42A5F5" }} />
-              </button>
-            </div>
-          ) : (
-            <button onClick={startEdit} className="flex items-center gap-1.5 min-w-0 hover:bg-white/5 rounded px-2 py-0.5 transition-colors group" title="Click to rename">
-              <span className="text-sm font-medium truncate" style={{ color: "rgba(255,255,255,0.85)" }}>{fileName}</span>
-              <Pencil className="w-3 h-3 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "rgba(255,255,255,0.5)" }} />
-            </button>
-          )}
-        </div>
-        {/* Right: Close */}
-        <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors shrink-0" title="Close editor">
-          <XIcon className="w-5 h-5" style={{ color: "rgba(255,255,255,0.7)" }} />
-        </button>
-      </div>
+  // Create blob URL from pending file for WebViewer
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (pendingFile) {
+      const url = URL.createObjectURL(pendingFile);
+      setFileUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+  }, [pendingFile]);
 
-      {/* Full-screen editor */}
-      <div className="flex-1 overflow-hidden">
-        <PdfEditor
-          initialFile={pendingFile ?? undefined}
-          initialTool={pendingTool ?? undefined}
-          initialOpenPaywall={pendingPaywall}
-          onPaywallOpened={() => setPendingPaywall(false)}
-          fullscreen
-          onFileNameChange={setFileName}
-          displayName={fileName}
-        />
+  if (!fileUrl) {
+    return (
+      <div className="flex flex-col min-h-screen" style={{ backgroundColor: "#f8fafc" }}>
+        <div className="flex items-center px-4 h-12 border-b" style={{ backgroundColor: "#0D47A1", borderColor: "#1e293b" }}>
+          <div className="flex items-center gap-1"><LogoSvg /><LogoText /></div>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center" style={{ color: "#1565C0" }}>
+            <div className="w-8 h-8 border-2 border-current border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-sm font-medium">Loading document...</p>
+          </div>
+        </div>
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <WebViewerEditor
+      fileUrl={fileUrl}
+      fileName={fileName}
+      onClose={handleClose}
+    />
   );
 }

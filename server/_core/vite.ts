@@ -105,7 +105,14 @@ export function serveStatic(app: Express) {
   }
 
   // Serve static assets but SKIP index.html (we process it with brand placeholders)
-  app.use(express.static(distPath, { index: false }));
+  // Set proper MIME types for WebViewer assets
+  app.use(express.static(distPath, {
+    index: false,
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith(".wasm")) res.setHeader("Content-Type", "application/wasm");
+      if (filePath.endsWith(".mem")) res.setHeader("Content-Type", "application/octet-stream");
+    },
+  }));
 
   // All routes → processed index.html (SPA fallback)
   app.use("*", (_req, res) => {
