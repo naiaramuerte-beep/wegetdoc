@@ -108,6 +108,7 @@ interface NativeTextBlock {
   page: number; // 1-indexed page number
   fontColor?: string; // hex color e.g. "#000000"
   fontFamily?: string; // CSS font-family from pdf.js styles
+  pdfFontName?: string; // raw font name from pdf.js (e.g. "g_d0_f1")
 }
 
 interface Annotation {
@@ -831,8 +832,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const pdfFontSize = Math.sqrt(a * a + b * b); // font size in PDF points
       const pdfPageHeight = vp.height / scale; // page height in PDF points
       const pdfWidth = item.width ?? item.str.length * pdfFontSize * 0.6;
-      // Font family from pdf.js styles
+      // Font info from pdf.js styles
       const fontFamily = styles[item.fontName]?.fontFamily || "sans-serif";
+      const pdfFontName = item.fontName || "";
       // Canvas pixel coords (for overlay display)
       // PDF y is from bottom; canvas y is from top
       const canvasX = e * scale;
@@ -856,6 +858,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         pageHeight: pdfPageHeight,
         page: pageNum,
         fontFamily,
+        pdfFontName,
       });
     }
     // Only set blocks for this page if not already loaded (preserve existing edits)
@@ -3216,12 +3219,29 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 <p>{(t as any).editor_image_no_text_desc ?? "This page may be a scanned image. Use 'Add Text' to place new text on top."}</p>
               </div>
             )}
-            {/* Instruction when a block is selected */}
-            {editingBlockId && (
-              <div className="p-2 rounded text-xs" style={{ backgroundColor: "rgba(27, 94, 32, 0.1)", color: "#0f172a" }}>
-                {t.editor_panel_edit_inline_hint}
-              </div>
-            )}
+            {/* Detected block properties — shown when a block is clicked */}
+            {editingBlockId && (() => {
+              const block = nativeTextBlocks.find(b => b.id === editingBlockId);
+              if (!block) return null;
+              return (
+                <div className="p-3 rounded-lg border text-xs flex flex-col gap-2" style={{ borderColor: "#e2e8f0" }}>
+                  <div className="font-medium" style={{ color: "#1565C0" }}>Detected properties</div>
+                  <div className="flex items-center gap-2">
+                    <span style={{ color: "#64748b" }}>Font:</span>
+                    <span className="font-medium" style={{ color: "#0f172a" }}>{block.pdfFontName || block.fontFamily || "sans-serif"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span style={{ color: "#64748b" }}>Size:</span>
+                    <span className="font-medium" style={{ color: "#0f172a" }}>{Math.round(block.pdfFontSize)}pt</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span style={{ color: "#64748b" }}>Color:</span>
+                    <span className="w-4 h-4 rounded border inline-block" style={{ backgroundColor: block.fontColor || "#000", borderColor: "#e2e8f0" }} />
+                    <span style={{ color: "#0f172a" }}>{block.fontColor || "#000000"}</span>
+                  </div>
+                </div>
+              );
+            })()}
             </div>
           </div>
         );
