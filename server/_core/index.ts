@@ -663,7 +663,7 @@ ${allUrls.map(u => `  <url>
                 fontName: cur.fontName, isBold: cur.isBold, isItalic: cur.isItalic,
                 fontFamily: cur.isSerif ? "serif" : "sans-serif",
                 color: cur.color,
-                width: cur.lastX - cur.x + cur.fontSize * 0.7,
+                width: Math.max(cur.lastX - cur.x + cur.fontSize * 0.6, str.length * cur.fontSize * 0.5),
               });
             }
           }
