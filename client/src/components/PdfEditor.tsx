@@ -823,42 +823,78 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const page = await pdfDoc.getPage(pageNum);
     const vp = page.getViewport({ scale });
     const content = await page.getTextContent();
-    const blocks: NativeTextBlock[] = [];
     const styles = (content as any).styles ?? {};
-    for (const item of content.items as any[]) {
-      if (!item.str || !item.str.trim()) continue;
-      // item.transform = [a, b, c, d, e, f] where (e,f) is bottom-left in PDF points (from bottom)
+    const pdfPageHeight = vp.height / scale;
+
+    // Step 1: Parse items into line-level entries
+    interface LineItem {
+      str: string; pdfX: number; pdfY: number; pdfWidth: number; pdfFontSize: number;
+      canvasX: number; canvasY: number; canvasW: number; canvasH: number;
+      fontFamily: string; fontSize: number; pdfFontName: string;
+    }
+    const allItems = content.items as any[];
+    const paragraphs: LineItem[][] = [];
+    let currentPara: LineItem[] = [];
+
+    for (const item of allItems) {
+      // Empty items mark paragraph boundaries
+      if (!item.str || !item.str.trim()) {
+        if (currentPara.length > 0) { paragraphs.push(currentPara); currentPara = []; }
+        continue;
+      }
       const [a, b, , , e, f] = item.transform as number[];
-      const pdfFontSize = Math.sqrt(a * a + b * b); // font size in PDF points
-      const pdfPageHeight = vp.height / scale; // page height in PDF points
+      const pdfFontSize = Math.sqrt(a * a + b * b);
       const pdfWidth = item.width ?? item.str.length * pdfFontSize * 0.6;
-      // Font info from pdf.js styles
       const fontFamily = styles[item.fontName]?.fontFamily || "sans-serif";
       const pdfFontName = item.fontName || "";
-      // Canvas pixel coords (for overlay display)
-      // PDF y is from bottom; canvas y is from top
       const canvasX = e * scale;
       const canvasY = (pdfPageHeight - f) * scale - pdfFontSize * scale;
       const canvasW = pdfWidth * scale;
       const canvasH = pdfFontSize * scale * 1.4;
+      const line: LineItem = { str: item.str, pdfX: e, pdfY: f, pdfWidth, pdfFontSize, fontFamily, pdfFontName, canvasX, canvasY, canvasW, canvasH, fontSize: pdfFontSize * scale };
+
+      // Also break on font size change or large position shift
+      if (currentPara.length > 0) {
+        const prev = currentPara[currentPara.length - 1];
+        const sizeChanged = Math.abs(line.fontSize - prev.fontSize) > 2;
+        const bigYGap = line.canvasY - (prev.canvasY + prev.canvasH) > prev.canvasH * 1.5;
+        if (sizeChanged || bigYGap) { paragraphs.push(currentPara); currentPara = []; }
+      }
+      currentPara.push(line);
+    }
+    if (currentPara.length > 0) paragraphs.push(currentPara);
+
+    // Step 2: Build one NativeTextBlock per paragraph
+    const blocks: NativeTextBlock[] = [];
+    for (const para of paragraphs) {
+      // Join: space for same-line items, newline for different lines
+      let combinedStr = "";
+      for (let i = 0; i < para.length; i++) {
+        if (i === 0) { combinedStr = para[i].str; continue; }
+        const isNewLine = Math.abs(para[i].canvasY - para[i-1].canvasY) > para[i-1].canvasH * 0.3;
+        combinedStr += isNewLine ? "\n" + para[i].str : " " + para[i].str;
+      }
+      const first = para[0];
+      const last = para[para.length - 1];
+      const minX = Math.min(...para.map(l => l.canvasX));
+      const minY = Math.min(...para.map(l => l.canvasY));
+      const maxR = Math.max(...para.map(l => l.canvasX + l.canvasW));
+      const maxB = Math.max(...para.map(l => l.canvasY + l.canvasH));
+
       blocks.push({
         id: Math.random().toString(36).slice(2),
-        str: item.str,
-        // Canvas coords
-        x: canvasX,
-        y: canvasY,
-        width: Math.max(canvasW, 20),
-        height: Math.max(canvasH, 14),
-        fontSize: pdfFontSize * scale,
-        // PDF point coords (used directly at export — no scale conversion needed)
-        pdfX: e,
-        pdfY: f,           // baseline y from bottom of page (PDF coordinate system)
-        pdfWidth: Math.max(pdfWidth, 10),
-        pdfFontSize: Math.max(pdfFontSize, 6),
+        str: combinedStr,
+        x: minX, y: minY,
+        width: Math.max(maxR - minX, 20),
+        height: Math.max(maxB - minY, 14),
+        fontSize: first.fontSize,
+        pdfX: first.pdfX, pdfY: last.pdfY,
+        pdfWidth: Math.max(first.pdfWidth, 10),
+        pdfFontSize: Math.max(first.pdfFontSize, 6),
         pageHeight: pdfPageHeight,
         page: pageNum,
-        fontFamily,
-        pdfFontName,
+        fontFamily: first.fontFamily,
+        pdfFontName: first.pdfFontName,
       });
     }
     // Only set blocks for this page if not already loaded (preserve existing edits)
