@@ -19,7 +19,7 @@ export const TOOL_LANDINGS: ToolDef[] = [
   { slug: "pdf-to-jpg",    i18nPrefix: "landing_pdf2jpg" },
   { slug: "pdf-to-excel",  i18nPrefix: "landing_pdf2excel" },
   { slug: "word-to-pdf",   i18nPrefix: "landing_word2pdf" },
-  { slug: "split-pdf",     i18nPrefix: "landing_split" },
+  { slug: "split-pdf",     i18nPrefix: "landing_split", editorTool: "split" },
   { slug: "pdf-converter", i18nPrefix: "landing_converter" },
   { slug: "image-to-pdf",  i18nPrefix: "landing_img2pdf" },
   { slug: "png-to-pdf",    i18nPrefix: "landing_png2pdf" },

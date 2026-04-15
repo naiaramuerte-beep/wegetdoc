@@ -10,6 +10,7 @@ interface AdPageDef {
   subtitle: Record<LangCode, string>;
   metaTitle: Record<LangCode, string>;
   metaDesc: Record<LangCode, string>;
+  editorTool?: string;
 }
 
 export const AD_PAGES: AdPageDef[] = [
@@ -23,6 +24,7 @@ export const AD_PAGES: AdPageDef[] = [
   },
   {
     slug: "sign-pdf-online",
+    editorTool: "sign",
     title:     { es: "Firma", en: "Sign", fr: "Signer", de: "Unterschreiben", pt: "Assinar", it: "Firma", nl: "Onderteken", pl: "Podpisz", ru: "Подписать", zh: "签署" },
     highlight: { es: "PDF Online", en: "PDF Online", fr: "PDF en ligne", de: "PDF Online", pt: "PDF Online", it: "PDF Online", nl: "PDF Online", pl: "PDF Online", ru: "PDF онлайн", zh: "PDF 在线" },
     subtitle:  { es: "Añade tu firma digital a cualquier documento PDF en segundos — sin imprimir", en: "Add your digital signature to any PDF document in seconds — no printing needed", fr: "Ajoutez votre signature numérique à tout document PDF en quelques secondes", de: "Fügen Sie Ihre digitale Unterschrift in Sekunden zu jedem PDF hinzu", pt: "Adicione sua assinatura digital a qualquer PDF em segundos — sem imprimir", it: "Aggiungi la tua firma digitale a qualsiasi PDF in pochi secondi", nl: "Voeg uw digitale handtekening toe aan elk PDF-document in seconden", pl: "Dodaj swój podpis cyfrowy do dowolnego PDF w kilka sekund", ru: "Добавьте цифровую подпись к любому PDF за считанные секунды", zh: "几秒钟内为任何PDF文档添加数字签名" },
@@ -73,6 +75,7 @@ export default function AdLanding({ page }: { page: AdPageDef }) {
     heroSubtitle: page.subtitle[l] || page.subtitle.en,
     metaTitle: page.metaTitle[l] || page.metaTitle.en,
     metaDesc: page.metaDesc[l] || page.metaDesc.en,
+    editorTool: page.editorTool,
   };
 
   return <Home overrides={overrides} />;
