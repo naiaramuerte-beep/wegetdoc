@@ -1873,14 +1873,16 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       pages1.forEach(p => part1.addPage(p));
       const pages2 = await part2.copyPages(original, Array.from({ length: totalPages - splitAt }, (_, i) => i + splitAt));
       pages2.forEach(p => part2.addPage(p));
-      for (const [i, doc] of [[1, part1], [2, part2]] as [number, PDFDocument][]) {
-        const out = await doc.save();
-        const blob = new Blob([out.buffer as ArrayBuffer], { type: "application/pdf" });
-        const downloadName = `part${i}_${file?.name ?? "document.pdf"}`;
-        await guardedDownload(blob, downloadName, "split");
-        // If paywall was shown (not premium), stop after first part
-        if (!isPremium) break;
-      }
+      // Save both parts as the new PDF bytes (concatenated back, user downloads via Download PDF)
+      // Load part 1 into the editor for viewing
+      const out1 = await part1.save();
+      const newBytes = new Uint8Array(out1);
+      const newBlob = new Blob([newBytes], { type: "application/pdf" });
+      const newFile = new File([newBlob], `split_${file?.name ?? "document.pdf"}`, { type: "application/pdf" });
+      await loadPdf(newFile);
+      setAnnotations([]);
+      setAllNativeTextBlocks(new Map());
+      toast.success(`PDF dividido en página ${splitAt}. Páginas 1-${splitAt} cargadas.`, { id: "split" });
     } catch {
       toast.error("Error al dividir", { id: "split" });
     }
