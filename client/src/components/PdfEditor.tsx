@@ -4069,24 +4069,21 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     left: block.x,
                     top: block.y,
                     width: block.width,
-                    height: block.height,
+                    minHeight: block.height,
                     cursor: "text",
                     border: editingBlockId === block.id
                       ? "2px solid #1565C0"
                       : block.editedStr !== undefined
-                        ? "2px dashed #1E88E5"
-                        : "1.5px dashed rgba(27, 94, 32, 0.6)",
+                        ? "1.5px dashed #1565C0"
+                        : "1.5px dashed rgba(21, 101, 192, 0.3)",
                     backgroundColor: editingBlockId === block.id
-                      ? "rgba(255,255,255,0.95)"
+                      ? "rgba(255,255,255,0.97)"
                       : block.editedStr !== undefined
-                        ? "rgba(255,255,255,0.95)"
+                        ? "rgba(255,255,255,0.97)"
                         : "transparent",
                     borderRadius: 2,
                     zIndex: editingBlockId === block.id ? 30 : 25,
                     boxSizing: "border-box",
-                    overflow: editingBlockId === block.id ? "visible" : "hidden",
-                    display: "flex",
-                    alignItems: "center",
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -4154,15 +4151,16 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       }}
                     />
                   ) : (
-                    /* Show edited text preview or original text */
+                    /* Show text — transparent for unedited (canvas shows through), visible for edited */
                     <span style={{
-                      fontSize: Math.min(block.fontSize, 12),
-                      color: block.editedStr !== undefined ? (block.fontColor ?? editTextColor) : "transparent",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      padding: "0 2px",
-                      fontWeight: 500,
+                      fontSize: block.fontSize,
+                      fontFamily: block.fontFamily || "sans-serif",
+                      color: block.editedStr !== undefined ? (block.fontColor ?? "#000") : "transparent",
+                      whiteSpace: "pre-wrap",
+                      wordWrap: "break-word",
+                      padding: 0,
+                      lineHeight: 1.35,
+                      display: "block",
                       width: "100%",
                     }}>
                       {block.editedStr ?? block.str}
