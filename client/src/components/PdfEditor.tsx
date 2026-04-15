@@ -2330,7 +2330,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       "convert-word": "convert-word", "convert-excel": "convert-excel",
       "convert-ppt": "convert-ppt", "convert-html": "convert-html",
       "jpg-to-pdf": "jpg-to-pdf", "png-to-pdf": "png-to-pdf",
-      "merge": "merge",
+      "merge": "merge", "split": "split", "convert": "convert",
     };
     const mapped = toolMap[initialTool];
     setActiveTool(mapped ?? "edit-text");
