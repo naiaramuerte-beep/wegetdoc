@@ -14,11 +14,10 @@ import {
   Minimize2, Move, StickyNote, FileText, Trash2, RotateCw,
   Plus, Scissors, Layers, X, Upload, Check, Eye, EyeOff,
   AlignLeft, Bold, Italic, Underline, ChevronDown, Lock, Unlock,
-  Save, CheckCircle, Info, RefreshCw,
+  Save, CheckCircle, Info,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-// import WebViewer from "@pdftron/webviewer"; // disabled - too large for deploy
 import PaywallModal from "./PaywallModal";
 import { encryptPDF } from "@pdfsmaller/pdf-encrypt-lite";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -88,7 +87,7 @@ type ToolName =
   | "eraser" | "brush" | "image" | "shapes" | "find"
   | "protect" | "compress" | "move" | "notes" | "none"
   | "convert-jpg" | "convert-png" | "convert-word" | "convert-excel" | "convert-ppt" | "convert-html"
-  | "word-to-pdf" | "excel-to-pdf" | "ppt-to-pdf" | "jpg-to-pdf" | "png-to-pdf" | "merge" | "split" | "convert";
+  | "word-to-pdf" | "excel-to-pdf" | "ppt-to-pdf" | "jpg-to-pdf" | "png-to-pdf" | "merge" | "split";
 
 interface NativeTextBlock {
   id: string;
@@ -107,13 +106,8 @@ interface NativeTextBlock {
   pdfFontSize: number; // font size in PDF points
   pageHeight: number; // page height in PDF points
   page: number; // 1-indexed page number
-  fontColor?: string; // hex color set by user when editing
-  originalColor?: string; // original text color from PDF
-  fontFamily?: string; // CSS generic family fallback (serif, sans-serif)
-  fontWeight?: string; // "bold" or "normal"
-  fontStyle?: string; // "italic" or "normal"
-  lineHeight?: number; // line height in canvas pixels (extracted from PDF)
-  pdfFontName?: string; // pdf.js loaded font name (e.g. "g_d0_f1") — matches @font-face
+  fontColor?: string; // hex color e.g. "#000000"
+  fontFamily?: string; // CSS font-family from pdf.js styles
 }
 
 interface Annotation {
@@ -127,9 +121,6 @@ interface Annotation {
   color?: string;
   fontSize?: number;
   fontFamily?: string;
-  fontWeight?: string;
-  fontStyle?: string;
-  textDecoration?: string;
   opacity?: number;
   rotation?: number;
   points?: { x: number; y: number }[];
@@ -218,9 +209,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const [textColor, setTextColor] = useState("#000000");
   const [textSize, setTextSize] = useState(14);
   const [textBold, setTextBold] = useState(false);
-  const [textItalic, setTextItalic] = useState(false);
-  const [textUnderline, setTextUnderline] = useState(false);
-  const [textStrikethrough, setTextStrikethrough] = useState(false);
   const [textFont, setTextFont] = useState("Arial, sans-serif");
   const [clickToPlaceText, setClickToPlaceText] = useState(false);
   const [editingTextId, setEditingTextId] = useState<string | null>(null); // inline text editing
@@ -285,42 +273,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const [noteText, setNoteText] = useState("");
 
   // Edit-text tool state
+  // allNativeTextBlocks: Map<pageNum, NativeTextBlock[]> — persists edits across page navigation
   const [allNativeTextBlocks, setAllNativeTextBlocks] = useState<Map<number, NativeTextBlock[]>>(new Map());
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [editingBlockText, setEditingBlockText] = useState("");
   const [editTextColor, setEditTextColor] = useState("#000000");
-  const editContentRef = useRef<HTMLDivElement | null>(null);
-
-  // Apryse WebViewer for text editing
-  const webviewerContainerRef = useRef<HTMLDivElement | null>(null);
-  const webviewerInstanceRef = useRef<any>(null);
-  const [webviewerReady, setWebviewerReady] = useState(false);
-
-  // Apply a CSS style to the active contentEditable div in real-time
-  const applyEditStyle = useCallback((prop: string, value: string) => {
-    const el = editContentRef.current;
-    if (!el) return;
-    (el.style as any)[prop] = value;
-    // Also update the block in state for export
-    if (editingBlockId) {
-      setAllNativeTextBlocks(prev => {
-        const pageBlocks = prev.get(currentPage) ?? [];
-        const propMap: Record<string, string> = {
-          fontWeight: "fontWeight", fontStyle: "fontStyle",
-          color: "originalColor", fontSize: "fontSize",
-          textAlign: "textAlign",
-        };
-        const blockProp = propMap[prop];
-        if (!blockProp) return prev;
-        const updated = pageBlocks.map((b: NativeTextBlock) =>
-          b.id === editingBlockId ? { ...b, [blockProp]: prop === "fontSize" ? parseFloat(value) : value } : b
-        );
-        const next = new Map(prev);
-        next.set(currentPage, updated);
-        return next;
-      });
-    }
-  }, [editingBlockId, currentPage]);
   // Derived: blocks for the current page
   const nativeTextBlocks = allNativeTextBlocks.get(currentPage) ?? [];
 
@@ -594,102 +551,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   }, []);
 
   // ── Render page ───────────────────────────────────────────────
-  // Keep a ref to allNativeTextBlocks so renderPage can read it without re-creating
-  const allNativeTextBlocksRef = useRef(allNativeTextBlocks);
-  allNativeTextBlocksRef.current = allNativeTextBlocks;
-
-  // Apply text edits to the PDF bytes and reload — this modifies the actual PDF
-  // so pdf.js renders the changes natively with correct positioning
-  const bakeTextEditsIntoPdf = useCallback(async () => {
-    if (!pdfBytes) return;
-    const editedBlocks: NativeTextBlock[] = [];
-    allNativeTextBlocksRef.current.forEach(pageBlocks => {
-      pageBlocks.filter(b => b.editedStr !== undefined).forEach(b => editedBlocks.push(b));
-    });
-    if (editedBlocks.length === 0) return;
-
-    try {
-      const safeBytes = pdfBytes.slice();
-      const doc = await PDFDocument.load(safeBytes, { ignoreEncryption: true });
-      const font = await doc.embedFont(StandardFonts.Helvetica);
-      const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
-      const fontItalic = await doc.embedFont(StandardFonts.HelveticaOblique);
-      const fontBoldItalic = await doc.embedFont(StandardFonts.HelveticaBoldOblique);
-
-      for (const block of editedBlocks) {
-        try {
-          const page = doc.getPage(block.page - 1);
-          const { width: pageW, height: pageH } = page.getSize();
-          const fontSizePts = block.pdfFontSize;
-
-          // Cover original text with white rectangle
-          const coverTop = pageH - (block.y / scale);
-          const coverBottom = pageH - ((block.y + block.height) / scale);
-          page.drawRectangle({
-            x: block.pdfX - 2,
-            y: coverBottom - fontSizePts * 0.3,
-            width: pageW - block.pdfX + 4,
-            height: (coverTop - coverBottom) + fontSizePts * 0.6,
-            color: rgb(1, 1, 1),
-            opacity: 1,
-          });
-
-          // Choose font
-          const isBold = block.fontWeight === "bold";
-          const isItalic = block.fontStyle === "italic";
-          const useFont = isBold && isItalic ? fontBoldItalic : isBold ? fontBold : isItalic ? fontItalic : font;
-
-          // Parse color
-          const hex = block.originalColor && block.originalColor.length === 7 ? block.originalColor : "#000000";
-          const cr = parseInt(hex.slice(1, 3), 16) / 255;
-          const cg = parseInt(hex.slice(3, 5), 16) / 255;
-          const cb = parseInt(hex.slice(5, 7), 16) / 255;
-          const textColor = rgb(isNaN(cr) ? 0 : cr, isNaN(cg) ? 0 : cg, isNaN(cb) ? 0 : cb);
-
-          // Draw edited text line by line
-          const lineH = block.lineHeight ? block.lineHeight / scale : fontSizePts * 1.4;
-          const editedLines = block.editedStr!.split("\n");
-          const startY = coverTop - fontSizePts;
-          for (let i = 0; i < editedLines.length; i++) {
-            const safeText = editedLines[i].replace(/[^\x00-\xFF]/g, "?");
-            if (!safeText.trim()) continue;
-            page.drawText(safeText, {
-              x: block.pdfX,
-              y: startY - i * lineH,
-              size: fontSizePts,
-              font: useFont,
-              color: textColor,
-            });
-          }
-        } catch (err) {
-          console.error("[bakeTextEdits] Error on block:", err);
-        }
-      }
-
-      // Save and reload
-      const newBytes = await doc.save();
-      const newUint8 = new Uint8Array(newBytes);
-      setPdfBytes(newUint8);
-      const newDoc = await pdfjsLib.getDocument({ data: newUint8.slice() }).promise;
-      if (pdfDoc) { try { pdfDoc.destroy(); } catch {} }
-      setPdfDoc(newDoc);
-      setAllNativeTextBlocks(new Map());
-      // renderPage will be triggered by the pdfDoc state change
-    } catch (err) {
-      console.error("[bakeTextEdits] Error:", err);
-      toast.error("Error applying text edits");
-    }
-  }, [pdfBytes, scale, pdfDoc]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const renderTaskRef = useRef<any>(null);
-
   const renderPage = useCallback(async (pageNum: number) => {
     if (!pdfDoc || !mainCanvasRef.current) return;
-    // Cancel any pending render
-    if (renderTaskRef.current) {
-      try { renderTaskRef.current.cancel(); } catch {}
-      renderTaskRef.current = null;
-    }
     const page = await pdfDoc.getPage(pageNum);
     const dpr = window.devicePixelRatio || 1;
     const vp = page.getViewport({ scale: scale * dpr });
@@ -699,16 +562,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     canvas.style.width = `${vp.width / dpr}px`;
     canvas.style.height = `${vp.height / dpr}px`;
     const ctx = canvas.getContext("2d")!;
-    const task = page.render({ canvas, viewport: vp } as any);
-    renderTaskRef.current = task;
-    try {
-      await task.promise;
-    } catch (e: any) {
-      if (e?.name === "RenderingCancelledException") return;
-      throw e;
-    }
-    renderTaskRef.current = null;
-
+    await page.render({ canvas, viewport: vp } as any).promise;
     // Sync drawing canvas size
     if (drawingCanvasRef.current) {
       drawingCanvasRef.current.width = vp.width;
@@ -962,95 +816,56 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run ONLY on mount
 
-  // ── Load native text blocks via MuPDF backend ──────────────
+  // ── Load native text blocks for Edit-Text tool ──────────────
   const loadNativeTextBlocks = useCallback(async (pageNum: number) => {
-    console.log("[edit-text] loadNativeTextBlocks called, page:", pageNum, "pdfDoc:", !!pdfDoc, "pdfBytes:", !!pdfBytes);
-    if (!pdfDoc || !pdfBytes) return;
+    if (!pdfDoc) return;
     const page = await pdfDoc.getPage(pageNum);
     const vp = page.getViewport({ scale });
-    const pdfPageHeight = vp.height / scale;
-
-    // Call MuPDF backend for clean text extraction
-    const formData = new FormData();
-    formData.append("file", new Blob([pdfBytes as any], { type: "application/pdf" }), "doc.pdf");
-    formData.append("page", String(pageNum - 1));
-
-    let mupdfBlocks: any[] = [];
-    try {
-      const resp = await fetch("/api/pdf/blocks", { method: "POST", body: formData });
-      console.log("[edit-text] fetch response status:", resp.status);
-      if (resp.ok) {
-        const data = await resp.json();
-        mupdfBlocks = data.blocks ?? [];
-        console.log("[edit-text] blocks received:", mupdfBlocks.length, mupdfBlocks.slice(0, 2));
-      } else {
-        console.error("[edit-text] fetch failed:", resp.status, await resp.text().catch(() => ""));
-      }
-    } catch (err) {
-      console.error("[edit-text] MuPDF backend error:", err);
-      return;
-    }
-
-    if (mupdfBlocks.length === 0) {
-      console.warn("[edit-text] No blocks returned from backend");
-      return;
-    }
-
-    // Get actual canvas CSS dimensions for coordinate mapping
-    const canvasEl = mainCanvasRef.current;
-    const rect = canvasEl!.getBoundingClientRect();
-    const canvasCSSWidth = rect.width;
-    const canvasCSSHeight = rect.height;
-    const pdfPageWidth = vp.width / scale; // PDF width in points
-
-    // DIAGNOSTIC — raw numbers from MuPDF and canvas
-    if (mupdfBlocks.length > 0) {
-      const fb = mupdfBlocks[0];
-      console.log("DIAGNOSTIC - first block raw:", JSON.stringify(fb));
-      console.log("DIAGNOSTIC - pdfPageWidth:", pdfPageWidth, "pdfPageHeight:", pdfPageHeight);
-      console.log("DIAGNOSTIC - canvasCSSWidth:", canvasCSSWidth, "canvasCSSHeight:", canvasCSSHeight);
-      console.log("DIAGNOSTIC - canvas.width (px):", canvasEl?.width, "canvas.height (px):", canvasEl?.height);
-      console.log("DIAGNOSTIC - scale:", scale, "dpr:", window.devicePixelRatio);
-      console.log("DIAGNOSTIC - computed top:", (pdfPageHeight - fb.y - fb.height) * (canvasCSSHeight / pdfPageHeight));
-      console.log("DIAGNOSTIC - computed left:", fb.x * (canvasCSSWidth / pdfPageWidth));
-    }
-
-    const scaleX = canvasCSSWidth / pdfPageWidth;
-    const scaleY = canvasCSSHeight / pdfPageHeight;
-    const blocks: NativeTextBlock[] = mupdfBlocks.map((mb: any) => {
-      const canvasX = mb.x * scaleX;
-      const canvasY = mb.y * scaleY;
-      const canvasW = mb.width * scaleX;
-      const canvasH = Math.max(mb.height * scaleY, mb.fontSize * scaleY * 1.4);
-      return {
+    const content = await page.getTextContent();
+    const blocks: NativeTextBlock[] = [];
+    const styles = (content as any).styles ?? {};
+    for (const item of content.items as any[]) {
+      if (!item.str || !item.str.trim()) continue;
+      // item.transform = [a, b, c, d, e, f] where (e,f) is bottom-left in PDF points (from bottom)
+      const [a, b, , , e, f] = item.transform as number[];
+      const pdfFontSize = Math.sqrt(a * a + b * b); // font size in PDF points
+      const pdfPageHeight = vp.height / scale; // page height in PDF points
+      const pdfWidth = item.width ?? item.str.length * pdfFontSize * 0.6;
+      // Font family from pdf.js styles
+      const fontFamily = styles[item.fontName]?.fontFamily || "sans-serif";
+      // Canvas pixel coords (for overlay display)
+      // PDF y is from bottom; canvas y is from top
+      const canvasX = e * scale;
+      const canvasY = (pdfPageHeight - f) * scale - pdfFontSize * scale;
+      const canvasW = pdfWidth * scale;
+      const canvasH = pdfFontSize * scale * 1.4;
+      blocks.push({
         id: Math.random().toString(36).slice(2),
-        str: mb.str,
+        str: item.str,
+        // Canvas coords
         x: canvasX,
         y: canvasY,
         width: Math.max(canvasW, 20),
         height: Math.max(canvasH, 14),
-        fontSize: mb.fontSize * scaleY,
-        pdfX: mb.x,
-        pdfY: mb.y,
-        pdfWidth: Math.max(mb.width, 10),
-        pdfFontSize: mb.fontSize,
+        fontSize: pdfFontSize * scale,
+        // PDF point coords (used directly at export — no scale conversion needed)
+        pdfX: e,
+        pdfY: f,           // baseline y from bottom of page (PDF coordinate system)
+        pdfWidth: Math.max(pdfWidth, 10),
+        pdfFontSize: Math.max(pdfFontSize, 6),
         pageHeight: pdfPageHeight,
         page: pageNum,
-        fontFamily: mb.fontFamily || "sans-serif",
-        fontWeight: mb.isBold ? "bold" : "normal",
-        fontStyle: mb.isItalic ? "italic" : "normal",
-        originalColor: mb.color || "#000000",
-        lineHeight: (mb.lineHeight || mb.fontSize * 1.4) * scaleY,
-        pdfFontName: mb.fontName || "",
-      };
-    });
-
+        fontFamily,
+      });
+    }
+    // Only set blocks for this page if not already loaded (preserve existing edits)
     setAllNativeTextBlocks(prev => {
       const existing = prev.get(pageNum);
       if (existing && existing.length > 0) {
+        // Merge: keep editedStr from existing blocks matched by str+position
         const merged = blocks.map(newBlock => {
           const match = existing.find(
-            ex => ex.str === newBlock.str && Math.abs(ex.x - newBlock.x) < 5 && Math.abs(ex.y - newBlock.y) < 5
+            ex => ex.str === newBlock.str && Math.abs(ex.x - newBlock.x) < 2 && Math.abs(ex.y - newBlock.y) < 2
           );
           return match ? { ...newBlock, editedStr: match.editedStr, fontColor: match.fontColor } : newBlock;
         });
@@ -1062,7 +877,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       next.set(pageNum, blocks);
       return next;
     });
-  }, [pdfDoc, pdfBytes, scale]);
+  }, [pdfDoc, scale]);
 
   // Auto-save edited text when switching away from edit-text tool or changing page
   const editingBlockIdRef = useRef(editingBlockId);
@@ -1081,7 +896,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           const idx = blocks.findIndex((b: NativeTextBlock) => b.id === blockId);
           if (idx !== -1) {
             const updated = blocks.map((b: NativeTextBlock) =>
-              b.id === blockId ? { ...b, editedStr: text } : b
+              b.id === blockId ? { ...b, editedStr: text, fontColor: editTextColor } : b
             );
             const next = new Map(prev);
             next.set(page, updated);
@@ -1094,7 +909,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
   }, [activeTool, editTextColor]);
 
-  // WebViewer disabled — using MuPDF backend + overlays instead
+  // Reload text blocks when page or scale changes while edit-text is active
+  useEffect(() => {
+    if (activeTool === "edit-text" && pdfDoc) {
+      loadNativeTextBlocks(currentPage);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTool, currentPage, scale, pdfDoc]);
 
   // Handle file drop / select — auto-converts non-PDF files to PDF via server
   const handleFile = useCallback(async (f: File) => {
@@ -1422,8 +1243,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   }, [activeTool, getCanvasPos, currentBrushPoints, dragPreview, currentPage, brushColor, brushSize, highlightColor, pushHistory]);
 
   const undo = useCallback(() => {
-    if (historyIndex < 0) return;
-    if (historyIndex === 0) { setAnnotations([]); setHistoryIndex(-1); return; }
+    if (historyIndex <= 0) { setAnnotations([]); return; }
     const prev = history[historyIndex - 1];
     setAnnotations(prev.annotations);
     setHistoryIndex(i => i - 1);
@@ -1641,9 +1461,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       width: Math.max(100, textInput.length * (textSize * 0.6)),
       height: textSize + 8, page: currentPage,
       color: textColor, fontSize: textSize, fontFamily: textFont,
-      fontWeight: textBold ? "bold" : "normal",
-      fontStyle: textItalic ? "italic" : "normal",
-      textDecoration: [textUnderline ? "underline" : "", textStrikethrough ? "line-through" : ""].filter(Boolean).join(" ") || "none",
     });
     setTextInput("");
     toast.success(t.editor_toast_image_added ?? "Text added. Drag it to position.");
@@ -2034,14 +1851,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         pages.forEach(p => merged.addPage(p));
       }
       const out = await merged.save();
-      // Reload the merged PDF into the editor instead of downloading
-      const mergedBytes = new Uint8Array(out);
-      const mergedBlob = new Blob([mergedBytes], { type: "application/pdf" });
-      const mergedFile = new File([mergedBlob], "merged.pdf", { type: "application/pdf" });
-      await loadPdf(mergedFile);
-      setAnnotations([]);
-      setAllNativeTextBlocks(new Map());
-      toast.success("PDFs fusionados correctamente", { id: "merge" });
+      const blob = new Blob([out.buffer as ArrayBuffer], { type: "application/pdf" });
+      await guardedDownload(blob, "merged.pdf", "merge");
     } catch {
       toast.error("Error al fusionar", { id: "merge" });
     }
@@ -2292,44 +2103,35 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     for (const block of editedBlocks) {
       try {
         const page = doc.getPage(block.page - 1);
-        const { width: pageW, height: pageH } = page.getSize();
+        const { width: pageW } = page.getSize();
+        // Use stored PDF point coordinates directly (no scale conversion needed)
+        const pdfX = block.pdfX;
+        const pdfY = block.pdfY;      // baseline y from bottom of page
         const fontSizePts = block.pdfFontSize;
-        const lineHeight = fontSizePts * 1.4;
-
-        // Cover original paragraph area with white rectangle
-        // block.y is canvas top, block.height is canvas height — convert to PDF coords
-        const coverTop = pageH - (block.y / scale);
-        const coverBottom = pageH - ((block.y + block.height) / scale);
-        const coverWidth = pageW - block.pdfX + 10;
+        // Cover original text with a wide white rectangle that extends to the right edge of the page
+        const coverWidth = pageW - pdfX + 10;
         page.drawRectangle({
-          x: block.pdfX - 4,
-          y: coverBottom - fontSizePts * 0.3,
+          x: pdfX - 4,
+          y: pdfY - fontSizePts * 0.35,
           width: coverWidth,
-          height: (coverTop - coverBottom) + fontSizePts * 0.6,
+          height: fontSizePts * 1.6,
           color: rgb(1, 1, 1),
           opacity: 1,
         });
-
-        // Draw replacement text line by line
+        // Draw replacement text at the original baseline position
         const hexColor = block.fontColor && block.fontColor.length === 7 ? block.fontColor : "#000000";
         const tr = parseInt(hexColor.slice(1, 3), 16) / 255;
         const tg = parseInt(hexColor.slice(3, 5), 16) / 255;
         const tb = parseInt(hexColor.slice(5, 7), 16) / 255;
-        const textColor = rgb(isNaN(tr) ? 0 : tr, isNaN(tg) ? 0 : tg, isNaN(tb) ? 0 : tb);
-        const editedLines = block.editedStr!.split("\n");
-        // Start from the top of the paragraph
-        const startY = coverTop - fontSizePts;
-        for (let i = 0; i < editedLines.length; i++) {
-          const safeText = editedLines[i].replace(/[^\x00-\xFF]/g, "?");
-          if (!safeText.trim()) continue;
-          page.drawText(safeText, {
-            x: block.pdfX,
-            y: startY - i * lineHeight,
-            size: fontSizePts,
-            font,
-            color: textColor,
-          });
-        }
+        // Encode text to remove characters unsupported by Helvetica
+        const safeText = block.editedStr!.replace(/[^\x00-\xFF]/g, "?");
+        page.drawText(safeText, {
+          x: pdfX,
+          y: pdfY,
+          size: fontSizePts,
+          font,
+          color: rgb(isNaN(tr) ? 0 : tr, isNaN(tg) ? 0 : tg, isNaN(tb) ? 0 : tb),
+        });
       } catch (err) {
         console.error("[buildAnnotatedPdf] Error applying text edit:", err, block);
       }
@@ -2716,7 +2518,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       <div className="flex flex-wrap gap-1.5 p-3 border-b" style={{ borderColor: "#f1f5f9", backgroundColor: "#f8fafc" }}>
         <button
           onClick={undo}
-          disabled={historyIndex < 0}
+          disabled={historyIndex <= 0}
           title={t.editor_undo_tooltip}
           className="flex-1 min-w-0 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-medium border transition-all disabled:opacity-40"
           style={{ borderColor: "#cbd5e1", color: "#1A3A5C", backgroundColor: "#fff" }}
@@ -2946,33 +2748,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</option>
                 ))}
               </select>
-            </div>
-            {/* Bold / Italic / Underline / Strikethrough */}
-            <div className="flex gap-1">
-              {[
-                { key: "bold", label: "B", state: isEditingExisting ? selectedTextAnn.fontWeight === "bold" : textBold, btnStyle: { fontWeight: "bold" } as React.CSSProperties,
-                  toggle: () => { const v = !textBold; setTextBold(v); if (isEditingExisting) updateSelectedTextProp({ fontWeight: v ? "bold" : "normal" }); } },
-                { key: "italic", label: "I", state: isEditingExisting ? selectedTextAnn.fontStyle === "italic" : textItalic, btnStyle: { fontStyle: "italic" } as React.CSSProperties,
-                  toggle: () => { const v = !textItalic; setTextItalic(v); if (isEditingExisting) updateSelectedTextProp({ fontStyle: v ? "italic" : "normal" }); } },
-                { key: "underline", label: "U", state: isEditingExisting ? selectedTextAnn.textDecoration?.includes("underline") : textUnderline, btnStyle: { textDecoration: "underline" } as React.CSSProperties,
-                  toggle: () => { const v = !textUnderline; setTextUnderline(v); if (isEditingExisting) updateSelectedTextProp({ textDecoration: v ? "underline" : "none" }); } },
-                { key: "strike", label: "S", state: isEditingExisting ? selectedTextAnn.textDecoration?.includes("line-through") : textStrikethrough, btnStyle: { textDecoration: "line-through" } as React.CSSProperties,
-                  toggle: () => { const v = !textStrikethrough; setTextStrikethrough(v); if (isEditingExisting) updateSelectedTextProp({ textDecoration: v ? "line-through" : "none" }); } },
-              ].map(btn => (
-                <button
-                  key={btn.key}
-                  onClick={btn.toggle}
-                  className="w-8 h-8 rounded border flex items-center justify-center text-sm transition-colors"
-                  style={{
-                    borderColor: btn.state ? "#1565C0" : "#cbd5e1",
-                    backgroundColor: btn.state ? "#f0f7ff" : "white",
-                    color: btn.state ? "#1565C0" : "#64748b",
-                    ...btn.btnStyle,
-                  }}
-                >
-                  {btn.label}
-                </button>
-              ))}
             </div>
             <div className="flex gap-2 items-center">
               <label className="text-xs" style={{ color: "#64748b" }}>Color</label>
@@ -3412,172 +3187,44 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             </div>
           </div>
         );
-      case "edit-text": {
-        const editBlock = editingBlockId ? nativeTextBlocks.find(b => b.id === editingBlockId) : null;
+      case "edit-text":
         return (
           <div className="flex flex-col">
             <div className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "#0f172a" }}>{t.editor_panel_edit_native_text}</h3>
-
-            {!editBlock && (
-              <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "rgba(21, 101, 192, 0.06)", color: "#0f172a" }}>
-                {t.editor_edittext_hint ?? "Click on any text block in the PDF to edit it in-place."}
-              </div>
-            )}
-
-            {/* Interactive properties panel — shown when a block is selected */}
-            {editBlock && (
-              <>
-                <div className="text-xs font-medium mb-1" style={{ color: "#1565C0" }}>
-                  {(t as any).editor_block_properties ?? "Block properties"}
-                </div>
-
-                {/* Font family selector */}
-                <div>
-                  <label className="text-[10px] block mb-0.5" style={{ color: "#94a3b8" }}>Font</label>
-                  <select
-                    value={editBlock.fontFamily || "sans-serif"}
-                    onChange={(e) => applyEditStyle("fontFamily", e.target.value)}
-                    className="w-full border rounded px-2 py-1 text-xs"
-                    style={{ borderColor: "#e2e8f0" }}
-                  >
-                    <option value="sans-serif">Sans-serif</option>
-                    <option value="serif">Serif</option>
-                    <option value="monospace">Monospace</option>
-                    <option value="Arial, sans-serif">Arial</option>
-                    <option value="'Times New Roman', serif">Times New Roman</option>
-                    <option value="'Courier New', monospace">Courier New</option>
-                    <option value="Georgia, serif">Georgia</option>
-                    <option value="Verdana, sans-serif">Verdana</option>
-                  </select>
-                </div>
-
-                {/* Font size + Color row */}
-                <div className="flex gap-2 items-end">
-                  <div className="flex-1">
-                    <label className="text-[10px] block mb-0.5" style={{ color: "#94a3b8" }}>Size (pt)</label>
-                    <input
-                      type="number"
-                      value={Math.round(editBlock.pdfFontSize)}
-                      onChange={(e) => {
-                        const newSize = Number(e.target.value);
-                        if (newSize > 0 && newSize <= 200) {
-                          const canvasSize = newSize * scale;
-                          applyEditStyle("fontSize", `${canvasSize}px`);
-                          // Update pdfFontSize in the block
-                          setAllNativeTextBlocks(prev => {
-                            const pageBlocks = prev.get(currentPage) ?? [];
-                            const updated = pageBlocks.map((b: NativeTextBlock) =>
-                              b.id === editingBlockId ? { ...b, pdfFontSize: newSize, fontSize: canvasSize } : b
-                            );
-                            const next = new Map(prev);
-                            next.set(currentPage, updated);
-                            return next;
-                          });
-                        }
-                      }}
-                      min={4} max={200}
-                      className="w-full border rounded px-2 py-1 text-xs"
-                      style={{ borderColor: "#e2e8f0" }}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] block mb-0.5" style={{ color: "#94a3b8" }}>Color</label>
-                    <input
-                      type="color"
-                      value={editBlock.originalColor || "#000000"}
-                      onChange={(e) => applyEditStyle("color", e.target.value)}
-                      className="w-8 h-8 rounded cursor-pointer border-0"
-                    />
-                  </div>
-                </div>
-
-                {/* Bold / Italic / Underline toggles */}
-                <div>
-                  <label className="text-[10px] block mb-1" style={{ color: "#94a3b8" }}>Style</label>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => {
-                        const newVal = editBlock.fontWeight === "bold" ? "normal" : "bold";
-                        applyEditStyle("fontWeight", newVal);
-                      }}
-                      className="w-8 h-8 rounded border flex items-center justify-center text-sm font-bold transition-colors"
-                      style={{
-                        borderColor: editBlock.fontWeight === "bold" ? "#1565C0" : "#e2e8f0",
-                        backgroundColor: editBlock.fontWeight === "bold" ? "#f0f7ff" : "white",
-                        color: editBlock.fontWeight === "bold" ? "#1565C0" : "#94a3b8",
-                      }}
-                    >B</button>
-                    <button
-                      onClick={() => {
-                        const newVal = editBlock.fontStyle === "italic" ? "normal" : "italic";
-                        applyEditStyle("fontStyle", newVal);
-                      }}
-                      className="w-8 h-8 rounded border flex items-center justify-center text-sm italic transition-colors"
-                      style={{
-                        borderColor: editBlock.fontStyle === "italic" ? "#1565C0" : "#e2e8f0",
-                        backgroundColor: editBlock.fontStyle === "italic" ? "#f0f7ff" : "white",
-                        color: editBlock.fontStyle === "italic" ? "#1565C0" : "#94a3b8",
-                      }}
-                    >I</button>
-                    <button
-                      onClick={() => {
-                        const el = editContentRef.current;
-                        if (el) {
-                          const current = el.style.textDecoration;
-                          el.style.textDecoration = current === "underline" ? "none" : "underline";
-                        }
-                      }}
-                      className="w-8 h-8 rounded border flex items-center justify-center text-sm underline transition-colors"
-                      style={{ borderColor: "#e2e8f0", color: "#94a3b8" }}
-                    >U</button>
-                  </div>
-                </div>
-
-                {/* Alignment */}
-                <div>
-                  <label className="text-[10px] block mb-1" style={{ color: "#94a3b8" }}>Align</label>
-                  <div className="flex gap-1">
-                    {(["left", "center", "right", "justify"] as const).map(align => (
-                      <button
-                        key={align}
-                        onClick={() => applyEditStyle("textAlign", align)}
-                        className="flex-1 h-7 rounded border flex items-center justify-center text-[10px] transition-colors"
-                        style={{ borderColor: "#e2e8f0", color: "#64748b" }}
-                        title={align}
-                      >
-                        {align === "left" ? "⫷" : align === "center" ? "≡" : align === "right" ? "⫸" : "⊞"}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="border-t pt-2 text-[10px]" style={{ borderColor: "#f1f5f9", color: "#94a3b8" }}>
-                  {(t as any).editor_edit_inline_tip ?? "Edit text in the blue box. Click outside to save."}
-                </div>
-              </>
-            )}
-
+            <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "rgba(27, 94, 32, 0.08)", color: "#0f172a" }}>
+              {t.editor_edittext_hint}
+            </div>
+            {/* Color picker for replacement text */}
+            <div className="flex gap-2 items-center">
+              <label className="text-xs" style={{ color: "#64748b" }}>{t.editor_panel_text_color}</label>
+              <input type="color" value={editTextColor} onChange={e => setEditTextColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0" />
+            </div>
             {/* Block count */}
             {nativeTextBlocks.length > 0 ? (
-              <div className="text-xs p-2 rounded" style={{ backgroundColor: "#f8fafc", color: "#64748b" }}>
-                {nativeTextBlocks.length} {t.editor_text_blocks_detected ?? "text blocks"}
+              <div className="text-xs p-2 rounded" style={{ backgroundColor: "#ffffff", color: "#64748b" }}>
+                {nativeTextBlocks.length} {t.editor_text_blocks_detected}
                 {nativeTextBlocks.filter(b => b.editedStr !== undefined).length > 0 && (
-                  <span className="ml-1 font-semibold" style={{ color: "#1565C0" }}>
-                    ({nativeTextBlocks.filter(b => b.editedStr !== undefined).length} {t.editor_edited_label ?? "edited"})
+                  <span className="ml-1 font-semibold" style={{ color: "#1E88E5" }}>
+                    ({nativeTextBlocks.filter(b => b.editedStr !== undefined).length} {t.editor_edited_label})
                   </span>
                 )}
               </div>
             ) : (
               <div className="text-xs p-3 rounded-lg" style={{ backgroundColor: "#FFF3E0", color: "#E65100" }}>
-                <p className="font-semibold mb-1">{(t as any).editor_image_no_text_title ?? "No editable text"}</p>
-                <p>{(t as any).editor_image_no_text_desc ?? "This page may be a scanned image."}</p>
+                <p className="font-semibold mb-1">{(t as any).editor_image_no_text_title ?? "This page has no editable text"}</p>
+                <p>{(t as any).editor_image_no_text_desc ?? "This page may be a scanned image. Use 'Add Text' to place new text on top."}</p>
+              </div>
+            )}
+            {/* Instruction when a block is selected */}
+            {editingBlockId && (
+              <div className="p-2 rounded text-xs" style={{ backgroundColor: "rgba(27, 94, 32, 0.1)", color: "#0f172a" }}>
+                {t.editor_panel_edit_inline_hint}
               </div>
             )}
             </div>
           </div>
         );
-      }
       case "move": {
         const movePageAnns = annotations.filter(a => a.page === currentPage && a.type !== "drawing" && a.type !== "eraser");
         const selectedAnn = selectedId ? movePageAnns.find(a => a.id === selectedId) : null;
@@ -3669,57 +3316,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             </button>
             <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "#ffffff", color: "#64748b" }}>
               💡 {t.editor_panel_each_page_file}
-            </div>
-          </div>
-        );
-      }
-      case "convert": {
-        const convertOptions = [
-          { label: "Word (.docx)", fmt: "docx" as const, icon: FileText, desc: t.editor_panel_convert_desc_word ?? "Convert PDF to editable Word document" },
-          { label: "Excel (.xlsx)", fmt: "xlsx" as const, icon: FileText, desc: t.editor_panel_convert_desc_excel ?? "Extract tables to Excel spreadsheet" },
-          { label: "PowerPoint (.pptx)", fmt: "pptx" as const, icon: FileText, desc: t.editor_panel_convert_desc_ppt ?? "Convert PDF slides to PowerPoint" },
-          { label: "JPG", fmt: "jpg" as const, icon: ImageIcon, desc: (t as any).editor_panel_convert_desc_jpg ?? "Export pages as JPG images" },
-          { label: "PNG", fmt: "png" as const, icon: ImageIcon, desc: (t as any).editor_panel_convert_desc_png ?? "Export pages as PNG images" },
-        ];
-        return (
-          <div className="p-4 flex flex-col gap-3">
-            <h3 className="font-semibold text-sm" style={{ color: "#0f172a" }}>{(t as any).editor_convert ?? "Convert PDF"}</h3>
-            <p className="text-xs" style={{ color: "#64748b" }}>{(t as any).editor_convert_desc ?? "Choose the format to convert your PDF to:"}</p>
-            {isExporting && (
-              <div className="flex flex-col gap-1.5">
-                <div className="flex justify-between text-xs" style={{ color: "#64748b" }}>
-                  <span>{exportProgress < 100 ? (t.editor_panel_exporting ?? "Converting...") : "Done!"}</span>
-                  <span>{Math.round(exportProgress)}%</span>
-                </div>
-                <div className="w-full rounded-full overflow-hidden" style={{ height: 6, backgroundColor: "#f1f5f9" }}>
-                  <div className="h-full rounded-full transition-all duration-200" style={{ width: `${exportProgress}%`, backgroundColor: exportProgress === 100 ? "#42A5F5" : "#1565C0" }} />
-                </div>
-              </div>
-            )}
-            <div className="flex flex-col gap-2">
-              {convertOptions.map(opt => (
-                <button
-                  key={opt.fmt}
-                  onClick={() => {
-                    if (opt.fmt === "jpg" || opt.fmt === "png") {
-                      convertAllToImages(opt.fmt);
-                    } else {
-                      exportPdf(opt.fmt);
-                    }
-                  }}
-                  disabled={!pdfBytes || isExporting}
-                  className="flex items-center gap-3 p-3 rounded-lg border text-left transition-all hover:shadow-sm disabled:opacity-50"
-                  style={{ borderColor: "#e2e8f0" }}
-                >
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#f0f7ff" }}>
-                    <opt.icon className="w-4 h-4" style={{ color: "#1565C0" }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium" style={{ color: "#0f172a" }}>PDF → {opt.label}</p>
-                    <p className="text-[11px] truncate" style={{ color: "#94a3b8" }}>{opt.desc}</p>
-                  </div>
-                </button>
-              ))}
             </div>
           </div>
         );
@@ -3901,7 +3497,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       {/* ── TOP TOOLBAR — desktop only ── */}
       <div className="hidden md:flex items-center gap-1 px-3 py-1.5 border-b min-w-0" style={{ backgroundColor: "#FFFFFF", borderColor: "#f1f5f9" }}>
         {/* Undo / Redo */}
-        <button title={t.editor_undo + " (Ctrl+Z)"} onClick={undo} disabled={historyIndex < 0} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
+        <button title={t.editor_undo + " (Ctrl+Z)"} onClick={undo} disabled={historyIndex <= 0} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
           <Undo2 className="w-4 h-4" style={{ color: "#1A3A5C" }} />
         </button>
         <button title={t.editor_redo + " (Ctrl+Y)"} onClick={redo} disabled={historyIndex >= history.length - 1} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
@@ -3923,7 +3519,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             { id: "find" as ToolName, icon: Search, label: t.editor_find },
             { id: "protect" as ToolName, icon: Shield, label: t.editor_protect },
             { id: "compress" as ToolName, icon: Minimize2, label: t.editor_compress },
-            { id: "convert" as ToolName, icon: RefreshCw, label: (t as any).editor_convert ?? "Convert" },
             { id: "merge" as ToolName, icon: Layers, label: (t as any).editor_merge ?? "Merge" },
             { id: "split" as ToolName, icon: Scissors, label: (t as any).editor_split ?? "Split" },
             { id: "move" as ToolName, icon: Move, label: t.editor_move },
@@ -4258,9 +3853,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                             fontSize: ann.fontSize ?? 14,
                             color: ann.color ?? "#000",
                             fontFamily: ann.fontFamily ?? "Arial, sans-serif",
-                            fontWeight: ann.fontWeight ?? "normal",
-                            fontStyle: ann.fontStyle ?? "normal",
-                            textDecoration: ann.textDecoration ?? "none",
                             whiteSpace: "pre-wrap",
                             display: "block",
                             lineHeight: 1.3,
@@ -4279,7 +3871,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         />
                       ) : (
                         <span
-                          style={{ fontSize: ann.fontSize ?? 14, color: ann.color ?? "#000", fontFamily: ann.fontFamily ?? "Arial, sans-serif", fontWeight: ann.fontWeight ?? "normal", fontStyle: ann.fontStyle ?? "normal", textDecoration: ann.textDecoration ?? "none", whiteSpace: "pre-wrap", display: "block", lineHeight: 1.2, cursor: "move", minHeight: "1em" }}
+                          style={{ fontSize: ann.fontSize ?? 14, color: ann.color ?? "#000", fontFamily: ann.fontFamily ?? "Arial, sans-serif", whiteSpace: "pre-wrap", display: "block", lineHeight: 1.2, cursor: "move", minHeight: "1em" }}
                           onDoubleClick={(e) => {
                             e.stopPropagation();
                             setEditingTextId(ann.id);
@@ -4381,108 +3973,192 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   </div>
                 ))}
               </div>
-              {/* No overlay needed — edited text is rendered directly on the canvas */}
-              {/* Native text blocks overlay — edit-text tool active */}
-              {activeTool === "edit-text" && (console.log("[edit-text] rendering", nativeTextBlocks.length, "blocks"), nativeTextBlocks).map(block => {
-                const isEditing = editingBlockId === block.id;
-                return isEditing ? (
-                  /* WYSIWYG contentEditable overlay — positioned exactly over the text */
-                  <div
-                    key={block.id}
-                    contentEditable
-                    suppressContentEditableWarning
-                    spellCheck={false}
-                    style={{
-                      position: "absolute",
-                      left: block.x,
-                      top: block.y,
-                      width: block.width,
-                      maxWidth: block.width,
-                      minHeight: block.height,
-                      cursor: "text",
-                      border: "2px solid #1565C0",
-                      backgroundColor: "rgba(255,255,255,0.97)",
-                      borderRadius: 2,
-                      zIndex: 30,
-                      boxSizing: "border-box",
-                      padding: "1px 2px",
-                      fontSize: block.fontSize,
-                      fontFamily: `"${block.pdfFontName}", ${block.fontFamily || "sans-serif"}`,
-                      fontWeight: block.fontWeight || "normal",
-                      fontStyle: block.fontStyle || "normal",
-                      color: block.originalColor || "#000",
-                      lineHeight: block.lineHeight ? `${block.lineHeight}px` : "1.4",
-                      whiteSpace: "pre-wrap",
-                      wordWrap: "break-word",
-                      overflowWrap: "break-word",
-                      outline: "none",
-                      boxShadow: "0 2px 12px rgba(21,101,192,0.15)",
-                    }}
-                    onBlur={(e) => {
-                      const el = e.currentTarget as HTMLElement;
-                      const newText = el.innerText;
-                      const savedOriginal = el.dataset.originalText ?? "";
-                      // Only save if text actually changed from what was loaded
-                      const normalize = (s: string) => s.replace(/\s+/g, " ").trim();
-                      if (normalize(newText) !== normalize(savedOriginal)) {
-                        setAllNativeTextBlocks(prev => {
-                          const pageBlocks = prev.get(block.page) ?? [];
-                          const updated = pageBlocks.map((b: NativeTextBlock) =>
-                            b.id === block.id ? { ...b, editedStr: newText } : b
-                          );
-                          const next = new Map(prev);
-                          next.set(block.page, updated);
-                          return next;
-                        });
-                        toast.success((t as any).editor_text_saved ?? "Text saved");
-                        setTimeout(() => bakeTextEditsIntoPdf(), 100);
-                      }
-                      setEditingBlockId(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Escape") (e.currentTarget as HTMLElement).blur();
-                      e.stopPropagation();
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    ref={(el) => {
-                      editContentRef.current = el;
-                      if (el && !el.dataset.init) {
-                        el.dataset.init = "1";
-                        const textContent = block.editedStr ?? block.str;
-                        el.innerText = textContent;
-                        // Store the original text for comparison on blur
-                        el.dataset.originalText = textContent;
-                        el.focus();
-                        const range = document.createRange();
-                        range.selectNodeContents(el);
-                        range.collapse(false);
-                        const sel = window.getSelection();
-                        sel?.removeAllRanges();
-                        sel?.addRange(range);
-                      }
-                    }}
-                  />
-                ) : (
-                  /* Not editing: thin border, pointer-events none */
-                  <div
-                    key={block.id}
-                    style={{
-                      position: "absolute",
-                      left: block.x,
-                      top: block.y,
-                      width: block.width,
-                      height: block.height,
-                      border: "1px dashed rgba(21, 101, 192, 0.25)",
-                      backgroundColor: "transparent",
-                      borderRadius: 2,
-                      zIndex: 25,
-                      boxSizing: "border-box",
-                      pointerEvents: "none",
-                    }}
-                  />
-                );
-              })}
+              {/* Edited text blocks — always visible to cover original PDF text */}
+              {activeTool !== "edit-text" && nativeTextBlocks.filter(b => b.editedStr !== undefined).map(block => (
+                <div
+                  key={`edited-${block.id}`}
+                  style={{
+                    position: "absolute",
+                    left: block.x,
+                    top: block.y,
+                    minWidth: block.width,
+                    minHeight: block.height,
+                    backgroundColor: "rgba(255,255,255,1)",
+                    display: "flex",
+                    alignItems: "center",
+                    zIndex: 5,
+                    pointerEvents: "none",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <span style={{
+                    fontSize: block.fontSize,
+                    fontFamily: block.fontFamily || "sans-serif",
+                    color: block.fontColor || "#000",
+                    whiteSpace: "nowrap",
+                    lineHeight: 1,
+                  }}>
+                    {block.editedStr}
+                  </span>
+                </div>
+              ))}
+              {/* Native text blocks overlay — interactive when edit-text tool is active */}
+              {activeTool === "edit-text" && nativeTextBlocks.map(block => (
+                <div
+                  key={block.id}
+                  style={{
+                    position: "absolute",
+                    left: block.x,
+                    top: block.y,
+                    width: block.width,
+                    height: block.height,
+                    cursor: "text",
+                    border: editingBlockId === block.id
+                      ? "2px solid #1565C0"
+                      : block.editedStr !== undefined
+                        ? "2px dashed #1E88E5"
+                        : "1.5px dashed rgba(27, 94, 32, 0.6)",
+                    backgroundColor: editingBlockId === block.id
+                      ? "rgba(255,255,255,0.95)"
+                      : block.editedStr !== undefined
+                        ? "rgba(255,255,255,0.95)"
+                        : "transparent",
+                    borderRadius: 2,
+                    zIndex: editingBlockId === block.id ? 30 : 25,
+                    boxSizing: "border-box",
+                    overflow: editingBlockId === block.id ? "visible" : "hidden",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (editingBlockId !== block.id) {
+                      setEditingBlockId(block.id);
+                      setEditingBlockText(block.editedStr ?? block.str);
+                      setShowMobilePanel(true);
+                    }
+                  }}
+                  title={block.editedStr !== undefined ? `Editado: "${block.editedStr}"` : `Clic para editar: "${block.str}"`}
+                >
+                  {/* Inline editor: floating popup above the block */}
+                  {editingBlockId === block.id ? (
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: 0,
+                        top: block.height + 4,
+                        minWidth: Math.max(block.width, 200),
+                        background: "white",
+                        border: "2px solid #1565C0",
+                        borderRadius: 6,
+                        padding: 8,
+                        zIndex: 100,
+                        boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 6,
+                      }}
+                      onMouseDown={e => e.stopPropagation()}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <input
+                        autoFocus
+                        value={editingBlockText}
+                        onChange={e => setEditingBlockText(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === "Enter") {
+                            setAllNativeTextBlocks(prev => {
+                              const pageBlocks = prev.get(block.page) ?? [];
+                              const updated = pageBlocks.map((b: NativeTextBlock) =>
+                                b.id === block.id
+                                  ? { ...b, editedStr: editingBlockText, fontColor: editTextColor }
+                                  : b
+                              );
+                              const next = new Map(prev);
+                              next.set(block.page, updated);
+                              return next;
+                            });
+                            setEditingBlockId(null);
+                            toast.success("Texto actualizado");
+                          } else if (e.key === "Escape") {
+                            setEditingBlockId(null);
+                          }
+                          e.stopPropagation();
+                        }}
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                          width: "100%",
+                          fontSize: 13,
+                          color: editTextColor,
+                          background: "#f8f9ff",
+                          border: "1px solid #cbd5e1",
+                          borderRadius: 4,
+                          outline: "none",
+                          padding: "4px 6px",
+                          fontFamily: "Helvetica, Arial, sans-serif",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                      <div style={{ display: "flex", gap: 4 }}>
+                        <button
+                          onMouseDown={e => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setAllNativeTextBlocks(prev => {
+                              const pageBlocks = prev.get(block.page) ?? [];
+                              const updated = pageBlocks.map((b: NativeTextBlock) =>
+                                b.id === block.id
+                                  ? { ...b, editedStr: editingBlockText, fontColor: editTextColor }
+                                  : b
+                              );
+                              const next = new Map(prev);
+                              next.set(block.page, updated);
+                              return next;
+                            });
+                            setEditingBlockId(null);
+                            toast.success("Texto actualizado");
+                          }}
+                          style={{
+                            flex: 1, padding: "3px 0", borderRadius: 4,
+                            background: "#1565C0", color: "white",
+                            border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
+                          }}
+                        >
+                          {t.editor_save_btn}
+                        </button>
+                        <button
+                          onMouseDown={e => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setEditingBlockId(null);
+                          }}
+                          style={{
+                            flex: 1, padding: "3px 0", borderRadius: 4,
+                            background: "transparent", color: "#64748b",
+                            border: "1px solid #cbd5e1", cursor: "pointer", fontSize: 12,
+                          }}
+                        >
+                          {t.editor_cancel_btn}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Show edited text preview or original text */
+                    <span style={{
+                      fontSize: Math.min(block.fontSize, 12),
+                      color: block.editedStr !== undefined ? (block.fontColor ?? editTextColor) : "transparent",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      padding: "0 2px",
+                      fontWeight: 500,
+                      width: "100%",
+                    }}>
+                      {block.editedStr ?? block.str}
+                    </span>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -4552,7 +4228,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             { id: "find" as ToolName, icon: Search, label: t.editor_find },
             { id: "protect" as ToolName, icon: Shield, label: t.editor_protect },
             { id: "compress" as ToolName, icon: Minimize2, label: t.editor_compress },
-            { id: "convert" as ToolName, icon: RefreshCw, label: (t as any).editor_convert ?? "Convert" },
             { id: "merge" as ToolName, icon: Layers, label: (t as any).editor_merge ?? "Merge" },
             { id: "split" as ToolName, icon: Scissors, label: (t as any).editor_split ?? "Split" },
           ].map(({ id, icon: Icon, label }) => (
