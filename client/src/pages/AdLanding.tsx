@@ -49,6 +49,7 @@ export const AD_PAGES: AdPageDef[] = [
   },
   {
     slug: "compress-pdf-online",
+    editorTool: "compress",
     title:     { es: "Comprimir", en: "Compress", fr: "Compresser", de: "Komprimieren", pt: "Comprimir", it: "Comprimi", nl: "Comprimeer", pl: "Kompresuj", ru: "Сжать", zh: "压缩" },
     highlight: { es: "PDF Online", en: "PDF Online", fr: "PDF en ligne", de: "PDF Online", pt: "PDF Online", it: "PDF Online", nl: "PDF Online", pl: "PDF Online", ru: "PDF онлайн", zh: "PDF 在线" },
     subtitle:  { es: "Reduce el tamaño de tus PDFs hasta un 70% sin perder calidad — ideal para email", en: "Reduce your PDF file size by up to 70% without losing quality — perfect for email", fr: "Réduisez la taille de vos PDF jusqu'à 70% sans perte de qualité", de: "Reduzieren Sie die PDF-Dateigröße um bis zu 70% ohne Qualitätsverlust", pt: "Reduza o tamanho dos seus PDFs em até 70% sem perder qualidade", it: "Riduci le dimensioni dei tuoi PDF fino al 70% senza perdere qualità", nl: "Verklein uw PDF-bestand tot 70% zonder kwaliteitsverlies", pl: "Zmniejsz rozmiar PDF nawet o 70% bez utraty jakości", ru: "Уменьшите размер PDF до 70% без потери качества", zh: "将PDF文件大小缩小高达70%，不损失质量" },
