@@ -4081,33 +4081,31 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       onMouseDown={e => e.stopPropagation()}
                       onClick={e => e.stopPropagation()}
                     >
-                      <input
+                      <textarea
                         autoFocus
                         value={editingBlockText}
                         onChange={e => setEditingBlockText(e.target.value)}
+                        onInput={e => {
+                          const el = e.currentTarget;
+                          el.style.height = "auto";
+                          el.style.height = el.scrollHeight + "px";
+                        }}
                         onKeyDown={e => {
-                          if (e.key === "Enter") {
-                            setAllNativeTextBlocks(prev => {
-                              const pageBlocks = prev.get(block.page) ?? [];
-                              const updated = pageBlocks.map((b: NativeTextBlock) =>
-                                b.id === block.id
-                                  ? { ...b, editedStr: editingBlockText, fontColor: editTextColor }
-                                  : b
-                              );
-                              const next = new Map(prev);
-                              next.set(block.page, updated);
-                              return next;
-                            });
-                            setEditingBlockId(null);
-                            toast.success("Texto actualizado");
-                          } else if (e.key === "Escape") {
+                          if (e.key === "Escape") {
                             setEditingBlockId(null);
                           }
                           e.stopPropagation();
                         }}
                         onClick={e => e.stopPropagation()}
+                        ref={el => {
+                          if (el) {
+                            el.style.height = "auto";
+                            el.style.height = el.scrollHeight + "px";
+                          }
+                        }}
                         style={{
                           width: "100%",
+                          minHeight: Math.max(block.height, 30),
                           fontSize: 13,
                           color: editTextColor,
                           background: "#f8f9ff",
@@ -4117,6 +4115,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                           padding: "4px 6px",
                           fontFamily: "Helvetica, Arial, sans-serif",
                           boxSizing: "border-box",
+                          overflow: "hidden",
+                          resize: "none",
                         }}
                       />
                       <div style={{ display: "flex", gap: 4 }}>
