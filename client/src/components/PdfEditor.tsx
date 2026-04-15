@@ -4098,112 +4098,61 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   }}
                   title={block.editedStr !== undefined ? `Editado: "${block.editedStr}"` : `Clic para editar: "${block.str}"`}
                 >
-                  {/* Inline editor: floating popup above the block */}
+                  {/* Inline editor: textarea directly over the block text */}
                   {editingBlockId === block.id ? (
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: 0,
-                        top: block.height + 4,
-                        minWidth: Math.max(block.width, 200),
-                        background: "white",
-                        border: "2px solid #1565C0",
-                        borderRadius: 6,
-                        padding: 8,
-                        zIndex: 100,
-                        boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 6,
+                    <textarea
+                      autoFocus
+                      value={editingBlockText}
+                      onChange={e => setEditingBlockText(e.target.value)}
+                      onBlur={() => {
+                        // Auto-save on blur
+                        const original = block.editedStr ?? block.str;
+                        const normalize = (s: string) => s.replace(/\s+/g, " ").trim();
+                        if (normalize(editingBlockText) !== normalize(original)) {
+                          setAllNativeTextBlocks(prev => {
+                            const pageBlocks = prev.get(block.page) ?? [];
+                            const updated = pageBlocks.map((b: NativeTextBlock) =>
+                              b.id === block.id
+                                ? { ...b, editedStr: editingBlockText, fontColor: editTextColor }
+                                : b
+                            );
+                            const next = new Map(prev);
+                            next.set(block.page, updated);
+                            return next;
+                          });
+                          toast.success("Texto actualizado");
+                        }
+                        setEditingBlockId(null);
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === "Escape") setEditingBlockId(null);
+                        e.stopPropagation();
                       }}
                       onMouseDown={e => e.stopPropagation()}
                       onClick={e => e.stopPropagation()}
-                    >
-                      <textarea
-                        autoFocus
-                        value={editingBlockText}
-                        onChange={e => setEditingBlockText(e.target.value)}
-                        onInput={e => {
-                          const el = e.currentTarget;
-                          el.style.height = "auto";
-                          el.style.height = el.scrollHeight + "px";
-                        }}
-                        onKeyDown={e => {
-                          if (e.key === "Escape") {
-                            setEditingBlockId(null);
-                          }
-                          e.stopPropagation();
-                        }}
-                        onClick={e => e.stopPropagation()}
-                        ref={el => {
-                          if (el) {
-                            el.style.height = "auto";
-                            el.style.height = el.scrollHeight + "px";
-                          }
-                        }}
-                        style={{
-                          width: block.width,
-                          maxWidth: block.width,
-                          minHeight: Math.max(block.height, 30),
-                          fontSize: 13,
-                          color: editTextColor,
-                          background: "#f8f9ff",
-                          border: "1px solid #cbd5e1",
-                          borderRadius: 4,
-                          outline: "none",
-                          padding: "4px 6px",
-                          fontFamily: "Helvetica, Arial, sans-serif",
-                          boxSizing: "border-box",
-                          overflow: "hidden",
-                          overflowX: "hidden",
-                          resize: "none",
-                          whiteSpace: "pre-wrap",
-                          wordWrap: "break-word",
-                        }}
-                      />
-                      <div style={{ display: "flex", gap: 4 }}>
-                        <button
-                          onMouseDown={e => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setAllNativeTextBlocks(prev => {
-                              const pageBlocks = prev.get(block.page) ?? [];
-                              const updated = pageBlocks.map((b: NativeTextBlock) =>
-                                b.id === block.id
-                                  ? { ...b, editedStr: editingBlockText, fontColor: editTextColor }
-                                  : b
-                              );
-                              const next = new Map(prev);
-                              next.set(block.page, updated);
-                              return next;
-                            });
-                            setEditingBlockId(null);
-                            toast.success("Texto actualizado");
-                          }}
-                          style={{
-                            flex: 1, padding: "3px 0", borderRadius: 4,
-                            background: "#1565C0", color: "white",
-                            border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
-                          }}
-                        >
-                          {t.editor_save_btn}
-                        </button>
-                        <button
-                          onMouseDown={e => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setEditingBlockId(null);
-                          }}
-                          style={{
-                            flex: 1, padding: "3px 0", borderRadius: 4,
-                            background: "transparent", color: "#64748b",
-                            border: "1px solid #cbd5e1", cursor: "pointer", fontSize: 12,
-                          }}
-                        >
-                          {t.editor_cancel_btn}
-                        </button>
-                      </div>
-                    </div>
+                      style={{
+                        position: "absolute",
+                        left: 0,
+                        top: 0,
+                        width: "100%",
+                        minHeight: block.height,
+                        fontSize: block.fontSize,
+                        fontFamily: block.fontFamily || "sans-serif",
+                        color: editTextColor,
+                        background: "rgba(255,255,255,0.97)",
+                        border: "none",
+                        outline: "none",
+                        padding: 0,
+                        margin: 0,
+                        boxSizing: "border-box",
+                        overflow: "hidden",
+                        resize: "both",
+                        whiteSpace: "pre-wrap",
+                        wordWrap: "break-word",
+                        lineHeight: 1.35,
+                        zIndex: 31,
+                      }}
+                    />
                   ) : (
                     /* Show edited text preview or original text */
                     <span style={{
