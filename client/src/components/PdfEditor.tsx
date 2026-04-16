@@ -131,6 +131,10 @@ interface Annotation {
   color?: string;
   fontSize?: number;
   fontFamily?: string;
+  fontWeight?: string;
+  fontStyle?: string;
+  textDecoration?: string;
+  textAlign?: string;
   opacity?: number;
   rotation?: number;
   points?: { x: number; y: number }[];
@@ -838,9 +842,28 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const vp = page.getViewport({ scale });
     const content = await page.getTextContent();
     const styles = (content as any).styles ?? {};
-    // Debug: log font styles to understand available data
-    if (Object.keys(styles).length > 0) console.log("[PDF fonts]", JSON.stringify(styles, null, 2));
     const pdfPageHeight = vp.height / scale;
+
+    // Try to extract real font names from PDF.js internal font objects
+    const realFontNames: Record<string, string> = {};
+    try {
+      const opList = await page.getOperatorList();
+      for (let i = 0; i < opList.fnArray.length; i++) {
+        // OPS.setFont = 1 (dependency operator that loads fonts)
+        if (opList.fnArray[i] === 1) { // setFont
+          const fontRef = opList.argsArray[i]?.[0];
+          if (fontRef && typeof fontRef === "string") {
+            try {
+              const fontObj = (page.commonObjs as any).has(fontRef) ? (page.commonObjs as any).get(fontRef) : null;
+              if (fontObj?.name) realFontNames[fontRef] = fontObj.name;
+              else if (fontObj?.loadedName) realFontNames[fontRef] = fontObj.loadedName;
+            } catch {}
+          }
+        }
+      }
+      if (Object.keys(realFontNames).length > 0) console.log("[PDF real fonts]", realFontNames);
+    } catch {}
+
 
     // Step 1: Parse items into line-level entries
     interface LineItem {
@@ -863,25 +886,66 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const pdfFontSize = Math.sqrt(a * a + b * b);
       const pdfWidth = item.width ?? item.str.length * pdfFontSize * 0.6;
       const rawFamily = styles[item.fontName]?.fontFamily || "sans-serif";
-      const pdfFontName = item.fontName || "";
-      // Detect bold/italic from PDF font name (e.g. "TimesNewRomanPS-BoldMT", "Arial-ItalicMT")
+      // Get real font name — strip subset prefix (e.g. "BCDEEE+Calibri-Bold" → "Calibri-Bold")
+      const rawRealName = realFontNames[item.fontName] || item.fontName || "";
+      const pdfFontName = rawRealName.includes("+") ? rawRealName.split("+").pop()! : rawRealName;
+      // Detect bold/italic from real font name
       const nameLC = pdfFontName.toLowerCase();
       const fontWeight = (nameLC.includes("bold") || nameLC.includes("black") || nameLC.includes("heavy")) ? "bold" : "normal";
       const fontStyle = (nameLC.includes("italic") || nameLC.includes("oblique")) ? "italic" : "normal";
-      // Map PDF font names to CSS equivalents
+      // Map real PDF font names to CSS equivalents
       let fontFamily = rawFamily;
-      if (nameLC.includes("calibri")) fontFamily = "Calibri, sans-serif";
-      else if (nameLC.includes("arial") || nameLC.includes("helvetica")) fontFamily = "Arial, Helvetica, sans-serif";
-      else if (nameLC.includes("verdana")) fontFamily = "Verdana, sans-serif";
-      else if (nameLC.includes("tahoma")) fontFamily = "Tahoma, sans-serif";
-      else if (nameLC.includes("trebuchet")) fontFamily = "Trebuchet MS, sans-serif";
-      else if (nameLC.includes("georgia")) fontFamily = "Georgia, serif";
-      else if (nameLC.includes("palatino")) fontFamily = "Palatino, serif";
-      else if (nameLC.includes("garamond")) fontFamily = "Garamond, serif";
-      else if (nameLC.includes("times")) fontFamily = "Times New Roman, serif";
-      else if (nameLC.includes("courier") || nameLC.includes("mono")) fontFamily = "Courier New, monospace";
-      else if (nameLC.includes("sans")) fontFamily = "Arial, Helvetica, sans-serif";
-      else if (nameLC.includes("serif")) fontFamily = "Times New Roman, serif";
+      const fontMap: [string, string][] = [
+        ["arialnarrow", "Arial Narrow, sans-serif"],
+        ["arial", "Arial, Helvetica, sans-serif"],
+        ["arimo", "Arimo, sans-serif"],
+        ["bookantiqua", "Book Antiqua, serif"],
+        ["calibri", "Calibri, sans-serif"],
+        ["cambria", "Cambria, serif"],
+        ["carlito", "Carlito, sans-serif"],
+        ["centurygothic", "Century Gothic, sans-serif"],
+        ["constantia", "Constantia, serif"],
+        ["couriernew", "Courier New, monospace"],
+        ["courier", "Courier, monospace"],
+        ["dejavusans", "DejaVu Sans, sans-serif"],
+        ["dejavuserif", "DejaVu Serif, serif"],
+        ["didot", "Didot, serif"],
+        ["franklingothic", "Franklin Gothic, sans-serif"],
+        ["garamond", "Garamond, serif"],
+        ["georgia", "Georgia, serif"],
+        ["helvetica", "Helvetica, Arial, sans-serif"],
+        ["inter", "Inter, sans-serif"],
+        ["lato", "Lato, sans-serif"],
+        ["liberationsans", "Liberation Sans, sans-serif"],
+        ["liberationserif", "Liberation Serif, serif"],
+        ["lucidasansunicode", "Lucida Sans Unicode, sans-serif"],
+        ["lucida", "Lucida Sans Unicode, sans-serif"],
+        ["notosans", "Noto Sans, sans-serif"],
+        ["opensans", "Open Sans, sans-serif"],
+        ["palatino", "Palatino Linotype, serif"],
+        ["poppins", "Poppins, sans-serif"],
+        ["roboto", "Roboto, sans-serif"],
+        ["rockwell", "Rockwell Nova, serif"],
+        ["segoeui", "Segoe UI, sans-serif"],
+        ["segoe", "Segoe UI, sans-serif"],
+        ["tahoma", "Tahoma, sans-serif"],
+        ["timesnewroman", "Times New Roman, serif"],
+        ["timesroman", "Times-Roman, serif"],
+        ["times", "Times New Roman, serif"],
+        ["trebuchet", "Trebuchet MS, sans-serif"],
+        ["verdana", "Verdana, sans-serif"],
+        ["consolas", "Consolas, monospace"],
+        ["mono", "Courier New, monospace"],
+        ["comicsans", "Comic Sans MS, cursive"],
+        ["impact", "Impact, sans-serif"],
+      ];
+      const nameNoSpaces = nameLC.replace(/[-_\s]/g, "");
+      for (const [key, css] of fontMap) {
+        if (nameNoSpaces.includes(key)) { fontFamily = css; break; }
+      }
+      // Fallback: if still generic, use rawFamily
+      if (fontFamily === "sans-serif") fontFamily = "Arial, Helvetica, sans-serif";
+      else if (fontFamily === "serif") fontFamily = "Times New Roman, serif";
       const canvasX = e * scale;
       const canvasY = (pdfPageHeight - f) * scale - pdfFontSize * scale;
       const canvasW = pdfWidth * scale;
@@ -2920,50 +2984,120 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               </div>
             )}
 
-            {/* Font selector */}
-            <div>
-              <label className="text-xs block mb-1" style={{ color: "#64748b" }}>Fuente</label>
-              <select
-                value={isEditingExisting ? (selectedTextAnn.fontFamily ?? textFont) : textFont}
-                onChange={e => {
-                  const val = e.target.value;
-                  setTextFont(val);
-                  if (isEditingExisting) updateSelectedTextProp({ fontFamily: val });
-                }}
-                className="w-full border rounded px-2 py-1.5 text-xs"
-                style={{ borderColor: "#cbd5e1", fontFamily: isEditingExisting ? (selectedTextAnn.fontFamily ?? textFont) : textFont }}
-              >
-                {FONT_OPTIONS.map(f => (
-                  <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-2 items-center">
-              <label className="text-xs" style={{ color: "#64748b" }}>Color</label>
-              <input
-                type="color"
-                value={isEditingExisting ? (selectedTextAnn.color ?? textColor) : textColor}
-                onChange={e => {
-                  const val = e.target.value;
-                  setTextColor(val);
-                  if (isEditingExisting) updateSelectedTextProp({ color: val });
-                }}
-                className="w-8 h-8 rounded cursor-pointer border-0"
-              />
-              <label className="text-xs ml-2" style={{ color: "#64748b" }}>Tamaño</label>
-              <input
-                type="number"
-                value={isEditingExisting ? (selectedTextAnn.fontSize ?? textSize) : textSize}
-                onChange={e => {
-                  const val = Number(e.target.value);
-                  setTextSize(val);
-                  if (isEditingExisting) updateSelectedTextProp({ fontSize: val, height: Math.max(val + 16, (selectedTextAnn.text ?? "").split("\n").length * (val * 1.3) + 16) });
-                }}
-                min={8} max={120}
-                className="w-14 border rounded px-1 py-0.5 text-xs"
-                style={{ borderColor: "#cbd5e1" }}
-              />
-            </div>
+            {/* Font, Size, Style, Align, Color — same toolbar as Edit Text */}
+            {(() => {
+              const curFont = isEditingExisting ? (selectedTextAnn.fontFamily ?? textFont) : textFont;
+              const curColor = isEditingExisting ? (selectedTextAnn.color ?? textColor) : textColor;
+              const curSize = isEditingExisting ? (selectedTextAnn.fontSize ?? textSize) : textSize;
+              const addFonts = [
+                "Arial", "Arial Narrow", "Arimo", "Book Antiqua", "Calibri", "Cambria",
+                "Carlito", "Century Gothic", "Constantia", "Courier New", "DejaVu Sans",
+                "DejaVu Serif", "Didot", "Franklin Gothic", "Garamond", "Georgia",
+                "Helvetica", "Inter", "Lato", "Liberation Sans", "Liberation Serif",
+                "Lucida Sans Unicode", "Noto Sans", "Open Sans", "Palatino Linotype",
+                "Poppins", "Roboto", "Rockwell Nova", "Segoe UI", "Tahoma",
+                "Times New Roman", "Trebuchet MS", "Verdana",
+              ];
+              const setVal = (prop: Partial<Annotation> & { _font?: string; _color?: string; _size?: number }) => {
+                if (prop._font) { setTextFont(prop._font); if (isEditingExisting) updateSelectedTextProp({ fontFamily: prop._font }); }
+                if (prop._color) { setTextColor(prop._color); if (isEditingExisting) updateSelectedTextProp({ color: prop._color }); }
+                if (prop._size) { setTextSize(prop._size); if (isEditingExisting) updateSelectedTextProp({ fontSize: prop._size, height: Math.max(prop._size + 16, (selectedTextAnn?.text ?? "").split("\n").length * (prop._size * 1.3) + 16) }); }
+              };
+              const abtn = (active: boolean) => ({
+                borderColor: active ? "#1565C0" : "#cbd5e1",
+                backgroundColor: active ? "rgba(21,101,192,0.1)" : "#fff",
+                color: active ? "#1565C0" : "#333",
+              });
+              return (
+                <div className="flex flex-col gap-3">
+                  {/* Font */}
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs" style={{ color: "#64748b" }}>Font</span>
+                    <select value={curFont.split(",")[0]?.trim() || "Arial"} onChange={e => setVal({ _font: e.target.value + ", sans-serif" })}
+                      className="w-full border rounded px-2 py-1.5 text-xs" style={{ borderColor: "#cbd5e1", fontFamily: curFont }}>
+                      {addFonts.map(f => <option key={f} value={f} style={{ fontFamily: f }}>{f}</option>)}
+                    </select>
+                  </div>
+                  {/* Size */}
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs" style={{ color: "#64748b" }}>Size (pt)</span>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => setVal({ _size: Math.max(6, curSize - 1) })} className="w-7 h-7 flex items-center justify-center border rounded text-sm" style={{ borderColor: "#cbd5e1" }}>−</button>
+                      <input type="number" value={curSize} onChange={e => setVal({ _size: Number(e.target.value) })}
+                        className="w-16 border rounded px-1.5 py-1 text-xs text-center" style={{ borderColor: "#cbd5e1" }} min={6} max={200} />
+                      <button onClick={() => setVal({ _size: curSize + 1 })} className="w-7 h-7 flex items-center justify-center border rounded text-sm" style={{ borderColor: "#cbd5e1" }}>+</button>
+                    </div>
+                  </div>
+                  {/* Style — B I U S */}
+                  {(() => {
+                    const curWeight = isEditingExisting ? (selectedTextAnn.fontWeight ?? "normal") : "normal";
+                    const curStyle = isEditingExisting ? (selectedTextAnn.fontStyle ?? "normal") : "normal";
+                    const curDeco = isEditingExisting ? (selectedTextAnn.textDecoration ?? "") : "";
+                    const curAlign = isEditingExisting ? (selectedTextAnn.textAlign ?? "left") : "left";
+                    const toggleWeight = () => {
+                      const nw = curWeight === "bold" ? "normal" : "bold";
+                      if (isEditingExisting) updateSelectedTextProp({ fontWeight: nw });
+                    };
+                    const toggleStyle = () => {
+                      const ns = curStyle === "italic" ? "normal" : "italic";
+                      if (isEditingExisting) updateSelectedTextProp({ fontStyle: ns });
+                    };
+                    const toggleDeco = (d: string) => {
+                      const nd = curDeco === d ? "" : d;
+                      if (isEditingExisting) updateSelectedTextProp({ textDecoration: nd });
+                    };
+                    const setAlign = (a: string) => {
+                      if (isEditingExisting) updateSelectedTextProp({ textAlign: a });
+                    };
+                    return (<>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs" style={{ color: "#64748b" }}>Style</span>
+                        <div className="flex gap-1">
+                          <button onClick={toggleWeight} className="flex-1 py-1.5 rounded text-xs border" style={abtn(curWeight === "bold")}><span style={{ fontWeight: "bold" }}>B</span></button>
+                          <button onClick={toggleStyle} className="flex-1 py-1.5 rounded text-xs border" style={abtn(curStyle === "italic")}><span style={{ fontStyle: "italic" }}>I</span></button>
+                          <button onClick={() => toggleDeco("underline")} className="flex-1 py-1.5 rounded text-xs border" style={abtn(curDeco === "underline")}><span style={{ textDecoration: "underline" }}>U</span></button>
+                          <button onClick={() => toggleDeco("line-through")} className="flex-1 py-1.5 rounded text-xs border" style={abtn(curDeco === "line-through")}><span style={{ textDecoration: "line-through" }}>S</span></button>
+                        </div>
+                      </div>
+                      {/* Align */}
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs" style={{ color: "#64748b" }}>Align</span>
+                        <div className="flex gap-1">
+                          <button onClick={() => setAlign("left")} className="flex-1 py-1.5 rounded border flex items-center justify-center" style={abtn(curAlign === "left")}>
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2h14v1.5H1zm0 3.5h10v1.5H1zm0 3.5h14v1.5H1zm0 3.5h10v1.5H1z"/></svg>
+                          </button>
+                          <button onClick={() => setAlign("center")} className="flex-1 py-1.5 rounded border flex items-center justify-center" style={abtn(curAlign === "center")}>
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2h14v1.5H1zm3 3.5h8v1.5H4zM1 9h14v1.5H1zm3 3.5h8v1.5H4z"/></svg>
+                          </button>
+                          <button onClick={() => setAlign("right")} className="flex-1 py-1.5 rounded border flex items-center justify-center" style={abtn(curAlign === "right")}>
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2h14v1.5H1zm4 3.5h10v1.5H5zM1 9h14v1.5H1zm4 3.5h10v1.5H5z"/></svg>
+                          </button>
+                        </div>
+                      </div>
+                    </>);
+                  })()}
+                  {/* Color */}
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-xs" style={{ color: "#64748b" }}>Color</span>
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <div className="w-9 h-9 rounded-lg border-2" style={{ borderColor: "#cbd5e1", backgroundColor: curColor }} />
+                        <input type="color" value={curColor} onChange={e => setVal({ _color: e.target.value })}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                      </div>
+                      <input type="text" value={curColor} onChange={e => { if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) setVal({ _color: e.target.value }); }}
+                        className="flex-1 border rounded px-2 py-1.5 text-xs font-mono" style={{ borderColor: "#cbd5e1" }} maxLength={7} />
+                    </div>
+                    <div className="flex gap-1 flex-wrap">
+                      {["#000000","#c62828","#1565C0","#2e7d32","#e65100","#6a1b9a","#00838f","#4e342e","#546e7a","#ff6f00"].map(c => (
+                        <button key={c} onClick={() => setVal({ _color: c })} className="w-6 h-6 rounded-full border-2 transition-all"
+                          style={{ backgroundColor: c, borderColor: curColor === c ? "#1565C0" : "transparent" }} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Actions */}
             {isEditingExisting ? (
@@ -3384,11 +3518,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "rgba(27, 94, 32, 0.08)", color: "#0f172a" }}>
               {t.editor_edittext_hint}
             </div>
-            {/* Color picker for replacement text */}
-            <div className="flex gap-2 items-center">
-              <label className="text-xs" style={{ color: "#64748b" }}>{t.editor_panel_text_color}</label>
-              <input type="color" value={editTextColor} onChange={e => setEditTextColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0" />
-            </div>
             {/* Block count */}
             {nativeTextBlocks.length > 0 ? (
               <div className="text-xs p-2 rounded" style={{ backgroundColor: "#ffffff", color: "#64748b" }}>
@@ -3429,8 +3558,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               const isUnderline = typingBlockId === block.id ? document.queryCommandState("underline") : false;
               const isStrike = typingBlockId === block.id ? document.queryCommandState("strikeThrough") : false;
               const fonts = [
-                "Arial", "Times New Roman", "Courier New", "Georgia", "Verdana",
-                "Calibri", "Trebuchet MS", "Tahoma", "Palatino", "Garamond",
+                "Arial", "Arial Narrow", "Arimo", "Book Antiqua", "Calibri", "Cambria",
+                "Carlito", "Century Gothic", "Constantia", "Courier New", "DejaVu Sans",
+                "DejaVu Serif", "Didot", "Franklin Gothic", "Garamond", "Georgia",
+                "Helvetica", "Inter", "Lato", "Liberation Sans", "Liberation Serif",
+                "Lucida Sans Unicode", "Noto Sans", "Open Sans", "Open Symbol",
+                "Palatino Linotype", "Poppins", "Roboto", "Rockwell Nova",
+                "Rockwell Nova Condensed", "Segoe UI", "Tahoma", "Times New Roman",
+                "Times-Roman", "Trebuchet MS", "Verdana", "Courier",
               ];
               const btn = (active: boolean) => ({
                 borderColor: active ? "#1565C0" : "#cbd5e1",
@@ -4188,6 +4323,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                             fontSize: ann.fontSize ?? 14,
                             color: ann.color ?? "#000",
                             fontFamily: ann.fontFamily ?? "Arial, sans-serif",
+                            fontWeight: ann.fontWeight ?? "normal",
+                            fontStyle: ann.fontStyle ?? "normal",
+                            textDecoration: ann.textDecoration ?? "none",
+                            textAlign: (ann.textAlign ?? "left") as any,
                             whiteSpace: "pre-wrap",
                             display: "block",
                             lineHeight: 1.3,
@@ -4206,7 +4345,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         />
                       ) : (
                         <span
-                          style={{ fontSize: ann.fontSize ?? 14, color: ann.color ?? "#000", fontFamily: ann.fontFamily ?? "Arial, sans-serif", whiteSpace: "pre-wrap", display: "block", lineHeight: 1.2, cursor: "move", minHeight: "1em" }}
+                          style={{ fontSize: ann.fontSize ?? 14, color: ann.color ?? "#000", fontFamily: ann.fontFamily ?? "Arial, sans-serif", fontWeight: ann.fontWeight ?? "normal", fontStyle: ann.fontStyle ?? "normal", textDecoration: ann.textDecoration ?? "none", textAlign: (ann.textAlign ?? "left") as any, whiteSpace: "pre-wrap", display: "block", lineHeight: 1.2, cursor: "move", minHeight: "1em" }}
                           onDoubleClick={(e) => {
                             e.stopPropagation();
                             setEditingTextId(ann.id);
