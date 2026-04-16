@@ -108,7 +108,14 @@ interface NativeTextBlock {
   page: number; // 1-indexed page number
   fontColor?: string; // hex color e.g. "#000000"
   fontFamily?: string; // CSS font-family from pdf.js styles
+  fontWeight?: string; // "bold" or "normal"
+  fontStyle?: string; // "italic" or "normal"
   pdfFontName?: string; // raw font name from pdf.js (e.g. "g_d0_f1")
+  // Original position/size — used to cover original PDF text when block is moved/resized
+  origX?: number;
+  origY?: number;
+  origWidth?: number;
+  origHeight?: number;
 }
 
 interface Annotation {
@@ -276,7 +283,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // Edit-text tool state
   // allNativeTextBlocks: Map<pageNum, NativeTextBlock[]> — persists edits across page navigation
   const [allNativeTextBlocks, setAllNativeTextBlocks] = useState<Map<number, NativeTextBlock[]>>(new Map());
-  const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+  const [editingBlockId, setEditingBlockId] = useState<string | null>(null); // selected block
+  const [typingBlockId, setTypingBlockId] = useState<string | null>(null); // block in text-editing mode (double-click)
   const [editingBlockText, setEditingBlockText] = useState("");
   const [editTextColor, setEditTextColor] = useState("#000000");
   // Derived: blocks for the current page
@@ -831,6 +839,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       str: string; pdfX: number; pdfY: number; pdfWidth: number; pdfFontSize: number;
       canvasX: number; canvasY: number; canvasW: number; canvasH: number;
       fontFamily: string; fontSize: number; pdfFontName: string;
+      fontWeight: string; fontStyle: string;
     }
     const allItems = content.items as any[];
     const paragraphs: LineItem[][] = [];
@@ -845,13 +854,23 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const [a, b, , , e, f] = item.transform as number[];
       const pdfFontSize = Math.sqrt(a * a + b * b);
       const pdfWidth = item.width ?? item.str.length * pdfFontSize * 0.6;
-      const fontFamily = styles[item.fontName]?.fontFamily || "sans-serif";
+      const rawFamily = styles[item.fontName]?.fontFamily || "sans-serif";
       const pdfFontName = item.fontName || "";
+      // Detect bold/italic from PDF font name (e.g. "TimesNewRomanPS-BoldMT", "Arial-ItalicMT")
+      const nameLC = pdfFontName.toLowerCase();
+      const fontWeight = (nameLC.includes("bold") || nameLC.includes("black") || nameLC.includes("heavy")) ? "bold" : "normal";
+      const fontStyle = (nameLC.includes("italic") || nameLC.includes("oblique")) ? "italic" : "normal";
+      // Map generic PDF.js families to better CSS equivalents
+      let fontFamily = rawFamily;
+      if (nameLC.includes("arial") || nameLC.includes("helvetica") || nameLC.includes("sans")) fontFamily = "Arial, Helvetica, sans-serif";
+      else if (nameLC.includes("times")) fontFamily = "Times New Roman, serif";
+      else if (nameLC.includes("courier") || nameLC.includes("mono")) fontFamily = "Courier New, monospace";
+      else if (nameLC.includes("serif") && !nameLC.includes("sans")) fontFamily = "Times New Roman, serif";
       const canvasX = e * scale;
       const canvasY = (pdfPageHeight - f) * scale - pdfFontSize * scale;
       const canvasW = pdfWidth * scale;
       const canvasH = pdfFontSize * scale * 1.4;
-      const line: LineItem = { str: item.str, pdfX: e, pdfY: f, pdfWidth, pdfFontSize, fontFamily, pdfFontName, canvasX, canvasY, canvasW, canvasH, fontSize: pdfFontSize * scale };
+      const line: LineItem = { str: item.str, pdfX: e, pdfY: f, pdfWidth, pdfFontSize, fontFamily, pdfFontName, canvasX, canvasY, canvasW, canvasH, fontSize: pdfFontSize * scale, fontWeight, fontStyle };
 
       // Also break on font size change or large position shift
       if (currentPara.length > 0) {
@@ -867,12 +886,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     // Step 2: Build one NativeTextBlock per paragraph
     const blocks: NativeTextBlock[] = [];
     for (const para of paragraphs) {
-      // Join: space for same-line items, newline for different lines
+      // Join all items with spaces — let CSS word-wrap handle line breaks
       let combinedStr = "";
       for (let i = 0; i < para.length; i++) {
         if (i === 0) { combinedStr = para[i].str; continue; }
-        const isNewLine = Math.abs(para[i].canvasY - para[i-1].canvasY) > para[i-1].canvasH * 0.3;
-        combinedStr += isNewLine ? "\n" + para[i].str : " " + para[i].str;
+        combinedStr += " " + para[i].str;
       }
       const first = para[0];
       const last = para[para.length - 1];
@@ -894,8 +912,53 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         pageHeight: pdfPageHeight,
         page: pageNum,
         fontFamily: first.fontFamily,
+        fontWeight: first.fontWeight,
+        fontStyle: first.fontStyle,
         pdfFontName: first.pdfFontName,
       });
+    }
+    // Step 3: Detect text color by sampling canvas pixels
+    const canvas = mainCanvasRef.current;
+    if (canvas) {
+      const dpr = window.devicePixelRatio || 1;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        for (const block of blocks) {
+          // Sample a grid of pixels across the first line of text and pick the most saturated non-white one
+          const regionX = Math.round(block.x * dpr);
+          const regionY = Math.round(block.y * dpr);
+          const regionW = Math.min(Math.round(block.width * dpr), canvas.width - regionX);
+          const regionH = Math.min(Math.round(block.fontSize * 1.2 * dpr), canvas.height - regionY);
+          if (regionX >= 0 && regionY >= 0 && regionW > 0 && regionH > 0) {
+            const imageData = ctx.getImageData(regionX, regionY, regionW, regionH);
+            const data = imageData.data;
+            let bestColor = [0, 0, 0];
+            let bestScore = -1;
+            // Step through pixels (sample every few for performance)
+            const step = Math.max(1, Math.floor(data.length / 4 / 200)) * 4;
+            for (let i = 0; i < data.length; i += step) {
+              const r = data[i], g = data[i+1], b = data[i+2];
+              // Skip white/near-white pixels (background)
+              if (r > 240 && g > 240 && b > 240) continue;
+              // Skip very light pixels (antialiased edges)
+              if (r > 200 && g > 200 && b > 200) continue;
+              // Score by saturation + darkness — prefer vivid colors and darker text
+              const max = Math.max(r, g, b), min = Math.min(r, g, b);
+              const saturation = max > 0 ? (max - min) / max : 0;
+              const darkness = 1 - (r + g + b) / (255 * 3);
+              const score = saturation * 2 + darkness;
+              if (score > bestScore) {
+                bestScore = score;
+                bestColor = [r, g, b];
+              }
+            }
+            if (bestScore > 0) {
+              const hex = "#" + bestColor.map(c => c.toString(16).padStart(2, "0")).join("");
+              block.fontColor = hex;
+            }
+          }
+        }
+      }
     }
     // Only set blocks for this page if not already loaded (preserve existing edits)
     setAllNativeTextBlocks(prev => {
@@ -906,7 +969,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           const match = existing.find(
             ex => ex.str === newBlock.str && Math.abs(ex.x - newBlock.x) < 2 && Math.abs(ex.y - newBlock.y) < 2
           );
-          return match ? { ...newBlock, editedStr: match.editedStr, fontColor: match.fontColor } : newBlock;
+          if (!match) return newBlock;
+          // Preserve user edits and manual resize/move
+          return {
+            ...newBlock,
+            editedStr: match.editedStr,
+            fontColor: match.fontColor,
+            // If user manually resized/moved, keep those dimensions
+            ...(match.origX !== undefined ? { x: match.x, y: match.y, width: match.width, height: match.height, origX: match.origX, origY: match.origY, origWidth: match.origWidth, origHeight: match.origHeight } : {}),
+          };
         });
         const next = new Map(prev);
         next.set(pageNum, merged);
@@ -945,6 +1016,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         return prev;
       });
       setEditingBlockId(null);
+      setTypingBlockId(null);
     }
   }, [activeTool, editTextColor]);
 
@@ -3273,6 +3345,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     <span className="font-medium" style={{ color: "#0f172a" }}>{Math.round(block.pdfFontSize)}pt</span>
                   </div>
                   <div className="flex items-center gap-2">
+                    <span style={{ color: "#64748b" }}>Style:</span>
+                    <span className="font-medium" style={{ color: "#0f172a" }}>
+                      {block.fontWeight === "bold" ? "Bold" : "Normal"}{block.fontStyle === "italic" ? " Italic" : ""}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <span style={{ color: "#64748b" }}>Color:</span>
                     <span className="w-4 h-4 rounded border inline-block" style={{ backgroundColor: block.fontColor || "#000", borderColor: "#e2e8f0" }} />
                     <span style={{ color: "#0f172a" }}>{block.fontColor || "#000000"}</span>
@@ -4031,6 +4109,22 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   </div>
                 ))}
               </div>
+              {/* White cover over original position when block was moved */}
+              {nativeTextBlocks.filter(b => b.origX !== undefined || b.origY !== undefined).map(block => (
+                <div
+                  key={`cover-${block.id}`}
+                  style={{
+                    position: "absolute",
+                    left: block.origX ?? block.x,
+                    top: block.origY ?? block.y,
+                    width: block.origWidth ?? block.width,
+                    height: block.origHeight ?? block.height,
+                    backgroundColor: "rgba(255,255,255,1)",
+                    zIndex: 4,
+                    pointerEvents: "none",
+                  }}
+                />
+              ))}
               {/* Edited text blocks — always visible to cover original PDF text */}
               {activeTool !== "edit-text" && nativeTextBlocks.filter(b => b.editedStr !== undefined).map(block => (
                 <div
@@ -4039,11 +4133,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     position: "absolute",
                     left: block.x,
                     top: block.y,
-                    minWidth: block.width,
+                    width: block.width,
                     minHeight: block.height,
                     backgroundColor: "rgba(255,255,255,1)",
-                    display: "flex",
-                    alignItems: "center",
                     zIndex: 5,
                     pointerEvents: "none",
                     boxSizing: "border-box",
@@ -4052,9 +4144,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   <span style={{
                     fontSize: block.fontSize,
                     fontFamily: block.fontFamily || "sans-serif",
+                    fontWeight: block.fontWeight || "normal",
+                    fontStyle: block.fontStyle || "normal",
                     color: block.fontColor || "#000",
-                    whiteSpace: "nowrap",
-                    lineHeight: 1,
+                    whiteSpace: "normal",
+                    wordWrap: "break-word",
+                    lineHeight: 1.2,
+                    display: "block",
+                    width: "100%",
                   }}>
                     {block.editedStr}
                   </span>
@@ -4069,104 +4166,241 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     left: block.x,
                     top: block.y,
                     width: block.width,
-                    height: block.height,
-                    cursor: "text",
-                    border: editingBlockId === block.id
-                      ? "2px solid #1565C0"
-                      : block.editedStr !== undefined
-                        ? "1.5px dashed #1565C0"
-                        : "1.5px dashed rgba(21, 101, 192, 0.3)",
-                    backgroundColor: editingBlockId === block.id
-                      ? "rgba(255,255,255,0.97)"
-                      : block.editedStr !== undefined
-                        ? "rgba(255,255,255,0.97)"
-                        : "transparent",
+                    height: typingBlockId === block.id ? "auto" : block.height,
+                    minHeight: typingBlockId === block.id ? block.height : undefined,
+                    cursor: editingBlockId === block.id && typingBlockId !== block.id ? "move" : "text",
                     borderRadius: 2,
                     zIndex: editingBlockId === block.id ? 30 : 25,
                     boxSizing: "border-box",
-                    overflow: "hidden",
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
                     if (editingBlockId !== block.id) {
+                      // First click: select block (move/resize mode)
                       setEditingBlockId(block.id);
+                      setTypingBlockId(null);
                       setEditingBlockText(block.editedStr ?? block.str);
+                      if (block.fontColor) setEditTextColor(block.fontColor);
                       setShowMobilePanel(true);
+                    }
+                  }}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    // Double click: enter text editing mode
+                    setEditingBlockId(block.id);
+                    setTypingBlockId(block.id);
+                    setEditingBlockText(block.editedStr ?? block.str);
+                    if (block.fontColor) setEditTextColor(block.fontColor);
+                  }}
+                  onMouseDown={(e) => {
+                    // Move if this block is selected (not typing) — only from outer container
+                    if (editingBlockId === block.id && typingBlockId !== block.id && e.target === e.currentTarget) {
+                      e.stopPropagation(); e.preventDefault();
+                      const startX = e.clientX, startY = e.clientY;
+                      const startLeft = block.x, startTop = block.y;
+                      const onMove = (ev: MouseEvent) => {
+                        setAllNativeTextBlocks(prev => {
+                          const pageBlocks = prev.get(block.page) ?? [];
+                          const updated = pageBlocks.map((b: NativeTextBlock) =>
+                            b.id === block.id ? {
+                              ...b, x: startLeft + ev.clientX - startX, y: startTop + ev.clientY - startY,
+                              origX: b.origX ?? b.x, origY: b.origY ?? b.y,
+                              origWidth: b.origWidth ?? b.width, origHeight: b.origHeight ?? b.height,
+                            } : b
+                          );
+                          const next = new Map(prev); next.set(block.page, updated); return next;
+                        });
+                      };
+                      const onUp = () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+                      window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onUp);
                     }
                   }}
                   title={block.editedStr !== undefined ? `Editado: "${block.editedStr}"` : `Clic para editar: "${block.str}"`}
                 >
-                  {/* Inline editor: textarea directly over the block text */}
-                  {editingBlockId === block.id ? (
-                    <textarea
-                      autoFocus
-                      value={editingBlockText}
-                      onChange={e => setEditingBlockText(e.target.value)}
-                      onBlur={() => {
-                        // Auto-save on blur
+                  {/* Inline editable content — when editing, React must NOT control children */}
+                  {typingBlockId === block.id ? (
+                    <div
+                      key={`editing-${block.id}`}
+                      contentEditable
+                      suppressContentEditableWarning
+                      ref={el => {
+                        if (el && document.activeElement !== el) {
+                          // Set initial content and focus
+                          el.innerText = block.editedStr ?? block.str;
+                          el.focus();
+                          const range = document.createRange();
+                          range.selectNodeContents(el);
+                          range.collapse(false);
+                          const sel = window.getSelection();
+                          sel?.removeAllRanges();
+                          sel?.addRange(range);
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const el = e.currentTarget as HTMLElement;
+                        const newText = el.innerText;
+                        const newHeight = Math.max(block.height, el.scrollHeight);
                         const original = block.editedStr ?? block.str;
                         const normalize = (s: string) => s.replace(/\s+/g, " ").trim();
-                        if (normalize(editingBlockText) !== normalize(original)) {
+                        if (normalize(newText) !== normalize(original) || newHeight > block.height) {
                           setAllNativeTextBlocks(prev => {
                             const pageBlocks = prev.get(block.page) ?? [];
                             const updated = pageBlocks.map((b: NativeTextBlock) =>
                               b.id === block.id
-                                ? { ...b, editedStr: editingBlockText, fontColor: editTextColor }
+                                ? { ...b, editedStr: newText, fontColor: editTextColor, height: newHeight }
                                 : b
                             );
                             const next = new Map(prev);
                             next.set(block.page, updated);
                             return next;
                           });
-                          toast.success("Texto actualizado");
                         }
+                        setTypingBlockId(null);
                         setEditingBlockId(null);
                       }}
                       onKeyDown={e => {
-                        if (e.key === "Escape") setEditingBlockId(null);
+                        if (e.key === "Escape") (e.currentTarget as HTMLElement).blur();
                         e.stopPropagation();
                       }}
                       onMouseDown={e => e.stopPropagation()}
-                      onClick={e => e.stopPropagation()}
                       style={{
-                        position: "absolute",
-                        left: 0,
-                        top: 0,
-                        width: "100%",
-                        minHeight: block.height,
+                        width: "100%", minHeight: "100%",
                         fontSize: block.fontSize,
                         fontFamily: block.fontFamily || "sans-serif",
+                        fontWeight: (block.fontWeight || "normal") as any,
+                        fontStyle: block.fontStyle || "normal",
                         color: editTextColor,
-                        background: "rgba(255,255,255,0.97)",
-                        border: "none",
-                        outline: "none",
-                        padding: 0,
-                        margin: 0,
+                        backgroundColor: "rgba(255,255,255,0.97)",
+                        border: "2px solid #1565C0",
+                        outline: "none", padding: 0, margin: 0,
                         boxSizing: "border-box",
-                        overflow: "hidden",
-                        resize: "both",
-                        whiteSpace: "pre-wrap",
-                        wordWrap: "break-word",
-                        lineHeight: 1.35,
-                        zIndex: 31,
+                        whiteSpace: "normal", wordWrap: "break-word",
+                        overflow: "visible", lineHeight: 1.2,
+                        borderRadius: 2, cursor: "text",
                       }}
                     />
                   ) : (
-                    /* Show text — transparent for unedited (canvas shows through), visible for edited */
-                    <span style={{
-                      fontSize: block.fontSize,
-                      fontFamily: block.fontFamily || "sans-serif",
-                      color: block.editedStr !== undefined ? (block.fontColor ?? "#000") : "transparent",
-                      whiteSpace: "pre-wrap",
-                      wordWrap: "break-word",
-                      padding: 0,
-                      lineHeight: 1.35,
-                      display: "block",
-                      width: "100%",
-                    }}>
+                    <div
+                      onMouseDown={e => {
+                        if (editingBlockId === block.id && typingBlockId !== block.id) {
+                          e.stopPropagation(); e.preventDefault();
+                          const startX = e.clientX, startY = e.clientY;
+                          const startLeft = block.x, startTop = block.y;
+                          const onMove = (ev: MouseEvent) => {
+                            setAllNativeTextBlocks(prev => {
+                              const pageBlocks = prev.get(block.page) ?? [];
+                              const updated = pageBlocks.map((b: NativeTextBlock) =>
+                                b.id === block.id ? {
+                                  ...b, x: startLeft + ev.clientX - startX, y: startTop + ev.clientY - startY,
+                                  origX: b.origX ?? b.x, origY: b.origY ?? b.y,
+                                  origWidth: b.origWidth ?? b.width, origHeight: b.origHeight ?? b.height,
+                                } : b
+                              );
+                              const next = new Map(prev); next.set(block.page, updated); return next;
+                            });
+                          };
+                          const onUp = () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+                          window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onUp);
+                        }
+                      }}
+                      style={{
+                        width: "100%", height: "100%",
+                        fontSize: block.fontSize,
+                        fontFamily: block.fontFamily || "sans-serif",
+                        fontWeight: (block.fontWeight || "normal") as any,
+                        fontStyle: block.fontStyle || "normal",
+                        color: (editingBlockId === block.id || block.editedStr !== undefined) ? (block.fontColor ?? "#000") : "transparent",
+                        backgroundColor: (editingBlockId === block.id || block.editedStr !== undefined) ? "rgba(255,255,255,0.97)" : "transparent",
+                        border: (editingBlockId === block.id || block.editedStr !== undefined) ? "1.5px dashed #1565C0" : "1.5px dashed rgba(21, 101, 192, 0.3)",
+                        outline: "none", padding: 0, margin: 0,
+                        boxSizing: "border-box",
+                        whiteSpace: "normal", wordWrap: "break-word",
+                        overflow: "hidden", lineHeight: 1.2,
+                        borderRadius: 2, cursor: editingBlockId === block.id ? "move" : "pointer",
+                      }}
+                    >
                       {block.editedStr ?? block.str}
-                    </span>
+                    </div>
                   )}
+                  {/* 4 handle dots + move via block drag */}
+                  {editingBlockId === block.id && (<>
+                    {/* Left dot — resize width from left */}
+                    <div
+                      style={{ position: "absolute", left: -5, top: "50%", transform: "translateY(-50%)", width: 10, height: 10, backgroundColor: "#1565C0", borderRadius: "50%", cursor: "ew-resize", zIndex: 35, border: "2px solid white" }}
+                      onMouseDown={e => {
+                        e.stopPropagation(); e.preventDefault();
+                        const startX = e.clientX, startW = block.width, startLeft = block.x;
+                        const onMove = (ev: MouseEvent) => {
+                          const dx = ev.clientX - startX;
+                          const newW = Math.max(30, startW - dx);
+                          const newX = startLeft + (startW - newW);
+                          setAllNativeTextBlocks(prev => {
+                            const pageBlocks = prev.get(block.page) ?? [];
+                            const updated = pageBlocks.map((b: NativeTextBlock) => b.id === block.id ? { ...b, width: newW, x: newX } : b);
+                            const next = new Map(prev); next.set(block.page, updated); return next;
+                          });
+                        };
+                        const onUp = () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+                        window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onUp);
+                      }}
+                    />
+                    {/* Right dot — resize width */}
+                    <div
+                      style={{ position: "absolute", right: -5, top: "50%", transform: "translateY(-50%)", width: 10, height: 10, backgroundColor: "#1565C0", borderRadius: "50%", cursor: "ew-resize", zIndex: 35, border: "2px solid white" }}
+                      onMouseDown={e => {
+                        e.stopPropagation(); e.preventDefault();
+                        const startX = e.clientX, startW = block.width;
+                        const onMove = (ev: MouseEvent) => {
+                          const newW = Math.max(30, startW + ev.clientX - startX);
+                          setAllNativeTextBlocks(prev => {
+                            const pageBlocks = prev.get(block.page) ?? [];
+                            const updated = pageBlocks.map((b: NativeTextBlock) => b.id === block.id ? { ...b, width: newW } : b);
+                            const next = new Map(prev); next.set(block.page, updated); return next;
+                          });
+                        };
+                        const onUp = () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+                        window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onUp);
+                      }}
+                    />
+                    {/* Top dot — resize height from top + move */}
+                    <div
+                      style={{ position: "absolute", top: -5, left: "50%", transform: "translateX(-50%)", width: 10, height: 10, backgroundColor: "#1565C0", borderRadius: "50%", cursor: "ns-resize", zIndex: 35, border: "2px solid white" }}
+                      onMouseDown={e => {
+                        e.stopPropagation(); e.preventDefault();
+                        const startY = e.clientY, startH = block.height, startTop = block.y;
+                        const onMove = (ev: MouseEvent) => {
+                          const dy = ev.clientY - startY;
+                          const newH = Math.max(14, startH - dy);
+                          const newY = startTop + (startH - newH);
+                          setAllNativeTextBlocks(prev => {
+                            const pageBlocks = prev.get(block.page) ?? [];
+                            const updated = pageBlocks.map((b: NativeTextBlock) => b.id === block.id ? { ...b, height: newH, y: newY } : b);
+                            const next = new Map(prev); next.set(block.page, updated); return next;
+                          });
+                        };
+                        const onUp = () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+                        window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onUp);
+                      }}
+                    />
+                    {/* Bottom dot — resize height */}
+                    <div
+                      style={{ position: "absolute", bottom: -5, left: "50%", transform: "translateX(-50%)", width: 10, height: 10, backgroundColor: "#1565C0", borderRadius: "50%", cursor: "ns-resize", zIndex: 35, border: "2px solid white" }}
+                      onMouseDown={e => {
+                        e.stopPropagation(); e.preventDefault();
+                        const startY = e.clientY, startH = block.height;
+                        const onMove = (ev: MouseEvent) => {
+                          const newH = Math.max(14, startH + ev.clientY - startY);
+                          setAllNativeTextBlocks(prev => {
+                            const pageBlocks = prev.get(block.page) ?? [];
+                            const updated = pageBlocks.map((b: NativeTextBlock) => b.id === block.id ? { ...b, height: newH } : b);
+                            const next = new Map(prev); next.set(block.page, updated); return next;
+                          });
+                        };
+                        const onUp = () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+                        window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onUp);
+                      }}
+                    />
+                  </>)}
                 </div>
               ))}
             </div>
