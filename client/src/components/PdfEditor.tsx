@@ -111,6 +111,7 @@ interface NativeTextBlock {
   fontWeight?: string; // "bold" or "normal"
   fontStyle?: string; // "italic" or "normal"
   pdfFontName?: string; // raw font name from pdf.js (e.g. "g_d0_f1")
+  bgColor?: string; // background color sampled from canvas
   // Original position/size — used to cover original PDF text when block is moved/resized
   origX?: number;
   origY?: number;
@@ -304,6 +305,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
   }, []);
   const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasSnapshotRef = useRef<ImageData | null>(null); // clean canvas snapshot for restore
   const overlayRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -572,6 +574,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     canvas.style.height = `${vp.height / dpr}px`;
     const ctx = canvas.getContext("2d")!;
     await page.render({ canvas, viewport: vp } as any).promise;
+    // Save clean canvas snapshot for text erasure/restore
+    canvasSnapshotRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
     // Sync drawing canvas size
     if (drawingCanvasRef.current) {
       drawingCanvasRef.current.width = vp.width;
@@ -956,6 +960,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               const hex = "#" + bestColor.map(c => c.toString(16).padStart(2, "0")).join("");
               block.fontColor = hex;
             }
+            // Sample background color
+            const bgSampleX = Math.round((block.x + block.width / 2) * dpr);
+            const bgSampleY = Math.max(0, Math.round((block.y - 2) * dpr));
+            if (bgSampleX < canvas.width && bgSampleY < canvas.height) {
+              const bgPixel = ctx.getImageData(bgSampleX, bgSampleY, 1, 1).data;
+              block.bgColor = "#" + [bgPixel[0], bgPixel[1], bgPixel[2]].map(c => c.toString(16).padStart(2, "0")).join("");
+            }
           }
         }
       }
@@ -1027,6 +1038,51 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTool, currentPage, scale, pdfDoc]);
+
+  // Erase/restore canvas text when selecting/deselecting blocks
+  const prevErasedBlockRef = useRef<string | null>(null);
+  useEffect(() => {
+    const canvas = mainCanvasRef.current;
+    const snapshot = canvasSnapshotRef.current;
+    if (!canvas || !snapshot) return;
+    const dpr = window.devicePixelRatio || 1;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Restore previously erased block from snapshot
+    if (prevErasedBlockRef.current && prevErasedBlockRef.current !== editingBlockId) {
+      const prevBlock = nativeTextBlocks.find(b => b.id === prevErasedBlockRef.current);
+      if (prevBlock && !prevBlock.editedStr && prevBlock.origX === undefined) {
+        // Block was NOT edited — restore original canvas pixels from snapshot
+        const sx = Math.round(prevBlock.x * dpr);
+        const sy = Math.round(prevBlock.y * dpr);
+        const sw = Math.round(prevBlock.width * dpr);
+        const sh = Math.round(prevBlock.height * dpr);
+        // Create a temp canvas to extract the region from snapshot
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = snapshot.width;
+        tempCanvas.height = snapshot.height;
+        const tempCtx = tempCanvas.getContext("2d")!;
+        tempCtx.putImageData(snapshot, 0, 0);
+        ctx.drawImage(tempCanvas, sx, sy, sw, sh, sx, sy, sw, sh);
+      }
+    }
+
+    // Erase newly selected block
+    if (editingBlockId) {
+      const block = nativeTextBlocks.find(b => b.id === editingBlockId);
+      if (block) {
+        ctx.fillStyle = block.bgColor || "#ffffff";
+        ctx.fillRect(
+          Math.round(block.x * dpr), Math.round(block.y * dpr),
+          Math.round(block.width * dpr), Math.round(block.height * dpr)
+        );
+      }
+    }
+
+    prevErasedBlockRef.current = editingBlockId;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingBlockId]);
 
   // Handle file drop / select — auto-converts non-PDF files to PDF via server
   const handleFile = useCallback(async (f: File) => {
@@ -4119,7 +4175,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     top: block.origY ?? block.y,
                     width: block.origWidth ?? block.width,
                     height: block.origHeight ?? block.height,
-                    backgroundColor: "rgba(255,255,255,1)",
+                    backgroundColor: block.bgColor || "rgba(255,255,255,1)",
                     zIndex: 4,
                     pointerEvents: "none",
                   }}
@@ -4135,7 +4191,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     top: block.y,
                     width: block.width,
                     minHeight: block.height,
-                    backgroundColor: "rgba(255,255,255,1)",
+                    backgroundColor: block.bgColor || "rgba(255,255,255,1)",
                     zIndex: 5,
                     pointerEvents: "none",
                     boxSizing: "border-box",
@@ -4270,7 +4326,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         fontWeight: (block.fontWeight || "normal") as any,
                         fontStyle: block.fontStyle || "normal",
                         color: editTextColor,
-                        backgroundColor: "rgba(255,255,255,0.97)",
+                        backgroundColor: "transparent",
                         border: "2px solid #1565C0",
                         outline: "none", padding: 0, margin: 0,
                         boxSizing: "border-box",
@@ -4309,9 +4365,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         fontFamily: block.fontFamily || "sans-serif",
                         fontWeight: (block.fontWeight || "normal") as any,
                         fontStyle: block.fontStyle || "normal",
-                        color: (editingBlockId === block.id || block.editedStr !== undefined) ? (block.fontColor ?? "#000") : "transparent",
-                        backgroundColor: (editingBlockId === block.id || block.editedStr !== undefined) ? "rgba(255,255,255,0.97)" : "transparent",
-                        border: (editingBlockId === block.id || block.editedStr !== undefined) ? "1.5px dashed #1565C0" : "1.5px dashed rgba(21, 101, 192, 0.3)",
+                        color: (editingBlockId === block.id || block.editedStr !== undefined || block.origX !== undefined) ? (block.fontColor ?? "#000") : "transparent",
+                        backgroundColor: "transparent",
+                        border: (editingBlockId === block.id || block.editedStr !== undefined || block.origX !== undefined) ? "1.5px dashed #1565C0" : "1.5px dashed rgba(21, 101, 192, 0.3)",
                         outline: "none", padding: 0, margin: 0,
                         boxSizing: "border-box",
                         whiteSpace: "normal", wordWrap: "break-word",
