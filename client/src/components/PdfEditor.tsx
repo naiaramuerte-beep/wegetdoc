@@ -92,7 +92,8 @@ type ToolName =
 interface NativeTextBlock {
   id: string;
   str: string;
-  editedStr?: string; // if set, this replaces str on export
+  editedStr?: string; // if set, this replaces str on export (plain text)
+  editedHtml?: string; // rich text HTML for display
   // Canvas pixel coordinates (for overlay display)
   x: number;
   y: number;
@@ -286,6 +287,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const [allNativeTextBlocks, setAllNativeTextBlocks] = useState<Map<number, NativeTextBlock[]>>(new Map());
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null); // selected block
   const [typingBlockId, setTypingBlockId] = useState<string | null>(null); // block in text-editing mode (double-click)
+  const [selectionTick, setSelectionTick] = useState(0); // force re-render on selection change for toolbar state
   const [editingBlockText, setEditingBlockText] = useState("");
   const [editTextColor, setEditTextColor] = useState("#000000");
   // Derived: blocks for the current page
@@ -836,6 +838,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const vp = page.getViewport({ scale });
     const content = await page.getTextContent();
     const styles = (content as any).styles ?? {};
+    // Debug: log font styles to understand available data
+    if (Object.keys(styles).length > 0) console.log("[PDF fonts]", JSON.stringify(styles, null, 2));
     const pdfPageHeight = vp.height / scale;
 
     // Step 1: Parse items into line-level entries
@@ -864,12 +868,20 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const nameLC = pdfFontName.toLowerCase();
       const fontWeight = (nameLC.includes("bold") || nameLC.includes("black") || nameLC.includes("heavy")) ? "bold" : "normal";
       const fontStyle = (nameLC.includes("italic") || nameLC.includes("oblique")) ? "italic" : "normal";
-      // Map generic PDF.js families to better CSS equivalents
+      // Map PDF font names to CSS equivalents
       let fontFamily = rawFamily;
-      if (nameLC.includes("arial") || nameLC.includes("helvetica") || nameLC.includes("sans")) fontFamily = "Arial, Helvetica, sans-serif";
+      if (nameLC.includes("calibri")) fontFamily = "Calibri, sans-serif";
+      else if (nameLC.includes("arial") || nameLC.includes("helvetica")) fontFamily = "Arial, Helvetica, sans-serif";
+      else if (nameLC.includes("verdana")) fontFamily = "Verdana, sans-serif";
+      else if (nameLC.includes("tahoma")) fontFamily = "Tahoma, sans-serif";
+      else if (nameLC.includes("trebuchet")) fontFamily = "Trebuchet MS, sans-serif";
+      else if (nameLC.includes("georgia")) fontFamily = "Georgia, serif";
+      else if (nameLC.includes("palatino")) fontFamily = "Palatino, serif";
+      else if (nameLC.includes("garamond")) fontFamily = "Garamond, serif";
       else if (nameLC.includes("times")) fontFamily = "Times New Roman, serif";
       else if (nameLC.includes("courier") || nameLC.includes("mono")) fontFamily = "Courier New, monospace";
-      else if (nameLC.includes("serif") && !nameLC.includes("sans")) fontFamily = "Times New Roman, serif";
+      else if (nameLC.includes("sans")) fontFamily = "Arial, Helvetica, sans-serif";
+      else if (nameLC.includes("serif")) fontFamily = "Times New Roman, serif";
       const canvasX = e * scale;
       const canvasY = (pdfPageHeight - f) * scale - pdfFontSize * scale;
       const canvasW = pdfWidth * scale;
@@ -1038,6 +1050,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTool, currentPage, scale, pdfDoc]);
+
+  // Track selection changes to update toolbar button states (bold/italic/etc)
+  useEffect(() => {
+    if (!typingBlockId) return;
+    const handler = () => setSelectionTick(t => t + 1);
+    document.addEventListener("selectionchange", handler);
+    return () => document.removeEventListener("selectionchange", handler);
+  }, [typingBlockId]);
 
   // Erase/restore canvas text when selecting/deselecting blocks
   const prevErasedBlockRef = useRef<string | null>(null);
@@ -3385,31 +3405,154 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 <p>{(t as any).editor_image_no_text_desc ?? "This page may be a scanned image. Use 'Add Text' to place new text on top."}</p>
               </div>
             )}
-            {/* Detected block properties — shown when a block is clicked */}
+            {/* Rich text toolbar — applies to selection via execCommand */}
             {editingBlockId && (() => {
               const block = nativeTextBlocks.find(b => b.id === editingBlockId);
               if (!block) return null;
+              const updateBlock = (props: Partial<NativeTextBlock>) => {
+                setAllNativeTextBlocks(prev => {
+                  const pageBlocks = prev.get(block.page) ?? [];
+                  const updated = pageBlocks.map((b: NativeTextBlock) =>
+                    b.id === block.id ? { ...b, ...props, editedStr: b.editedStr ?? b.str } : b
+                  );
+                  const next = new Map(prev);
+                  next.set(block.page, updated);
+                  return next;
+                });
+              };
+              // execCommand helper
+              const exec = (cmd: string, value?: string) => { document.execCommand(cmd, false, value); };
+              // Query current selection state (selectionTick forces re-eval)
+              void selectionTick;
+              const isBold = typingBlockId === block.id ? document.queryCommandState("bold") : block.fontWeight === "bold";
+              const isItalic = typingBlockId === block.id ? document.queryCommandState("italic") : block.fontStyle === "italic";
+              const isUnderline = typingBlockId === block.id ? document.queryCommandState("underline") : false;
+              const isStrike = typingBlockId === block.id ? document.queryCommandState("strikeThrough") : false;
+              const fonts = [
+                "Arial", "Times New Roman", "Courier New", "Georgia", "Verdana",
+                "Calibri", "Trebuchet MS", "Tahoma", "Palatino", "Garamond",
+              ];
+              const btn = (active: boolean) => ({
+                borderColor: active ? "#1565C0" : "#cbd5e1",
+                backgroundColor: active ? "rgba(21,101,192,0.1)" : "#fff",
+                color: active ? "#1565C0" : "#333",
+              });
+              // SVG alignment icons
+              const AlignLeft = <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2h14v1.5H1zm0 3.5h10v1.5H1zm0 3.5h14v1.5H1zm0 3.5h10v1.5H1z"/></svg>;
+              const AlignCenter = <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2h14v1.5H1zm3 3.5h8v1.5H4zM1 9h14v1.5H1zm3 3.5h8v1.5H4z"/></svg>;
+              const AlignRight = <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2h14v1.5H1zm4 3.5h10v1.5H5zM1 9h14v1.5H1zm4 3.5h10v1.5H5z"/></svg>;
               return (
-                <div className="p-3 rounded-lg border text-xs flex flex-col gap-2" style={{ borderColor: "#e2e8f0" }}>
-                  <div className="font-medium" style={{ color: "#1565C0" }}>Detected properties</div>
-                  <div className="flex items-center gap-2">
-                    <span style={{ color: "#64748b" }}>Font:</span>
-                    <span className="font-medium" style={{ color: "#0f172a" }}>{block.pdfFontName || block.fontFamily || "sans-serif"}</span>
+                <div className="p-3 rounded-lg border text-xs flex flex-col gap-3" style={{ borderColor: "#e2e8f0" }}>
+                  <div className="font-medium" style={{ color: "#1565C0" }}>Text formatting</div>
+                  {/* Font family */}
+                  <div className="flex flex-col gap-1">
+                    <span style={{ color: "#64748b" }}>Font</span>
+                    <select
+                      value={block.fontFamily?.split(",")[0]?.trim() || "Arial"}
+                      onChange={e => {
+                        const f = e.target.value;
+                        if (typingBlockId === block.id) exec("fontName", f);
+                        updateBlock({ fontFamily: f + ", sans-serif" });
+                      }}
+                      onMouseDown={e => e.preventDefault()}
+                      className="w-full border rounded px-2 py-1.5 text-xs"
+                      style={{ borderColor: "#cbd5e1", fontFamily: block.fontFamily || "sans-serif" }}
+                    >
+                      {fonts.map(f => <option key={f} value={f} style={{ fontFamily: f }}>{f}</option>)}
+                    </select>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span style={{ color: "#64748b" }}>Size:</span>
-                    <span className="font-medium" style={{ color: "#0f172a" }}>{Math.round(block.pdfFontSize)}pt</span>
+                  {/* Font size */}
+                  <div className="flex flex-col gap-1">
+                    <span style={{ color: "#64748b" }}>Size (pt)</span>
+                    <div className="flex items-center gap-1">
+                      <button onMouseDown={e => e.preventDefault()} onClick={() => {
+                        const ns = Math.max(4, block.pdfFontSize - 1); const r = ns / block.pdfFontSize;
+                        updateBlock({ fontSize: block.fontSize * r, pdfFontSize: ns });
+                      }} className="w-7 h-7 flex items-center justify-center border rounded text-sm" style={{ borderColor: "#cbd5e1" }}>−</button>
+                      <input type="number" value={parseFloat(block.pdfFontSize.toFixed(1))} onChange={e => {
+                        const v = parseFloat(e.target.value);
+                        if (v > 0 && v < 200) { const r = v / block.pdfFontSize; updateBlock({ fontSize: block.fontSize * r, pdfFontSize: v }); }
+                      }} className="w-16 border rounded px-1.5 py-1 text-xs text-center" style={{ borderColor: "#cbd5e1" }} min={4} max={200} step={0.5} />
+                      <button onMouseDown={e => e.preventDefault()} onClick={() => {
+                        const ns = block.pdfFontSize + 1; const r = ns / block.pdfFontSize;
+                        updateBlock({ fontSize: block.fontSize * r, pdfFontSize: ns });
+                      }} className="w-7 h-7 flex items-center justify-center border rounded text-sm" style={{ borderColor: "#cbd5e1" }}>+</button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span style={{ color: "#64748b" }}>Style:</span>
-                    <span className="font-medium" style={{ color: "#0f172a" }}>
-                      {block.fontWeight === "bold" ? "Bold" : "Normal"}{block.fontStyle === "italic" ? " Italic" : ""}
-                    </span>
+                  {/* Style buttons — B I U S */}
+                  <div className="flex flex-col gap-1">
+                    <span style={{ color: "#64748b" }}>Style</span>
+                    <div className="flex gap-1">
+                      <button onMouseDown={e => e.preventDefault()} onClick={() => { if (typingBlockId === block.id) exec("bold"); else updateBlock({ fontWeight: block.fontWeight === "bold" ? "normal" : "bold" }); }}
+                        className="flex-1 py-1.5 rounded text-xs border" style={btn(isBold)}>
+                        <span style={{ fontWeight: "bold" }}>B</span>
+                      </button>
+                      <button onMouseDown={e => e.preventDefault()} onClick={() => { if (typingBlockId === block.id) exec("italic"); else updateBlock({ fontStyle: block.fontStyle === "italic" ? "normal" : "italic" }); }}
+                        className="flex-1 py-1.5 rounded text-xs border" style={btn(isItalic)}>
+                        <span style={{ fontStyle: "italic" }}>I</span>
+                      </button>
+                      <button onMouseDown={e => e.preventDefault()} onClick={() => { if (typingBlockId === block.id) exec("underline"); }}
+                        className="flex-1 py-1.5 rounded text-xs border" style={btn(isUnderline)}>
+                        <span style={{ textDecoration: "underline" }}>U</span>
+                      </button>
+                      <button onMouseDown={e => e.preventDefault()} onClick={() => { if (typingBlockId === block.id) exec("strikeThrough"); }}
+                        className="flex-1 py-1.5 rounded text-xs border" style={btn(isStrike)}>
+                        <span style={{ textDecoration: "line-through" }}>S</span>
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span style={{ color: "#64748b" }}>Color:</span>
-                    <span className="w-4 h-4 rounded border inline-block" style={{ backgroundColor: block.fontColor || "#000", borderColor: "#e2e8f0" }} />
-                    <span style={{ color: "#0f172a" }}>{block.fontColor || "#000000"}</span>
+                  {/* Alignment — 3 icons */}
+                  <div className="flex flex-col gap-1">
+                    <span style={{ color: "#64748b" }}>Align</span>
+                    <div className="flex gap-1">
+                      <button onMouseDown={e => e.preventDefault()} onClick={() => exec("justifyLeft")}
+                        className="flex-1 py-1.5 rounded border flex items-center justify-center" style={btn(false)}>{AlignLeft}</button>
+                      <button onMouseDown={e => e.preventDefault()} onClick={() => exec("justifyCenter")}
+                        className="flex-1 py-1.5 rounded border flex items-center justify-center" style={btn(false)}>{AlignCenter}</button>
+                      <button onMouseDown={e => e.preventDefault()} onClick={() => exec("justifyRight")}
+                        className="flex-1 py-1.5 rounded border flex items-center justify-center" style={btn(false)}>{AlignRight}</button>
+                    </div>
+                  </div>
+                  {/* Color */}
+                  <div className="flex flex-col gap-1.5">
+                    <span style={{ color: "#64748b" }}>Color</span>
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <div className="w-9 h-9 rounded-lg border-2" style={{ borderColor: "#cbd5e1", backgroundColor: block.fontColor || "#000" }} />
+                        <input type="color" value={block.fontColor || "#000000"}
+                          onMouseDown={e => e.stopPropagation()}
+                          onChange={e => {
+                            const c = e.target.value;
+                            if (typingBlockId === block.id) { exec("foreColor", c); }
+                            else { updateBlock({ fontColor: c }); setEditTextColor(c); }
+                          }}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                      </div>
+                      <input type="text" value={block.fontColor || "#000000"} onChange={e => {
+                        if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) {
+                          const c = e.target.value;
+                          if (typingBlockId === block.id) { exec("foreColor", c); }
+                          else { updateBlock({ fontColor: c }); setEditTextColor(c); }
+                        }
+                      }} className="flex-1 border rounded px-2 py-1.5 text-xs font-mono" style={{ borderColor: "#cbd5e1" }} maxLength={7} />
+                    </div>
+                    {/* Quick color swatches */}
+                    <div className="flex gap-1 flex-wrap">
+                      {["#000000","#c62828","#1565C0","#2e7d32","#e65100","#6a1b9a","#00838f","#4e342e","#546e7a","#ff6f00"].map(c => (
+                        <button key={c} onMouseDown={e => e.preventDefault()} onClick={() => {
+                          if (typingBlockId === block.id) { exec("foreColor", c); }
+                          else { updateBlock({ fontColor: c }); setEditTextColor(c); }
+                        }}
+                          className="w-6 h-6 rounded-full border-2 transition-all"
+                          style={{ backgroundColor: c, borderColor: (block.fontColor || "#000") === c ? "#1565C0" : "transparent" }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  {/* PDF font info */}
+                  <div className="text-[10px] pt-1 border-t" style={{ color: "#94a3b8", borderColor: "#f1f5f9" }}>
+                    PDF font: {block.pdfFontName || "unknown"}
                   </div>
                 </div>
               );
@@ -4209,7 +4352,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     display: "block",
                     width: "100%",
                   }}>
-                    {block.editedStr}
+                    {block.editedHtml ? (
+                      <span dangerouslySetInnerHTML={{ __html: block.editedHtml }} />
+                    ) : block.editedStr}
                   </span>
                 </div>
               ))}
@@ -4281,8 +4426,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       suppressContentEditableWarning
                       ref={el => {
                         if (el && document.activeElement !== el) {
-                          // Set initial content and focus
-                          el.innerText = block.editedStr ?? block.str;
+                          // Set initial content — use HTML if previously saved as rich text
+                          const content = block.editedHtml || block.editedStr || block.str;
+                          if (block.editedHtml) el.innerHTML = content;
+                          else el.innerText = content;
                           el.focus();
                           const range = document.createRange();
                           range.selectNodeContents(el);
@@ -4295,15 +4442,16 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       onBlur={(e) => {
                         const el = e.currentTarget as HTMLElement;
                         const newText = el.innerText;
+                        const newHtml = el.innerHTML;
                         const newHeight = Math.max(block.height, el.scrollHeight);
                         const original = block.editedStr ?? block.str;
                         const normalize = (s: string) => s.replace(/\s+/g, " ").trim();
-                        if (normalize(newText) !== normalize(original) || newHeight > block.height) {
+                        if (normalize(newText) !== normalize(original) || newHeight > block.height || newHtml !== newText) {
                           setAllNativeTextBlocks(prev => {
                             const pageBlocks = prev.get(block.page) ?? [];
                             const updated = pageBlocks.map((b: NativeTextBlock) =>
                               b.id === block.id
-                                ? { ...b, editedStr: newText, fontColor: editTextColor, height: newHeight }
+                                ? { ...b, editedStr: newText, editedHtml: newHtml, fontColor: editTextColor, height: newHeight }
                                 : b
                             );
                             const next = new Map(prev);
@@ -4375,7 +4523,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         borderRadius: 2, cursor: editingBlockId === block.id ? "move" : "pointer",
                       }}
                     >
-                      {block.editedStr ?? block.str}
+                      {block.editedHtml ? (
+                        <span dangerouslySetInnerHTML={{ __html: block.editedHtml }} />
+                      ) : (block.editedStr ?? block.str)}
                     </div>
                   )}
                   {/* 4 handle dots + move via block drag */}
