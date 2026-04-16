@@ -3589,7 +3589,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         if (typingBlockId === block.id) exec("fontName", f);
                         updateBlock({ fontFamily: f + ", sans-serif" });
                       }}
-                      onMouseDown={e => e.preventDefault()}
                       className="w-full border rounded px-2 py-1.5 text-xs"
                       style={{ borderColor: "#cbd5e1", fontFamily: block.fontFamily || "sans-serif" }}
                     >
