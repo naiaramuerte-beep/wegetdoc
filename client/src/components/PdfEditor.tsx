@@ -113,6 +113,7 @@ interface NativeTextBlock {
   fontStyle?: string; // "italic" or "normal"
   pdfFontName?: string; // raw font name from pdf.js (e.g. "g_d0_f1")
   bgColor?: string; // background color sampled from canvas
+  textAlign?: string; // text alignment: left, center, right
   // Original position/size — used to cover original PDF text when block is moved/resized
   origX?: number;
   origY?: number;
@@ -2434,38 +2435,63 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         const htmlContent = block.editedHtml || block.editedStr || block.str;
         const runs = block.editedHtml ? parseHtmlToRuns(htmlContent) : [{ text: htmlContent, bold: defaultBold, italic: defaultItalic, underline: false, strike: false, color: defaultColor }];
 
-        // Draw runs with word wrap
-        const lineHeight = fontSizePts * 1.3;
-        let xPos = curX;
-        let yOffset = 0;
-
+        // Build word tokens with formatting, then layout into lines, then draw
+        const pickFont = (b: boolean, i: boolean) => b && i ? fontBoldItalic : b ? fontBold : i ? fontItalic : fontRegular;
+        interface WordToken { text: string; width: number; font: any; color: any; bold: boolean; italic: boolean; underline: boolean; strike: boolean; isSpace: boolean; }
+        const tokens: WordToken[] = [];
         for (const run of runs) {
-          const pickFont = (b: boolean, i: boolean) => b && i ? fontBoldItalic : b ? fontBold : i ? fontItalic : fontRegular;
           const runFont = pickFont(run.bold, run.italic);
           const hex = run.color.length === 7 ? run.color : "#000000";
           const cr = parseInt(hex.slice(1, 3), 16) / 255;
           const cg = parseInt(hex.slice(3, 5), 16) / 255;
           const cb = parseInt(hex.slice(5, 7), 16) / 255;
           const runColor = rgb(isNaN(cr) ? 0 : cr, isNaN(cg) ? 0 : cg, isNaN(cb) ? 0 : cb);
+          const safeText = run.text.replace(/[^\x00-\xFF]/g, "?");
+          const parts = safeText.split(/(\s+)/);
+          for (const part of parts) {
+            if (!part) continue;
+            tokens.push({ text: part, width: runFont.widthOfTextAtSize(part, fontSizePts), font: runFont, color: runColor, bold: run.bold, italic: run.italic, underline: run.underline, strike: run.strike, isSpace: !part.trim() });
+          }
+        }
 
-          const safeRunText = run.text.replace(/[^\x00-\xFF]/g, "?");
-          const words = safeRunText.split(/(\s+)/); // keep spaces
+        // Layout tokens into lines
+        type LineData = { tokens: WordToken[]; width: number; };
+        const lines: LineData[] = [];
+        let curLine: WordToken[] = [];
+        let curLineW = 0;
+        for (const tok of tokens) {
+          if (!tok.isSpace && curLineW + tok.width > curW && curLine.length > 0) {
+            lines.push({ tokens: curLine, width: curLineW });
+            curLine = []; curLineW = 0;
+          }
+          curLine.push(tok); curLineW += tok.width;
+        }
+        if (curLine.length > 0) lines.push({ tokens: curLine, width: curLineW });
 
-          for (const word of words) {
-            if (!word) continue;
-            const wordW = runFont.widthOfTextAtSize(word, fontSizePts);
-            // Wrap if needed
-            if (xPos + wordW > curX + curW && xPos > curX && word.trim()) {
-              xPos = curX;
-              yOffset += lineHeight;
+        // Determine text alignment
+        const align = block.textAlign || "left";
+        const lineHeight = fontSizePts * 1.3;
+
+        // Draw lines
+        for (let li = 0; li < lines.length; li++) {
+          const line = lines[li];
+          // Calculate starting X based on alignment
+          let lineX = curX;
+          if (align === "center") lineX = curX + (curW - line.width) / 2;
+          else if (align === "right") lineX = curX + curW - line.width;
+          let xPos = lineX;
+          const drawY = textPdfY - li * lineHeight;
+
+          for (const tok of line.tokens) {
+            if (tok.isSpace) { xPos += tok.width; continue; }
+            page.drawText(tok.text, { x: xPos, y: drawY, size: fontSizePts, font: tok.font, color: tok.color });
+            if (tok.underline) {
+              page.drawLine({ start: { x: xPos, y: drawY - fontSizePts * 0.15 }, end: { x: xPos + tok.width, y: drawY - fontSizePts * 0.15 }, thickness: fontSizePts * 0.06, color: tok.color });
             }
-            if (word.trim()) {
-              page.drawText(word, {
-                x: xPos, y: textPdfY - yOffset,
-                size: fontSizePts, font: runFont, color: runColor,
-              });
+            if (tok.strike) {
+              page.drawLine({ start: { x: xPos, y: drawY + fontSizePts * 0.3 }, end: { x: xPos + tok.width, y: drawY + fontSizePts * 0.3 }, thickness: fontSizePts * 0.06, color: tok.color });
             }
-            xPos += wordW;
+            xPos += tok.width;
           }
         }
       } catch (err) {
@@ -3728,12 +3754,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   <div className="flex flex-col gap-1">
                     <span style={{ color: "#64748b" }}>Align</span>
                     <div className="flex gap-1">
-                      <button onMouseDown={e => e.preventDefault()} onClick={() => exec("justifyLeft")}
-                        className="flex-1 py-1.5 rounded border flex items-center justify-center" style={btn(false)}>{AlignLeft}</button>
-                      <button onMouseDown={e => e.preventDefault()} onClick={() => exec("justifyCenter")}
-                        className="flex-1 py-1.5 rounded border flex items-center justify-center" style={btn(false)}>{AlignCenter}</button>
-                      <button onMouseDown={e => e.preventDefault()} onClick={() => exec("justifyRight")}
-                        className="flex-1 py-1.5 rounded border flex items-center justify-center" style={btn(false)}>{AlignRight}</button>
+                      <button onMouseDown={e => e.preventDefault()} onClick={() => { exec("justifyLeft"); updateBlock({ textAlign: "left" }); }}
+                        className="flex-1 py-1.5 rounded border flex items-center justify-center" style={btn(block.textAlign === "left" || !block.textAlign)}>{AlignLeft}</button>
+                      <button onMouseDown={e => e.preventDefault()} onClick={() => { exec("justifyCenter"); updateBlock({ textAlign: "center" }); }}
+                        className="flex-1 py-1.5 rounded border flex items-center justify-center" style={btn(block.textAlign === "center")}>{AlignCenter}</button>
+                      <button onMouseDown={e => e.preventDefault()} onClick={() => { exec("justifyRight"); updateBlock({ textAlign: "right" }); }}
+                        className="flex-1 py-1.5 rounded border flex items-center justify-center" style={btn(block.textAlign === "right")}>{AlignRight}</button>
                     </div>
                   </div>
                   {/* Color */}
