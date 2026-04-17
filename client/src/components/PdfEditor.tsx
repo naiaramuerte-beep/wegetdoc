@@ -956,9 +956,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       // Also break on font size change or large position shift
       if (currentPara.length > 0) {
         const prev = currentPara[currentPara.length - 1];
-        const sizeChanged = Math.abs(line.fontSize - prev.fontSize) > 2;
-        const bigYGap = line.canvasY - (prev.canvasY + prev.canvasH) > prev.canvasH * 1.5;
-        if (sizeChanged || bigYGap) { paragraphs.push(currentPara); currentPara = []; }
+        const sizeChanged = Math.abs(line.fontSize - prev.fontSize) > 1;
+        const yGap = line.canvasY - (prev.canvasY + prev.canvasH);
+        const bigYGap = yGap > prev.canvasH * 0.3; // 30% line height = new paragraph
+        const fontChanged = line.pdfFontName !== prev.pdfFontName;
+        const bigXShift = Math.abs(line.canvasX - prev.canvasX) > prev.canvasH * 2;
+        // If previous line is short (doesn't fill the block width), it's likely a standalone line
+        const prevLineShort = currentPara.length > 0 && prev.canvasW < line.canvasW * 0.7 && yGap > 0;
+        if (sizeChanged || bigYGap || fontChanged || bigXShift || prevLineShort) { paragraphs.push(currentPara); currentPara = []; }
       }
       currentPara.push(line);
     }
