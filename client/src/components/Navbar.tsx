@@ -244,7 +244,7 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
                       </div>
                       <div className="py-1">
                         {[
-                          { href: `/${lang}/dashboard`, icon: LayoutDashboard, label: t.nav_my_account },
+                          { href: `/${lang}/dashboard?tab=documents`, icon: LayoutDashboard, label: t.nav_my_account },
                           { href: `/${lang}/dashboard?tab=billing`, icon: Crown, label: t.nav_billing },
                         ].map((item) => (
                           <Link key={item.href} href={item.href}>
@@ -382,7 +382,7 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
             <div className="flex flex-col gap-2 pt-3 border-t" style={{ borderColor: BORDER }}>
               {isAuthenticated ? (
                 <>
-                  <Link href={`/${lang}/dashboard`}>
+                  <Link href={`/${lang}/dashboard?tab=documents`}>
                     <button
                       className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl border"
                       style={{ color: TEXT_MAIN, borderColor: BORDER }}

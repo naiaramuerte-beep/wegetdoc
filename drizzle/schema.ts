@@ -23,6 +23,9 @@ export const users = mysqlTable("users", {
   resetToken: varchar("resetToken", { length: 256 }),
   resetTokenExpiry: timestamp("resetTokenExpiry"),
   emailVerified: boolean("emailVerified").default(false).notNull(),
+  // Soft delete: when set, the account is "deleted" but the row is kept for audit/recovery.
+  // All auth lookups must filter WHERE deletedAt IS NULL.
+  deletedAt: timestamp("deletedAt"),
 });
 
 export type User = typeof users.$inferSelect;

@@ -65,8 +65,11 @@ export default function Dashboard() {
     );
   }
 
-  if (!isAuthenticated) {
-    // Redirect to home page (with login modal) for authentication
+  // DEV-ONLY localhost bypass: lets us iterate on the dashboard UI without registering.
+  // Reverts to the normal auth redirect on any non-localhost host — safe for production.
+  // TODO: remove this block once the dashboard is stable.
+  const isLocalhost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+  if (!isAuthenticated && !isLocalhost) {
     const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
     const currentLang = langMatch ? langMatch[1] : "es";
     window.location.href = `/${currentLang}?login=true`;

@@ -1,4 +1,4 @@
-import { and, desc, eq, like, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, like, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
@@ -76,14 +76,15 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  // Exclude soft-deleted users from all auth lookups
+  const result = await db.select().from(users).where(and(eq(users.openId, openId), isNull(users.deletedAt))).limit(1);
   return result[0] ?? undefined;
 }
 
 export async function getUserById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  const result = await db.select().from(users).where(and(eq(users.id, id), isNull(users.deletedAt))).limit(1);
   return result[0] ?? undefined;
 }
 
@@ -213,10 +214,13 @@ export async function deactivateUser(userId: number) {
   await db.update(users).set({ role: "user" }).where(eq(users.id, userId));
 }
 
+// Soft delete: mark the user as deleted but keep the row for audit/recovery.
+// All auth-related lookups filter WHERE deletedAt IS NULL, so this user will be
+// unable to sign in, be found by email/Google/openId, and won't appear in admin lists.
 export async function deleteUserById(userId: number) {
   const db = await getDb();
   if (!db) return;
-  await db.delete(users).where(eq(users.id, userId));
+  await db.update(users).set({ deletedAt: new Date() }).where(eq(users.id, userId));
 }
 
 export async function updateUserProfile(
@@ -442,21 +446,21 @@ export async function getAdminStats() {
 export async function getUserByEmail(email: string) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  const result = await db.select().from(users).where(and(eq(users.email, email), isNull(users.deletedAt))).limit(1);
   return result[0] ?? undefined;
 }
 
 export async function getUserByGoogleId(googleId: string) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(users).where(eq(users.googleId, googleId)).limit(1);
+  const result = await db.select().from(users).where(and(eq(users.googleId, googleId), isNull(users.deletedAt))).limit(1);
   return result[0] ?? undefined;
 }
 
 export async function getUserByResetToken(token: string) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(users).where(eq(users.resetToken, token)).limit(1);
+  const result = await db.select().from(users).where(and(eq(users.resetToken, token), isNull(users.deletedAt))).limit(1);
   return result[0] ?? undefined;
 }
 
