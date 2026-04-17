@@ -861,7 +861,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           }
         }
       }
-      if (Object.keys(realFontNames).length > 0) console.log("[PDF real fonts]", realFontNames);
+      // Real font names extracted for mapping
     } catch {}
 
 
@@ -2347,44 +2347,127 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         console.error("[buildAnnotatedPdf] Error processing annotation:", annErr, ann.type, ann);
       }
     }
-    // Apply native text edits: cover original text with white rect, draw new text
-    // Collect edited blocks from ALL pages
+    // Apply native text edits: cover original text, draw replacement
+    // Embed font variants for bold/italic support
+    const fontRegular = await doc.embedFont(StandardFonts.Helvetica);
+    const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
+    const fontItalic = await doc.embedFont(StandardFonts.HelveticaOblique);
+    const fontBoldItalic = await doc.embedFont(StandardFonts.HelveticaBoldOblique);
+
     const editedBlocks: NativeTextBlock[] = [];
     allNativeTextBlocks.forEach(pageBlocks => {
-      pageBlocks.filter(b => b.editedStr !== undefined).forEach(b => editedBlocks.push(b));
+      pageBlocks.filter(b => b.editedStr !== undefined || b.origX !== undefined).forEach(b => editedBlocks.push(b));
     });
     for (const block of editedBlocks) {
       try {
         const page = doc.getPage(block.page - 1);
-        const { width: pageW } = page.getSize();
-        // Use stored PDF point coordinates directly (no scale conversion needed)
-        const pdfX = block.pdfX;
-        const pdfY = block.pdfY;      // baseline y from bottom of page
-        const fontSizePts = block.pdfFontSize;
-        // Cover original text with a wide white rectangle that extends to the right edge of the page
-        const coverWidth = pageW - pdfX + 10;
+        const { height: pageH } = page.getSize();
+        const scl = scale || 1;
+
+        // Cover ORIGINAL position (from canvas coordinates → PDF points)
+        const origX = (block.origX ?? block.x) / scl;
+        const origY = (block.origY ?? block.y) / scl;
+        const origW = (block.origWidth ?? block.width) / scl;
+        const origH = (block.origHeight ?? block.height) / scl;
+        // Canvas Y is from top, PDF Y is from bottom
+        const coverPdfY = pageH - origY - origH;
         page.drawRectangle({
-          x: pdfX - 4,
-          y: pdfY - fontSizePts * 0.35,
-          width: coverWidth,
-          height: fontSizePts * 1.6,
+          x: origX - 2,
+          y: coverPdfY - 2,
+          width: origW + 4,
+          height: origH + 4,
           color: rgb(1, 1, 1),
           opacity: 1,
         });
-        // Draw replacement text at the original baseline position
-        const hexColor = block.fontColor && block.fontColor.length === 7 ? block.fontColor : "#000000";
-        const tr = parseInt(hexColor.slice(1, 3), 16) / 255;
-        const tg = parseInt(hexColor.slice(3, 5), 16) / 255;
-        const tb = parseInt(hexColor.slice(5, 7), 16) / 255;
-        // Encode text to remove characters unsupported by Helvetica
-        const safeText = block.editedStr!.replace(/[^\x00-\xFF]/g, "?");
-        page.drawText(safeText, {
-          x: pdfX,
-          y: pdfY,
-          size: fontSizePts,
-          font,
-          color: rgb(isNaN(tr) ? 0 : tr, isNaN(tg) ? 0 : tg, isNaN(tb) ? 0 : tb),
-        });
+
+        // Draw replacement text at CURRENT position
+        const curX = block.x / scl;
+        const curY = block.y / scl;
+        const curW = block.width / scl;
+        const fontSizePts = block.pdfFontSize;
+        const textPdfY = pageH - curY - fontSizePts; // top of text in PDF coords
+
+        // Parse HTML into styled runs
+        interface TextRun { text: string; bold: boolean; italic: boolean; underline: boolean; strike: boolean; color: string; }
+        const defaultColor = block.fontColor && block.fontColor.length === 7 ? block.fontColor : "#000000";
+        const defaultBold = block.fontWeight === "bold";
+        const defaultItalic = block.fontStyle === "italic";
+
+        const parseHtmlToRuns = (html: string): TextRun[] => {
+          const runs: TextRun[] = [];
+          const div = document.createElement("div");
+          div.innerHTML = html;
+          const walk = (node: Node, bold: boolean, italic: boolean, underline: boolean, strike: boolean, color: string) => {
+            if (node.nodeType === Node.TEXT_NODE) {
+              const text = node.textContent || "";
+              if (text) runs.push({ text, bold, italic, underline, strike, color });
+              return;
+            }
+            if (node.nodeType !== Node.ELEMENT_NODE) return;
+            const el = node as HTMLElement;
+            const tag = el.tagName.toLowerCase();
+            let b = bold, i = italic, u = underline, s = strike, c = color;
+            if (tag === "b" || tag === "strong") b = true;
+            if (tag === "i" || tag === "em") i = true;
+            if (tag === "u") u = true;
+            if (tag === "s" || tag === "strike" || tag === "del") s = true;
+            if (tag === "font" && el.getAttribute("color")) c = el.getAttribute("color")!;
+            if (el.style.color) {
+              // Convert rgb() to hex
+              const tmp = document.createElement("div"); tmp.style.color = el.style.color;
+              document.body.appendChild(tmp);
+              const computed = getComputedStyle(tmp).color;
+              document.body.removeChild(tmp);
+              const m = computed.match(/(\d+)/g);
+              if (m && m.length >= 3) c = "#" + m.slice(0, 3).map(n => parseInt(n).toString(16).padStart(2, "0")).join("");
+            }
+            if (el.style.fontWeight === "bold" || parseInt(el.style.fontWeight) >= 700) b = true;
+            if (el.style.fontStyle === "italic") i = true;
+            if (el.style.textDecoration?.includes("underline")) u = true;
+            if (el.style.textDecoration?.includes("line-through")) s = true;
+            for (const child of Array.from(node.childNodes)) walk(child, b, i, u, s, c);
+          };
+          walk(div, defaultBold, defaultItalic, false, false, defaultColor);
+          return runs;
+        };
+
+        const htmlContent = block.editedHtml || block.editedStr || block.str;
+        const runs = block.editedHtml ? parseHtmlToRuns(htmlContent) : [{ text: htmlContent, bold: defaultBold, italic: defaultItalic, underline: false, strike: false, color: defaultColor }];
+
+        // Draw runs with word wrap
+        const lineHeight = fontSizePts * 1.3;
+        let xPos = curX;
+        let yOffset = 0;
+
+        for (const run of runs) {
+          const pickFont = (b: boolean, i: boolean) => b && i ? fontBoldItalic : b ? fontBold : i ? fontItalic : fontRegular;
+          const runFont = pickFont(run.bold, run.italic);
+          const hex = run.color.length === 7 ? run.color : "#000000";
+          const cr = parseInt(hex.slice(1, 3), 16) / 255;
+          const cg = parseInt(hex.slice(3, 5), 16) / 255;
+          const cb = parseInt(hex.slice(5, 7), 16) / 255;
+          const runColor = rgb(isNaN(cr) ? 0 : cr, isNaN(cg) ? 0 : cg, isNaN(cb) ? 0 : cb);
+
+          const safeRunText = run.text.replace(/[^\x00-\xFF]/g, "?");
+          const words = safeRunText.split(/(\s+)/); // keep spaces
+
+          for (const word of words) {
+            if (!word) continue;
+            const wordW = runFont.widthOfTextAtSize(word, fontSizePts);
+            // Wrap if needed
+            if (xPos + wordW > curX + curW && xPos > curX && word.trim()) {
+              xPos = curX;
+              yOffset += lineHeight;
+            }
+            if (word.trim()) {
+              page.drawText(word, {
+                x: xPos, y: textPdfY - yOffset,
+                size: fontSizePts, font: runFont, color: runColor,
+              });
+            }
+            xPos += wordW;
+          }
+        }
       } catch (err) {
         console.error("[buildAnnotatedPdf] Error applying text edit:", err, block);
       }
@@ -2524,6 +2607,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const docSize = pdfOut.byteLength;
 
     // Step 2: If NOT authenticated → show paywall modal (auth-choice step)
+    // DEV: skip auth for local testing
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+      triggerDownload(pdfOut);
+      toast.success("PDF descargado correctamente (dev mode)", { id: "dl" });
+      return;
+    }
     if (!isAuthenticated) {
       setPdfDataForPaywall({ base64, name: docName, size: docSize });
       generateAnnotatedThumbnail(pdfOut).then(t => { if (t) setPaywallThumbnail(t); });
