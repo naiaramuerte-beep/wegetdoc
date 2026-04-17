@@ -808,15 +808,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
       // If premium → download immediately
       if (currentIsPremium) {
-        toast.loading("Preparando descarga...", { id: "dl" });
+        toast.loading(t.editor_toast_preparing_doc ?? "Preparing document...", { id: "dl" });
         try {
           const out = await buildAnnotatedPdf();
           if (out) {
             triggerDownload(out);
-            toast.success("PDF descargado correctamente", { id: "dl" });
+            toast.success(t.editor_toast_download_success ?? "PDF downloaded successfully", { id: "dl" });
           }
         } catch {
-          toast.error("Error al descargar", { id: "dl" });
+          toast.error(t.editor_toast_prepare_download_error ?? "Error preparing download", { id: "dl" });
         }
         return;
       }
@@ -2736,7 +2736,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // ── Download with annotations (SMART BUTTON) ─────────────────────────────────
   const downloadPdf = async () => {
     if (!pdfBytes) return;
-    toast.loading("Preparando documento...", { id: "dl" });
+    toast.loading(t.editor_toast_preparing_doc ?? "Preparing document...", { id: "dl" });
 
     // Step 1: Build the annotated PDF
     let pdfOut: Uint8Array | null = null;
@@ -2745,7 +2745,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       if (!pdfOut) throw new Error("Failed to build PDF");
     } catch (err) {
       console.error("[downloadPdf] buildAnnotatedPdf failed:", err);
-      toast.error("Error al generar el PDF", { id: "dl" });
+      toast.error(t.editor_toast_pdf_build_error ?? "Error generating PDF", { id: "dl" });
       return;
     }
 
@@ -2776,7 +2776,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       // Step 4: If premium → download immediately
       if (isPremium || result?.isPremium) {
         triggerDownload(pdfOut);
-        toast.success("PDF descargado correctamente", { id: "dl" });
+        toast.success(t.editor_toast_download_success ?? "PDF downloaded successfully", { id: "dl" });
         setIsAutoSaving(false);
         return;
       }
@@ -2788,7 +2788,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       setShowPaywall(true);
     } catch (err) {
       console.error("[downloadPdf]", err);
-      toast.error("Error al preparar la descarga", { id: "dl" });
+      toast.error(t.editor_toast_prepare_download_error ?? "Error preparing download", { id: "dl" });
     } finally {
       setIsAutoSaving(false);
     }

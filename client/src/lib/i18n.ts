@@ -502,6 +502,11 @@ export type TranslationKeys = {
   editor_toast_converting: string;
   editor_toast_converted: string;
   editor_toast_convert_error: string;
+  // Download flow (optional — English fallback in component when missing)
+  editor_toast_preparing_doc?: string;
+  editor_toast_pdf_build_error?: string;
+  editor_toast_download_success?: string;
+  editor_toast_prepare_download_error?: string;
   editor_converting_uploading: string;
   editor_converting_processing: string;
   editor_converting_finishing: string;
@@ -1070,6 +1075,10 @@ export const translations: Translations = {
     editor_toast_converting: "Procesando conversión...",
     editor_toast_converted: "Página lista",
     editor_toast_convert_error: "No fue posible convertir el archivo",
+    editor_toast_preparing_doc: "Preparando documento...",
+    editor_toast_pdf_build_error: "Error al generar el PDF",
+    editor_toast_download_success: "PDF descargado correctamente",
+    editor_toast_prepare_download_error: "Error al preparar la descarga",
     editor_converting_uploading: "Enviando archivo...",
     editor_converting_processing: "Realizando la conversión...",
     editor_converting_finishing: "Terminando...",
@@ -1967,6 +1976,10 @@ export const translations: Translations = {
     editor_toast_converting: "Converting...",
     editor_toast_converted: "Conversion complete",
     editor_toast_convert_error: "Unable to convert the file",
+    editor_toast_preparing_doc: "Preparing document...",
+    editor_toast_pdf_build_error: "Error generating PDF",
+    editor_toast_download_success: "PDF downloaded successfully",
+    editor_toast_prepare_download_error: "Error preparing download",
     editor_converting_uploading: "Sending file...",
     editor_converting_processing: "Running conversion...",
     editor_converting_finishing: "Almost done...",
