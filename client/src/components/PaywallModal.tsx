@@ -10,6 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { usePdfFile } from "@/contexts/PdfFileContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { getAuthStrings } from "@/lib/authModalStrings";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
@@ -354,7 +355,8 @@ export default function PaywallModal({
   thumbnailUrl,
   buildPdfForUpload,
 }: PaywallModalProps) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const s = getAuthStrings(lang);
   const { isAuthenticated } = useAuth();
   const { savePdfToSession, setPendingPaywall, pendingFile, pendingEditedPdf, clearPendingEditedPdf, saveEditedPdfToSession } = usePdfFile();
   const [step, setStep] = useState<Step>(isAuthenticated ? "plans" : "auth-choice");
@@ -365,6 +367,7 @@ export default function PaywallModal({
   const [emailMode, setEmailMode] = useState<"register" | "login">("register");
   const [emailLoading, setEmailLoading] = useState(false);
   const [gdprAccepted, setGdprAccepted] = useState(false);
+  const [gdprError, setGdprError] = useState(false);
   const registerMutation = trpc.auth.register.useMutation();
   const loginMutation = trpc.auth.login.useMutation();
   const { refresh } = useAuth();
@@ -409,7 +412,8 @@ export default function PaywallModal({
     if (!emailInput.trim() || !emailInput.includes("@")) { toast.error(t.paywall_enter_email); return; }
     if (!passwordInput || passwordInput.length < 6) { toast.error(t.paywall_password_min); return; }
     if (emailMode === "register" && !gdprAccepted) {
-      toast.error("Debes aceptar los Términos y la Política de Privacidad");
+      setGdprError(true);
+      toast.error(s.gdprRequired);
       return;
     }
     setEmailLoading(true);
@@ -471,18 +475,17 @@ export default function PaywallModal({
               <div className="w-14 h-14 rounded-2xl bg-[#1565C0] flex items-center justify-center mx-auto mb-4">
                 <FileText className="w-7 h-7 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">{emailMode === "register" ? "Crea tu cuenta" : t.paywall_login}</h2>
-              <p className="text-sm text-gray-500">{emailMode === "register" ? "para descargar tu documento" : t.paywall_enter_email}</p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">{emailMode === "register" ? s.paywallTitle : t.paywall_login}</h2>
+              <p className="text-sm text-gray-500">{emailMode === "register" ? s.paywallSubtitle : t.paywall_enter_email}</p>
             </div>
             <div className="max-w-sm mx-auto space-y-3">
               <div className="relative group">
               <button
                 onClick={() => {
-                  if (emailMode === "register" && !gdprAccepted) { toast.error("Debes aceptar los Términos y la Política de Privacidad"); return; }
+                  if (emailMode === "register" && !gdprAccepted) { setGdprError(true); toast.error(s.gdprRequired); return; }
                   handleGoogleLogin();
                 }}
-                disabled={emailMode === "register" && !gdprAccepted}
-                className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl border-2 border-gray-200 font-semibold text-sm text-gray-700 bg-white hover:border-gray-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-200"
+                className={`w-full flex items-center justify-center gap-3 py-3.5 rounded-xl border-2 border-gray-200 font-semibold text-sm bg-white hover:border-gray-400 transition-all cursor-pointer ${emailMode === "register" && !gdprAccepted ? "opacity-60 text-gray-500" : "text-gray-700"}`}
               >
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                   <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
@@ -492,15 +495,6 @@ export default function PaywallModal({
                 </svg>
                 {t.paywall_continue_google}
               </button>
-              {emailMode === "register" && !gdprAccepted && (
-                <div
-                  className="absolute left-1/2 -translate-x-1/2 -bottom-9 z-20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap px-3 py-1.5 rounded-md bg-gray-900 text-white text-xs font-medium shadow-lg"
-                  role="tooltip"
-                >
-                  Acepta los Términos y la Política de Privacidad para continuar
-                  <span className="absolute left-1/2 -translate-x-1/2 -top-1 w-2 h-2 bg-gray-900 rotate-45" />
-                </div>
-              )}
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-gray-200" />
@@ -521,32 +515,38 @@ export default function PaywallModal({
                 </div>
               </div>
               {emailMode === "register" && (
-                <label className="flex items-start gap-2 pt-1 cursor-pointer select-none">
+                <label
+                  className={`flex items-start gap-2 cursor-pointer select-none rounded-lg transition-all duration-200 ${gdprError ? "ring-2 ring-red-500 bg-red-50 p-2" : "pt-1"}`}
+                >
                   <input
                     type="checkbox"
                     checked={gdprAccepted}
-                    onChange={(e) => setGdprAccepted(e.target.checked)}
-                    className="mt-0.5 w-4 h-4 shrink-0 accent-[#1565C0] cursor-pointer"
+                    onChange={(e) => {
+                      setGdprAccepted(e.target.checked);
+                      if (e.target.checked) setGdprError(false);
+                    }}
+                    className={`mt-0.5 w-4 h-4 shrink-0 cursor-pointer ${gdprError ? "accent-red-600" : "accent-[#1565C0]"}`}
                   />
-                  <span className="text-xs text-gray-500 leading-relaxed">
-                    He leído y acepto los{" "}
-                    <a href="/terms" target="_blank" rel="noreferrer" className="underline text-[#1565C0] hover:text-[#0D47A1]" onClick={(e) => e.stopPropagation()}>
-                      {t.paywall_terms}
-                    </a>{" "}
-                    y la{" "}
-                    <a href="/privacy" target="_blank" rel="noreferrer" className="underline text-[#1565C0] hover:text-[#0D47A1]" onClick={(e) => e.stopPropagation()}>
-                      {t.paywall_privacy}
+                  <span className={`text-xs leading-relaxed ${gdprError ? "text-red-700" : "text-gray-500"}`}>
+                    {s.gdprPrefix}{" "}
+                    <a href={`/${lang}/terms`} target="_blank" rel="noreferrer" className="underline text-[#1565C0] hover:text-[#0D47A1]" onClick={(e) => e.stopPropagation()}>
+                      {s.termsLinkLabel}
                     </a>
-                    . Autorizo el tratamiento de mis datos personales conforme al Reglamento General de Protección de Datos (RGPD).
+                    {s.gdprAnd}
+                    <a href={`/${lang}/privacy`} target="_blank" rel="noreferrer" className="underline text-[#1565C0] hover:text-[#0D47A1]" onClick={(e) => e.stopPropagation()}>
+                      {s.privacyLinkLabel}
+                    </a>
+                    {s.gdprSuffix}
                   </span>
                 </label>
               )}
               <button
                 onClick={handleEmailSubmit}
-                disabled={emailLoading || (emailMode === "register" && !gdprAccepted)}
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#1565C0] text-white font-bold text-sm hover:bg-[#0D47A1] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled={emailLoading}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-white font-bold text-sm hover:bg-[#0D47A1] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                style={{ backgroundColor: emailLoading ? "#9ca3af" : (emailMode === "register" && !gdprAccepted) ? "#9ca3af" : "#1565C0" }}
               >
-                {emailLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> {emailMode === "register" ? t.paywall_registering : t.paywall_logging_in}</> : (emailMode === "register" ? "Crear cuenta" : t.paywall_login)}
+                {emailLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> {emailMode === "register" ? t.paywall_registering : t.paywall_logging_in}</> : (emailMode === "register" ? t.paywall_register : t.paywall_login)}
               </button>
               <div className="text-center text-sm text-gray-500 pt-1">
                 {emailMode === "register"

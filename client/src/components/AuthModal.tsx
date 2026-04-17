@@ -2,9 +2,12 @@
    EditorPDF AuthModal — Sign Up + Login
    ============================================================= */
 import { useState, useEffect } from "react";
-import { X, Eye, EyeOff, Mail, Lock, User as UserIcon, Loader2 } from "lucide-react";
+import { X, Eye, EyeOff, Mail, Lock, User as UserIcon, Loader2, FileText } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getAuthStrings } from "@/lib/authModalStrings";
+
 
 interface AuthModalProps {
   open: boolean;
@@ -24,6 +27,8 @@ const GoogleIcon = () => (
 );
 
 export default function AuthModal({ open, onClose, defaultMode = "signup", onSuccess }: AuthModalProps) {
+  const { t, lang } = useLanguage();
+  const s = getAuthStrings(lang);
   const [mode, setMode] = useState<"login" | "signup" | "forgot">(defaultMode);
 
   // Sync mode when defaultMode changes or modal opens
@@ -36,40 +41,42 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [forgotEmail, setForgotEmail] = useState("");
+  const [gdprAccepted, setGdprAccepted] = useState(false);
+  const [gdprError, setGdprError] = useState(false);
 
   const utils = trpc.useUtils();
 
   const registerMutation = trpc.auth.register.useMutation({
     onSuccess: (data) => {
-      toast.success("¡Perfil configurado exitosamente!");
+      toast.success(s.registerSuccess);
       utils.auth.me.invalidate();
       onSuccess?.();
       onClose();
     },
     onError: (err) => {
-      toast.error(err.message || "Error al registrarse");
+      toast.error(err.message || s.registerError);
     },
   });
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: () => {
-      toast.success("¡Bienvenido de nuevo!");
+      toast.success(s.loginSuccess);
       utils.auth.me.invalidate();
       onSuccess?.();
       onClose();
     },
     onError: (err) => {
-      toast.error(err.message || "Email o contraseña incorrectos");
+      toast.error(err.message || s.loginError);
     },
   });
 
   const forgotMutation = trpc.auth.forgotPassword.useMutation({
     onSuccess: () => {
-      toast.success("Si el email existe, recibirás un enlace de recuperación");
+      toast.success(s.forgotSent);
       setMode("login");
     },
     onError: () => {
-      toast.error("Error al enviar el email");
+      toast.error(s.forgotError);
     },
   });
 
@@ -78,11 +85,25 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (mode === "signup") {
+      if (!gdprAccepted) {
+        setGdprError(true);
+        toast.error(s.gdprRequired);
+        return;
+      }
       registerMutation.mutate({ email, password, name: name || undefined });
     } else if (mode === "login") {
       loginMutation.mutate({ email, password });
     } else if (mode === "forgot") {
       forgotMutation.mutate({ email: forgotEmail });
+    }
+  };
+
+  const googleHref = `/api/auth/google?origin=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}&returnPath=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname + window.location.search : "/")}`;
+  const handleGoogleClick = (e: React.MouseEvent) => {
+    if (mode === "signup" && !gdprAccepted) {
+      e.preventDefault();
+      setGdprError(true);
+      toast.error(s.gdprRequired);
     }
   };
 
@@ -108,32 +129,35 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
 
         {/* Mode label */}
         <p className="text-xs font-medium text-gray-400 mb-2">
-          {mode === "signup" ? "Sign up" : mode === "login" ? "Login" : "Forgot password"}
+          {mode === "signup" ? s.signupEyebrow : mode === "login" ? s.loginEyebrow : s.forgotEyebrow}
         </p>
 
         {/* Title */}
         {mode === "signup" && (
           <>
-            <h2 className="text-2xl font-bold text-gray-900 leading-tight mb-1">
-              Get started with our 7-day trial plan
+            <div className="w-14 h-14 rounded-2xl bg-[#1565C0] flex items-center justify-center mx-auto mb-4">
+              <FileText className="w-7 h-7 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 leading-tight mb-1 text-center">
+              {t.paywall_register}
             </h2>
-            <p className="text-sm text-gray-500 mb-5">Sign up with your social media or email.</p>
+            <p className="text-sm text-gray-500 mb-5 text-center">{s.signupSubtitle}</p>
           </>
         )}
         {mode === "login" && (
           <>
             <h2 className="text-2xl font-bold text-gray-900 leading-tight mb-1">
-              Welcome Back!
+              {s.welcomeTitle}
             </h2>
-            <p className="text-sm text-gray-500 mb-5">Sign in with your social networks or complete your details.</p>
+            <p className="text-sm text-gray-500 mb-5">{s.welcomeSubtitle}</p>
           </>
         )}
         {mode === "forgot" && (
           <>
             <h2 className="text-2xl font-bold text-gray-900 leading-tight mb-1">
-              Reset your password
+              {s.resetTitle}
             </h2>
-            <p className="text-sm text-gray-500 mb-5">Enter your email and we'll send you a reset link.</p>
+            <p className="text-sm text-gray-500 mb-5">{s.resetSubtitle}</p>
           </>
         )}
 
@@ -158,25 +182,45 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
               style={{ backgroundColor: isLoading ? "#9ca3af" : "#1565C0" }}
             >
               {isLoading && <Loader2 size={15} className="animate-spin" />}
-              Send reset link
+              {s.sendReset}
             </button>
             <button
               type="button"
               onClick={() => setMode("login")}
               className="text-sm text-center text-gray-500 hover:text-blue-700"
             >
-              Back to Login
+              {s.backToLogin}
             </button>
           </form>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+            {/* Google button (primero, como en PaywallModal) */}
+            <div className="relative group">
+              <a
+                href={googleHref}
+                onClick={handleGoogleClick}
+                aria-disabled={mode === "signup" && !gdprAccepted}
+                className={`w-full py-2.5 rounded-lg border border-gray-200 text-sm font-semibold flex items-center justify-center gap-2.5 transition-colors cursor-pointer ${mode === "signup" && !gdprAccepted ? "opacity-60 text-gray-500 hover:bg-gray-50" : "text-gray-700 hover:bg-gray-50"}`}
+              >
+                <GoogleIcon />
+                {t.paywall_continue_google}
+              </a>
+            </div>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3 my-1">
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs text-gray-400">{t.paywall_or}</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
+
             {/* Name field (signup only) */}
             {mode === "signup" && (
               <div className="relative">
                 <UserIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Full name (optional)"
+                  placeholder={t.paywall_name}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 bg-gray-50"
@@ -202,7 +246,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
               <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type={showPassword ? "text" : "password"}
-                placeholder="Password"
+                placeholder={t.paywall_password}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -226,70 +270,72 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
                   onClick={() => setMode("forgot")}
                   className="text-xs text-orange-500 hover:text-orange-600 font-medium"
                 >
-                  Did you forget your password? <span className="underline">Click here</span>
+                  {s.forgotQ} <span className="underline">{s.clickHere}</span>
                 </button>
               </div>
             )}
 
-            {/* Submit */}
+            {/* GDPR checkbox (solo en signup) — se resalta en rojo si el usuario intenta enviar sin marcarlo */}
+            {mode === "signup" && (
+              <label
+                className={`flex items-start gap-2 cursor-pointer select-none rounded-lg transition-all duration-200 ${gdprError ? "ring-2 ring-red-500 bg-red-50 p-2" : "pt-1"}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={gdprAccepted}
+                  onChange={(e) => {
+                    setGdprAccepted(e.target.checked);
+                    if (e.target.checked) setGdprError(false);
+                  }}
+                  className={`mt-0.5 w-4 h-4 shrink-0 cursor-pointer ${gdprError ? "accent-red-600" : "accent-[#1565C0]"}`}
+                />
+                <span className={`text-xs leading-relaxed ${gdprError ? "text-red-700" : "text-gray-500"}`}>
+                  {s.gdprPrefix}{" "}
+                  <a href={`/${lang}/terms`} target="_blank" rel="noreferrer" className="underline text-[#1565C0] hover:text-[#0D47A1]" onClick={(e) => e.stopPropagation()}>
+                    {s.termsLinkLabel}
+                  </a>
+                  {s.gdprAnd}
+                  <a href={`/${lang}/privacy`} target="_blank" rel="noreferrer" className="underline text-[#1565C0] hover:text-[#0D47A1]" onClick={(e) => e.stopPropagation()}>
+                    {s.privacyLinkLabel}
+                  </a>
+                  {s.gdprSuffix}
+                </span>
+              </label>
+            )}
+
+            {/* Submit: stays clickable even when GDPR is unchecked — on click we highlight the checkbox + toast. */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-2.5 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all mt-1"
-              style={{ backgroundColor: isLoading ? "#9ca3af" : "#6b7280" }}
+              className="w-full py-2.5 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all mt-1 disabled:opacity-60 disabled:cursor-not-allowed"
+              style={{ backgroundColor: isLoading ? "#9ca3af" : (mode === "signup" && !gdprAccepted) ? "#9ca3af" : "#1565C0" }}
             >
               {isLoading && <Loader2 size={15} className="animate-spin" />}
-              {mode === "signup" ? "Create an account" : "Login"}
+              {mode === "signup" ? t.paywall_register : t.paywall_login}
             </button>
-
-            {/* Divider */}
-            <div className="flex items-center gap-3 my-1">
-              <div className="flex-1 h-px bg-gray-200" />
-              <span className="text-xs text-gray-400">or</span>
-              <div className="flex-1 h-px bg-gray-200" />
-            </div>
-
-            {/* Google button — uses direct Google OAuth (shows "EditorPDF" on consent screen) */}
-            <a
-              href={`/api/auth/google?origin=${encodeURIComponent(window.location.origin)}&returnPath=${encodeURIComponent(window.location.pathname + window.location.search)}`}
-              className="w-full py-2.5 rounded-lg border border-gray-200 text-sm font-semibold text-gray-700 flex items-center justify-center gap-2.5 hover:bg-gray-50 transition-colors"
-            >
-              <GoogleIcon />
-              {mode === "signup" ? "Create account with Google" : "Sign in with Google"}
-            </a>
 
             {/* Switch mode */}
             {mode === "signup" ? (
               <p className="text-xs text-center text-gray-500 mt-1">
-                I already have an account{" "}
+                {t.paywall_have_account}{" "}
                 <button
                   type="button"
                   onClick={() => setMode("login")}
                   className="text-orange-500 font-semibold hover:underline"
                 >
-                  Login
+                  {t.paywall_login}
                 </button>
               </p>
             ) : (
               <p className="text-xs text-center text-gray-500 mt-1">
-                You do not have an account?{" "}
+                {t.paywall_no_account}{" "}
                 <button
                   type="button"
                   onClick={() => setMode("signup")}
                   className="text-orange-500 font-semibold hover:underline"
                 >
-                  Create an account
+                  {s.createAccountSwitch}
                 </button>
-              </p>
-            )}
-
-            {/* Legal */}
-            {mode === "signup" && (
-              <p className="text-[10px] text-center text-gray-400 mt-1 leading-relaxed">
-                By creating an account, you acknowledge that you have read and agree to the{" "}
-                <a href="/es/terms" className="underline hover:text-gray-600">Terms of Use and Contract</a>{" "}
-                and the{" "}
-                <a href="/es/privacy" className="underline hover:text-gray-600">Privacy Policy</a>.
               </p>
             )}
           </form>
