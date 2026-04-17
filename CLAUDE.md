@@ -89,3 +89,7 @@ Online PDF editor SaaS — edit, convert, sign, and protect PDFs in the browser.
 6. **Google Translate fix:** Added `translate="no"` and `notranslate` class to root div + meta tag to prevent Google Translate from modifying React-managed DOM (causes `insertBefore` errors)
 7. **Stripe payment flow rewrite:** Replaced SetupIntent (0€) with PaymentIntent using STRIPE_INTRO_PRICE_ID (0.50€, one-time price). confirmSetup creates monthly subscription with 7-day trial.
 8. **Google Ads compliance:** Removed "free", "no software", "no installation" language from schema markup, FAQ, i18n strings, and blog content to avoid "free desktop software" classification.
+9. **WYSIWYG text edit — metric-compatible fonts.** Editor overlay and exported PDF now use the same font for edited text blocks, so word-wrap matches between preview and download.
+   - Added `@pdf-lib/fontkit` and bundled 4 open-source families (Carlito/Arimo/Tinos/Cousine) as 16 TTFs in `client/public/fonts/` — metric-identical substitutes for Calibri/Arial/Times/Courier.
+   - `@font-face` declarations in `client/src/index.css` load them; `PdfEditor.tsx` font map prepends the matching family to every CSS stack (e.g. `"Carlito, Calibri, sans-serif"`).
+   - In `buildAnnotatedPdf`, `doc.registerFontkit(fontkit)` + per-family embed (subset) via `getCustomFont(family, variant)`; Helvetica kept as fallback only. Line-height lowered to 1.2 to match overlay CSS.

@@ -28,9 +28,15 @@ importers:
       '@matbee/libreoffice-converter':
         specifier: ^2.6.0
         version: 2.6.0(jszip@3.10.1)(sharp@0.34.5)
+      '@pdf-lib/fontkit':
+        specifier: ^1.1.1
+        version: 1.1.1
       '@pdfsmaller/pdf-encrypt-lite':
         specifier: ^1.0.2
         version: 1.0.2(pdf-lib@1.17.1)
+      '@pdftron/webviewer':
+        specifier: ^11.12.0
+        version: 11.12.0
       '@radix-ui/react-accordion':
         specifier: ^1.2.12
         version: 1.2.12(@types/react-dom@19.2.1(@types/react@19.2.1))(@types/react@19.2.1)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
@@ -1369,6 +1375,9 @@ packages:
     resolution: {integrity: sha512-6NNmNxvoJKeucVjxaaRUt3La2i5jShgiAbaY3G/72s1Vp3U06XPrAIxkAjBxpDcamEn/t+WJ4OOlGmvILo4/Ew==}
     engines: {node: '>= 10'}
 
+  '@pdf-lib/fontkit@1.1.1':
+    resolution: {integrity: sha512-KjMd7grNapIWS/Dm0gvfHEilSyAmeLvrEGVcqLGi0VYebuqqzTbgF29efCx7tvx+IEbG3zQciRSWl3GkUSvjZg==}
+
   '@pdf-lib/standard-fonts@1.0.0':
     resolution: {integrity: sha512-hU30BK9IUN/su0Mn9VdlVKsWBS6GyhVfqjwl1FjZN4TxP6cCw0jP2w7V3Hf5uX7M0AZJ16vey9yE0ny7Sa59ZA==}
 
@@ -1380,6 +1389,9 @@ packages:
     engines: {node: '>=14.0.0'}
     peerDependencies:
       pdf-lib: ^1.17.1
+
+  '@pdftron/webviewer@11.12.0':
+    resolution: {integrity: sha512-9GqjbLQTIR5jgFVKX99dcRHtfqFk0ctej3vy4eD9u3Xx5wAhrnZJjYCD4H7l+IWdr8CIqMSkl0K2RNWeiq86rw==}
 
   '@radix-ui/number@1.1.1':
     resolution: {integrity: sha512-MkKCwxlXTgz6CFoJx3pCwn07GKp36+aZyu/u2Ln2VrA5DcdyCZkASEDBTd8x5whTQQL5CiYf4prXKLcgQdv29g==}
@@ -6264,6 +6276,10 @@ snapshots:
       '@napi-rs/canvas-win32-x64-msvc': 0.1.96
     optional: true
 
+  '@pdf-lib/fontkit@1.1.1':
+    dependencies:
+      pako: 1.0.11
+
   '@pdf-lib/standard-fonts@1.0.0':
     dependencies:
       pako: 1.0.11
@@ -6275,6 +6291,8 @@ snapshots:
   '@pdfsmaller/pdf-encrypt-lite@1.0.2(pdf-lib@1.17.1)':
     dependencies:
       pdf-lib: 1.17.1
+
+  '@pdftron/webviewer@11.12.0': {}
 
   '@radix-ui/number@1.1.1': {}
 

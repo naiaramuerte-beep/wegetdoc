@@ -53,6 +53,44 @@ if (typeof (Uint8Array as any)["fromHex"] !== "function") {
 }
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import { PDFDocument, PDFDict, PDFName, PDFRef, PDFStream, rgb, StandardFonts, degrees } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
+
+// Metric-compatible open-source fonts (drop-in replacements for Calibri/Arial/Times/Courier).
+// Cached per-page-load so we don't refetch on every export.
+type FontVariant = "regular" | "bold" | "italic" | "boldItalic";
+type FontFamilyKey = "Carlito" | "Arimo" | "Tinos" | "Cousine";
+const CUSTOM_FONT_URLS: Record<FontFamilyKey, Record<FontVariant, string>> = {
+  Carlito: { regular: "/fonts/Carlito-Regular.ttf", bold: "/fonts/Carlito-Bold.ttf", italic: "/fonts/Carlito-Italic.ttf", boldItalic: "/fonts/Carlito-BoldItalic.ttf" },
+  Arimo:   { regular: "/fonts/Arimo-Regular.ttf",   bold: "/fonts/Arimo-Bold.ttf",   italic: "/fonts/Arimo-Italic.ttf",   boldItalic: "/fonts/Arimo-BoldItalic.ttf" },
+  Tinos:   { regular: "/fonts/Tinos-Regular.ttf",   bold: "/fonts/Tinos-Bold.ttf",   italic: "/fonts/Tinos-Italic.ttf",   boldItalic: "/fonts/Tinos-BoldItalic.ttf" },
+  Cousine: { regular: "/fonts/Cousine-Regular.ttf", bold: "/fonts/Cousine-Bold.ttf", italic: "/fonts/Cousine-Italic.ttf", boldItalic: "/fonts/Cousine-BoldItalic.ttf" },
+};
+const customFontBytesCache = new Map<string, Promise<ArrayBuffer>>();
+async function loadCustomFontBytes(family: FontFamilyKey, variant: FontVariant): Promise<ArrayBuffer> {
+  const url = CUSTOM_FONT_URLS[family][variant];
+  let p = customFontBytesCache.get(url);
+  if (!p) {
+    p = fetch(url).then(r => {
+      if (!r.ok) throw new Error(`Font load failed: ${url}`);
+      return r.arrayBuffer();
+    });
+    customFontBytesCache.set(url, p);
+  }
+  return p;
+}
+// Pick the metric-compatible family from a CSS font stack like "Carlito, Calibri, sans-serif"
+function pickFamilyKey(cssStack: string | undefined): FontFamilyKey {
+  if (!cssStack) return "Arimo";
+  const first = cssStack.split(",")[0].trim().replace(/^["']|["']$/g, "");
+  if (first === "Carlito") return "Carlito";
+  if (first === "Tinos") return "Tinos";
+  if (first === "Cousine") return "Cousine";
+  if (first === "Arimo") return "Arimo";
+  // Fallback by inspecting generic keyword
+  if (/serif/i.test(cssStack) && !/sans-serif/i.test(cssStack)) return "Tinos";
+  if (/monospace/i.test(cssStack)) return "Cousine";
+  return "Arimo";
+}
 
 // Browser-safe base64 encoder for Uint8Array (replaces Node.js Buffer.from().toString('base64'))
 function uint8ToBase64(bytes: Uint8Array): string {
@@ -894,59 +932,61 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const nameLC = pdfFontName.toLowerCase();
       const fontWeight = (nameLC.includes("bold") || nameLC.includes("black") || nameLC.includes("heavy")) ? "bold" : "normal";
       const fontStyle = (nameLC.includes("italic") || nameLC.includes("oblique")) ? "italic" : "normal";
-      // Map real PDF font names to CSS equivalents
+      // Map real PDF font names to CSS equivalents.
+      // Prefix with metric-compatible web font (Carlito/Arimo/Tinos/Cousine) so editor
+      // wrap matches the exported PDF (export embeds the same TTF via fontkit).
       let fontFamily = rawFamily;
       const fontMap: [string, string][] = [
-        ["arialnarrow", "Arial Narrow, sans-serif"],
-        ["arial", "Arial, Helvetica, sans-serif"],
+        ["arialnarrow", "Arimo, Arial Narrow, sans-serif"],
+        ["arial", "Arimo, Arial, Helvetica, sans-serif"],
         ["arimo", "Arimo, sans-serif"],
-        ["bookantiqua", "Book Antiqua, serif"],
-        ["calibri", "Calibri, sans-serif"],
-        ["cambria", "Cambria, serif"],
+        ["bookantiqua", "Tinos, Book Antiqua, serif"],
+        ["calibri", "Carlito, Calibri, sans-serif"],
+        ["cambria", "Tinos, Cambria, serif"],
         ["carlito", "Carlito, sans-serif"],
-        ["centurygothic", "Century Gothic, sans-serif"],
-        ["constantia", "Constantia, serif"],
-        ["couriernew", "Courier New, monospace"],
-        ["courier", "Courier, monospace"],
-        ["dejavusans", "DejaVu Sans, sans-serif"],
-        ["dejavuserif", "DejaVu Serif, serif"],
-        ["didot", "Didot, serif"],
-        ["franklingothic", "Franklin Gothic, sans-serif"],
-        ["garamond", "Garamond, serif"],
-        ["georgia", "Georgia, serif"],
-        ["helvetica", "Helvetica, Arial, sans-serif"],
-        ["inter", "Inter, sans-serif"],
-        ["lato", "Lato, sans-serif"],
-        ["liberationsans", "Liberation Sans, sans-serif"],
-        ["liberationserif", "Liberation Serif, serif"],
-        ["lucidasansunicode", "Lucida Sans Unicode, sans-serif"],
-        ["lucida", "Lucida Sans Unicode, sans-serif"],
-        ["notosans", "Noto Sans, sans-serif"],
-        ["opensans", "Open Sans, sans-serif"],
-        ["palatino", "Palatino Linotype, serif"],
-        ["poppins", "Poppins, sans-serif"],
-        ["roboto", "Roboto, sans-serif"],
-        ["rockwell", "Rockwell Nova, serif"],
-        ["segoeui", "Segoe UI, sans-serif"],
-        ["segoe", "Segoe UI, sans-serif"],
-        ["tahoma", "Tahoma, sans-serif"],
-        ["timesnewroman", "Times New Roman, serif"],
-        ["timesroman", "Times-Roman, serif"],
-        ["times", "Times New Roman, serif"],
-        ["trebuchet", "Trebuchet MS, sans-serif"],
-        ["verdana", "Verdana, sans-serif"],
-        ["consolas", "Consolas, monospace"],
-        ["mono", "Courier New, monospace"],
-        ["comicsans", "Comic Sans MS, cursive"],
-        ["impact", "Impact, sans-serif"],
+        ["centurygothic", "Arimo, Century Gothic, sans-serif"],
+        ["constantia", "Tinos, Constantia, serif"],
+        ["couriernew", "Cousine, Courier New, monospace"],
+        ["courier", "Cousine, Courier, monospace"],
+        ["dejavusans", "Arimo, DejaVu Sans, sans-serif"],
+        ["dejavuserif", "Tinos, DejaVu Serif, serif"],
+        ["didot", "Tinos, Didot, serif"],
+        ["franklingothic", "Arimo, Franklin Gothic, sans-serif"],
+        ["garamond", "Tinos, Garamond, serif"],
+        ["georgia", "Tinos, Georgia, serif"],
+        ["helvetica", "Arimo, Helvetica, Arial, sans-serif"],
+        ["inter", "Arimo, Inter, sans-serif"],
+        ["lato", "Arimo, Lato, sans-serif"],
+        ["liberationsans", "Arimo, Liberation Sans, sans-serif"],
+        ["liberationserif", "Tinos, Liberation Serif, serif"],
+        ["lucidasansunicode", "Arimo, Lucida Sans Unicode, sans-serif"],
+        ["lucida", "Arimo, Lucida Sans Unicode, sans-serif"],
+        ["notosans", "Arimo, Noto Sans, sans-serif"],
+        ["opensans", "Arimo, Open Sans, sans-serif"],
+        ["palatino", "Tinos, Palatino Linotype, serif"],
+        ["poppins", "Arimo, Poppins, sans-serif"],
+        ["roboto", "Arimo, Roboto, sans-serif"],
+        ["rockwell", "Tinos, Rockwell Nova, serif"],
+        ["segoeui", "Arimo, Segoe UI, sans-serif"],
+        ["segoe", "Arimo, Segoe UI, sans-serif"],
+        ["tahoma", "Arimo, Tahoma, sans-serif"],
+        ["timesnewroman", "Tinos, Times New Roman, serif"],
+        ["timesroman", "Tinos, Times-Roman, serif"],
+        ["times", "Tinos, Times New Roman, serif"],
+        ["trebuchet", "Arimo, Trebuchet MS, sans-serif"],
+        ["verdana", "Arimo, Verdana, sans-serif"],
+        ["consolas", "Cousine, Consolas, monospace"],
+        ["mono", "Cousine, Courier New, monospace"],
+        ["comicsans", "Arimo, Comic Sans MS, cursive"],
+        ["impact", "Arimo, Impact, sans-serif"],
       ];
       const nameNoSpaces = nameLC.replace(/[-_\s]/g, "");
       for (const [key, css] of fontMap) {
         if (nameNoSpaces.includes(key)) { fontFamily = css; break; }
       }
       // Fallback: if still generic, use rawFamily
-      if (fontFamily === "sans-serif") fontFamily = "Arial, Helvetica, sans-serif";
-      else if (fontFamily === "serif") fontFamily = "Times New Roman, serif";
+      if (fontFamily === "sans-serif") fontFamily = "Arimo, Arial, Helvetica, sans-serif";
+      else if (fontFamily === "serif") fontFamily = "Tinos, Times New Roman, serif";
       const canvasX = e * scale;
       const canvasY = (pdfPageHeight - f) * scale - pdfFontSize * scale;
       const canvasW = pdfWidth * scale;
@@ -2272,18 +2312,27 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
     const doc = await PDFDocument.load(safeBytes, { ignoreEncryption: true });
     const font = await doc.embedFont(StandardFonts.Helvetica);
+    // Scale factor: annotations are in canvas pixels, PDF uses points
+    const s = scale || 1;
     for (const ann of annotations) {
       try {
       const page = doc.getPage(ann.page - 1);
       const { height } = page.getSize();
-      const pdfY = height - ann.y - ann.height;
+      // Convert canvas coords to PDF points
+      const ax = ann.x / s, ay = ann.y / s, aw = ann.width / s, ah = ann.height / s;
+      const pdfY = height - ay - ah;
       if (ann.type === "text" && ann.text) {
-        page.drawText(ann.text, { x: ann.x, y: pdfY + ann.height / 2, size: ann.fontSize ?? 14, font, color: rgb(0, 0, 0) });
+        const fontSize = (ann.fontSize ?? 14);
+        const hexC = ann.color ?? "#000000";
+        const tr = parseInt(hexC.slice(1, 3), 16) / 255;
+        const tg = parseInt(hexC.slice(3, 5), 16) / 255;
+        const tb = parseInt(hexC.slice(5, 7), 16) / 255;
+        const textFont = (ann.fontWeight === "bold") ? (await doc.embedFont(StandardFonts.HelveticaBold)) : font;
+        page.drawText(ann.text, { x: ax, y: pdfY + ah / 2, size: fontSize, font: textFont, color: rgb(tr, tg, tb) });
       } else if ((ann.type === "signature" || ann.type === "image") && ann.dataUrl) {
         try {
-          // If rotated, pre-rotate the image via canvas before embedding
           let finalDataUrl = ann.dataUrl;
-          let drawW = ann.width, drawH = ann.height;
+          let drawW = aw, drawH = ah;
           if (ann.rotation && ann.rotation % 360 !== 0) {
             const tmpImg = await new Promise<HTMLImageElement>((resolve, reject) => {
               const i = new Image(); i.onload = () => resolve(i); i.onerror = reject; i.src = ann.dataUrl!;
@@ -2298,7 +2347,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             ctx.rotate(rad);
             ctx.drawImage(tmpImg, -tmpImg.width / 2, -tmpImg.height / 2);
             finalDataUrl = c.toDataURL("image/png");
-            if (ann.rotation % 180 !== 0) { drawW = ann.height; drawH = ann.width; }
+            if (ann.rotation % 180 !== 0) { drawW = ah; drawH = aw; }
           }
           const imgBytes = await fetch(finalDataUrl).then(r => r.arrayBuffer());
           const uint8 = new Uint8Array(imgBytes);
@@ -2309,44 +2358,57 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             try { img = await doc.embedJpg(uint8); }
             catch { img = await doc.embedPng(uint8); }
           }
-          const finalPdfY = height - ann.y - drawH;
-          page.drawImage(img, { x: ann.x, y: finalPdfY, width: drawW, height: drawH });
+          // Maintain aspect ratio: fit within drawW x drawH
+          const imgAspect = img.width / img.height;
+          const boxAspect = drawW / drawH;
+          let finalW = drawW, finalH = drawH, imgX = ax, imgY = height - ay - drawH;
+          if (imgAspect > boxAspect) { finalH = drawW / imgAspect; imgY = height - ay - finalH; }
+          else { finalW = drawH * imgAspect; }
+          page.drawImage(img, { x: imgX, y: imgY, width: finalW, height: finalH });
         } catch (imgErr) {
           console.error("[buildAnnotatedPdf] Error embedding image/signature:", imgErr, ann);
         }
       } else if (ann.type === "highlight") {
-        page.drawRectangle({ x: ann.x, y: pdfY, width: ann.width, height: ann.height, color: rgb(1, 1, 0), opacity: 0.4 });
+        const hc = ann.color ?? "#FFFF00";
+        const hr = parseInt(hc.slice(1, 3), 16) / 255;
+        const hg = parseInt(hc.slice(3, 5), 16) / 255;
+        const hb = parseInt(hc.slice(5, 7), 16) / 255;
+        page.drawRectangle({ x: ax, y: pdfY, width: aw, height: ah, color: rgb(isNaN(hr) ? 1 : hr, isNaN(hg) ? 1 : hg, isNaN(hb) ? 0 : hb), opacity: 0.4 });
       } else if (ann.type === "note" && ann.text) {
-        page.drawRectangle({ x: ann.x, y: pdfY, width: ann.width, height: ann.height, color: rgb(1, 1, 0.6), opacity: 0.8 });
-        page.drawText(ann.text, { x: ann.x + 6, y: pdfY + ann.height - 16, size: 10, font, color: rgb(0, 0, 0), maxWidth: ann.width - 12 });
+        page.drawRectangle({ x: ax, y: pdfY, width: aw, height: ah, color: rgb(1, 1, 0.6), opacity: 0.8 });
+        page.drawText(ann.text, { x: ax + 6, y: pdfY + ah - 16, size: 10, font, color: rgb(0, 0, 0), maxWidth: aw - 12 });
       } else if (ann.type === "shape") {
         const c = ann.color ?? "#2563EB";
         const r2 = parseInt(c.slice(1, 3), 16) / 255;
         const g2 = parseInt(c.slice(3, 5), 16) / 255;
         const b2 = parseInt(c.slice(5, 7), 16) / 255;
         if (ann.text === "rect") {
-          page.drawRectangle({ x: ann.x, y: pdfY, width: ann.width, height: ann.height, borderColor: rgb(r2, g2, b2), borderWidth: 2 });
+          page.drawRectangle({ x: ax, y: pdfY, width: aw, height: ah, borderColor: rgb(r2, g2, b2), borderWidth: 2 });
         } else if (ann.text === "rect-filled") {
-          page.drawRectangle({ x: ann.x, y: pdfY, width: ann.width, height: ann.height, borderColor: rgb(r2, g2, b2), borderWidth: 2, color: rgb(r2, g2, b2), opacity: 1 });
+          page.drawRectangle({ x: ax, y: pdfY, width: aw, height: ah, borderColor: rgb(r2, g2, b2), borderWidth: 2, color: rgb(r2, g2, b2), opacity: 1 });
         } else if (ann.text === "circle") {
-          page.drawEllipse({ x: ann.x + ann.width / 2, y: pdfY + ann.height / 2, xScale: ann.width / 2, yScale: ann.height / 2, borderColor: rgb(r2, g2, b2), borderWidth: 2 });
+          page.drawEllipse({ x: ax + aw / 2, y: pdfY + ah / 2, xScale: aw / 2, yScale: ah / 2, borderColor: rgb(r2, g2, b2), borderWidth: 2 });
         } else if (ann.text === "circle-filled") {
-          page.drawEllipse({ x: ann.x + ann.width / 2, y: pdfY + ann.height / 2, xScale: ann.width / 2, yScale: ann.height / 2, borderColor: rgb(r2, g2, b2), borderWidth: 2, color: rgb(r2, g2, b2), opacity: 1 });
+          page.drawEllipse({ x: ax + aw / 2, y: pdfY + ah / 2, xScale: aw / 2, yScale: ah / 2, borderColor: rgb(r2, g2, b2), borderWidth: 2, color: rgb(r2, g2, b2), opacity: 1 });
         } else {
-          page.drawLine({ start: { x: ann.x, y: pdfY }, end: { x: ann.x + ann.width, y: pdfY + ann.height }, thickness: 2, color: rgb(r2, g2, b2) });
+          page.drawLine({ start: { x: ax, y: pdfY }, end: { x: ax + aw, y: pdfY + ah }, thickness: 2, color: rgb(r2, g2, b2) });
         }
       } else if (ann.type === "eraser") {
-        page.drawRectangle({ x: ann.x, y: pdfY, width: ann.width, height: ann.height, color: rgb(1, 1, 1), opacity: 1 });
+        page.drawRectangle({ x: ax, y: pdfY, width: aw, height: ah, color: rgb(1, 1, 1), opacity: 1 });
       } else if (ann.type === "drawing" && ann.points && ann.points.length > 1) {
         const c = ann.color ?? "#FF0000";
         const r2 = parseInt(c.slice(1, 3), 16) / 255;
         const g2 = parseInt(c.slice(3, 5), 16) / 255;
         const b2 = parseInt(c.slice(5, 7), 16) / 255;
-        const { height: ph } = page.getSize();
         for (let i = 1; i < ann.points.length; i++) {
           const p1 = ann.points[i - 1];
           const p2 = ann.points[i];
-          page.drawLine({ start: { x: p1.x, y: ph - p1.y }, end: { x: p2.x, y: ph - p2.y }, thickness: ann.strokeWidth ?? 3, color: rgb(r2, g2, b2) });
+          page.drawLine({
+            start: { x: p1.x / s, y: height - p1.y / s },
+            end: { x: p2.x / s, y: height - p2.y / s },
+            thickness: (ann.strokeWidth ?? 3) / s,
+            color: rgb(r2, g2, b2),
+          });
         }
       }
       } catch (annErr) {
@@ -2354,11 +2416,35 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       }
     }
     // Apply native text edits: cover original text, draw replacement
-    // Embed font variants for bold/italic support
-    const fontRegular = await doc.embedFont(StandardFonts.Helvetica);
-    const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
-    const fontItalic = await doc.embedFont(StandardFonts.HelveticaOblique);
-    const fontBoldItalic = await doc.embedFont(StandardFonts.HelveticaBoldOblique);
+    // Embed Helvetica as ultimate fallback (used only if custom TTF fails to load)
+    const fallbackRegular = await doc.embedFont(StandardFonts.Helvetica);
+    const fallbackBold = await doc.embedFont(StandardFonts.HelveticaBold);
+    const fallbackItalic = await doc.embedFont(StandardFonts.HelveticaOblique);
+    const fallbackBoldItalic = await doc.embedFont(StandardFonts.HelveticaBoldOblique);
+
+    // Register fontkit so we can embed custom TTFs (Carlito/Arimo/Tinos/Cousine)
+    doc.registerFontkit(fontkit);
+    // Cache embedded fonts per-doc so each family/variant is embedded only once
+    const embeddedCustomFonts = new Map<string, any>();
+    const getCustomFont = async (family: FontFamilyKey, variant: FontVariant) => {
+      const key = `${family}:${variant}`;
+      const hit = embeddedCustomFonts.get(key);
+      if (hit) return hit;
+      try {
+        const bytes = await loadCustomFontBytes(family, variant);
+        // NOTE: no subset — pdf-lib+fontkit subsetting has been observed to omit glyphs
+        // when draw calls are split per-token. Embed full font (~300-680KB per variant,
+        // but the PDF is only generated on demand and each font is embedded only once).
+        const embedded = await doc.embedFont(bytes);
+        embeddedCustomFonts.set(key, embedded);
+        return embedded;
+      } catch (err) {
+        console.warn(`[buildAnnotatedPdf] Failed to embed ${key}, falling back to Helvetica`, err);
+        const fb = variant === "boldItalic" ? fallbackBoldItalic : variant === "bold" ? fallbackBold : variant === "italic" ? fallbackItalic : fallbackRegular;
+        embeddedCustomFonts.set(key, fb);
+        return fb;
+      }
+    };
 
     const editedBlocks: NativeTextBlock[] = [];
     allNativeTextBlocks.forEach(pageBlocks => {
@@ -2440,8 +2526,18 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         const htmlContent = block.editedHtml || block.editedStr || block.str;
         const runs = block.editedHtml ? parseHtmlToRuns(htmlContent) : [{ text: htmlContent, bold: defaultBold, italic: defaultItalic, underline: false, strike: false, color: defaultColor }];
 
+        // Pick metric-compatible family from the block's CSS stack, embed its 4 variants.
+        // This makes the exported PDF wrap identically to the editor overlay.
+        const familyKey = pickFamilyKey(block.fontFamily);
+        const [bfRegular, bfBold, bfItalic, bfBoldItalic] = await Promise.all([
+          getCustomFont(familyKey, "regular"),
+          getCustomFont(familyKey, "bold"),
+          getCustomFont(familyKey, "italic"),
+          getCustomFont(familyKey, "boldItalic"),
+        ]);
+
         // Build word tokens with formatting, then layout into lines, then draw
-        const pickFont = (b: boolean, i: boolean) => b && i ? fontBoldItalic : b ? fontBold : i ? fontItalic : fontRegular;
+        const pickFont = (b: boolean, i: boolean) => b && i ? bfBoldItalic : b ? bfBold : i ? bfItalic : bfRegular;
         interface WordToken { text: string; width: number; font: any; color: any; bold: boolean; italic: boolean; underline: boolean; strike: boolean; isSpace: boolean; }
         const tokens: WordToken[] = [];
         for (const run of runs) {
@@ -2451,8 +2547,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           const cg = parseInt(hex.slice(3, 5), 16) / 255;
           const cb = parseInt(hex.slice(5, 7), 16) / 255;
           const runColor = rgb(isNaN(cr) ? 0 : cr, isNaN(cg) ? 0 : cg, isNaN(cb) ? 0 : cb);
-          const safeText = run.text.replace(/[^\x00-\xFF]/g, "?");
-          const parts = safeText.split(/(\s+)/);
+          const parts = run.text.split(/(\s+)/);
           for (const part of parts) {
             if (!part) continue;
             tokens.push({ text: part, width: runFont.widthOfTextAtSize(part, fontSizePts), font: runFont, color: runColor, bold: run.bold, italic: run.italic, underline: run.underline, strike: run.strike, isSpace: !part.trim() });
@@ -2475,7 +2570,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
         // Determine text alignment
         const align = block.textAlign || "left";
-        const lineHeight = fontSizePts * 1.3;
+        // Match the editor overlay's CSS line-height: 1.2
+        const lineHeight = fontSizePts * 1.2;
 
         // Draw lines
         for (let li = 0; li < lines.length; li++) {
@@ -2489,7 +2585,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
           for (const tok of line.tokens) {
             if (tok.isSpace) { xPos += tok.width; continue; }
-            page.drawText(tok.text, { x: xPos, y: drawY, size: fontSizePts, font: tok.font, color: tok.color });
+            try {
+              page.drawText(tok.text, { x: xPos, y: drawY, size: fontSizePts, font: tok.font, color: tok.color });
+            } catch (drawErr) {
+              // Font may not support some chars (extremely rare with Carlito/Arimo/Tinos/Cousine unicode coverage)
+              console.warn("[buildAnnotatedPdf] drawText failed, replacing unsupported chars:", drawErr);
+              const sanitized = tok.text.replace(/[^\x00-\xFF]/g, "?");
+              try { page.drawText(sanitized, { x: xPos, y: drawY, size: fontSizePts, font: tok.font, color: tok.color }); } catch {}
+            }
             if (tok.underline) {
               page.drawLine({ start: { x: xPos, y: drawY - fontSizePts * 0.15 }, end: { x: xPos + tok.width, y: drawY - fontSizePts * 0.15 }, thickness: fontSizePts * 0.06, color: tok.color });
             }
@@ -3703,11 +3806,27 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   <div className="flex flex-col gap-1">
                     <span style={{ color: "#64748b" }}>Font</span>
                     <select
-                      value={block.fontFamily?.split(",")[0]?.trim() || "Arial"}
+                      value={(() => {
+                        const first = block.fontFamily?.split(",")[0]?.trim() || "Arial";
+                        // Hide metric-compat prefix in the dropdown display
+                        if (first === "Carlito") return "Calibri";
+                        if (first === "Arimo") return "Arial";
+                        if (first === "Tinos") return (block.fontFamily?.split(",")[1]?.trim() || "Times New Roman");
+                        if (first === "Cousine") return "Courier New";
+                        return first;
+                      })()}
                       onChange={e => {
                         const f = e.target.value;
                         if (typingBlockId === block.id) exec("fontName", f);
-                        updateBlock({ fontFamily: f + ", sans-serif" });
+                        // Prepend metric-compatible font so editor wrap matches PDF export
+                        const fLC = f.toLowerCase().replace(/[-_\s]/g, "");
+                        let stack: string;
+                        if (fLC.includes("calibri")) stack = `Carlito, ${f}, sans-serif`;
+                        else if (fLC.includes("arial") || fLC.includes("helvetica") || fLC === "verdana" || fLC === "tahoma" || fLC === "segoeui") stack = `Arimo, ${f}, sans-serif`;
+                        else if (fLC.includes("times") || fLC === "georgia" || fLC === "cambria" || fLC === "palatino" || fLC === "garamond") stack = `Tinos, ${f}, serif`;
+                        else if (fLC.includes("courier") || fLC === "consolas" || fLC.includes("mono")) stack = `Cousine, ${f}, monospace`;
+                        else stack = `Arimo, ${f}, sans-serif`;
+                        updateBlock({ fontFamily: stack });
                       }}
                       className="w-full border rounded px-2 py-1.5 text-xs"
                       style={{ borderColor: "#cbd5e1", fontFamily: block.fontFamily || "sans-serif" }}
@@ -4733,8 +4852,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         fontStyle: block.fontStyle || "normal",
                         color: editTextColor,
                         backgroundColor: "transparent",
-                        border: "2px solid #1565C0",
-                        outline: "none", padding: 0, margin: 0,
+                        // Use outline (not border) so the indicator doesn't shrink the text area — keeps wrap aligned with export
+                        border: "none",
+                        outline: "2px solid #1565C0", outlineOffset: "0px",
+                        padding: 0, margin: 0,
                         boxSizing: "border-box",
                         whiteSpace: "normal", wordWrap: "break-word",
                         overflow: "visible", lineHeight: 1.2,
@@ -4773,8 +4894,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         fontStyle: block.fontStyle || "normal",
                         color: (editingBlockId === block.id || block.editedStr !== undefined || block.origX !== undefined) ? (block.fontColor ?? "#000") : "transparent",
                         backgroundColor: "transparent",
-                        border: (editingBlockId === block.id || block.editedStr !== undefined || block.origX !== undefined) ? "1.5px dashed #1565C0" : "1.5px dashed rgba(21, 101, 192, 0.3)",
-                        outline: "none", padding: 0, margin: 0,
+                        // Use outline (not border) so the indicator doesn't shrink the text area — keeps wrap aligned with export
+                        border: "none",
+                        outline: (editingBlockId === block.id || block.editedStr !== undefined || block.origX !== undefined) ? "1.5px dashed #1565C0" : "1.5px dashed rgba(21, 101, 192, 0.3)",
+                        outlineOffset: "0px",
+                        padding: 0, margin: 0,
                         boxSizing: "border-box",
                         whiteSpace: "normal", wordWrap: "break-word",
                         overflow: "hidden", lineHeight: 1.2,
