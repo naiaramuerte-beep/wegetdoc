@@ -245,7 +245,6 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
                       <div className="py-1">
                         {[
                           { href: `/${lang}/dashboard?tab=documents`, icon: LayoutDashboard, label: t.nav_my_account },
-                          { href: `/${lang}/dashboard?tab=billing`, icon: Crown, label: t.nav_billing },
                         ].map((item) => (
                           <Link key={item.href} href={item.href}>
                             <button
