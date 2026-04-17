@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { colors } from "@/lib/brand";
-import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield } from "lucide-react";
+import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield, FileText } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -27,7 +27,7 @@ interface PaywallModalProps {
   buildPdfForUpload?: () => Promise<{ base64: string; name: string; size: number } | null>;
 }
 
-type Step = "auth-choice" | "email-form" | "plans";
+type Step = "auth-choice" | "plans";
 
 // ── Card brand icons (inline SVGs) ──────────────────────────────────────
 function CardBrands() {
@@ -364,6 +364,7 @@ export default function PaywallModal({
   const [showPassword, setShowPassword] = useState(false);
   const [emailMode, setEmailMode] = useState<"register" | "login">("register");
   const [emailLoading, setEmailLoading] = useState(false);
+  const [gdprAccepted, setGdprAccepted] = useState(false);
   const registerMutation = trpc.auth.register.useMutation();
   const loginMutation = trpc.auth.login.useMutation();
   const { refresh } = useAuth();
@@ -407,6 +408,10 @@ export default function PaywallModal({
   const handleEmailSubmit = async () => {
     if (!emailInput.trim() || !emailInput.includes("@")) { toast.error(t.paywall_enter_email); return; }
     if (!passwordInput || passwordInput.length < 6) { toast.error(t.paywall_password_min); return; }
+    if (emailMode === "register" && !gdprAccepted) {
+      toast.error("Debes aceptar los Términos y la Política de Privacidad");
+      return;
+    }
     setEmailLoading(true);
     try {
       if (emailMode === "register") {
@@ -459,18 +464,26 @@ export default function PaywallModal({
           <X className="w-4 h-4 text-slate-500" />
         </button>
 
-        {/* ── Auth Choice ── */}
+        {/* ── Unified Auth (Google + email/password + GDPR) ── */}
         {currentStep === "auth-choice" && (
           <div className="p-8">
             <div className="text-center mb-6">
               <div className="w-14 h-14 rounded-2xl bg-[#1565C0] flex items-center justify-center mx-auto mb-4">
-                <CreditCard className="w-7 h-7 text-white" />
+                <FileText className="w-7 h-7 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">{t.paywall_create_account}</h2>
-              <p className="text-sm text-gray-500">{t.paywall_sign_up_seconds}</p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">{emailMode === "register" ? "Crea tu cuenta" : t.paywall_login}</h2>
+              <p className="text-sm text-gray-500">{emailMode === "register" ? "para descargar tu documento" : t.paywall_enter_email}</p>
             </div>
-            <div className="space-y-3 max-w-sm mx-auto">
-              <button onClick={handleGoogleLogin} className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl border-2 border-gray-200 font-semibold text-sm text-gray-700 bg-white hover:border-gray-400 transition-all">
+            <div className="max-w-sm mx-auto space-y-3">
+              <div className="relative group">
+              <button
+                onClick={() => {
+                  if (emailMode === "register" && !gdprAccepted) { toast.error("Debes aceptar los Términos y la Política de Privacidad"); return; }
+                  handleGoogleLogin();
+                }}
+                disabled={emailMode === "register" && !gdprAccepted}
+                className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl border-2 border-gray-200 font-semibold text-sm text-gray-700 bg-white hover:border-gray-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-200"
+              >
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                   <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
                   <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
@@ -479,54 +492,67 @@ export default function PaywallModal({
                 </svg>
                 {t.paywall_continue_google}
               </button>
+              {emailMode === "register" && !gdprAccepted && (
+                <div
+                  className="absolute left-1/2 -translate-x-1/2 -bottom-9 z-20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap px-3 py-1.5 rounded-md bg-gray-900 text-white text-xs font-medium shadow-lg"
+                  role="tooltip"
+                >
+                  Acepta los Términos y la Política de Privacidad para continuar
+                  <span className="absolute left-1/2 -translate-x-1/2 -top-1 w-2 h-2 bg-gray-900 rotate-45" />
+                </div>
+              )}
+              </div>
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-gray-200" />
                 <span className="text-xs text-gray-400">{t.paywall_or}</span>
                 <div className="flex-1 h-px bg-gray-200" />
               </div>
-              <button onClick={() => setStep("email-form")} className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl border-2 border-gray-200 font-semibold text-sm text-gray-700 bg-white hover:border-gray-400 transition-all">
-                <Mail className="w-4 h-4" />
-                {t.paywall_continue_email}
-              </button>
-            </div>
-            <p className="text-center text-xs mt-5 text-gray-400">
-              {t.paywall_by_continuing}{" "}
-              <a href="/terms" className="underline text-gray-600">{t.paywall_terms}</a>{" "}
-              {t.paywall_or}{" "}
-              <a href="/privacy" className="underline text-gray-600">{t.paywall_privacy}</a>
-            </p>
-          </div>
-        )}
-
-        {/* ── Email Form ── */}
-        {currentStep === "email-form" && (
-          <div className="p-8">
-            <div className="text-center mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-[#1565C0] flex items-center justify-center mx-auto mb-4">
-                <Lock className="w-7 h-7 text-white" />
+              <div>
+                <label className="text-xs font-semibold text-gray-700 block mb-1">Email</label>
+                <input type="email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} placeholder="tu@email.com" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1565C0]" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">{emailMode === "register" ? t.paywall_register : t.paywall_login}</h2>
-              <p className="text-sm text-gray-500">{emailMode === "register" ? t.paywall_sign_up_seconds : t.paywall_enter_email}</p>
-            </div>
-            <div className="max-w-sm mx-auto space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-gray-700 block mb-1">{t.paywall_password}</label>
+                <div className="relative">
+                  <input type={showPassword ? "text" : "password"} value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} placeholder={emailMode === "register" ? t.paywall_password_min : t.paywall_password} className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-[#1565C0]" onKeyDown={(e) => e.key === "Enter" && handleEmailSubmit()} />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
               {emailMode === "register" && (
-                <input type="text" value={nameInput} onChange={(e) => setNameInput(e.target.value)} placeholder={t.paywall_name} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1565C0]" />
+                <label className="flex items-start gap-2 pt-1 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={gdprAccepted}
+                    onChange={(e) => setGdprAccepted(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 shrink-0 accent-[#1565C0] cursor-pointer"
+                  />
+                  <span className="text-xs text-gray-500 leading-relaxed">
+                    He leído y acepto los{" "}
+                    <a href="/terms" target="_blank" rel="noreferrer" className="underline text-[#1565C0] hover:text-[#0D47A1]" onClick={(e) => e.stopPropagation()}>
+                      {t.paywall_terms}
+                    </a>{" "}
+                    y la{" "}
+                    <a href="/privacy" target="_blank" rel="noreferrer" className="underline text-[#1565C0] hover:text-[#0D47A1]" onClick={(e) => e.stopPropagation()}>
+                      {t.paywall_privacy}
+                    </a>
+                    . Autorizo el tratamiento de mis datos personales conforme al Reglamento General de Protección de Datos (RGPD).
+                  </span>
+                </label>
               )}
-              <input type="email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} placeholder="you@email.com" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1565C0]" />
-              <div className="relative">
-                <input type={showPassword ? "text" : "password"} value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} placeholder={t.paywall_password} className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-[#1565C0]" onKeyDown={(e) => e.key === "Enter" && handleEmailSubmit()} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {emailMode === "register" && <p className="text-xs text-gray-400">{t.paywall_password_min}</p>}
-              <button onClick={handleEmailSubmit} disabled={emailLoading} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#1565C0] text-white font-bold text-sm hover:bg-[#0D47A1] transition-colors disabled:opacity-60">
-                {emailLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> {emailMode === "register" ? t.paywall_registering : t.paywall_logging_in}</> : <><ArrowRight className="w-4 h-4" /> {emailMode === "register" ? t.paywall_register : t.paywall_login}</>}
+              <button
+                onClick={handleEmailSubmit}
+                disabled={emailLoading || (emailMode === "register" && !gdprAccepted)}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#1565C0] text-white font-bold text-sm hover:bg-[#0D47A1] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {emailLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> {emailMode === "register" ? t.paywall_registering : t.paywall_logging_in}</> : (emailMode === "register" ? "Crear cuenta" : t.paywall_login)}
               </button>
               <div className="text-center text-sm text-gray-500 pt-1">
-                {emailMode === "register" ? <>{t.paywall_have_account}{" "}<button onClick={() => setEmailMode("login")} className="text-[#1565C0] font-semibold hover:underline">{t.paywall_login}</button></> : <>{t.paywall_no_account}{" "}<button onClick={() => setEmailMode("register")} className="text-[#1565C0] font-semibold hover:underline">{t.paywall_register}</button></>}
+                {emailMode === "register"
+                  ? <>{t.paywall_have_account}{" "}<button onClick={() => setEmailMode("login")} className="text-[#1565C0] font-semibold hover:underline">{t.paywall_login}</button></>
+                  : <>{t.paywall_no_account}{" "}<button onClick={() => setEmailMode("register")} className="text-[#1565C0] font-semibold hover:underline">{t.paywall_register}</button></>}
               </div>
-              <button onClick={() => setStep("auth-choice")} className="w-full text-sm text-gray-400 hover:text-gray-700 py-2 transition-colors">{t.paywall_back}</button>
             </div>
           </div>
         )}

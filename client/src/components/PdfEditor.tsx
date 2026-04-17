@@ -413,12 +413,25 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
   // ── Save PDF to My Documents ──────────────────────────────
   const savePdf = async () => {
-    if (!isAuthenticated) {
-      toast.error(t.editor_toast_login_required ?? "Sign in to save documents");
-      return;
-    }
     if (!pdfBytes) {
       toast.error(t.editor_toast_no_pdf ?? "No PDF loaded");
+      return;
+    }
+    if (!isAuthenticated) {
+      // Not logged in → open the paywall/auth modal so the user can register or sign in.
+      // After auth the pending action ("save") will resume.
+      try {
+        const pdfOut = await buildAnnotatedPdf();
+        if (pdfOut) {
+          const base64 = uint8ToBase64(pdfOut);
+          const docName = displayName || file?.name || "document.pdf";
+          setPdfDataForPaywall({ base64, name: docName, size: pdfOut.byteLength });
+          generateAnnotatedThumbnail(pdfOut).then(t => { if (t) setPaywallThumbnail(t); });
+        }
+      } catch {}
+      sessionStorage.setItem("cloudpdf_pending_action", "save");
+      if (file) { try { await savePdfToSession(file); } catch {} }
+      setShowPaywall(true);
       return;
     }
     setIsSaving(true);
@@ -2741,12 +2754,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const docSize = pdfOut.byteLength;
 
     // Step 2: If NOT authenticated → show paywall modal (auth-choice step)
-    // DEV: skip auth for local testing
-    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-      triggerDownload(pdfOut);
-      toast.success("PDF descargado correctamente (dev mode)", { id: "dl" });
-      return;
-    }
     if (!isAuthenticated) {
       setPdfDataForPaywall({ base64, name: docName, size: docSize });
       generateAnnotatedThumbnail(pdfOut).then(t => { if (t) setPaywallThumbnail(t); });
