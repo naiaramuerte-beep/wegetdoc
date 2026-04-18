@@ -113,17 +113,17 @@ function PaymentForm({ onSuccess, userCountry, userPostalCode }: { onSuccess: ()
         ) : (
           <span className="flex items-center justify-center gap-2">
             <Lock className="w-4 h-4" />
-            Download PDF
+            {t.editor_download}
           </span>
         )}
       </button>
 
-      {/* Legal disclaimer */}
+      {/* Legal disclaimer — sourced from i18n so it follows the active locale */}
       <p className="text-[9px] text-slate-300 leading-relaxed text-center">
-        By proceeding, you agree to a 7-day trial (0,50&nbsp;€) and a subsequent monthly subscription of 19,99&nbsp;€. You authorize recurring charges and can cancel at any time. You have 14 calendar days to request a refund, subject to our{" "}
-        <a href={`/${lang}/terms`} target="_blank" className="underline hover:text-slate-400">Terms of Service</a>{" "}
-        and{" "}
-        <a href={`/${lang}/privacy`} target="_blank" className="underline hover:text-slate-400">Privacy Policy</a>.
+        {t.paywall_legal_text}{" "}
+        <a href={`/${lang}/terms`} target="_blank" className="underline hover:text-slate-400">{t.paywall_terms}</a>
+        {" · "}
+        <a href={`/${lang}/privacy`} target="_blank" className="underline hover:text-slate-400">{t.paywall_privacy}</a>
       </p>
     </form>
   );
@@ -141,7 +141,7 @@ function StripeCheckoutForm({
   thumbnailUrl?: string;
   buildPdfForUpload?: () => Promise<{ base64: string; name: string; size: number } | null>;
 }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [isProcessing, setIsProcessing] = useState(false);
   const [progressStep, setProgressStep] = useState<"idle" | "checkout" | "saving" | "done">("idle");
   const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
@@ -331,7 +331,7 @@ function StripeCheckoutForm({
 
           {/* Stripe form */}
           {stripePromise && clientSecret ? (
-            <Elements stripe={stripePromise} options={{ clientSecret, locale: "en", appearance: { theme: "stripe", variables: { colorPrimary: "#1565C0", borderRadius: "10px" } } }}>
+            <Elements stripe={stripePromise} options={{ clientSecret, locale: (lang as any) || "auto", appearance: { theme: "stripe", variables: { colorPrimary: "#1565C0", borderRadius: "10px" } } }}>
               <PaymentForm onSuccess={handleComplete} userCountry={userCountry} userPostalCode={userPostalCode} />
             </Elements>
           ) : (
