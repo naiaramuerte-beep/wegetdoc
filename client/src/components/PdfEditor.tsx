@@ -182,7 +182,7 @@ interface Annotation {
 
 interface HistoryEntry {
   annotations: Annotation[];
-  pages: number[];
+  textBlocks: Map<number, NativeTextBlock[]>;
 }
 
 // ── Toolbar button ─────────────────────────────────────────────
@@ -227,7 +227,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [scale, setScale] = useState(1.2);
-  const [activeTool, setActiveTool] = useState<ToolName>("edit-text");
+  const [activeTool, setActiveTool] = useState<ToolName>(() =>
+    typeof window !== "undefined" && window.innerWidth < 768 ? "pointer" : "edit-text"
+  );
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -357,6 +359,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
   // Keep annotationsRef in sync with annotations state for use in event listeners
   useEffect(() => { annotationsRef.current = annotations; }, [annotations]);
+
+  // Keep a ref to native text blocks so pushHistory can snapshot current state without races
+  const allNativeTextBlocksRef = useRef<Map<number, NativeTextBlock[]>>(new Map());
+  useEffect(() => { allNativeTextBlocksRef.current = allNativeTextBlocks; }, [allNativeTextBlocks]);
 
   // ── Sync canvas internal size with its CSS display size ──────
   // Sync the canvas internal size to its CSS display size once when the sign/draw panel opens.
@@ -570,9 +576,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       setTotalPages(doc.numPages);
       setCurrentPage(1);
       setAnnotations([]);
-      setHistory([]);
-      setHistoryIndex(-1);
-      setActiveTool("edit-text");
+      setAllNativeTextBlocks(new Map());
+      setHistory([{ annotations: [], textBlocks: new Map() }]);
+      setHistoryIndex(0);
+      setActiveTool(window.innerWidth < 768 ? "pointer" : "edit-text");
       // Generate thumbnails
       setPdfLoadProgress(60);
       const thumbs: string[] = [];
@@ -1107,6 +1114,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       }
     }
     // Only set blocks for this page if not already loaded (preserve existing edits)
+    let resultingMap: Map<number, NativeTextBlock[]> | null = null;
     setAllNativeTextBlocks(prev => {
       const existing = prev.get(pageNum);
       if (existing && existing.length > 0) {
@@ -1127,12 +1135,30 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         });
         const next = new Map(prev);
         next.set(pageNum, merged);
+        resultingMap = next;
         return next;
       }
       const next = new Map(prev);
       next.set(pageNum, blocks);
+      resultingMap = next;
       return next;
     });
+    // Loaded blocks are PDF-native data (not an edit). Backfill this page's blocks into every
+    // existing history entry that doesn't yet have them, so undo never wipes detected text.
+    if (resultingMap) {
+      setHistory(prev => {
+        const finalMap = resultingMap as Map<number, NativeTextBlock[]>;
+        const pageBlocks = finalMap.get(pageNum) ?? [];
+        const needsBackfill = prev.some(e => (e.textBlocks.get(pageNum)?.length ?? 0) === 0);
+        if (!needsBackfill) return prev;
+        return prev.map(e => {
+          if ((e.textBlocks.get(pageNum)?.length ?? 0) > 0) return e;
+          const m = new Map(e.textBlocks);
+          m.set(pageNum, pageBlocks.map(b => ({ ...b })));
+          return { ...e, textBlocks: m };
+        });
+      });
+    }
   }, [pdfDoc, scale]);
 
   // Auto-save edited text when switching away from edit-text tool or changing page
@@ -1299,10 +1325,18 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   }, [handleFile]);
 
   // ── History (undo/redo) ───────────────────────────────────────
-  const pushHistory = useCallback((anns: Annotation[]) => {
+  // Snapshot annotations + native text block edits together so undo reverts BOTH.
+  const pushHistory = useCallback((anns: Annotation[], blocks?: Map<number, NativeTextBlock[]>) => {
+    const src = blocks ?? allNativeTextBlocksRef.current;
+    const clonedBlocks = new Map<number, NativeTextBlock[]>();
+    src.forEach((v, k) => clonedBlocks.set(k, v.map(b => ({ ...b }))));
+    const entry: HistoryEntry = {
+      annotations: anns.map(a => ({ ...a })),
+      textBlocks: clonedBlocks,
+    };
     setHistory(prev => {
       const newHist = prev.slice(0, historyIndex + 1);
-      newHist.push({ annotations: anns, pages: [] });
+      newHist.push(entry);
       setHistoryIndex(newHist.length - 1);
       return newHist;
     });
@@ -1553,16 +1587,18 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   }, [activeTool, getCanvasPos, currentBrushPoints, dragPreview, currentPage, brushColor, brushSize, highlightColor, pushHistory]);
 
   const undo = useCallback(() => {
-    if (historyIndex <= 0) { setAnnotations([]); return; }
-    const prev = history[historyIndex - 1];
-    setAnnotations(prev.annotations);
+    if (historyIndex <= 0) return;
+    const target = history[historyIndex - 1];
+    setAnnotations(target.annotations);
+    setAllNativeTextBlocks(target.textBlocks);
     setHistoryIndex(i => i - 1);
   }, [history, historyIndex]);
 
   const redo = useCallback(() => {
     if (historyIndex >= history.length - 1) return;
-    const next = history[historyIndex + 1];
-    setAnnotations(next.annotations);
+    const target = history[historyIndex + 1];
+    setAnnotations(target.annotations);
+    setAllNativeTextBlocks(target.textBlocks);
     setHistoryIndex(i => i + 1);
   }, [history, historyIndex]);
 
@@ -2797,7 +2833,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // ── Apply initialTool when PDF is loaded (default to "edit-text") ──
   useEffect(() => {
     if (!pdfDoc) return;
-    if (!initialTool) { setActiveTool("edit-text"); return; }
+    const fallback: ToolName = typeof window !== "undefined" && window.innerWidth < 768 ? "pointer" : "edit-text";
+    if (!initialTool) { setActiveTool(fallback); return; }
     const toolMap: Record<string, ToolName> = {
       "text": "text", "sign": "sign", "notes": "notes",
       "image": "image", "protect": "protect", "compress": "compress",
@@ -2811,7 +2848,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       "merge": "merge", "split": "split",
     };
     const mapped = toolMap[initialTool];
-    setActiveTool(mapped ?? "edit-text");
+    setActiveTool(mapped ?? fallback);
   }, [initialTool, pdfDoc]);
 
   // ── Auto-save draft to localStorage (unregistered users) ─────
@@ -4831,17 +4868,17 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         const original = block.editedStr ?? block.str;
                         const normalize = (s: string) => s.replace(/\s+/g, " ").trim();
                         if (normalize(newText) !== normalize(original) || newHeight > block.height || newHtml !== newText) {
-                          setAllNativeTextBlocks(prev => {
-                            const pageBlocks = prev.get(block.page) ?? [];
-                            const updated = pageBlocks.map((b: NativeTextBlock) =>
-                              b.id === block.id
-                                ? { ...b, editedStr: newText, editedHtml: newHtml, fontColor: editTextColor, height: newHeight }
-                                : b
-                            );
-                            const next = new Map(prev);
-                            next.set(block.page, updated);
-                            return next;
-                          });
+                          const current = allNativeTextBlocksRef.current;
+                          const pageBlocks = current.get(block.page) ?? [];
+                          const updated = pageBlocks.map((b: NativeTextBlock) =>
+                            b.id === block.id
+                              ? { ...b, editedStr: newText, editedHtml: newHtml, fontColor: editTextColor, height: newHeight }
+                              : b
+                          );
+                          const next = new Map(current);
+                          next.set(block.page, updated);
+                          setAllNativeTextBlocks(next);
+                          pushHistory(annotationsRef.current, next);
                         }
                         setTypingBlockId(null);
                         setEditingBlockId(null);

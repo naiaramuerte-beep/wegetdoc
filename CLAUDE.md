@@ -93,3 +93,9 @@ Online PDF editor SaaS — edit, convert, sign, and protect PDFs in the browser.
    - Added `@pdf-lib/fontkit` and bundled 4 open-source families (Carlito/Arimo/Tinos/Cousine) as 16 TTFs in `client/public/fonts/` — metric-identical substitutes for Calibri/Arial/Times/Courier.
    - `@font-face` declarations in `client/src/index.css` load them; `PdfEditor.tsx` font map prepends the matching family to every CSS stack (e.g. `"Carlito, Calibri, sans-serif"`).
    - In `buildAnnotatedPdf`, `doc.registerFontkit(fontkit)` + per-family embed (subset) via `getCustomFont(family, variant)`; Helvetica kept as fallback only. Line-height lowered to 1.2 to match overlay CSS.
+10. **Undo/redo covers native text edits + correct initial state.**
+    - `HistoryEntry` now stores `{ annotations, textBlocks: Map<number, NativeTextBlock[]> }` so Ctrl+Z reverts BOTH annotations and edits to the PDF's detected text blocks.
+    - On PDF load, history is seeded with an empty initial entry at index 0 (previously `[]`/index -1), so the first user action creates a reversible state instead of wiping work.
+    - `loadNativeTextBlocks` backfills its result into existing history entries for that page (PDF-native data, not a user action) so undoing past the first edit doesn't erase detected text.
+    - `allNativeTextBlocksRef` mirrors the state so `pushHistory` can snapshot without closure races.
+11. **Mobile UX: no tool preselected on PDF open.** Desktop keeps "edit-text" as default; on mobile (`window.innerWidth < 768`) the default is `pointer`, avoiding auto-opening the tool sheet on file load.
