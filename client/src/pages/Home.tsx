@@ -311,7 +311,7 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
           onDragLeave={() => setIsDraggingOver(false)}
           onDrop={handleDrop}
           onClick={() => triggerUpload(TAB_TO_TOOL[activeTab])}
-          className="rounded-2xl border-[1.5px] border-dashed cursor-pointer transition-all flex items-center justify-center gap-3 flex-wrap text-center"
+          className="rounded-2xl border-[1.5px] border-dashed cursor-pointer transition-all flex flex-col md:flex-row md:flex-wrap items-center justify-center gap-2 md:gap-3 text-center"
           style={{
             borderColor: isDraggingOver ? ACCENT : ACCENT_BORDER,
             background: isDraggingOver
