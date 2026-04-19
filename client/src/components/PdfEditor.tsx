@@ -13,7 +13,7 @@ import {
   Image as ImageIcon, MousePointer, Shapes, Search, Shield,
   Minimize2, Move, StickyNote, FileText, Trash2, RotateCw,
   Plus, Scissors, Layers, X, Upload, Check, Eye, EyeOff,
-  AlignLeft, Bold, Italic, Underline, ChevronDown, Lock, Unlock,
+  AlignLeft, Bold, Italic, Underline, ChevronDown, ChevronUp, Lock, Unlock,
   Save, CheckCircle, Info,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -363,6 +363,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // Keep a ref to native text blocks so pushHistory can snapshot current state without races
   const allNativeTextBlocksRef = useRef<Map<number, NativeTextBlock[]>>(new Map());
   useEffect(() => { allNativeTextBlocksRef.current = allNativeTextBlocks; }, [allNativeTextBlocks]);
+
+  // Mobile swipe-to-change-page. Only fires on mobile (<768px) when no tool is active.
+  const swipeStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
 
   // ── Sync canvas internal size with its CSS display size ──────
   // Sync the canvas internal size to its CSS display size once when the sign/draw panel opens.
@@ -1102,12 +1105,53 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               const hex = "#" + bestColor.map(c => c.toString(16).padStart(2, "0")).join("");
               block.fontColor = hex;
             }
-            // Sample background color
-            const bgSampleX = Math.round((block.x + block.width / 2) * dpr);
-            const bgSampleY = Math.max(0, Math.round((block.y - 2) * dpr));
-            if (bgSampleX < canvas.width && bgSampleY < canvas.height) {
-              const bgPixel = ctx.getImageData(bgSampleX, bgSampleY, 1, 1).data;
-              block.bgColor = "#" + [bgPixel[0], bgPixel[1], bgPixel[2]].map(c => c.toString(16).padStart(2, "0")).join("");
+            // Sample background color from multiple points around the block edges.
+            // Single-point sampling failed when the probe landed on adjacent text or graphics
+            // (e.g. on a PDF with colored background + title above the block). We sample ~12
+            // points, skip anything close to the detected text color, then pick the mode.
+            const textR = bestColor[0] ?? 0;
+            const textG = bestColor[1] ?? 0;
+            const textB = bestColor[2] ?? 0;
+            const isTextLike = (r: number, g: number, b: number) =>
+              Math.abs(r - textR) + Math.abs(g - textG) + Math.abs(b - textB) < 60;
+            const trySample = (x: number, y: number): [number, number, number] | null => {
+              const sx = Math.round(x * dpr);
+              const sy = Math.round(y * dpr);
+              if (sx < 0 || sy < 0 || sx >= canvas.width || sy >= canvas.height) return null;
+              const p = ctx.getImageData(sx, sy, 1, 1).data;
+              if (isTextLike(p[0], p[1], p[2])) return null;
+              return [p[0], p[1], p[2]];
+            };
+            const bcx = block.x + block.width / 2;
+            const bcy = block.y + block.height / 2;
+            const probes: Array<[number, number]> = [
+              [bcx, block.y - 4], [bcx, block.y - 10],
+              [bcx, block.y + block.height + 4], [bcx, block.y + block.height + 10],
+              [block.x - 6, bcy], [block.x - 14, bcy],
+              [block.x + block.width + 6, bcy], [block.x + block.width + 14, bcy],
+              [block.x - 6, block.y - 6], [block.x + block.width + 6, block.y - 6],
+              [block.x - 6, block.y + block.height + 6], [block.x + block.width + 6, block.y + block.height + 6],
+            ];
+            const candidates: Array<[number, number, number]> = [];
+            for (const [px, py] of probes) {
+              const c = trySample(px, py);
+              if (c) candidates.push(c);
+            }
+            if (candidates.length > 0) {
+              // Quantize to 16-step buckets (coarse grouping) and pick the most common
+              const buckets = new Map<string, { rgb: [number, number, number]; count: number }>();
+              for (const [r, g, b] of candidates) {
+                const key = (r >> 4) + "," + (g >> 4) + "," + (b >> 4);
+                const cur = buckets.get(key);
+                if (cur) cur.count++;
+                else buckets.set(key, { rgb: [r, g, b], count: 1 });
+              }
+              const bucketList = Array.from(buckets.values());
+              let best = bucketList[0];
+              for (const bucket of bucketList) {
+                if (bucket.count > best.count) best = bucket;
+              }
+              block.bgColor = "#" + best.rgb.map(c => c.toString(16).padStart(2, "0")).join("");
             }
           }
         }
@@ -1208,8 +1252,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     return () => document.removeEventListener("selectionchange", handler);
   }, [typingBlockId]);
 
-  // Erase/restore canvas text when selecting/deselecting blocks
-  const prevErasedBlockRef = useRef<string | null>(null);
+  // Erase/restore canvas text under native text blocks.
+  // A block's canvas area is erased (filled with bgColor) whenever the block is either
+  // selected (editingBlockId) OR has user edits (editedStr set / origX set). When any of
+  // those conditions cease (e.g. after undo reverts an edit), the pixels are restored
+  // from the clean canvas snapshot. Reacting to both editingBlockId AND block content
+  // changes is what makes undo/redo actually visible on the canvas.
+  const prevErasedBlocksRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     const canvas = mainCanvasRef.current;
     const snapshot = canvasSnapshotRef.current;
@@ -1218,40 +1267,54 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Restore previously erased block from snapshot
-    if (prevErasedBlockRef.current && prevErasedBlockRef.current !== editingBlockId) {
-      const prevBlock = nativeTextBlocks.find(b => b.id === prevErasedBlockRef.current);
-      if (prevBlock && !prevBlock.editedStr && prevBlock.origX === undefined) {
-        // Block was NOT edited — restore original canvas pixels from snapshot
-        const sx = Math.round(prevBlock.x * dpr);
-        const sy = Math.round(prevBlock.y * dpr);
-        const sw = Math.round(prevBlock.width * dpr);
-        const sh = Math.round(prevBlock.height * dpr);
-        // Create a temp canvas to extract the region from snapshot
-        const tempCanvas = document.createElement("canvas");
-        tempCanvas.width = snapshot.width;
-        tempCanvas.height = snapshot.height;
-        const tempCtx = tempCanvas.getContext("2d")!;
-        tempCtx.putImageData(snapshot, 0, 0);
-        ctx.drawImage(tempCanvas, sx, sy, sw, sh, sx, sy, sw, sh);
+    const shouldBeErased = (b: NativeTextBlock) =>
+      editingBlockId === b.id || b.editedStr !== undefined || b.origX !== undefined;
+
+    // Build a temp canvas with the clean snapshot for region restores
+    let tempCanvas: HTMLCanvasElement | null = null;
+    const getTempCanvas = () => {
+      if (tempCanvas) return tempCanvas;
+      const c = document.createElement("canvas");
+      c.width = snapshot.width;
+      c.height = snapshot.height;
+      const tctx = c.getContext("2d")!;
+      tctx.putImageData(snapshot, 0, 0);
+      tempCanvas = c;
+      return c;
+    };
+
+    // Restore any previously erased blocks that no longer need to be erased
+    const erased = prevErasedBlocksRef.current;
+    const toUnerase: string[] = [];
+    erased.forEach(id => {
+      const block = nativeTextBlocks.find(b => b.id === id);
+      if (!block || !shouldBeErased(block)) toUnerase.push(id);
+    });
+    for (const id of toUnerase) {
+      const block = nativeTextBlocks.find(b => b.id === id);
+      if (block) {
+        const sx = Math.round(block.x * dpr);
+        const sy = Math.round(block.y * dpr);
+        const sw = Math.round(block.width * dpr);
+        const sh = Math.round(block.height * dpr);
+        ctx.drawImage(getTempCanvas(), sx, sy, sw, sh, sx, sy, sw, sh);
       }
+      erased.delete(id);
     }
 
-    // Erase newly selected block
-    if (editingBlockId) {
-      const block = nativeTextBlocks.find(b => b.id === editingBlockId);
-      if (block) {
+    // Erase any block that should be erased but isn't yet
+    for (const block of nativeTextBlocks) {
+      if (shouldBeErased(block) && !erased.has(block.id)) {
         ctx.fillStyle = block.bgColor || "#ffffff";
         ctx.fillRect(
           Math.round(block.x * dpr), Math.round(block.y * dpr),
           Math.round(block.width * dpr), Math.round(block.height * dpr)
         );
+        erased.add(block.id);
       }
     }
-
-    prevErasedBlockRef.current = editingBlockId;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editingBlockId]);
+  }, [editingBlockId, nativeTextBlocks]);
 
   // Handle file drop / select — auto-converts non-PDF files to PDF via server
   const handleFile = useCallback(async (f: File) => {
@@ -4423,7 +4486,28 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           </div>
 
           {/* PDF canvas + annotation overlay */}
-          <div className="flex-1 overflow-auto flex items-start justify-center p-3 md:p-6 pb-[140px] md:pb-6">
+          <div
+            className="flex-1 overflow-auto flex items-start justify-center p-3 md:p-6 pb-[140px] md:pb-6 relative"
+            onTouchStart={(e) => {
+              if (window.innerWidth >= 768) return;
+              if (activeTool !== "pointer") return;
+              const tch = e.touches[0];
+              swipeStartRef.current = { x: tch.clientX, y: tch.clientY, time: Date.now() };
+            }}
+            onTouchEnd={(e) => {
+              const start = swipeStartRef.current;
+              swipeStartRef.current = null;
+              if (!start) return;
+              const tch = e.changedTouches[0];
+              const dx = tch.clientX - start.x;
+              const dy = tch.clientY - start.y;
+              if (Date.now() - start.time > 600) return;
+              if (Math.abs(dx) < 80) return;
+              if (Math.abs(dx) < Math.abs(dy) * 2) return;
+              if (dx < 0) setCurrentPage(p => Math.min(totalPages, p + 1));
+              else setCurrentPage(p => Math.max(1, p - 1));
+            }}
+          >
             <div
               className="relative shadow-xl"
               ref={viewerRef}
@@ -5076,8 +5160,49 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         </div>
       </div>
 
+      {/* ── MOBILE FLOATING PAGE PILL ── only when multi-page, sits above the bottom bar */}
+      {pdfDoc && totalPages > 1 && (
+        <div className="md:hidden fixed left-1/2 z-[45] -translate-x-1/2 flex items-center gap-1 rounded-full border shadow-lg"
+             style={{ bottom: 170, backgroundColor: "#FFFFFF", borderColor: "#e2e8f0", boxShadow: "0 4px 14px rgba(13, 51, 17, 0.18)" }}>
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="w-10 h-10 flex items-center justify-center rounded-l-full disabled:opacity-30 transition-colors"
+            aria-label="Página anterior"
+          >
+            <ChevronLeft className="w-5 h-5" style={{ color: "#1565C0" }} />
+          </button>
+          <span className="text-sm font-semibold px-2 tabular-nums" style={{ color: "#0D47A1", minWidth: 52, textAlign: "center" }}>
+            {currentPage} / {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="w-10 h-10 flex items-center justify-center rounded-r-full disabled:opacity-30 transition-colors"
+            aria-label="Página siguiente"
+          >
+            <ChevronRight className="w-5 h-5" style={{ color: "#1565C0" }} />
+          </button>
+        </div>
+      )}
+
       {/* ── MOBILE BOTTOM BAR ── fixed at bottom, always visible */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex flex-col border-t" style={{ backgroundColor: "#FFFFFF", borderColor: "#f1f5f9", boxShadow: "0 -2px 12px rgba(13, 51, 17, 0.12)" }}>
+        {/* Chevron: manual expand/collapse of the tool sheet */}
+        <button
+          onClick={() => setShowMobilePanel(v => !v)}
+          className="w-full flex items-center justify-center py-1.5"
+          aria-label={showMobilePanel ? "Colapsar opciones" : "Expandir opciones"}
+        >
+          <div className="flex items-center justify-center w-12 h-6 rounded-md" style={{ backgroundColor: "#f1f5f9" }}>
+            {showMobilePanel
+              ? <ChevronDown className="w-4 h-4" style={{ color: "#64748b" }} />
+              : <ChevronUp className="w-4 h-4" style={{ color: "#64748b" }} />
+            }
+          </div>
+        </button>
+        {/* Hidden file input for mobile direct-image-upload shortcut */}
+        <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
         {/* Tools row — horizontal scroll with fade indicator */}
         <div className="relative">
         <div className="flex items-center overflow-x-auto gap-0 px-1 py-1" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
@@ -5109,7 +5234,24 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           ].map(({ id, icon: Icon, label }) => (
             <button
               key={id}
-              onClick={() => { setActiveTool(id); setSelectedId(null); setShowMobilePanel(true); }}
+              onClick={() => {
+                setActiveTool(id);
+                setSelectedId(null);
+                // Image: skip the panel and open the file picker directly
+                if (id === "image") {
+                  if (imageInputRef.current) {
+                    imageInputRef.current.value = "";
+                    imageInputRef.current.click();
+                  }
+                  return;
+                }
+                // Add text / Sign need options up front (font, color, signature tabs)
+                if (id === "text" || id === "sign") {
+                  setShowMobilePanel(true);
+                  return;
+                }
+                // Everything else: activate tool but keep sheet collapsed — user taps chevron to expand
+              }}
               className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg shrink-0 transition-all"
               style={{
                 color: activeTool === id ? "#1565C0" : "#1A3A5C",
