@@ -2985,38 +2985,39 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // Full-screen PDF loading overlay (for native PDFs)
   if (isLoadingPdf) {
     return (
-      <div className="w-full rounded-2xl flex flex-col items-center justify-center py-20 px-8 text-center" style={{ backgroundColor: "#f8fafc", border: "2px solid #e2e8f0" }}>
-        {/* Animated PDF icon */}
+      <div className="w-full rounded-2xl flex flex-col items-center justify-center py-20 px-8 text-center" style={{ backgroundColor: "#FAFAFA", border: "1px solid #E8E8EC" }}>
+        {/* Brand mark with spinning ring */}
         <div className="relative mb-6 w-20 h-20 flex items-center justify-center">
-          <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(27, 94, 32, 0.08)" }}>
-            <FileText className="w-9 h-9" style={{ color: "#1565C0" }} />
-          </div>
-          {/* Spinning ring — circular */}
-          <div className="absolute inset-[-4px] rounded-full animate-spin" style={{ border: "3px solid #e2e8f0", borderTopColor: "#1565C0", animationDuration: "1.2s" }} />
+          <svg width="56" height="56" viewBox="0 0 512 512" fill="none" aria-hidden="true">
+            <rect x="48" y="48" width="416" height="416" rx="112" fill="#0A0A0B"/>
+            <path d="M176 180v152M176 180h82a50 50 0 010 100h-82" stroke="white" strokeWidth="34" strokeLinecap="round" strokeLinejoin="round"/>
+            <circle cx="342" cy="348" r="32" fill="#E63946"/>
+          </svg>
+          <div className="absolute inset-[-4px] rounded-full animate-spin" style={{ border: "3px solid #F1F1F4", borderTopColor: "#E63946", animationDuration: "1.2s" }} />
         </div>
         {/* Title */}
-        <p className="text-xl font-bold mb-2" style={{ color: "#0D47A1" }}>
+        <p className="text-xl font-bold mb-2" style={{ color: "#0A0A0B" }}>
           {t.editor_loading_pdf}
         </p>
-        <p className="text-sm mb-6" style={{ color: "#64748b" }}>
+        <p className="text-sm mb-6" style={{ color: "#5A5A62" }}>
           {initialFile?.name ?? ""}
         </p>
         {/* Progress bar */}
         <div className="w-full max-w-xs mb-3">
-          <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: "#f1f5f9" }}>
+          <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: "#F1F1F4" }}>
             <div
               className="h-full rounded-full transition-all duration-300 ease-out"
               style={{
                 width: `${pdfLoadProgress}%`,
-                backgroundColor: pdfLoadProgress === 100 ? "#42A5F5" : "#1565C0",
+                backgroundColor: pdfLoadProgress === 100 ? "#1E9E63" : "#E63946",
               }}
             />
           </div>
           <div className="flex justify-between mt-1.5">
-            <span className="text-xs font-medium" style={{ color: "#64748b" }}>
+            <span className="text-xs font-medium" style={{ color: "#5A5A62" }}>
               {pdfLoadProgress < 20 ? t.editor_loading_pdf_reading : pdfLoadProgress < 55 ? t.editor_loading_pdf_parsing : pdfLoadProgress < 95 ? t.editor_loading_pdf_thumbnails : t.editor_loading_pdf_ready}
             </span>
-            <span className="text-xs font-semibold" style={{ color: "#1565C0" }}>{pdfLoadProgress}%</span>
+            <span className="text-xs font-semibold" style={{ color: "#E63946" }}>{pdfLoadProgress}%</span>
           </div>
         </div>
       </div>
@@ -3026,38 +3027,39 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // Full-screen conversion loading overlay
   if (isConvertingFile) {
     return (
-      <div className="w-full rounded-2xl flex flex-col items-center justify-center py-20 px-8 text-center" style={{ backgroundColor: "#f8fafc", border: "2px solid #e2e8f0" }}>
-        {/* Animated file icon */}
+      <div className="w-full rounded-2xl flex flex-col items-center justify-center py-20 px-8 text-center" style={{ backgroundColor: "#FAFAFA", border: "1px solid #E8E8EC" }}>
+        {/* Brand mark with spinning ring */}
         <div className="relative mb-6 w-20 h-20 flex items-center justify-center">
-          <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(27, 94, 32, 0.08)" }}>
-            <FileText className="w-9 h-9" style={{ color: "#1565C0" }} />
-          </div>
-          {/* Spinning ring — circular */}
-          <div className="absolute inset-[-4px] rounded-full animate-spin" style={{ border: "3px solid #e2e8f0", borderTopColor: "#1565C0", animationDuration: "1.2s" }} />
+          <svg width="56" height="56" viewBox="0 0 512 512" fill="none" aria-hidden="true">
+            <rect x="48" y="48" width="416" height="416" rx="112" fill="#0A0A0B"/>
+            <path d="M176 180v152M176 180h82a50 50 0 010 100h-82" stroke="white" strokeWidth="34" strokeLinecap="round" strokeLinejoin="round"/>
+            <circle cx="342" cy="348" r="32" fill="#E63946"/>
+          </svg>
+          <div className="absolute inset-[-4px] rounded-full animate-spin" style={{ border: "3px solid #F1F1F4", borderTopColor: "#E63946", animationDuration: "1.2s" }} />
         </div>
         {/* Title */}
-        <p className="text-xl font-bold mb-2" style={{ color: "#0D47A1" }}>
+        <p className="text-xl font-bold mb-2" style={{ color: "#0A0A0B" }}>
           {t.editor_toast_converting}
         </p>
-        <p className="text-sm mb-6" style={{ color: "#64748b" }}>
+        <p className="text-sm mb-6" style={{ color: "#5A5A62" }}>
           {initialFile?.name ?? ""}
         </p>
         {/* Progress bar */}
         <div className="w-full max-w-xs mb-3">
-          <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: "#f1f5f9" }}>
+          <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: "#F1F1F4" }}>
             <div
               className="h-full rounded-full transition-all duration-300 ease-out"
               style={{
                 width: `${convertFileProgress}%`,
-                backgroundColor: convertFileProgress === 100 ? "#42A5F5" : "#1565C0",
+                backgroundColor: convertFileProgress === 100 ? "#1E9E63" : "#E63946",
               }}
             />
           </div>
           <div className="flex justify-between mt-1.5">
-            <span className="text-xs font-medium" style={{ color: "#64748b" }}>
+            <span className="text-xs font-medium" style={{ color: "#5A5A62" }}>
               {convertFileProgress < 30 ? t.editor_converting_uploading : convertFileProgress < 85 ? t.editor_converting_processing : convertFileProgress < 100 ? t.editor_converting_finishing : t.editor_toast_converted}
             </span>
-            <span className="text-xs font-semibold" style={{ color: "#1565C0" }}>{convertFileProgress}%</span>
+            <span className="text-xs font-semibold" style={{ color: "#E63946" }}>{convertFileProgress}%</span>
           </div>
         </div>
       </div>
@@ -4369,10 +4371,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         {/* Download */}
         <button
           onClick={downloadPdf}
-          className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-white text-sm font-semibold transition-all shrink-0"
-          style={{ backgroundColor: "#0D47A1" }}
-          onMouseEnter={e => e.currentTarget.style.backgroundColor = "#1565C0"}
-          onMouseLeave={e => e.currentTarget.style.backgroundColor = "#0D47A1"}
+          className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-white text-sm font-semibold transition-all shrink-0 shadow-sm hover:shadow-md"
+          style={{ backgroundColor: "#E63946" }}
+          onMouseEnter={e => e.currentTarget.style.backgroundColor = "#C72738"}
+          onMouseLeave={e => e.currentTarget.style.backgroundColor = "#E63946"}
         >
           <Download className="w-4 h-4" />{t.editor_download}
         </button>
@@ -5282,10 +5284,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           {/* Download button */}
           <button
             onClick={downloadPdf}
-            className="flex-1 flex items-center justify-center gap-2 h-12 rounded-xl text-white font-bold text-base transition-all"
-            style={{ backgroundColor: "#0D47A1" }}
-            onTouchStart={e => e.currentTarget.style.backgroundColor = "#1565C0"}
-            onTouchEnd={e => e.currentTarget.style.backgroundColor = "#0D47A1"}
+            className="flex-1 flex items-center justify-center gap-2 h-12 rounded-xl text-white font-bold text-base transition-all shadow-sm"
+            style={{ backgroundColor: "#E63946" }}
+            onTouchStart={e => e.currentTarget.style.backgroundColor = "#C72738"}
+            onTouchEnd={e => e.currentTarget.style.backgroundColor = "#E63946"}
           >
             <Download className="w-5 h-5" />
             {t.editor_download}

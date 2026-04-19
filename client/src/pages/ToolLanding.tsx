@@ -7,24 +7,28 @@ import Home from "./Home";
 export interface ToolDef {
   slug: string;
   i18nPrefix: string;
+  // Word inside the H1 that receives the red squiggle accent.
+  // Kept as a universal acronym/brand name (PDF, Word, Excel, JPG...) so it
+  // matches across all 10 languages without needing per-language keys.
+  highlight: string;
   editorTool?: string;
 }
 
 export const TOOL_LANDINGS: ToolDef[] = [
-  { slug: "pdf-to-word",   i18nPrefix: "landing_pdf2word" },
-  { slug: "pdf-editor",    i18nPrefix: "landing_editor" },
-  { slug: "merge-pdf",     i18nPrefix: "landing_merge", editorTool: "merge" },
-  { slug: "compress-pdf",  i18nPrefix: "landing_compress" },
-  { slug: "jpg-to-pdf",    i18nPrefix: "landing_jpg2pdf" },
-  { slug: "pdf-to-jpg",    i18nPrefix: "landing_pdf2jpg" },
-  { slug: "pdf-to-excel",  i18nPrefix: "landing_pdf2excel" },
-  { slug: "word-to-pdf",   i18nPrefix: "landing_word2pdf" },
-  { slug: "split-pdf",     i18nPrefix: "landing_split", editorTool: "split" },
-  { slug: "pdf-converter", i18nPrefix: "landing_converter" },
-  { slug: "image-to-pdf",  i18nPrefix: "landing_img2pdf" },
-  { slug: "png-to-pdf",    i18nPrefix: "landing_png2pdf" },
-  { slug: "jpeg-to-pdf",   i18nPrefix: "landing_jpeg2pdf" },
-  { slug: "docx-to-pdf",   i18nPrefix: "landing_docx2pdf" },
+  { slug: "pdf-to-word",   i18nPrefix: "landing_pdf2word",   highlight: "Word" },
+  { slug: "pdf-editor",    i18nPrefix: "landing_editor",     highlight: "PDF" },
+  { slug: "merge-pdf",     i18nPrefix: "landing_merge",      highlight: "PDF", editorTool: "merge" },
+  { slug: "compress-pdf",  i18nPrefix: "landing_compress",   highlight: "PDF" },
+  { slug: "jpg-to-pdf",    i18nPrefix: "landing_jpg2pdf",    highlight: "PDF" },
+  { slug: "pdf-to-jpg",    i18nPrefix: "landing_pdf2jpg",    highlight: "JPG" },
+  { slug: "pdf-to-excel",  i18nPrefix: "landing_pdf2excel",  highlight: "Excel" },
+  { slug: "word-to-pdf",   i18nPrefix: "landing_word2pdf",   highlight: "PDF" },
+  { slug: "split-pdf",     i18nPrefix: "landing_split",      highlight: "PDF", editorTool: "split" },
+  { slug: "pdf-converter", i18nPrefix: "landing_converter",  highlight: "PDF" },
+  { slug: "image-to-pdf",  i18nPrefix: "landing_img2pdf",    highlight: "PDF" },
+  { slug: "png-to-pdf",    i18nPrefix: "landing_png2pdf",    highlight: "PDF" },
+  { slug: "jpeg-to-pdf",   i18nPrefix: "landing_jpeg2pdf",   highlight: "PDF" },
+  { slug: "docx-to-pdf",   i18nPrefix: "landing_docx2pdf",   highlight: "PDF" },
 ];
 
 // ── Component ───────────────────────────────────────────────────
@@ -43,6 +47,7 @@ export default function ToolLanding({ tool }: { tool: ToolDef }) {
     <Home
       overrides={{
         heroTitle: tr("h1"),
+        heroHighlight: tool.highlight,
         heroSubtitle: tr("subtitle"),
         metaTitle: tr("meta_title") || `${tr("h1")} | ${brandName}`,
         metaDesc: tr("meta_desc") || tr("subtitle"),

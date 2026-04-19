@@ -7,8 +7,8 @@ import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
 import { brandName, brandDomain } from "../brand";
 
-const FAVICON_DEFAULT = `<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
-    <link rel="apple-touch-icon" href="/favicon.svg?v=2" />`;
+const FAVICON_DEFAULT = `<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=3" />
+    <link rel="apple-touch-icon" href="/favicon.svg?v=3" />`;
 
 const FAVICON_FASTDOC = `<link rel="icon" type="image/svg+xml" href="/favicon-fastdoc.svg" />`;
 

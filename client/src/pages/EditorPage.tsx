@@ -4,7 +4,7 @@
    When accessed directly (no file loaded), shows upload zone.
    ============================================================= */
 import { useEffect, useState, useRef, useCallback } from "react";
-import { logoParts, colors } from "@/lib/brand";
+import { colors } from "@/lib/brand";
 import { useLocation } from "wouter";
 import PdfEditor from "@/components/PdfEditor";
 import { usePdfFile } from "@/contexts/PdfFileContext";
@@ -33,19 +33,23 @@ const ACCEPTED_EXTENSIONS = new Set([
   '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.html', '.txt', '.csv',
 ]);
 
-/* Inline SVG logo — EditorPDF cloud icon */
+/* Inline brand mark — bundle isotipo (P + red dot) for dark editor header */
 const LogoSvg = () => (
-  <svg width="26" height="18" viewBox="0 0 32 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-    <path d="M25.5 12.5C25.5 12.5 26 12 26 11c0-2.8-2.2-5-5-5-.5 0-1 .1-1.5.2C18.3 3.7 15.9 2 13 2 9.4 2 6.5 4.9 6.5 8.5c0 .2 0 .4 0 .6C4.5 9.6 3 11.4 3 13.5 3 16 5 18 7.5 18h16c2.2 0 4-1.8 4-4 0-1.5-.8-2.8-2-3.5z" fill={colors.light} />
-    <rect x="13" y="6" width="6" height="8" rx="0.8" fill="white" fillOpacity="0.9" />
-    <path d="M16.5 6V6L19 8.5H16.5V6Z" fill="#1565C0" />
+  <svg width="26" height="26" viewBox="0 0 512 512" fill="none" className="shrink-0" aria-hidden="true">
+    <rect x="48" y="48" width="416" height="416" rx="112" fill="#0A0A0B" />
+    <path
+      d="M176 180v152M176 180h82a50 50 0 010 100h-82"
+      stroke="white" strokeWidth="34"
+      strokeLinecap="round" strokeLinejoin="round"
+    />
+    <circle cx="342" cy="348" r="32" fill="#E63946" />
   </svg>
 );
 
 const LogoText = () => (
-  <span>
-    <span className="font-medium text-lg" style={{ color: "rgba(255,255,255,0.85)" }}>{logoParts[0]}</span>
-    <span className="font-extrabold text-lg" style={{ color: colors.light }}>{logoParts[1]}</span>
+  <span className="font-extrabold text-[16px] tracking-[-0.03em] leading-none">
+    <span className="text-white">editorpdf</span>
+    <span className="text-[#E63946]">.net</span>
   </span>
 );
 
@@ -185,13 +189,13 @@ export default function EditorPage() {
   if (isRestoringFromSession) {
     return (
       <div className="flex flex-col min-h-screen" style={{ backgroundColor: "#f8fafc" }}>
-        <div className="flex items-center px-4 h-12 border-b" style={{ backgroundColor: "#0D47A1", borderColor: "#1e293b" }}>
+        <div className="flex items-center px-4 h-12 border-b" style={{ backgroundColor: "#0A0A0B", borderColor: "#1A1A1C" }}>
           <div className="flex items-center gap-1"><LogoSvg /><LogoText /></div>
         </div>
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center" style={{ color: "#1565C0" }}>
+          <div className="text-center" style={{ color: "#E63946" }}>
             <div className="w-8 h-8 border-2 border-current border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-sm font-medium">Loading document...</p>
+            <p className="text-sm font-medium" style={{ color: "#5A5A62" }}>Loading document...</p>
           </div>
         </div>
       </div>
@@ -207,7 +211,7 @@ export default function EditorPage() {
     <div className="flex flex-col" style={{ height: "100dvh", overflow: "hidden" }}>
       {/* ── Custom Editor Header Bar ── */}
       <div className="flex items-center justify-between px-3 md:px-4 h-11 md:h-12 shrink-0 border-b"
-        style={{ backgroundColor: "#0D47A1", borderColor: "#1e293b" }}>
+        style={{ backgroundColor: "#0A0A0B", borderColor: "#1A1A1C" }}>
         {/* Left: Logo */}
         <button onClick={handleClose} className="flex items-center gap-1 shrink-0 hover:opacity-80 transition-opacity" title="Back to home">
           <LogoSvg />
@@ -224,7 +228,7 @@ export default function EditorPage() {
                 className="bg-white/10 text-white text-sm px-2 py-0.5 rounded border border-white/20 outline-none focus:border-white/40 min-w-[120px] max-w-[300px]"
                 />
               <button onMouseDown={e => { e.preventDefault(); confirmEdit(); }} className="p-0.5 rounded hover:bg-white/10 transition-colors" title="Confirm">
-                <Check className="w-3.5 h-3.5" style={{ color: "#42A5F5" }} />
+                <Check className="w-3.5 h-3.5" style={{ color: "#E63946" }} />
               </button>
             </div>
           ) : (

@@ -38,8 +38,17 @@ const LandingTest = lazy(() => import("./pages/LandingTest"));
 
 function LazyFallback() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <div className="w-8 h-8 border-3 border-blue-700 border-t-transparent rounded-full animate-spin" />
+    <div className="min-h-screen flex flex-col items-center justify-center gap-5 bg-[#FAFAFA]">
+      <svg width="48" height="48" viewBox="0 0 512 512" fill="none" aria-hidden="true">
+        <rect x="48" y="48" width="416" height="416" rx="112" fill="#0A0A0B" />
+        <path
+          d="M176 180v152M176 180h82a50 50 0 010 100h-82"
+          stroke="white" strokeWidth="34"
+          strokeLinecap="round" strokeLinejoin="round"
+        />
+        <circle cx="342" cy="348" r="32" fill="#E63946" />
+      </svg>
+      <div className="w-7 h-7 border-[3px] border-[#E63946] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 }

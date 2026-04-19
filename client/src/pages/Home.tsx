@@ -1,26 +1,27 @@
 /* =============================================================
-   EditorPDF Home Page — Professional & Trustworthy Design
-   Light theme, green-gold accents, upload-first hero,
-   social proof, testimonials, security section, tools, FAQ
+   EditorPDF Home — bundle design (ChatPDF-inspired, ink + PDF red)
+   - Hero with centered upload box, functional tabs, hand-note
+   - Trust line, stats, tool grid by 6 categories
+   - Restyled how-it-works, testimonials, features, FAQ, final CTA
+   - All copy via i18n keys (no hardcoded strings)
    ============================================================= */
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useAuth } from "@/_core/hooks/useAuth";
 import {
-  FileText, PenTool, Share2, MessageSquare, Type, Image, Lock,
-  ChevronDown, ChevronUp, ArrowRight, Upload, Download, Edit3,
-  Layers, Shield, Zap, Monitor, CheckCircle2, RefreshCw, Sparkles,
-  Star, Trash2, Clock, Globe, Cloud, Users, FileLock2, Check, Merge,
-  Scissors, RotateCcw, Minimize2, FileImage, FileSpreadsheet,
-  Presentation, FileCode,
+  FileText, PenTool, MessageSquare, Type, Image, Lock,
+  ChevronDown, Upload, Edit3, Cloud, RefreshCw,
+  Shield, Zap, Star, Sparkles,
+  Merge, Scissors, RotateCcw, Minimize2,
+  FileImage, FileSpreadsheet, Presentation, FileCode,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { usePdfFile } from "@/contexts/PdfFileContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { colors, isFastDoc } from "@/lib/brand";
+import { isFastDoc } from "@/lib/brand";
 
+// ─── Accepted file types (preserved) ───────────────────────────
 const ACCEPTED_MIME_TYPES = new Set([
   'application/pdf',
   'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/tiff',
@@ -39,75 +40,54 @@ const ACCEPTED_EXTENSIONS = new Set([
   '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.html', '.txt', '.csv',
 ]);
 
-// ─── Design tokens ───────────────────────────────────────────
-const INDIGO     = colors.primary;
-const VIOLET     = colors.secondary;
-const TEXT_MAIN  = "#0f172a";
-const TEXT_MUTED = "#64748b";
-const TEXT_LIGHT = "#94a3b8";
-const BORDER     = "#e2e8f0";
-const SURFACE    = "#ffffff";
+// ─── Bundle palette tokens ─────────────────────────────────────
+const ACCENT = "#E63946";
+const ACCENT_BORDER = "#F2C1C6";
 
-const GRAD = `linear-gradient(135deg, ${INDIGO}, ${VIOLET})`;
+// ─── Tool definitions, grouped into bundle's 6 categories ──────
+type ToolDef = { icon: any; label_key: string; tool: string };
 
-/** Highlight specific words in a title with a colored underline */
-function highlightWords(text: string, words: string[], color = "#60a5fa") {
-  const parts: React.ReactNode[] = [];
-  let remaining = text;
-  let key = 0;
-  for (const word of words) {
-    const idx = remaining.toLowerCase().indexOf(word.toLowerCase());
-    if (idx === -1) continue;
-    if (idx > 0) parts.push(remaining.slice(0, idx));
-    const matched = remaining.slice(idx, idx + word.length);
-    parts.push(
-      <span key={key++} className="relative inline-block pb-1">
-        <span style={{ color: INDIGO }}>{matched}</span>
-        <span className="absolute bottom-0 left-0 w-full rounded-full" style={{ backgroundColor: color, height: "6px", opacity: 0.5 }} />
-      </span>
-    );
-    remaining = remaining.slice(idx + word.length);
-  }
-  if (remaining) parts.push(remaining);
-  return parts;
-}
-
-// ─── Tool definitions ─────────────────────────────────────────
-const TOOLS_EDIT = [
-  { icon: Type,           label_key: "tool_edit_text",  tool: "text",         color: "#f1f5f9", iconColor: INDIGO },
-  { icon: PenTool,        label_key: "tool_add_sign",   tool: "sign",         color: "#f1f5f9", iconColor: INDIGO },
-  { icon: MessageSquare,  label_key: "tool_annotate",   tool: "notes",        color: "#f1f5f9", iconColor: INDIGO },
-  { icon: Image,          label_key: "tool_images",     tool: "image",        color: "#f1f5f9", iconColor: INDIGO },
-  { icon: Lock,           label_key: "tool_protect",    tool: "protect",      color: "#f1f5f9", iconColor: INDIGO },
-  { icon: Merge,          label_key: "tool_merge",      tool: "merge",        color: "#f1f5f9", iconColor: INDIGO },
-  { icon: Scissors,       label_key: "tool_split",      tool: "split",        color: "#f1f5f9", iconColor: INDIGO },
-  { icon: RotateCcw,      label_key: "tool_rotate",     tool: "rotate",       color: "#f1f5f9", iconColor: INDIGO },
-  { icon: Minimize2,      label_key: "tool_compress",   tool: "compress",     color: "#f1f5f9", iconColor: INDIGO },
+const TOOLS_EDIT_CAT: ToolDef[] = [
+  { icon: Type,          label_key: "tool_edit_text", tool: "text"  },
+  { icon: MessageSquare, label_key: "tool_annotate",  tool: "notes" },
+  { icon: Image,         label_key: "tool_images",    tool: "image" },
 ];
-const TOOLS_FROM_PDF = [
-  { icon: FileText,        label_key: "tool_pdf_word",  tool: "convert-word",  color: "#f1f5f9", iconColor: "#1565C0" },
-  { icon: FileSpreadsheet, label_key: "tool_pdf_excel", tool: "convert-excel", color: "#f1f5f9", iconColor: "#1565C0" },
-  { icon: Presentation,    label_key: "tool_pdf_ppt",   tool: "convert-ppt",   color: "#f1f5f9", iconColor: "#1565C0" },
-  { icon: FileImage,       label_key: "tool_pdf_jpg",   tool: "convert-jpg",   color: "#f1f5f9", iconColor: "#1565C0" },
-  { icon: FileImage,       label_key: "tool_pdf_png",   tool: "convert-png",   color: "#f1f5f9", iconColor: "#1565C0" },
-  { icon: FileCode,        label_key: "tool_pdf_html",  tool: "convert-html",  color: "#f1f5f9", iconColor: "#1565C0" },
+const TOOLS_ORGANIZE: ToolDef[] = [
+  { icon: Merge,     label_key: "tool_merge",  tool: "merge"  },
+  { icon: Scissors,  label_key: "tool_split",  tool: "split"  },
+  { icon: RotateCcw, label_key: "tool_rotate", tool: "rotate" },
 ];
-const TOOLS_TO_PDF = [
-  { icon: FileText,        label_key: "tool_word_pdf",  tool: "word-to-pdf",  color: "#f8fafc", iconColor: "#2563EB" },
-  { icon: FileSpreadsheet, label_key: "tool_excel_pdf", tool: "excel-to-pdf", color: "#f8fafc", iconColor: "#2563EB" },
-  { icon: Presentation,    label_key: "tool_ppt_pdf",   tool: "ppt-to-pdf",   color: "#f8fafc", iconColor: "#2563EB" },
-  { icon: FileImage,       label_key: "tool_jpg_pdf",   tool: "jpg-to-pdf",   color: "#f8fafc", iconColor: "#2563EB" },
-  { icon: FileImage,       label_key: "tool_png_pdf",   tool: "png-to-pdf",   color: "#f8fafc", iconColor: "#2563EB" },
-  { icon: FileCode,        label_key: "tool_html_pdf",  tool: "html-to-pdf",  color: "#f8fafc", iconColor: "#2563EB" },
+const TOOLS_OPTIMIZE: ToolDef[] = [
+  { icon: Minimize2, label_key: "tool_compress", tool: "compress" },
+];
+const TOOLS_SECURITY: ToolDef[] = [
+  { icon: PenTool, label_key: "tool_add_sign", tool: "sign"    },
+  { icon: Lock,    label_key: "tool_protect",  tool: "protect" },
+];
+const TOOLS_FROM_PDF: ToolDef[] = [
+  { icon: FileText,        label_key: "tool_pdf_word",  tool: "convert-word"  },
+  { icon: FileSpreadsheet, label_key: "tool_pdf_excel", tool: "convert-excel" },
+  { icon: Presentation,    label_key: "tool_pdf_ppt",   tool: "convert-ppt"   },
+  { icon: FileImage,       label_key: "tool_pdf_jpg",   tool: "convert-jpg"   },
+  { icon: FileImage,       label_key: "tool_pdf_png",   tool: "convert-png"   },
+  { icon: FileCode,        label_key: "tool_pdf_html",  tool: "convert-html"  },
+];
+const TOOLS_TO_PDF: ToolDef[] = [
+  { icon: FileText,        label_key: "tool_word_pdf",  tool: "word-to-pdf"  },
+  { icon: FileSpreadsheet, label_key: "tool_excel_pdf", tool: "excel-to-pdf" },
+  { icon: Presentation,    label_key: "tool_ppt_pdf",   tool: "ppt-to-pdf"   },
+  { icon: FileImage,       label_key: "tool_jpg_pdf",   tool: "jpg-to-pdf"   },
+  { icon: FileImage,       label_key: "tool_png_pdf",   tool: "png-to-pdf"   },
+  { icon: FileCode,        label_key: "tool_html_pdf",  tool: "html-to-pdf"  },
 ];
 
 const FILE_FREE_TOOLS = ["jpg-to-pdf", "png-to-pdf", "word-to-pdf", "excel-to-pdf", "ppt-to-pdf", "html-to-pdf"];
 
-// ─── Testimonials ─────────────────────────────────────────────
+// ─── Testimonials (preserved) ──────────────────────────────────
 const TESTIMONIALS_META = [
-  { name: "María García",      avatar: "MG", avatarColor: "#1565C0", textKey: "testimonial1_text", roleKey: "testimonial1_role" },
-  { name: "Carlos Rodríguez",  avatar: "CR", avatarColor: "#1565C0", textKey: "testimonial2_text", roleKey: "testimonial2_role" },
-  { name: "Ana Martínez",      avatar: "AM", avatarColor: "#42A5F5",  textKey: "testimonial3_text", roleKey: "testimonial3_role" },
+  { name: "María García",     avatar: "MG", color: "linear-gradient(135deg,#E63946,#F4A442)", textKey: "testimonial1_text", roleKey: "testimonial1_role" },
+  { name: "Carlos Rodríguez", avatar: "CR", color: "linear-gradient(135deg,#1E9E63,#2B5BEA)", textKey: "testimonial2_text", roleKey: "testimonial2_role" },
+  { name: "Ana Martínez",     avatar: "AM", color: "linear-gradient(135deg,#2B5BEA,#E63946)", textKey: "testimonial3_text", roleKey: "testimonial3_role" },
 ];
 
 export interface HomeOverrides {
@@ -119,8 +99,60 @@ export interface HomeOverrides {
   editorTool?: string;
 }
 
+// ─── Squiggle accent (bundle .accent-text em::after) ───────────
+const SquiggleUnderline = ({ children }: { children: React.ReactNode }) => (
+  <span className="relative inline-block px-0.5">
+    {children}
+    <svg
+      className="absolute left-0 right-0 -bottom-1.5 w-full pointer-events-none"
+      viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true"
+      style={{ height: "0.28em" }}
+    >
+      <path d="M2 9 Q 60 4, 150 5 T 298 7 L 296 11 Q 150 9, 4 12 Z" fill={ACCENT}/>
+    </svg>
+  </span>
+);
+
+// Render a heading title and apply the red squiggle to `highlight`.
+// - If the highlight word appears inside the title, wrap it in place.
+// - Otherwise append it at the end (AdLanding style: title + highlighted suffix).
+const renderHighlightedTitle = (title: string, highlight?: string) => {
+  if (!highlight) return title;
+  const idx = title.lastIndexOf(highlight);
+  if (idx === -1) {
+    return <>{title} <SquiggleUnderline>{highlight}</SquiggleUnderline></>;
+  }
+  return (
+    <>
+      {title.slice(0, idx)}
+      <SquiggleUnderline>{title.slice(idx, idx + highlight.length)}</SquiggleUnderline>
+      {title.slice(idx + highlight.length)}
+    </>
+  );
+};
+
+// ─── Hand-drawn note + arrow (bundle HandNote 'left' placement) ─
+const HandNote = ({ text }: { text: string }) => (
+  <div
+    className="hidden lg:flex absolute -left-44 top-12 w-44 flex-col items-end pointer-events-none z-10 text-right"
+  >
+    <div
+      className="text-[#0A0A0B] text-[22px] leading-tight mb-1.5"
+      style={{ fontFamily: "'Patrick Hand', 'Caveat', cursive", transform: "rotate(-5deg)" }}
+    >
+      {text}
+    </div>
+    <svg width="110" height="68" viewBox="0 0 110 68" className="ml-14 block">
+      <path d="M6 6 Q 40 10, 58 30 Q 78 50, 100 58" stroke="#0A0A0B" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+      <path d="M90 48 L102 60 L88 62" stroke="#0A0A0B" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  </div>
+);
+
+type TabId = "edit" | "merge" | "split" | "compress" | "convert" | "sign";
+
 export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) {
-  const [activeTab, setActiveTab] = useState<"edit" | "fromPdf" | "toPdf">("edit");
+  const [activeTab, setActiveTab] = useState<TabId>("edit");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [docsCount, setDocsCount] = useState(3847);
@@ -129,7 +161,7 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
   const { lang, t } = useLanguage();
   const [, navigate] = useLocation();
 
-  // Animated counter: +1 to +8 every 0.5-1s randomly
+  // Animated counter
   useEffect(() => {
     const tick = () => {
       setDocsCount((c) => c + 1 + Math.floor(Math.random() * 8));
@@ -140,7 +172,7 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
     return () => clearTimeout(timer);
   }, []);
 
-  // Override meta tags for ad landing pages
+  // Override meta tags
   useEffect(() => {
     if (overrides?.metaTitle) document.title = overrides.metaTitle;
     if (overrides?.metaDesc) {
@@ -149,21 +181,25 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
     }
   }, [overrides]);
 
-  const toolsMap = { edit: TOOLS_EDIT, fromPdf: TOOLS_FROM_PDF, toPdf: TOOLS_TO_PDF };
-  const activeTools = toolsMap[activeTab].map((tool) => ({
-    ...tool,
-    label: (t as any)[tool.label_key] ?? tool.label_key,
-  }));
+  // Load handwritten font (Patrick Hand) for the hand-note accent
+  useEffect(() => {
+    const id = "editorpdf-handnote-font";
+    if (document.getElementById(id)) return;
+    const link = document.createElement('link');
+    link.id = id;
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Caveat:wght@500;600&display=swap';
+    document.head.appendChild(link);
+  }, []);
 
-  const faqs = [
-    { question: t.faq_q1, answer: t.faq_a1 },
-    { question: t.faq_q2, answer: t.faq_a2 },
-    { question: t.faq_q3, answer: t.faq_a3 },
-    { question: t.faq_q4, answer: t.faq_a4 },
-    { question: t.faq_q5, answer: t.faq_a5 },
-    { question: t.faq_q6, answer: t.faq_a6 },
-    { question: t.faq_q7, answer: t.faq_a7 },
-  ];
+  const TAB_TO_TOOL: Record<TabId, string> = {
+    edit: "text",
+    merge: "merge",
+    split: "split",
+    compress: "compress",
+    convert: "convert-word",
+    sign: "sign",
+  };
 
   const openEditor = useCallback((file: File, tool?: string) => {
     const ext = '.' + file.name.split('.').pop()?.toLowerCase();
@@ -182,40 +218,135 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (f) openEditor(f, overrides?.editorTool);
+    if (f) openEditor(f, overrides?.editorTool ?? TAB_TO_TOOL[activeTab]);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDraggingOver(false);
     const f = e.dataTransfer.files[0];
-    if (f) openEditor(f, overrides?.editorTool);
+    if (f) openEditor(f, overrides?.editorTool ?? TAB_TO_TOOL[activeTab]);
   };
 
-  const scrollToEditor = (tool?: string) => {
-    if (tool) {
-      setPendingTool(tool);
-      if (FILE_FREE_TOOLS.includes(tool)) {
-        navigate(`/${lang}/editor`);
-      } else {
-        fileInputRef.current?.click();
-      }
+  const triggerUpload = (tool?: string) => {
+    if (tool) setPendingTool(tool);
+    if (tool && FILE_FREE_TOOLS.includes(tool)) {
+      navigate(`/${lang}/editor`);
     } else {
       fileInputRef.current?.click();
     }
   };
 
-  // Resolved tool labels for the grid
-  const editTools = TOOLS_EDIT.map((tool) => ({
-    ...tool,
-    label: (t as any)[tool.label_key] ?? tool.label_key,
-  }));
+  const resolveLabel = (key: string) => (t as any)[key] ?? key;
+
+  const HERO_TABS: { id: TabId; labelKey: string; icon: any; alwaysShow?: boolean }[] = [
+    { id: "edit",     labelKey: "hero_pill_edit",     icon: Edit3,     alwaysShow: true },
+    { id: "merge",    labelKey: "hero_pill_merge",    icon: Merge },
+    { id: "split",    labelKey: "hero_pill_split",    icon: Scissors },
+    { id: "compress", labelKey: "hero_pill_compress", icon: Minimize2 },
+    { id: "convert",  labelKey: "hero_pill_convert",  icon: RefreshCw, alwaysShow: true },
+    { id: "sign",     labelKey: "hero_pill_sign",     icon: PenTool,   alwaysShow: true },
+  ];
+
+  const TOOL_CATEGORIES: { titleKey: string; tools: ToolDef[] }[] = [
+    { titleKey: "tools_tab_edit",     tools: TOOLS_EDIT_CAT },
+    { titleKey: "tools_cat_organize", tools: TOOLS_ORGANIZE },
+    { titleKey: "tools_cat_optimize", tools: TOOLS_OPTIMIZE },
+    { titleKey: "tools_cat_security", tools: TOOLS_SECURITY },
+    { titleKey: "tools_tab_from_pdf", tools: TOOLS_FROM_PDF },
+    { titleKey: "tools_tab_to_pdf",   tools: TOOLS_TO_PDF   },
+  ];
+
+  const faqs = [
+    { question: t.faq_q1, answer: t.faq_a1 },
+    { question: t.faq_q2, answer: t.faq_a2 },
+    { question: t.faq_q3, answer: t.faq_a3 },
+    { question: t.faq_q4, answer: t.faq_a4 },
+    { question: t.faq_q5, answer: t.faq_a5 },
+    { question: t.faq_q6, answer: t.faq_a6 },
+    { question: t.faq_q7, answer: t.faq_a7 },
+  ];
+
+  // ─── UploadBox (reused in hero + final CTA) ──────────────────
+  const UploadBox = ({ withTabs, withHandNote }: { withTabs?: boolean; withHandNote?: boolean }) => (
+    <div className="relative">
+      {withHandNote && <HandNote text={t.hero_handnote} />}
+      <div
+        className="rounded-[22px] p-6 transition-all"
+        style={{
+          background: "linear-gradient(180deg, #fff 0%, #fafafa 100%)",
+          border: "1px solid rgba(10,10,11,0.08)",
+          boxShadow:
+            "0 1px 0 rgba(255,255,255,0.9) inset, 0 0 0 1px rgba(10,10,11,0.02), 0 2px 4px rgba(10,10,11,0.04), 0 12px 24px -8px rgba(10,10,11,0.08), 0 32px 56px -16px rgba(10,10,11,0.12)",
+        }}
+      >
+        {withTabs && (
+          <div className="flex justify-center gap-1.5 mb-5 flex-nowrap">
+            {HERO_TABS.map(tab => {
+              const active = tab.id === activeTab;
+              const Ico = tab.icon;
+              const visibility = tab.alwaysShow ? "flex" : "hidden md:flex";
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`${visibility} shrink-0 px-2.5 py-1.5 rounded-full text-[12px] font-semibold border transition-all items-center gap-1.5 whitespace-nowrap ${
+                    active
+                      ? "bg-[#0A0A0B] text-white border-[#0A0A0B] shadow-sm"
+                      : "bg-white text-[#1A1A1C] border-[#E8E8EC] hover:border-[#0A0A0B]/30 hover:bg-[#F6F6F7]"
+                  }`}
+                  type="button"
+                  aria-pressed={active}
+                >
+                  <Ico className="w-3.5 h-3.5" style={{ color: active ? "#E63946" : "#5A5A62" }} />
+                  {resolveLabel(tab.labelKey)}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        <div
+          onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+          onDragLeave={() => setIsDraggingOver(false)}
+          onDrop={handleDrop}
+          onClick={() => triggerUpload(TAB_TO_TOOL[activeTab])}
+          className="rounded-2xl border-[1.5px] border-dashed cursor-pointer transition-all flex items-center justify-center gap-3 flex-wrap text-center"
+          style={{
+            borderColor: isDraggingOver ? ACCENT : ACCENT_BORDER,
+            background: isDraggingOver
+              ? "linear-gradient(180deg,#FDE3E6,#FFF1F2)"
+              : "linear-gradient(180deg,#FEF6F7,#FFFBFB)",
+            padding: "40px 24px",
+            minHeight: 140,
+          }}
+        >
+          <strong className="text-[15px] font-bold text-[#0A0A0B]">{t.hero_drag_here}</strong>
+          <span className="text-[15px] text-[#1A1A1C] font-medium">{t.hero_or}</span>
+          <button
+            onClick={(e) => { e.stopPropagation(); triggerUpload(TAB_TO_TOOL[activeTab]); }}
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#E63946] text-white text-sm font-bold border border-[#E63946] shadow-[0_6px_16px_-6px_rgba(230,57,70,0.55)] hover:bg-[#C72738] hover:border-[#C72738] hover:shadow-[0_10px_24px_-8px_rgba(230,57,70,0.65)] hover:-translate-y-px transition-all"
+            type="button"
+          >
+            <Upload className="w-4 h-4" />
+            {t.hero_upload_btn}
+          </button>
+        </div>
+
+        <div className="flex justify-center mt-4">
+          <span className="inline-flex items-center gap-1.5 text-[12px] text-[#5A5A62] font-medium">
+            <Cloud className="w-3.5 h-3.5 text-[#8A8A92]" />
+            {t.hero_max_size}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white text-[#0A0A0B]">
       <Navbar />
 
-      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -224,163 +355,69 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
         onChange={handleFileInput}
       />
 
-      {/* ══════════════════════════════════════════════════════════
-          HERO — Single centered column
-      ══════════════════════════════════════════════════════════ */}
-      <section className="bg-white">
-        <div className="container pt-10 pb-12 md:pt-16 md:pb-16">
-          <div className="flex flex-col items-center gap-2">
-            {/* Centered content */}
-            <div className="w-full max-w-2xl flex flex-col items-center text-center">
-              <h1
-                className="text-4xl md:text-5xl lg:text-[3.6rem] font-extrabold leading-[1.12] mb-5 tracking-tight"
-                style={{ color: TEXT_MAIN }}
-              >
-                {overrides?.heroTitle ? (
-                  <>
-                    {overrides.heroTitle}{" "}
-                    {overrides.heroHighlight && (
-                      <span className="relative inline-block pb-1">
-                        <span style={{ color: INDIGO }}>{overrides.heroHighlight}</span>
-                        <span className="absolute bottom-0 left-0 w-full rounded-full" style={{ backgroundColor: "#60a5fa", height: "6px", opacity: 0.5 }} />
-                      </span>
-                    )}
-                  </>
-                ) : isFastDoc ? (
-                  <>
-                    {t.fastdoc_hero_title_1}{" "}
-                    <span style={{ color: colors.primary }}>
-                      {t.fastdoc_hero_title_2}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    {t.hero_title_1.replace("PDF", "").trim()}{" "}
-                    <span className="relative inline-block pb-1">
-                      <span style={{ color: INDIGO }}>PDF</span>
-                      <span
-                        className="absolute bottom-0 left-0 w-full rounded-full"
-                        style={{ backgroundColor: "#60a5fa", height: "6px", opacity: 0.5 }}
-                      />
-                    </span>{" "}
-                    <span style={{ color: INDIGO }}>
-                      {t.hero_title_2}
-                    </span>
-                  </>
-                )}
-              </h1>
-              <p
-                className="text-base md:text-lg leading-relaxed mb-6 max-w-xl"
-                style={{ color: TEXT_MUTED }}
-              >
-                {overrides?.heroSubtitle ?? (isFastDoc ? t.fastdoc_hero_subtitle : t.hero_subtitle)}
-              </p>
+      {/* ══════ HERO — bundle variant A (centered upload) ══════ */}
+      <section className="relative pt-16 md:pt-[72px] pb-20 overflow-hidden">
+        <div
+          className="absolute inset-0 z-0 pointer-events-none"
+          style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%, #F6F6F7 0%, transparent 70%)" }}
+        />
+        <div className="container relative z-[1] text-center">
+          <h1
+            className="font-extrabold leading-[1.08] tracking-[-0.03em] mb-4 max-w-[880px] mx-auto text-[#0A0A0B]"
+            style={{ fontSize: "clamp(30px, 4.6vw, 48px)", textWrap: "balance" as any }}
+          >
+            {overrides?.heroTitle ? (
+              renderHighlightedTitle(overrides.heroTitle, overrides.heroHighlight)
+            ) : isFastDoc ? (
+              <>{t.fastdoc_hero_title_1} <SquiggleUnderline>{t.fastdoc_hero_title_2}</SquiggleUnderline></>
+            ) : (
+              <>{t.hero_title_1} <SquiggleUnderline>{t.hero_title_2}</SquiggleUnderline></>
+            )}
+          </h1>
+          <p className="text-base md:text-[17px] text-[#5A5A62] mb-8 max-w-xl mx-auto leading-relaxed">
+            {overrides?.heroSubtitle ?? (isFastDoc ? t.fastdoc_hero_subtitle : t.hero_subtitle)}
+          </p>
 
-              {/* Social proof inline */}
-              {!isFastDoc && (
-                <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs mb-2" style={{ color: TEXT_MUTED }}>
-                  <span className="flex items-center gap-1.5">
-                    <span className="flex">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-3.5 h-3.5 fill-current" style={{ color: "#facc15" }} />
-                      ))}
-                    </span>
-                    <strong style={{ color: TEXT_MAIN }}>4.8/5</strong>
-                    <span style={{ color: TEXT_LIGHT }}>{(t as any).hero_social_rating ?? "Valoracion media"}</span>
-                  </span>
-                  <span className="w-px h-3 rounded-full" style={{ backgroundColor: BORDER }} />
-                  <span className="flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5" style={{ color: INDIGO }} />
-                    <strong style={{ color: TEXT_MAIN }}>2.3M+</strong>
-                    <span style={{ color: TEXT_LIGHT }}>{(t as any).hero_social_users ?? "usuarios activos"}</span>
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Upload drop zone — centered with CTA + badges inside */}
-            <div className="w-full max-w-xl">
-              <div
-                onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
-                onDragLeave={() => setIsDraggingOver(false)}
-                onDrop={handleDrop}
-                className="rounded-2xl border-2 border-dashed transition-all duration-300"
-                style={{
-                  borderColor: isDraggingOver ? INDIGO : "rgba(0, 0, 0, 0.15)",
-                  backgroundColor: isDraggingOver ? "#f0f7ff" : "#fafbfc",
-                  boxShadow: isDraggingOver
-                    ? `0 0 0 5px rgba(21, 101, 192, 0.08)`
-                    : "none",
-                }}
-              >
-                <div className="flex flex-col items-center gap-4 px-6 py-10">
-                  <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                    style={{ backgroundColor: INDIGO }}
-                  >
-                    <FileText className="w-7 h-7 text-white" />
-                  </div>
-                  <p className="font-bold text-base" style={{ color: TEXT_MAIN }}>
-                    {t.hero_drag_here}
-                  </p>
-                  <p className="text-sm" style={{ color: TEXT_LIGHT }}>
-                    {(t as any).hero_or ?? "or"}
-                  </p>
-                  <button
-                    className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-bold text-white text-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
-                    style={{ backgroundColor: INDIGO, boxShadow: `0 4px 16px rgba(0, 0, 0, 0.18)` }}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Upload className="w-4 h-4" />
-                    {t.hero_upload_btn}
-                  </button>
-                  <div className="flex flex-wrap items-center justify-center gap-1.5 mt-2">
-                    {["PDF", "Word", "Excel", "PPT", "JPG", "PNG"].map((fmt) => (
-                      <span
-                        key={fmt}
-                        className="text-xs px-2.5 py-0.5 rounded-md font-medium border"
-                        style={{ backgroundColor: "white", borderColor: BORDER, color: TEXT_MUTED }}
-                      >
-                        {fmt}
-                      </span>
-                    ))}
-                  </div>
-                  <span className="text-xs" style={{ color: TEXT_LIGHT }}>{t.hero_max_size}</span>
-                </div>
-              </div>
-            </div>
+          <div className="relative max-w-[720px] mx-auto">
+            <UploadBox withTabs withHandNote />
           </div>
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════════════
-          STATS — Horizontal bar
-      ══════════════════════════════════════════════════════════ */}
+      {/* ══════ TRUST LINE — replaces fake logos ══════ */}
       {!isFastDoc && (
-        <section style={{ backgroundColor: "#f8fafc" }}>
-          <div className="container py-6">
-            <div className="flex flex-wrap items-center justify-center gap-y-4">
+        <section className="pb-12 -mt-6">
+          <div className="container">
+            <div className="flex items-center justify-center gap-3 flex-wrap">
+              <div className="flex gap-0.5">
+                {[1,2,3,4,5].map(i => (
+                  <Star key={i} className="w-4 h-4 fill-current" style={{ color: i <= 4 ? "#F4A442" : "#E4E4E7" }} />
+                ))}
+              </div>
+              <span className="font-bold text-sm text-[#0A0A0B]">4.8</span>
+              <span className="text-[#8A8A92] text-sm">·</span>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-[#8A8A92] font-bold">
+                {t.testimonials_subtitle}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ══════ STATS ══════ */}
+      {!isFastDoc && (
+        <section className="pb-14">
+          <div className="container">
+            <div className="max-w-[760px] mx-auto grid grid-cols-1 sm:grid-cols-3 gap-0">
               {[
-                { value: "15+",   label: (t as any).hero_social_tools ?? "Herramientas PDF", icon: Sparkles },
-                { value: docsCount.toLocaleString(), label: (t as any).hero_social_pdfs ?? "Documentos procesados hoy", icon: FileText },
-                { value: "4.8★",  label: (t as any).hero_social_rating ?? "Valoracion media", icon: Star },
-                { value: "100%",  label: (t as any).hero_social_install ?? "Sin instalacion", icon: Cloud },
-              ].map((stat, i, arr) => (
-                <div key={i} className="flex items-center">
-                  <div className="flex items-center gap-3 px-6">
-                    <stat.icon className="w-4 h-4 flex-shrink-0" style={{ color: INDIGO, opacity: 0.6 }} />
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-xl font-extrabold" style={{ color: TEXT_MAIN }}>
-                        {stat.value}
-                      </span>
-                      <span className="text-xs font-medium" style={{ color: TEXT_MUTED }}>
-                        {stat.label}
-                      </span>
-                    </div>
-                  </div>
-                  {i < arr.length - 1 && (
-                    <div className="hidden md:block w-px h-8" style={{ backgroundColor: BORDER }} />
-                  )}
+                { big: docsCount.toLocaleString(), label: t.hero_social_pdfs, emoji: "📄" },
+                { big: "12M+", label: t.hero_social_users, emoji: "👥" },
+                { big: "4.8 ★", label: t.hero_social_rating, emoji: "🏆" },
+              ].map((s, i) => (
+                <div key={i} className={`text-center px-4 py-2 ${i > 0 ? "sm:border-l sm:border-[#E8E8EC]" : ""}`}>
+                  <div className="text-2xl mb-2">{s.emoji}</div>
+                  <div className="text-[28px] font-extrabold tracking-[-0.02em] text-[#0A0A0B] leading-none">{s.big}</div>
+                  <div className="text-xs text-[#5A5A62] mt-2">{s.label}</div>
                 </div>
               ))}
             </div>
@@ -388,203 +425,82 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
         </section>
       )}
 
-      {/* ══════════════════════════════════════════════════════════
-          TOOLS — 3-column grid, no tabs
-      ══════════════════════════════════════════════════════════ */}
-      <section id="tools" className="py-16 md:py-20 bg-white">
+      {/* ══════ TOOLS GRID — 6 categories ══════ */}
+      <section id="tools" className="py-20 bg-[#FAFAFA] border-y border-[#F1F1F4]">
         <div className="container">
-          <div className="text-center mb-10">
+          <div className="text-center mb-12">
             <h2
-              className="text-3xl md:text-4xl font-bold mb-3"
-              style={{ color: TEXT_MAIN }}
+              className="font-extrabold tracking-[-0.025em] leading-[1.1] mb-3.5 text-[#0A0A0B]"
+              style={{ fontSize: "clamp(32px, 4vw, 44px)" }}
             >
-              {highlightWords(t.tools_title, ["complete toolkit", "Todas las utilidades", "suite complète", "Alle PDF-Funktionen", "kit completo", "Un kit completo", "Alle professionele", "Kompletny zestaw", "Весь арсенал", "完整的专业"])}
+              {t.tools_title}
             </h2>
-            <p className="text-base max-w-lg mx-auto" style={{ color: TEXT_MUTED }}>
+            <p className="text-[17px] text-[#5A5A62] max-w-[540px] mx-auto">
               {t.tools_subtitle}
             </p>
           </div>
 
-          {/* 3-column grid of TOOLS_EDIT */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-3xl mx-auto mb-8">
-            {editTools.map((tool, i) => (
-              <button
-                key={i}
-                className="flex items-center gap-3 p-4 rounded-xl border text-left transition-all duration-200 hover:shadow-md"
-                style={{ backgroundColor: "white", borderColor: BORDER }}
-                onClick={() => scrollToEditor(tool.tool)}
-              >
-                <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: tool.color }}
-                >
-                  <tool.icon className="w-5 h-5" style={{ color: tool.iconColor }} />
-                </div>
-                <span className="text-sm font-medium" style={{ color: TEXT_MAIN }}>
-                  {tool.label}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <div className="text-center">
-            <a
-              href={`/${lang}/tools`}
-              className="inline-flex items-center gap-1.5 text-sm font-semibold transition-colors duration-200"
-              style={{ color: INDIGO }}
-            >
-              {(t as any).tools_view_all ?? "Ver todas las herramientas"}
-              <ArrowRight className="w-4 h-4" />
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          HOW IT WORKS — Horizontal 3 steps
-      ══════════════════════════════════════════════════════════ */}
-      <section id="how-it-works" className="py-16 md:py-20 bg-white">
-        <div className="container">
-          <div className="text-center mb-12">
-            <h2
-              className="text-3xl md:text-4xl font-bold mb-3"
-              style={{ color: TEXT_MAIN }}
-            >
-              {highlightWords(t.how_title, ["Three quick steps", "Así de sencillo", "Drei einfache Schritte", "Trois étapes", "Três passos", "Tre semplici", "Drie stappen", "Trzy kroki", "Три шага", "三步"])}
-            </h2>
-            <p className="text-base" style={{ color: TEXT_MUTED }}>{t.how_subtitle}</p>
-          </div>
-
-          <div className="flex flex-col md:flex-row items-start justify-center gap-4 max-w-4xl mx-auto">
-            {[
-              { step: 1, icon: Upload,   title: t.how_step1_title, desc: t.how_step1_desc },
-              { step: 2, icon: Edit3,    title: t.how_step2_title, desc: t.how_step2_desc },
-              { step: 3, icon: Download, title: t.how_step3_title, desc: t.how_step3_desc },
-            ].map((item, i, arr) => (
-              <div key={i} className="flex items-start flex-1">
-                {/* Step content */}
-                <div className="flex flex-col items-center text-center flex-1">
-                  {/* Step number circle */}
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold mb-3"
-                    style={{ backgroundColor: INDIGO }}
-                  >
-                    {item.step}
-                  </div>
-                  {/* Icon */}
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center mb-3"
-                    style={{ backgroundColor: "#f1f5f9" }}
-                  >
-                    <item.icon className="w-6 h-6" style={{ color: INDIGO }} />
-                  </div>
-                  <h3 className="font-bold text-base mb-2" style={{ color: TEXT_MAIN }}>
-                    {item.title}
+          <div className="flex flex-col gap-10">
+            {TOOL_CATEGORIES.map((cat) => (
+              <div key={cat.titleKey}>
+                <div className="flex items-baseline gap-4 mb-4 pb-3 border-b border-[#F1F1F4] flex-wrap">
+                  <h3 className="text-[22px] font-extrabold tracking-[-0.015em] text-[#0A0A0B]">
+                    {resolveLabel(cat.titleKey)}
                   </h3>
-                  <p className="text-sm leading-relaxed" style={{ color: TEXT_MUTED }}>
-                    {item.desc}
-                  </p>
+                  <span className="ml-auto text-[11px] font-bold tracking-[0.12em] text-[#8A8A92] uppercase">
+                    {cat.tools.length}
+                  </span>
                 </div>
-                {/* Arrow connector */}
-                {i < arr.length - 1 && (
-                  <div className="hidden md:flex items-center pt-8 px-2">
-                    <ArrowRight className="w-5 h-5" style={{ color: TEXT_LIGHT }} />
-                  </div>
-                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+                  {cat.tools.map((tool) => (
+                    <button
+                      key={tool.label_key}
+                      onClick={() => triggerUpload(tool.tool)}
+                      className="bg-white border border-[#E8E8EC] rounded-xl px-4 py-3.5 flex items-center gap-3 text-left text-[#0A0A0B] hover:border-[#E63946] hover:-translate-y-px hover:shadow-[0_8px_18px_-10px_rgba(230,57,70,0.28)] transition-all"
+                    >
+                      <div className="w-[34px] h-[34px] rounded-lg bg-[#F6F6F7] flex items-center justify-center flex-shrink-0">
+                        <tool.icon className="w-[17px] h-[17px] text-[#0A0A0B]" />
+                      </div>
+                      <span className="text-sm font-semibold">
+                        {resolveLabel(tool.label_key)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
-
-          <div className="flex justify-center mt-10">
-            <button
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl text-white font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5"
-              style={{ backgroundColor: INDIGO, boxShadow: `0 4px 16px rgba(0, 0, 0, 0.18)` }}
-              onClick={() => scrollToEditor()}
-            >
-              <Upload className="w-4 h-4" />
-              {t.how_cta}
-            </button>
-          </div>
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════════════
-          BENEFITS — 2x2 grid
-      ══════════════════════════════════════════════════════════ */}
+      {/* ══════ HOW IT WORKS (kept for #how-it-works anchor) ══════ */}
       {!isFastDoc && (
-        <section className="py-16 md:py-20" style={{ backgroundColor: "#f8fafc" }}>
+        <section id="how-it-works" className="py-20">
           <div className="container">
-            <div className="text-center mb-12">
+            <div className="text-center mb-14">
               <h2
-                className="text-3xl md:text-4xl font-bold"
-                style={{ color: TEXT_MAIN }}
+                className="font-extrabold tracking-[-0.025em] leading-[1.1] text-[#0A0A0B] mb-3"
+                style={{ fontSize: "clamp(32px, 4vw, 42px)" }}
               >
-                {highlightWords(t.benefits_title, ["EditorPDF"])}
+                {t.how_title}
               </h2>
+              <p className="text-base text-[#5A5A62]">{t.how_subtitle}</p>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
               {[
-                {
-                  icon: Zap,
-                  title: t.benefit1_title,
-                  desc: t.benefit1_desc,
-                  color: "#f1f5f9",
-                  iconColor: "#1565C0",
-                  points: [(t as any).benefit1_point1, (t as any).benefit1_point2, (t as any).benefit1_point3],
-                },
-                {
-                  icon: Shield,
-                  title: t.benefit2_title,
-                  desc: t.benefit2_desc,
-                  color: "#f8fafc",
-                  iconColor: "#2563EB",
-                  points: [(t as any).benefit2_point1, (t as any).benefit2_point2, (t as any).benefit2_point3],
-                },
-                {
-                  icon: Edit3,
-                  title: t.benefit3_title,
-                  desc: t.benefit3_desc,
-                  color: "#f1f5f9",
-                  iconColor: INDIGO,
-                  points: [(t as any).benefit3_point1, (t as any).benefit3_point2, (t as any).benefit3_point3],
-                },
-                {
-                  icon: Monitor,
-                  title: t.benefit4_title,
-                  desc: t.benefit4_desc,
-                  color: "#f1f5f9",
-                  iconColor: VIOLET,
-                  points: [(t as any).benefit4_point1, (t as any).benefit4_point2, (t as any).benefit4_point3],
-                },
-              ].map((b, i) => (
-                <div
-                  key={i}
-                  className="flex flex-col gap-4 p-8 rounded-2xl bg-white border"
-                  style={{ borderColor: BORDER }}
-                >
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center"
-                    style={{ backgroundColor: b.color }}
-                  >
-                    <b.icon className="w-6 h-6" style={{ color: b.iconColor }} />
+                { n: 1, icon: Upload, title: t.how_step1_title, desc: t.how_step1_desc },
+                { n: 2, icon: Edit3,  title: t.how_step2_title, desc: t.how_step2_desc },
+                { n: 3, icon: Cloud,  title: t.how_step3_title, desc: t.how_step3_desc },
+              ].map((s) => (
+                <div key={s.n} className="text-center px-4">
+                  <div className="w-12 h-12 rounded-full bg-[#0A0A0B] text-white text-sm font-bold flex items-center justify-center mx-auto mb-4 ring-4 ring-[#FDECEE]">
+                    {s.n}
                   </div>
-                  <div>
-                    <h3 className="font-bold text-base mb-2" style={{ color: TEXT_MAIN }}>
-                      {b.title}
-                    </h3>
-                    <p className="text-sm leading-relaxed mb-3" style={{ color: TEXT_MUTED }}>
-                      {b.desc}
-                    </p>
-                    <ul className="space-y-1.5">
-                      {b.points.map((point, j) => (
-                        <li key={j} className="flex items-center gap-2 text-xs" style={{ color: TEXT_MUTED }}>
-                          <Check className="w-3.5 h-3.5 flex-shrink-0" style={{ color: b.iconColor }} />
-                          {point}
-                        </li>
-                      ))}
-                    </ul>
+                  <div className="w-12 h-12 rounded-2xl bg-[#F6F6F7] flex items-center justify-center mx-auto mb-3">
+                    <s.icon className="w-5 h-5 text-[#0A0A0B]" />
                   </div>
+                  <h3 className="text-base font-bold text-[#0A0A0B] mb-2">{s.title}</h3>
+                  <p className="text-sm text-[#5A5A62] leading-relaxed">{s.desc}</p>
                 </div>
               ))}
             </div>
@@ -592,58 +508,41 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
         </section>
       )}
 
-      {/* ══════════════════════════════════════════════════════════
-          TESTIMONIALS — Single row, 3 cards
-      ══════════════════════════════════════════════════════════ */}
+      {/* ══════ TESTIMONIALS — 3 cards in bundle aesthetic ══════ */}
       {!isFastDoc && (
-        <section className="py-16 md:py-20 bg-white">
+        <section className="py-20 border-t border-[#F1F1F4]">
           <div className="container">
-            <div className="text-center mb-10">
+            <div className="text-center mb-12">
               <h2
-                className="text-3xl md:text-4xl font-bold mb-2"
-                style={{ color: TEXT_MAIN }}
+                className="font-extrabold tracking-[-0.025em] text-[#0A0A0B] mb-2"
+                style={{ fontSize: "clamp(28px, 3.5vw, 36px)" }}
               >
-                {(t as any).testimonials_title}
+                {t.testimonials_title}
               </h2>
-              <p className="text-base" style={{ color: TEXT_MUTED }}>
-                {(t as any).testimonials_subtitle}
-              </p>
+              <p className="text-base text-[#5A5A62]">{t.testimonials_subtitle}</p>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto">
               {TESTIMONIALS_META.map((tm, i) => (
-                <div
-                  key={i}
-                  className="flex flex-col gap-4 p-6 rounded-2xl"
-                  style={{ backgroundColor: "#f8fafc" }}
-                >
-                  {/* Stars */}
-                  <div className="flex items-center gap-0.5">
+                <div key={i} className="bg-[#F6F6F7] rounded-3xl p-7 flex flex-col gap-4 relative">
+                  <div className="absolute right-5 top-5 text-xl">✦</div>
+                  <div className="flex gap-0.5">
                     {[...Array(5)].map((_, j) => (
-                      <Star key={j} className="w-4 h-4 fill-current" style={{ color: "#facc15" }} />
+                      <Star key={j} className="w-4 h-4 fill-current text-[#F4A442]" />
                     ))}
                   </div>
-
-                  {/* Quote */}
-                  <p className="text-sm leading-relaxed flex-1" style={{ color: TEXT_MUTED }}>
+                  <p className="text-[15px] leading-relaxed text-[#1A1A1C] flex-1">
                     "{(t as any)[tm.textKey]}"
                   </p>
-
-                  {/* Author */}
                   <div className="flex items-center gap-3 pt-2">
                     <div
-                      className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                      style={{ background: tm.avatarColor }}
+                      className="w-10 h-10 rounded-full text-white font-bold text-sm flex items-center justify-center flex-shrink-0"
+                      style={{ background: tm.color }}
                     >
                       {tm.avatar}
                     </div>
                     <div>
-                      <div className="text-sm font-semibold" style={{ color: TEXT_MAIN }}>
-                        {tm.name}
-                      </div>
-                      <div className="text-xs" style={{ color: TEXT_LIGHT }}>
-                        {(t as any)[tm.roleKey]}
-                      </div>
+                      <div className="text-sm font-bold text-[#0A0A0B]">{tm.name}</div>
+                      <div className="text-xs text-[#5A5A62]">{(t as any)[tm.roleKey]}</div>
                     </div>
                   </div>
                 </div>
@@ -653,101 +552,42 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
         </section>
       )}
 
-      {/* ══════════════════════════════════════════════════════════
-          SECURITY — Horizontal badges
-      ══════════════════════════════════════════════════════════ */}
-      <section style={{ backgroundColor: "#f8fafc" }}>
-        <div className="container py-12">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold" style={{ color: TEXT_MAIN }}>
-              {(t as any).security_title}
-            </h2>
-            <p className="text-sm mt-1" style={{ color: TEXT_MUTED }}>
-              {(t as any).security_subtitle}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            {[
-              {
-                icon: Shield,
-                title: (t as any).security_ssl_title,
-                desc: (t as any).security_ssl_desc,
-                color: "#2563EB",
-              },
-              {
-                icon: Trash2,
-                title: (t as any).security_delete_title,
-                desc: (t as any).security_delete_desc,
-                color: "#1565C0",
-              },
-              {
-                icon: Globe,
-                title: (t as any).security_privacy_title,
-                desc: (t as any).security_privacy_desc,
-                color: INDIGO,
-              },
-            ].map((item, i) => (
-              <div key={i} className="flex items-start gap-4">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: `${item.color}18` }}
-                >
-                  <item.icon className="w-5 h-5" style={{ color: item.color }} />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-sm mb-1" style={{ color: TEXT_MAIN }}>
-                    {item.title}
-                  </h3>
-                  <p className="text-xs leading-relaxed" style={{ color: TEXT_MUTED }}>
-                    {item.desc}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          FAQ — Clean accordion
-      ══════════════════════════════════════════════════════════ */}
+      {/* ══════ FEATURES — 4 cards reusing benefit_* keys ══════ */}
       {!isFastDoc && (
-        <section id="faq" className="py-16 md:py-20 bg-white">
-          <div className="container max-w-2xl mx-auto">
-            <div className="text-center mb-12">
+        <section id="features" className="py-20 border-t border-[#F1F1F4] bg-[#FAFAFA]">
+          <div className="container">
+            <div className="text-center mb-14">
               <h2
-                className="text-3xl md:text-4xl font-bold"
-                style={{ color: TEXT_MAIN }}
+                className="font-extrabold tracking-[-0.025em] leading-[1.1] text-[#0A0A0B] mb-3.5"
+                style={{ fontSize: "clamp(32px, 4vw, 44px)" }}
               >
-                {t.faq_title}
+                {t.benefits_title}
               </h2>
             </div>
-
-            <div>
-              {faqs.map((faq, i) => (
-                <div
-                  key={i}
-                  className="border-b"
-                  style={{ borderColor: BORDER }}
-                >
-                  <button
-                    className="w-full flex items-center justify-between py-4 text-left gap-4"
-                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+              {[
+                { icon: Zap,      tint: ACCENT,    title: t.benefit1_title, desc: t.benefit1_desc, points: [(t as any).benefit1_point1, (t as any).benefit1_point2, (t as any).benefit1_point3] },
+                { icon: Shield,   tint: "#1E9E63", title: t.benefit2_title, desc: t.benefit2_desc, points: [(t as any).benefit2_point1, (t as any).benefit2_point2, (t as any).benefit2_point3] },
+                { icon: Edit3,    tint: "#2B5BEA", title: t.benefit3_title, desc: t.benefit3_desc, points: [(t as any).benefit3_point1, (t as any).benefit3_point2, (t as any).benefit3_point3] },
+                { icon: Sparkles, tint: "#F4A442", title: t.benefit4_title, desc: t.benefit4_desc, points: [(t as any).benefit4_point1, (t as any).benefit4_point2, (t as any).benefit4_point3] },
+              ].map((f, i) => (
+                <div key={i} className="bg-white rounded-3xl p-7 border border-[#E8E8EC]">
+                  <div
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5"
+                    style={{ background: `${f.tint}1F` }}
                   >
-                    <span className="font-semibold text-sm" style={{ color: TEXT_MAIN }}>
-                      {faq.question}
-                    </span>
-                    {openFaq === i
-                      ? <ChevronUp className="w-4 h-4 flex-shrink-0" style={{ color: INDIGO }} />
-                      : <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: TEXT_LIGHT }} />
-                    }
-                  </button>
-                  {openFaq === i && (
-                    <div className="pb-4 text-sm leading-relaxed" style={{ color: TEXT_MUTED }}>
-                      {faq.answer}
-                    </div>
-                  )}
+                    <f.icon className="w-6 h-6" style={{ color: f.tint }} />
+                  </div>
+                  <h3 className="text-xl font-bold tracking-[-0.015em] text-[#0A0A0B] mb-2">{f.title}</h3>
+                  <p className="text-sm text-[#5A5A62] leading-relaxed mb-3">{f.desc}</p>
+                  <ul className="space-y-1.5">
+                    {f.points.filter(Boolean).map((p, j) => (
+                      <li key={j} className="text-xs text-[#5A5A62] flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: f.tint }} />
+                        {p}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               ))}
             </div>
@@ -755,41 +595,59 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
         </section>
       )}
 
-      {/* ══════════════════════════════════════════════════════════
-          FINAL CTA — Simple green background
-      ══════════════════════════════════════════════════════════ */}
-      <section
-        className="py-16 md:py-24"
-        style={{
-          backgroundColor: isFastDoc ? "#E8590C" : INDIGO,
-        }}
-      >
-        <div className="container text-center">
-          <h2
-            className="text-3xl md:text-5xl font-extrabold text-white mb-4 tracking-tight"
-          >
-            {t.cta_title}
-          </h2>
-          <p
-            className="text-base md:text-lg mb-10 max-w-lg mx-auto leading-relaxed"
-            style={{ color: "rgba(255, 255, 255, 0.85)" }}
-          >
-            {t.cta_subtitle}
-          </p>
+      {/* ══════ FAQ ══════ */}
+      {!isFastDoc && (
+        <section id="faq" className="py-20 bg-[#FAFAFA] border-t border-[#F1F1F4]">
+          <div className="container max-w-[760px]">
+            <h2
+              className="font-extrabold tracking-[-0.025em] text-center mb-10 text-[#0A0A0B]"
+              style={{ fontSize: "clamp(32px, 4vw, 42px)" }}
+            >
+              {t.faq_title}
+            </h2>
+            <div className="flex flex-col gap-2">
+              {faqs.map((faq, i) => {
+                const open = openFaq === i;
+                return (
+                  <div key={i} className="bg-white rounded-xl border border-[#E8E8EC] overflow-hidden">
+                    <button
+                      onClick={() => setOpenFaq(open ? null : i)}
+                      className="w-full text-left px-5 py-4 flex justify-between items-center text-[15px] font-semibold text-[#0A0A0B]"
+                      type="button"
+                    >
+                      <span>{faq.question}</span>
+                      <ChevronDown size={18} className={`text-[#5A5A62] transition-transform flex-shrink-0 ${open ? "rotate-180" : ""}`} />
+                    </button>
+                    {open && (
+                      <div className="px-5 pb-5 text-sm text-[#5A5A62] leading-relaxed">
+                        {faq.answer}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
-          <button
-            className="inline-flex items-center gap-2.5 px-10 py-4 rounded-xl font-bold text-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl active:scale-95"
-            style={{
-              backgroundColor: "white",
-              color: isFastDoc ? "#C2410C" : INDIGO,
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.22)",
-            }}
-            onClick={() => scrollToEditor()}
-          >
-            <Upload className="w-5 h-5" />
-            {t.cta_btn}
-            <ArrowRight className="w-5 h-5" />
-          </button>
+      {/* ══════ FINAL CTA — UploadBox repeated with hand note ══════ */}
+      <section className="py-20 relative overflow-hidden">
+        <div
+          className="absolute inset-0 z-0 pointer-events-none"
+          style={{ background: "radial-gradient(ellipse 60% 80% at 50% 50%, #FDECEE 0%, transparent 70%)" }}
+        />
+        <div className="container relative z-[1] max-w-[780px]">
+          <div className="text-center mb-8">
+            <h2
+              className="font-extrabold tracking-[-0.025em] leading-[1.1] text-[#0A0A0B] mb-3"
+              style={{ fontSize: "clamp(28px, 3.5vw, 36px)" }}
+            >
+              {t.cta_title}
+            </h2>
+            <p className="text-[15px] text-[#5A5A62]">{t.cta_subtitle}</p>
+          </div>
+          <UploadBox withHandNote />
         </div>
       </section>
 

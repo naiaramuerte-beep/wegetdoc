@@ -1,27 +1,21 @@
 /* =============================================================
-   EditorPDF Navbar — "Clean White" design
-   Clean white glass navbar, neutral accents
-   Responsive: mobile hamburger (<md), desktop nav (md+)
+   EditorPDF Navbar — bundle palette (ink + PDF red accent)
+   - Glass header, ink/line tokens, accent for active states
+   - Same logic: auth, i18n, routing, contact modal (untouched)
    ============================================================= */
 
 import { useState, useEffect } from "react";
-import { logoParts, colors, isFastDoc } from "@/lib/brand";
+import { colors, isFastDoc } from "@/lib/brand";
 import { Link, useLocation } from "wouter";
 import {
-  Menu, X, LogOut, LayoutDashboard, Crown,
-  Globe, ChevronDown, Settings, FileText,
+  Menu, X, LogOut, LayoutDashboard,
+  ChevronDown, Settings,
 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import ContactModal from "./ContactModal";
 import AuthModal from "./AuthModal";
 import { LANGUAGES } from "@/lib/i18n";
 import { useLanguage } from "@/contexts/LanguageContext";
-
-const INDIGO = colors.primary;
-const INDIGO_HOVER_BG = colors.lightBg;
-const TEXT_MAIN = "#0f172a";
-const TEXT_MUTED = "#64748b";
-const BORDER = "#e2e8f0";
 
 export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; hideLogoLink?: boolean } = {}) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -72,42 +66,42 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
     }
   }, [isAuthenticated]);
 
+  const logoInner = (
+    <>
+      <svg
+        width="32" height="32" viewBox="0 0 512 512" fill="none"
+        className="flex-shrink-0"
+        aria-hidden="true"
+      >
+        <rect x="48" y="48" width="416" height="416" rx="112" fill="#0A0A0B"/>
+        <path
+          d="M176 180v152M176 180h82a50 50 0 010 100h-82"
+          stroke="white" strokeWidth="34"
+          strokeLinecap="round" strokeLinejoin="round"
+        />
+        <circle cx="342" cy="348" r="32" fill="#E63946"/>
+      </svg>
+      <span className="font-extrabold text-[18px] tracking-[-0.03em] text-[#0A0A0B] leading-none">
+        editorpdf<span className="text-[#E63946]">.net</span>
+      </span>
+    </>
+  );
+
   return (
     <>
       <header
-        className={`sticky top-0 z-50 w-full transition-all duration-200 ${
-          scrolled || menuOpen ? "navbar-glass shadow-sm" : "bg-white border-b"
+        className={`sticky top-0 z-50 w-full border-b border-[#F1F1F4] backdrop-blur-md bg-white/85 transition-shadow duration-200 ${
+          scrolled || menuOpen ? "shadow-sm" : ""
         }`}
-        style={{ borderColor: BORDER }}
       >
-        <div className={`container flex items-center h-14 md:h-16 ${isFastDoc ? "md:grid md:grid-cols-[auto_1fr_auto]" : "justify-between"}`}>
+        <div className={`container flex items-center h-16 md:h-[68px] ${isFastDoc ? "md:grid md:grid-cols-[auto_1fr_auto]" : "justify-between"}`}>
 
           {/* ── Logo ── */}
           {hideLogoLink ? (
-            <div className="flex items-center gap-2 shrink-0">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: colors.gradient }}
-              >
-                <FileText className="w-4 h-4 text-white" />
-              </div>
-              <span>
-                <span className="font-semibold text-lg" style={{ color: TEXT_MAIN }}>{logoParts[0]}</span>
-                <span className="font-extrabold text-lg" style={{ color: "#1565C0" }}>{logoParts[1]}</span>
-              </span>
-            </div>
+            <div className="flex items-center gap-2 shrink-0">{logoInner}</div>
           ) : (
-            <Link href={`/${lang}`} className="flex items-center gap-2 group shrink-0">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: colors.gradient }}
-              >
-                <FileText className="w-4 h-4 text-white" />
-              </div>
-              <span>
-                <span className="font-semibold text-lg" style={{ color: TEXT_MAIN }}>{logoParts[0]}</span>
-                <span className="font-extrabold text-lg" style={{ color: "#1565C0" }}>{logoParts[1]}</span>
-              </span>
+            <Link href={`/${lang}`} className="flex items-center gap-2 group shrink-0 transition-opacity hover:opacity-90">
+              {logoInner}
             </Link>
           )}
 
@@ -118,16 +112,7 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
                 <button
                   key={link.href}
                   onClick={link.onClick}
-                  className="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150"
-                  style={{ color: TEXT_MUTED, background: "none", border: "none" }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = TEXT_MAIN;
-                    e.currentTarget.style.backgroundColor = INDIGO_HOVER_BG;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = TEXT_MUTED;
-                    e.currentTarget.style.backgroundColor = "transparent";
-                  }}
+                  className="px-3 py-2 rounded-lg text-sm font-medium text-[#1A1A1C] hover:bg-[#F6F6F7] transition-colors"
                 >
                   {link.label}
                 </button>
@@ -135,16 +120,7 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
                 <a
                   key={link.href}
                   href={link.href}
-                  className="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150"
-                  style={{ color: TEXT_MUTED }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = TEXT_MAIN;
-                    e.currentTarget.style.backgroundColor = INDIGO_HOVER_BG;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = TEXT_MUTED;
-                    e.currentTarget.style.backgroundColor = "transparent";
-                  }}
+                  className="px-3 py-2 rounded-lg text-sm font-medium text-[#1A1A1C] hover:bg-[#F6F6F7] transition-colors"
                 >
                   {link.label}
                 </a>
@@ -155,49 +131,41 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
           {/* ── Right: Lang + Auth ── */}
           <div className="hidden md:flex items-center gap-2 shrink-0">
 
-            {/* Language selector */}
+            {/* Language selector — pill with circular flag */}
             <div className="relative">
               <button
                 onClick={() => setLangMenuOpen(!langMenuOpen)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm transition-all duration-150"
-                style={{ color: TEXT_MUTED }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = INDIGO_HOVER_BG;
-                  e.currentTarget.style.color = TEXT_MAIN;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.color = TEXT_MUTED;
-                }}
+                aria-expanded={langMenuOpen}
+                aria-label="Change language"
+                className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-full border border-[#E8E8EC] bg-white text-[#0A0A0B] hover:border-[#0A0A0B]/20 hover:bg-[#FAFAFA] transition-colors"
               >
-                <Globe size={14} />
-                <span className="font-medium text-xs">{currentLang.flag} {currentLang.code.toUpperCase()}</span>
-                <ChevronDown size={11} />
+                <span className="w-5 h-5 rounded-full overflow-hidden inline-flex items-center justify-center text-base leading-none ring-1 ring-black/[0.08]">
+                  {currentLang.flag}
+                </span>
+                <span className="text-[13px] font-bold tracking-wide">{currentLang.code.toUpperCase()}</span>
+                <ChevronDown size={13} className={`text-[#5A5A62] transition-transform ${langMenuOpen ? "rotate-180" : ""}`} />
               </button>
               {langMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setLangMenuOpen(false)} />
-                  <div
-                    className="absolute right-0 top-full mt-2 w-44 rounded-xl shadow-lg border overflow-hidden z-50 max-h-64 overflow-y-auto"
-                    style={{ backgroundColor: "white", borderColor: BORDER, boxShadow: "0 8px 30px rgba(15, 23, 42, 0.10)" }}
-                  >
-                    {LANGUAGES.map((l) => (
-                      <button
-                        key={l.code}
-                        onClick={() => { switchLang(l.code); setLangMenuOpen(false); }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors"
-                        style={{
-                          color: l.code === lang ? INDIGO : TEXT_MUTED,
-                          backgroundColor: l.code === lang ? "#f1f5f9" : "transparent",
-                          fontWeight: l.code === lang ? "600" : "400",
-                        }}
-                        onMouseEnter={(e) => { if (l.code !== lang) e.currentTarget.style.backgroundColor = "#f8fafc"; }}
-                        onMouseLeave={(e) => { if (l.code !== lang) e.currentTarget.style.backgroundColor = "transparent"; }}
-                      >
-                        <span>{l.flag}</span>
-                        <span>{l.name}</span>
-                      </button>
-                    ))}
+                  <div className="absolute right-0 top-full mt-2 w-44 rounded-2xl bg-white ring-1 ring-[#E8E8EC] shadow-[0_8px_30px_rgba(10,10,11,0.10)] overflow-hidden z-50 max-h-64 overflow-y-auto">
+                    {LANGUAGES.map((l) => {
+                      const active = l.code === lang;
+                      return (
+                        <button
+                          key={l.code}
+                          onClick={() => { switchLang(l.code); setLangMenuOpen(false); }}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors ${
+                            active
+                              ? "bg-[#FDECEE] text-[#E63946] font-semibold"
+                              : "text-[#1A1A1C] hover:bg-[#F6F6F7]"
+                          }`}
+                        >
+                          <span>{l.flag}</span>
+                          <span>{l.name}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </>
               )}
@@ -208,19 +176,11 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
               <div className="relative">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-xl border transition-all duration-150"
-                  style={{ borderColor: BORDER, color: TEXT_MAIN }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "rgba(27, 94, 32, 0.4)";
-                    e.currentTarget.style.backgroundColor = INDIGO_HOVER_BG;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = BORDER;
-                    e.currentTarget.style.backgroundColor = "transparent";
-                  }}
+                  aria-expanded={userMenuOpen}
+                  className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border border-[#E8E8EC] text-[#0A0A0B] hover:bg-[#FAFAFA] hover:border-[#0A0A0B]/20 transition-colors"
                 >
                   <div
-                    className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-white shadow-sm"
                     style={{ background: colors.gradient }}
                   >
                     {user?.name?.charAt(0)?.toUpperCase() ?? user?.email?.charAt(0)?.toUpperCase() ?? "U"}
@@ -228,19 +188,16 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
                   <span className="text-sm font-medium max-w-[100px] truncate">
                     {user?.name ?? user?.email?.split("@")[0] ?? "Usuario"}
                   </span>
-                  <ChevronDown size={12} style={{ color: TEXT_MUTED }} />
+                  <ChevronDown size={12} className={`text-[#8A8A92] transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
                 </button>
 
                 {userMenuOpen && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
-                    <div
-                      className="absolute right-0 top-full mt-2 w-52 rounded-xl shadow-lg border overflow-hidden z-50"
-                      style={{ backgroundColor: "white", borderColor: BORDER, boxShadow: "0 8px 30px rgba(15, 23, 42, 0.10)" }}
-                    >
-                      <div className="px-4 py-3 border-b" style={{ borderColor: BORDER, backgroundColor: "#f8fafc" }}>
-                        <p className="text-sm font-semibold truncate" style={{ color: TEXT_MAIN }}>{user?.name ?? "Usuario"}</p>
-                        <p className="text-xs truncate" style={{ color: TEXT_MUTED }}>{user?.email}</p>
+                    <div className="absolute right-0 top-full mt-2 w-52 rounded-2xl bg-white ring-1 ring-[#E8E8EC] shadow-[0_8px_30px_rgba(10,10,11,0.10)] overflow-hidden z-50">
+                      <div className="px-4 py-3 border-b border-[#F1F1F4] bg-[#FAFAFA]">
+                        <p className="text-sm font-semibold truncate text-[#0A0A0B]">{user?.name ?? "Usuario"}</p>
+                        <p className="text-xs truncate text-[#5A5A62]">{user?.email}</p>
                       </div>
                       <div className="py-1">
                         {[
@@ -249,10 +206,7 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
                           <Link key={item.href} href={item.href}>
                             <button
                               onClick={() => setUserMenuOpen(false)}
-                              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors text-left"
-                              style={{ color: TEXT_MUTED }}
-                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f8fafc"; e.currentTarget.style.color = TEXT_MAIN; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = TEXT_MUTED; }}
+                              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#1A1A1C] hover:bg-[#F6F6F7] transition-colors text-left"
                             >
                               <item.icon size={15} />
                               {item.label}
@@ -263,23 +217,17 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
                           <Link href={`/${lang}/admin`}>
                             <button
                               onClick={() => setUserMenuOpen(false)}
-                              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors text-left"
-                              style={{ color: "#1565C0" }}
-                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f8fafc"; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#E63946] hover:bg-[#F6F6F7] transition-colors text-left"
                             >
                               <Settings size={15} />
                               Admin Panel
                             </button>
                           </Link>
                         )}
-                        <div className="my-1 border-t" style={{ borderColor: BORDER }} />
+                        <div className="my-1 border-t border-[#F1F1F4]" />
                         <button
                           onClick={handleLogout}
-                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors text-left"
-                          style={{ color: "#C62828" }}
-                          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f8fafc"; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#E63946] hover:bg-[#F6F6F7] transition-colors text-left"
                         >
                           <LogOut size={15} />
                           {t.nav_logout}
@@ -293,16 +241,13 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
               <>
                 <button
                   onClick={openLogin}
-                  className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-150"
-                  style={{ color: TEXT_MUTED }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = INDIGO_HOVER_BG; e.currentTarget.style.color = TEXT_MAIN; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = TEXT_MUTED; }}
+                  className="px-4 py-2 text-sm font-medium rounded-lg text-[#1A1A1C] hover:bg-[#F6F6F7] transition-colors"
                 >
                   {t.nav_login}
                 </button>
                 <button
                   onClick={openSignup}
-                  className="px-4 py-2 text-sm font-semibold rounded-lg text-white transition-all duration-150 btn-gradient"
+                  className="px-4 py-2 text-sm font-semibold rounded-lg bg-[#0A0A0B] text-white hover:bg-[#1A1A1C] shadow-sm hover:shadow-md transition-all"
                 >
                   {t.nav_signup}
                 </button>
@@ -312,12 +257,10 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
 
           {/* ── Mobile hamburger ── */}
           <button
-            className="md:hidden p-2 rounded-lg transition-colors"
-            style={{ color: TEXT_MAIN }}
+            className="md:hidden p-2 rounded-lg text-[#0A0A0B] hover:bg-[#F6F6F7] transition-colors"
             onClick={() => setMenuOpen(!menuOpen)}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = INDIGO_HOVER_BG}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
             aria-label="Toggle menu"
+            aria-expanded={menuOpen}
           >
             {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -325,19 +268,13 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
 
         {/* ── Mobile Menu ── */}
         {menuOpen && (
-          <div
-            className="md:hidden border-t px-4 py-4 flex flex-col gap-2"
-            style={{ borderColor: BORDER, backgroundColor: "white" }}
-          >
+          <div className="md:hidden border-t border-[#F1F1F4] bg-white px-4 py-4 flex flex-col gap-1">
             {navLinks.map((link) =>
               link.onClick ? (
                 <button
                   key={link.href}
                   onClick={() => { link.onClick!(); setMenuOpen(false); }}
-                  className="text-sm font-medium text-left px-3 py-2.5 rounded-lg transition-colors"
-                  style={{ color: TEXT_MUTED }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = INDIGO_HOVER_BG; e.currentTarget.style.color = TEXT_MAIN; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = TEXT_MUTED; }}
+                  className="text-sm font-medium text-left px-3 py-3 rounded-lg text-[#1A1A1C] hover:bg-[#F6F6F7] transition-colors"
                 >
                   {link.label}
                 </button>
@@ -345,47 +282,42 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
                 <a
                   key={link.href}
                   href={link.href}
-                  className="text-sm font-medium px-3 py-2.5 rounded-lg transition-colors block"
-                  style={{ color: TEXT_MUTED }}
                   onClick={() => setMenuOpen(false)}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = INDIGO_HOVER_BG; e.currentTarget.style.color = TEXT_MAIN; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = TEXT_MUTED; }}
+                  className="text-sm font-medium px-3 py-3 rounded-lg block text-[#1A1A1C] hover:bg-[#F6F6F7] transition-colors"
                 >
                   {link.label}
                 </a>
               )
             )}
 
-            {/* Language flags */}
-            <div
-              className="flex flex-wrap gap-1.5 pt-3 mt-1 border-t"
-              style={{ borderColor: BORDER }}
-            >
-              {LANGUAGES.map((l) => (
-                <button
-                  key={l.code}
-                  onClick={() => { switchLang(l.code); setMenuOpen(false); }}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors border"
-                  style={{
-                    color: l.code === lang ? INDIGO : TEXT_MUTED,
-                    backgroundColor: l.code === lang ? "#f1f5f9" : "transparent",
-                    borderColor: l.code === lang ? "rgba(27, 94, 32, 0.3)" : BORDER,
-                  }}
-                >
-                  {l.flag} {l.code.toUpperCase()}
-                </button>
-              ))}
+            {/* Language chips */}
+            <div className="grid grid-cols-5 gap-1.5 pt-3 mt-2 border-t border-[#F1F1F4]">
+              {LANGUAGES.map((l) => {
+                const active = l.code === lang;
+                return (
+                  <button
+                    key={l.code}
+                    onClick={() => { switchLang(l.code); setMenuOpen(false); }}
+                    className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                      active
+                        ? "bg-[#FDECEE] text-[#E63946] border-[#F2C1C6]"
+                        : "text-[#1A1A1C] border-[#E8E8EC] hover:bg-[#F6F6F7]"
+                    }`}
+                  >
+                    {l.flag} {l.code.toUpperCase()}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Auth */}
-            <div className="flex flex-col gap-2 pt-3 border-t" style={{ borderColor: BORDER }}>
+            <div className="flex flex-col gap-2 pt-3 mt-2 border-t border-[#F1F1F4]">
               {isAuthenticated ? (
                 <>
                   <Link href={`/${lang}/dashboard?tab=documents`}>
                     <button
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl border"
-                      style={{ color: TEXT_MAIN, borderColor: BORDER }}
                       onClick={() => setMenuOpen(false)}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-xl border border-[#E8E8EC] text-[#0A0A0B] hover:bg-[#FAFAFA] transition-colors"
                     >
                       <LayoutDashboard size={15} />
                       {t.nav_my_account}
@@ -393,8 +325,7 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
                   </Link>
                   <button
                     onClick={() => { handleLogout(); setMenuOpen(false); }}
-                    className="w-full px-4 py-2.5 text-sm font-medium rounded-xl border text-center"
-                    style={{ color: "#C62828", borderColor: BORDER }}
+                    className="w-full px-4 py-3 text-sm font-medium rounded-xl border border-[#E8E8EC] text-[#E63946] hover:bg-[#FAFAFA] text-center transition-colors"
                   >
                     {t.nav_logout}
                   </button>
@@ -403,14 +334,13 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
                 <>
                   <button
                     onClick={() => { openLogin(); setMenuOpen(false); }}
-                    className="w-full px-4 py-2.5 text-sm font-medium rounded-xl border text-center"
-                    style={{ color: TEXT_MAIN, borderColor: BORDER }}
+                    className="w-full px-4 py-3 text-sm font-medium rounded-xl border border-[#E8E8EC] text-[#0A0A0B] hover:bg-[#FAFAFA] text-center transition-colors"
                   >
                     {t.nav_login}
                   </button>
                   <button
                     onClick={() => { openSignup(); setMenuOpen(false); }}
-                    className="w-full px-4 py-2.5 text-sm font-semibold rounded-xl text-white text-center btn-gradient"
+                    className="w-full px-4 py-3 text-sm font-semibold rounded-xl bg-[#0A0A0B] text-white text-center hover:bg-[#1A1A1C] shadow-sm hover:shadow-md transition-all"
                   >
                     {t.nav_signup}
                   </button>
