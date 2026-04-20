@@ -2985,9 +2985,16 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // Full-screen PDF loading overlay (for native PDFs)
   if (isLoadingPdf) {
     return (
-      <div className="w-full rounded-2xl flex flex-col items-center justify-center py-20 px-8 text-center" style={{ backgroundColor: "#FAFAFA", border: "1px solid #E8E8EC" }}>
+      <div
+        className="w-full rounded-2xl flex flex-col items-center justify-center py-24 px-10 text-center"
+        style={{
+          backgroundColor: "#FAFAFA",
+          border: "1px solid #E8E8EC",
+          boxShadow: "0 1px 2px rgba(10,10,11,0.03), 0 8px 24px -16px rgba(10,10,11,0.08)",
+        }}
+      >
         {/* Brand mark with spinning ring */}
-        <div className="relative mb-6 w-20 h-20 flex items-center justify-center">
+        <div className="relative mb-4 w-20 h-20 flex items-center justify-center">
           <svg width="56" height="56" viewBox="0 0 512 512" fill="none" aria-hidden="true">
             <rect x="48" y="48" width="416" height="416" rx="112" fill="#0A0A0B"/>
             <path d="M176 180v152M176 180h82a50 50 0 010 100h-82" stroke="white" strokeWidth="34" strokeLinecap="round" strokeLinejoin="round"/>
@@ -2995,16 +3002,21 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           </svg>
           <div className="absolute inset-[-4px] rounded-full animate-spin" style={{ border: "3px solid #F1F1F4", borderTopColor: "#E63946", animationDuration: "1.2s" }} />
         </div>
+        {/* Wordmark */}
+        <div className="mb-7 font-extrabold text-[13px] tracking-[-0.02em] leading-none">
+          <span className="text-[#0A0A0B]">editorpdf</span>
+          <span className="text-[#E63946]">.net</span>
+        </div>
         {/* Title */}
-        <p className="text-xl font-bold mb-2" style={{ color: "#0A0A0B" }}>
+        <p className="text-2xl font-bold mb-2 tracking-[-0.01em]" style={{ color: "#0A0A0B" }}>
           {t.editor_loading_pdf}
         </p>
-        <p className="text-sm mb-6" style={{ color: "#5A5A62" }}>
+        <p className="text-sm mb-8" style={{ color: "#5A5A62" }}>
           {initialFile?.name ?? ""}
         </p>
         {/* Progress bar */}
-        <div className="w-full max-w-xs mb-3">
-          <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: "#F1F1F4" }}>
+        <div className="w-full max-w-sm">
+          <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "#F1F1F4" }}>
             <div
               className="h-full rounded-full transition-all duration-300 ease-out"
               style={{
@@ -3013,11 +3025,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               }}
             />
           </div>
-          <div className="flex justify-between mt-1.5">
+          <div className="flex justify-between mt-2">
             <span className="text-xs font-medium" style={{ color: "#5A5A62" }}>
               {pdfLoadProgress < 20 ? t.editor_loading_pdf_reading : pdfLoadProgress < 55 ? t.editor_loading_pdf_parsing : pdfLoadProgress < 95 ? t.editor_loading_pdf_thumbnails : t.editor_loading_pdf_ready}
             </span>
-            <span className="text-xs font-semibold" style={{ color: "#E63946" }}>{pdfLoadProgress}%</span>
+            <span className="text-xs font-bold" style={{ color: "#E63946" }}>{pdfLoadProgress}%</span>
           </div>
         </div>
       </div>
@@ -3027,9 +3039,16 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // Full-screen conversion loading overlay
   if (isConvertingFile) {
     return (
-      <div className="w-full rounded-2xl flex flex-col items-center justify-center py-20 px-8 text-center" style={{ backgroundColor: "#FAFAFA", border: "1px solid #E8E8EC" }}>
+      <div
+        className="w-full rounded-2xl flex flex-col items-center justify-center py-24 px-10 text-center"
+        style={{
+          backgroundColor: "#FAFAFA",
+          border: "1px solid #E8E8EC",
+          boxShadow: "0 1px 2px rgba(10,10,11,0.03), 0 8px 24px -16px rgba(10,10,11,0.08)",
+        }}
+      >
         {/* Brand mark with spinning ring */}
-        <div className="relative mb-6 w-20 h-20 flex items-center justify-center">
+        <div className="relative mb-4 w-20 h-20 flex items-center justify-center">
           <svg width="56" height="56" viewBox="0 0 512 512" fill="none" aria-hidden="true">
             <rect x="48" y="48" width="416" height="416" rx="112" fill="#0A0A0B"/>
             <path d="M176 180v152M176 180h82a50 50 0 010 100h-82" stroke="white" strokeWidth="34" strokeLinecap="round" strokeLinejoin="round"/>
@@ -3037,16 +3056,21 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           </svg>
           <div className="absolute inset-[-4px] rounded-full animate-spin" style={{ border: "3px solid #F1F1F4", borderTopColor: "#E63946", animationDuration: "1.2s" }} />
         </div>
+        {/* Wordmark */}
+        <div className="mb-7 font-extrabold text-[13px] tracking-[-0.02em] leading-none">
+          <span className="text-[#0A0A0B]">editorpdf</span>
+          <span className="text-[#E63946]">.net</span>
+        </div>
         {/* Title */}
-        <p className="text-xl font-bold mb-2" style={{ color: "#0A0A0B" }}>
+        <p className="text-2xl font-bold mb-2 tracking-[-0.01em]" style={{ color: "#0A0A0B" }}>
           {t.editor_toast_converting}
         </p>
-        <p className="text-sm mb-6" style={{ color: "#5A5A62" }}>
+        <p className="text-sm mb-8" style={{ color: "#5A5A62" }}>
           {initialFile?.name ?? ""}
         </p>
         {/* Progress bar */}
-        <div className="w-full max-w-xs mb-3">
-          <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: "#F1F1F4" }}>
+        <div className="w-full max-w-sm">
+          <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "#F1F1F4" }}>
             <div
               className="h-full rounded-full transition-all duration-300 ease-out"
               style={{
@@ -3055,11 +3079,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               }}
             />
           </div>
-          <div className="flex justify-between mt-1.5">
+          <div className="flex justify-between mt-2">
             <span className="text-xs font-medium" style={{ color: "#5A5A62" }}>
               {convertFileProgress < 30 ? t.editor_converting_uploading : convertFileProgress < 85 ? t.editor_converting_processing : convertFileProgress < 100 ? t.editor_converting_finishing : t.editor_toast_converted}
             </span>
-            <span className="text-xs font-semibold" style={{ color: "#E63946" }}>{convertFileProgress}%</span>
+            <span className="text-xs font-bold" style={{ color: "#E63946" }}>{convertFileProgress}%</span>
           </div>
         </div>
       </div>

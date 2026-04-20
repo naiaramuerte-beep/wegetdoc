@@ -192,6 +192,12 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
     document.head.appendChild(link);
   }, []);
 
+  // Preload the editor bundle in the background so upload -> /editor
+  // does not flash the generic LazyFallback screen before PdfEditor mounts.
+  useEffect(() => {
+    import("./EditorPage");
+  }, []);
+
   const TAB_TO_TOOL: Record<TabId, string> = {
     edit: "text",
     merge: "merge",

@@ -38,17 +38,26 @@ const LandingTest = lazy(() => import("./pages/LandingTest"));
 
 function LazyFallback() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-5 bg-[#FAFAFA]">
-      <svg width="48" height="48" viewBox="0 0 512 512" fill="none" aria-hidden="true">
-        <rect x="48" y="48" width="416" height="416" rx="112" fill="#0A0A0B" />
-        <path
-          d="M176 180v152M176 180h82a50 50 0 010 100h-82"
-          stroke="white" strokeWidth="34"
-          strokeLinecap="round" strokeLinejoin="round"
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#FAFAFA]">
+      <div className="relative w-20 h-20 flex items-center justify-center">
+        <svg width="56" height="56" viewBox="0 0 512 512" fill="none" aria-hidden="true">
+          <rect x="48" y="48" width="416" height="416" rx="112" fill="#0A0A0B" />
+          <path
+            d="M176 180v152M176 180h82a50 50 0 010 100h-82"
+            stroke="white" strokeWidth="34"
+            strokeLinecap="round" strokeLinejoin="round"
+          />
+          <circle cx="342" cy="348" r="32" fill="#E63946" />
+        </svg>
+        <div
+          className="absolute inset-[-4px] rounded-full animate-spin"
+          style={{ border: "3px solid #F1F1F4", borderTopColor: "#E63946", animationDuration: "1.2s" }}
         />
-        <circle cx="342" cy="348" r="32" fill="#E63946" />
-      </svg>
-      <div className="w-7 h-7 border-[3px] border-[#E63946] border-t-transparent rounded-full animate-spin" />
+      </div>
+      <div className="font-extrabold text-[13px] tracking-[-0.02em] leading-none">
+        <span className="text-[#0A0A0B]">editorpdf</span>
+        <span className="text-[#E63946]">.net</span>
+      </div>
     </div>
   );
 }
