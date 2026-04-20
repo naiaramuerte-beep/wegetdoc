@@ -11,9 +11,13 @@ export default function PaymentSuccess() {
   // Google Ads conversion tracking (Compra)
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).gtag) {
+      const params = new URLSearchParams(window.location.search);
+      const txn = params.get('txn') || '';
       (window as any).gtag('event', 'conversion', {
         'send_to': 'AW-18071860641/pjCqCJ3srZkcEKHrqqlD',
-        'transaction_id': ''
+        'transaction_id': txn,
+        'value': 19.99,
+        'currency': 'EUR',
       });
     }
   }, []);

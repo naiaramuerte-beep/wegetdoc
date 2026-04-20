@@ -56,7 +56,7 @@ function CardBrands() {
 }
 
 // ── Inner payment form (must be inside <Elements>) ──────────────────────
-function PaymentForm({ onSuccess, userCountry, userPostalCode }: { onSuccess: () => void; userCountry: string; userPostalCode: string }) {
+function PaymentForm({ onSuccess, userCountry, userPostalCode }: { onSuccess: (paymentIntentId?: string) => void; userCountry: string; userPostalCode: string }) {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
@@ -67,7 +67,7 @@ function PaymentForm({ onSuccess, userCountry, userPostalCode }: { onSuccess: ()
     if (!stripe || !elements) return;
     setSubmitting(true);
     try {
-      const { error } = await stripe.confirmPayment({
+      const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         redirect: "if_required",
         confirmParams: {
@@ -84,7 +84,7 @@ function PaymentForm({ onSuccess, userCountry, userPostalCode }: { onSuccess: ()
       if (error) {
         toast.error(error.message ?? "Payment failed");
       } else {
-        onSuccess();
+        onSuccess(paymentIntent?.id);
       }
     } catch (err: any) {
       toast.error(err.message ?? "Payment failed");
@@ -198,7 +198,7 @@ function StripeCheckoutForm({
     if (!resp.ok) throw new Error(`Claim failed: ${resp.status}`);
   };
 
-  const handleComplete = useCallback(async () => {
+  const handleComplete = useCallback(async (paymentIntentId?: string) => {
     setIsProcessing(true);
     setProgressStep("checkout");
     try {
@@ -219,7 +219,7 @@ function StripeCheckoutForm({
       }
 
       setProgressStep("done");
-      onSuccess();
+      onSuccess(paymentIntentId);
     } catch (err: unknown) {
       setProgressStep("idle");
       toast.error(err instanceof Error ? err.message : "Error processing payment");
