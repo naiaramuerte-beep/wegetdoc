@@ -55,17 +55,17 @@ function useSteps(): StepType[] {
   return [
     { selector: "body", position: "center" as any,
       content: <TourCard title={t.tour_step1_title} body={t.tour_step1_body} />, ...common },
-    { selector: "[data-tour='filename']",
+    { selector: "[data-tour='filename']", position: "bottom" as any,
       content: <TourCard title={t.tour_step2_title} body={t.tour_step2_body} />, ...common },
-    { selector: "[data-tour='toolbar']",
+    { selector: "[data-tour='toolbar']", position: "bottom" as any,
       content: <TourCard title={t.tour_step3_title} body={t.tour_step3_body} />, ...common },
-    { selector: "[data-tour='tool-edit-text']",
+    { selector: "[data-tour='tool-edit-text']", position: "bottom" as any,
       content: <TourCard title={t.tour_step4_title} body={t.tour_step4_body} />, ...common },
-    { selector: "[data-tour='tool-sign']",
+    { selector: "[data-tour='tool-sign']", position: "bottom" as any,
       content: <TourCard title={t.tour_step5_title} body={t.tour_step5_body} />, ...common },
-    { selector: "[data-tour='thumbnails']",
+    { selector: "[data-tour='thumbnails']", position: "right" as any,
       content: <TourCard title={t.tour_step6_title} body={t.tour_step6_body} />, ...common },
-    { selector: "[data-tour='download-btn']",
+    { selector: "[data-tour='download-btn']", position: "left" as any,
       content: <TourCard title={t.tour_step7_title} body={t.tour_step7_body} />, ...common },
   ];
 }
