@@ -114,15 +114,16 @@ export default function PdfConverterHub() {
             Pick the format you need below — we'll convert your file in seconds, with layout and formatting preserved.
           </p>
 
-          {/* Primary picker — 4 large tiles */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
+          {/* Primary picker — 4 tiles. Mobile: 2-col compact (no desc, smaller
+              padding) so the user sees all 4 options without scrolling. */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 max-w-5xl mx-auto">
             {PDF_TO_TOOLS.map((tool) => {
               const Icon = tool.icon;
               return (
                 <button
                   key={tool.slug}
                   onClick={() => goTo(tool.slug)}
-                  className="group relative flex flex-col items-start gap-4 p-6 rounded-2xl bg-white text-left transition-all hover:-translate-y-1 hover:shadow-[0_18px_40px_-12px_rgba(10,10,11,0.18)]"
+                  className="group relative flex flex-col items-start gap-3 sm:gap-4 p-4 sm:p-6 rounded-2xl bg-white text-left transition-all hover:-translate-y-1 hover:shadow-[0_18px_40px_-12px_rgba(10,10,11,0.18)]"
                   style={{
                     border: "1px solid #E8E8EC",
                   }}
@@ -132,10 +133,10 @@ export default function PdfConverterHub() {
                   {/* Icon + format chip */}
                   <div className="flex items-center justify-between w-full">
                     <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center"
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center"
                       style={{ background: tool.bgColor }}
                     >
-                      <Icon className="w-6 h-6" style={{ color: tool.color }} />
+                      <Icon className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: tool.color }} />
                     </div>
                     <span
                       className="text-[10px] font-extrabold tracking-[0.12em] px-2 py-1 rounded"
@@ -145,23 +146,23 @@ export default function PdfConverterHub() {
                     </span>
                   </div>
 
-                  {/* Label + desc */}
+                  {/* Label + desc (desc hidden on mobile) */}
                   <div>
-                    <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-1" style={{ color: MUTED }}>
+                    <p className="text-[10px] sm:text-[11px] font-semibold tracking-[0.12em] uppercase mb-0.5 sm:mb-1" style={{ color: MUTED }}>
                       PDF to
                     </p>
-                    <h3 className="text-[22px] font-extrabold tracking-[-0.02em] leading-tight text-[#0A0A0B]">
+                    <h3 className="text-[17px] sm:text-[22px] font-extrabold tracking-[-0.02em] leading-tight text-[#0A0A0B]">
                       {tool.label}
                     </h3>
-                    <p className="text-[13px] mt-2 leading-relaxed" style={{ color: MUTED }}>
+                    <p className="hidden sm:block text-[13px] mt-2 leading-relaxed" style={{ color: MUTED }}>
                       {tool.desc}
                     </p>
                   </div>
 
                   {/* CTA arrow */}
-                  <span className="inline-flex items-center gap-1.5 text-[13px] font-bold mt-auto pt-2" style={{ color: ACCENT }}>
+                  <span className="inline-flex items-center gap-1.5 text-[12px] sm:text-[13px] font-bold mt-auto pt-1 sm:pt-2" style={{ color: ACCENT }}>
                     Convert now
-                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                    <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:translate-x-0.5" />
                   </span>
                 </button>
               );
