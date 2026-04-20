@@ -135,8 +135,9 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
         {/* Title */}
         {mode === "signup" && (
           <>
-            <div className="w-14 h-14 rounded-2xl bg-[#1565C0] flex items-center justify-center mx-auto mb-4">
+            <div className="w-14 h-14 rounded-2xl bg-[#0A0A0B] flex items-center justify-center mx-auto mb-4 relative">
               <FileText className="w-7 h-7 text-white" />
+              <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#E63946] ring-2 ring-white" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 leading-tight mb-1 text-center">
               {t.paywall_register}
@@ -172,14 +173,14 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
                 value={forgotEmail}
                 onChange={(e) => setForgotEmail(e.target.value)}
                 required
-                className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 bg-gray-50"
+                className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A0A0B] bg-gray-50"
               />
             </div>
             <button
               type="submit"
               disabled={isLoading}
               className="w-full py-2.5 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all"
-              style={{ backgroundColor: isLoading ? "#9ca3af" : "#1565C0" }}
+              style={{ backgroundColor: isLoading ? "#9ca3af" : "#E63946" }}
             >
               {isLoading && <Loader2 size={15} className="animate-spin" />}
               {s.sendReset}
@@ -187,7 +188,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
             <button
               type="button"
               onClick={() => setMode("login")}
-              className="text-sm text-center text-gray-500 hover:text-blue-700"
+              className="text-sm text-center text-gray-500 hover:text-[#E63946]"
             >
               {s.backToLogin}
             </button>
@@ -223,7 +224,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
                   placeholder={t.paywall_name}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 bg-gray-50"
+                  className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A0A0B] bg-gray-50"
                 />
               </div>
             )}
@@ -237,7 +238,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 bg-gray-50"
+                className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A0A0B] bg-gray-50"
               />
             </div>
 
@@ -251,7 +252,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full pl-9 pr-10 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 bg-gray-50"
+                className="w-full pl-9 pr-10 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A0A0B] bg-gray-50"
               />
               <button
                 type="button"
@@ -268,7 +269,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
                 <button
                   type="button"
                   onClick={() => setMode("forgot")}
-                  className="text-xs text-orange-500 hover:text-orange-600 font-medium"
+                  className="text-xs text-[#E63946] hover:text-[#C72738] font-medium"
                 >
                   {s.forgotQ} <span className="underline">{s.clickHere}</span>
                 </button>
@@ -287,15 +288,15 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
                     setGdprAccepted(e.target.checked);
                     if (e.target.checked) setGdprError(false);
                   }}
-                  className={`mt-0.5 w-4 h-4 shrink-0 cursor-pointer ${gdprError ? "accent-red-600" : "accent-[#1565C0]"}`}
+                  className={`mt-0.5 w-4 h-4 shrink-0 cursor-pointer ${gdprError ? "accent-red-600" : "accent-[#E63946]"}`}
                 />
                 <span className={`text-xs leading-relaxed ${gdprError ? "text-red-700" : "text-gray-500"}`}>
                   {s.gdprPrefix}{" "}
-                  <a href={`/${lang}/terms`} target="_blank" rel="noreferrer" className="underline text-[#1565C0] hover:text-[#0D47A1]" onClick={(e) => e.stopPropagation()}>
+                  <a href={`/${lang}/terms`} target="_blank" rel="noreferrer" className="underline text-[#E63946] hover:text-[#C72738]" onClick={(e) => e.stopPropagation()}>
                     {s.termsLinkLabel}
                   </a>
                   {s.gdprAnd}
-                  <a href={`/${lang}/privacy`} target="_blank" rel="noreferrer" className="underline text-[#1565C0] hover:text-[#0D47A1]" onClick={(e) => e.stopPropagation()}>
+                  <a href={`/${lang}/privacy`} target="_blank" rel="noreferrer" className="underline text-[#E63946] hover:text-[#C72738]" onClick={(e) => e.stopPropagation()}>
                     {s.privacyLinkLabel}
                   </a>
                   {s.gdprSuffix}
@@ -308,7 +309,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
               type="submit"
               disabled={isLoading}
               className="w-full py-2.5 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all mt-1 disabled:opacity-60 disabled:cursor-not-allowed"
-              style={{ backgroundColor: isLoading ? "#9ca3af" : (mode === "signup" && !gdprAccepted) ? "#9ca3af" : "#1565C0" }}
+              style={{ backgroundColor: isLoading ? "#9ca3af" : (mode === "signup" && !gdprAccepted) ? "#9ca3af" : "#E63946" }}
             >
               {isLoading && <Loader2 size={15} className="animate-spin" />}
               {mode === "signup" ? t.paywall_register : t.paywall_login}
@@ -321,7 +322,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
                 <button
                   type="button"
                   onClick={() => setMode("login")}
-                  className="text-orange-500 font-semibold hover:underline"
+                  className="text-[#E63946] font-semibold hover:underline"
                 >
                   {t.paywall_login}
                 </button>
@@ -332,7 +333,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
                 <button
                   type="button"
                   onClick={() => setMode("signup")}
-                  className="text-orange-500 font-semibold hover:underline"
+                  className="text-[#E63946] font-semibold hover:underline"
                 >
                   {s.createAccountSwitch}
                 </button>

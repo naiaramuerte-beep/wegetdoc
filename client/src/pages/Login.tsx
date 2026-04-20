@@ -21,28 +21,29 @@ export default function Login() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4"
-      style={{ backgroundColor: "#0D47A1" }}
+      style={{ backgroundColor: "#0A0A0B" }}
     >
       <div
         className="w-full max-w-md rounded-2xl p-8"
         style={{
           backgroundColor: "#FFFFFF",
-          boxShadow: "0 24px 64px rgba(13, 51, 17, 0.4)",
+          boxShadow: "0 24px 64px rgba(0, 0, 0, 0.45)",
         }}
       >
         {/* Logo */}
         <div className="flex items-center gap-2 mb-8">
           <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: "#1565C0" }}
+            className="w-8 h-8 rounded-lg flex items-center justify-center relative"
+            style={{ backgroundColor: "#0A0A0B" }}
           >
             <FileText className="w-4 h-4 text-white" />
+            <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full" style={{ backgroundColor: "#E63946" }} />
           </div>
           <span
             className="text-xl font-bold tracking-tight"
-            style={{ color: "#0f172a" }}
+            style={{ color: "#0A0A0B" }}
           >
-            WeGet<span style={{ color: "#1565C0" }}>Doc</span>
+            editor<span style={{ color: "#E63946" }}>pdf</span>
           </span>
         </div>
 
@@ -79,7 +80,7 @@ export default function Login() {
                 color: "#0f172a",
               }}
               onFocus={(e) =>
-                (e.currentTarget.style.borderColor = "#1565C0")
+                (e.currentTarget.style.borderColor = "#E63946")
               }
               onBlur={(e) =>
                 (e.currentTarget.style.borderColor = "#e2e8f0")
@@ -107,7 +108,7 @@ export default function Login() {
                   color: "#0f172a",
                 }}
                 onFocus={(e) =>
-                  (e.currentTarget.style.borderColor = "#1565C0")
+                  (e.currentTarget.style.borderColor = "#E63946")
                 }
                 onBlur={(e) =>
                   (e.currentTarget.style.borderColor = "#e2e8f0")
@@ -128,7 +129,7 @@ export default function Login() {
             <a
               href="#"
               className="text-xs transition-colors duration-200"
-              style={{ color: "#1565C0" }}
+              style={{ color: "#E63946" }}
             >
               ¿No recuerdas tus credenciales?
             </a>
@@ -138,13 +139,13 @@ export default function Login() {
             type="submit"
             className="w-full py-3 rounded-xl font-semibold text-sm text-white transition-all duration-200"
             style={{
-              backgroundColor: "#1565C0",
+              backgroundColor: "#E63946",
             }}
             onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#0D47A1")
+              (e.currentTarget.style.backgroundColor = "#C72738")
             }
             onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "#1565C0")
+              (e.currentTarget.style.backgroundColor = "#E63946")
             }
           >
             Acceder
@@ -159,7 +160,7 @@ export default function Login() {
           <Link
             href="/signup"
             className="font-semibold transition-colors duration-200"
-            style={{ color: "#1565C0" }}
+            style={{ color: "#E63946" }}
           >
             Crea tu cuenta
           </Link>

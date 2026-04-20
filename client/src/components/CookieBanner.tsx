@@ -82,13 +82,13 @@ export default function CookieBanner() {
       {/* Banner */}
       <div className="fixed bottom-0 left-0 right-0 z-[9999] animate-in slide-in-from-bottom duration-500">
         <div className="mx-auto max-w-4xl px-4 pb-4 sm:pb-6">
-          <div className="rounded-2xl border border-white/10 bg-[#0a1628]/95 backdrop-blur-xl shadow-2xl shadow-black/40 overflow-hidden">
+          <div className="rounded-2xl border border-white/10 bg-[#0A0A0B]/95 backdrop-blur-xl shadow-2xl shadow-black/40 overflow-hidden">
             {/* Main content */}
             <div className="p-5 sm:p-6">
               {/* Header */}
               <div className="flex items-start gap-3 mb-4">
-                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                  <Cookie className="w-5 h-5 text-blue-400" />
+                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-[#E63946]/15 flex items-center justify-center">
+                  <Cookie className="w-5 h-5 text-[#E63946]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-white font-semibold text-base mb-1">Cookies</h3>
@@ -99,7 +99,7 @@ export default function CookieBanner() {
                     {t.cookie_banner_more_info}{" "}
                     <Link
                       href={`/${lang}/cookies`}
-                      className="text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors"
+                      className="text-[#E63946] hover:text-[#F26271] underline underline-offset-2 transition-colors"
                     >
                       {t.footer_cookies}
                     </Link>
@@ -113,12 +113,12 @@ export default function CookieBanner() {
                   {/* Necessary cookies - always on */}
                   <div className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <Shield className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                      <Shield className="w-4 h-4 text-[#E63946] flex-shrink-0" />
                       <span className="text-sm text-gray-200">{t.cookie_banner_necessary}</span>
                     </div>
-                    <div className="flex-shrink-0 w-10 h-6 rounded-full bg-blue-500/20 flex items-center justify-end px-1">
-                      <div className="w-4 h-4 rounded-full bg-blue-400 flex items-center justify-center">
-                        <Check className="w-3 h-3 text-blue-900" />
+                    <div className="flex-shrink-0 w-10 h-6 rounded-full bg-[#E63946]/30 flex items-center justify-end px-1">
+                      <div className="w-4 h-4 rounded-full bg-[#E63946] flex items-center justify-center">
+                        <Check className="w-3 h-3 text-white" />
                       </div>
                     </div>
                   </div>
@@ -129,17 +129,17 @@ export default function CookieBanner() {
                     className="w-full flex items-center justify-between rounded-xl bg-white/5 hover:bg-white/8 px-4 py-3 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <BarChart3 className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                      <BarChart3 className="w-4 h-4 text-[#E63946] flex-shrink-0" />
                       <span className="text-sm text-gray-200">{t.cookie_banner_analytics}</span>
                     </div>
                     <div
                       className={`flex-shrink-0 w-10 h-6 rounded-full flex items-center px-1 transition-colors ${
-                        analyticsEnabled ? "bg-blue-500/30 justify-end" : "bg-gray-600/30 justify-start"
+                        analyticsEnabled ? "bg-[#E63946]/40 justify-end" : "bg-gray-600/30 justify-start"
                       }`}
                     >
                       <div
                         className={`w-4 h-4 rounded-full transition-colors ${
-                          analyticsEnabled ? "bg-blue-400" : "bg-gray-500"
+                          analyticsEnabled ? "bg-[#E63946]" : "bg-gray-500"
                         }`}
                       />
                     </div>
@@ -153,7 +153,7 @@ export default function CookieBanner() {
                   <>
                     <button
                       onClick={handleAcceptAll}
-                      className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors shadow-lg shadow-blue-600/20"
+                      className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-[#E63946] hover:bg-[#C72738] text-white text-sm font-medium transition-colors shadow-lg shadow-[#E63946]/25"
                     >
                       {t.cookie_banner_accept}
                     </button>
@@ -175,7 +175,7 @@ export default function CookieBanner() {
                   <>
                     <button
                       onClick={handleSaveSettings}
-                      className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors shadow-lg shadow-blue-600/20"
+                      className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-[#E63946] hover:bg-[#C72738] text-white text-sm font-medium transition-colors shadow-lg shadow-[#E63946]/25"
                     >
                       {t.cookie_banner_accept}
                     </button>
