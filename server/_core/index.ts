@@ -396,6 +396,68 @@ ${allUrls.map(u => `  <url>
     }
   });
 
+  // ── REST endpoint for PDF → Office/Image conversion via CloudConvert ───────────
+  const pdfFromUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
+  const PDF_TO_FORMAT_MAP: Record<string, { ext: string; mime: string }> = {
+    docx: { ext: "docx", mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
+    xlsx: { ext: "xlsx", mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
+    pptx: { ext: "pptx", mime: "application/vnd.openxmlformats-officedocument.presentationml.presentation" },
+    jpg:  { ext: "jpg",  mime: "image/jpeg" },
+  };
+  app.post("/api/convert/pdf-to/:format", pdfFromUpload.single("file"), async (req, res) => {
+    const target = (req.params.format || "").toLowerCase();
+    const cfg = PDF_TO_FORMAT_MAP[target];
+    if (!cfg) { res.status(400).json({ error: `Unsupported target format: ${target}` }); return; }
+
+    const apiKey = process.env.CLOUDCONVERT_API_KEY;
+    if (!apiKey) { res.status(500).json({ error: "CLOUDCONVERT_API_KEY not configured" }); return; }
+
+    const file = req.file;
+    if (!file) { res.status(400).json({ error: "No file" }); return; }
+    if (file.mimetype !== "application/pdf" && !file.originalname.toLowerCase().endsWith(".pdf")) {
+      res.status(415).json({ error: "Only PDF input is supported" }); return;
+    }
+
+    try {
+      const { default: CloudConvertCtor } = await import("cloudconvert");
+      const cloudConvert = new (CloudConvertCtor as any)(apiKey);
+
+      const job = await cloudConvert.jobs.create({
+        tasks: {
+          "import-pdf": { operation: "import/upload" },
+          "convert": {
+            operation: "convert",
+            input: "import-pdf",
+            input_format: "pdf",
+            output_format: cfg.ext,
+          },
+          "export-result": { operation: "export/url", input: "convert" },
+        },
+      });
+
+      const importTask = job.tasks.find((t: any) => t.name === "import-pdf");
+      await cloudConvert.tasks.upload(importTask, file.buffer, file.originalname);
+
+      const completedJob = await cloudConvert.jobs.wait(job.id);
+      const exportTask = completedJob.tasks.find((t: any) => t.name === "export-result" && t.status === "finished");
+      const fileResult = exportTask?.result?.files?.[0];
+      if (!fileResult?.url) throw new Error("CloudConvert did not return a download URL");
+
+      const downloaded = await fetch(fileResult.url);
+      if (!downloaded.ok) throw new Error(`Download failed: ${downloaded.status}`);
+      const arrayBuffer = await downloaded.arrayBuffer();
+
+      const outName = file.originalname.replace(/\.pdf$/i, "") + "." + cfg.ext;
+      res.setHeader("Content-Type", cfg.mime);
+      res.setHeader("Content-Disposition", `attachment; filename="${outName}"`);
+      res.setHeader("X-Converted-Name", encodeURIComponent(outName));
+      res.send(Buffer.from(arrayBuffer));
+    } catch (err) {
+      console.error("[PdfTo] CloudConvert error:", err);
+      res.status(500).json({ error: `Conversion failed: ${(err as Error).message}` });
+    }
+  });
+
   // ── REST endpoint for PDF upload (avoids tRPC base64 size limits) ─────────────
   const pdfUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
   app.post("/api/documents/upload", pdfUpload.single("file"), async (req, res) => {

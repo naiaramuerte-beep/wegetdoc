@@ -26,6 +26,12 @@ interface PaywallModalProps {
   onPaymentSuccess?: (transactionId?: string) => void;
   thumbnailUrl?: string;
   buildPdfForUpload?: () => Promise<{ base64: string; name: string; size: number } | null>;
+  /**
+   * Optional converter context. When set, the modal swaps a few copy strings to
+   * speak about the converted file ("Your Word file for only 0,50€") instead
+   * of the editor-default "your PDF". Only affects rendering — no flow change.
+   */
+  converter?: { label: string; price: string };
 }
 
 type Step = "auth-choice" | "plans";
@@ -102,8 +108,8 @@ function PaymentForm({ onSuccess, userCountry, userPostalCode }: { onSuccess: (p
       <button
         type="submit"
         disabled={!stripe || submitting}
-        className="w-full py-3.5 rounded-xl text-white font-bold text-sm transition-all duration-200 disabled:opacity-40"
-        style={{ backgroundColor: "#1565C0" }}
+        className="w-full py-3.5 rounded-xl text-white font-bold text-sm transition-all duration-200 disabled:opacity-40 hover:bg-[#C72738]"
+        style={{ backgroundColor: "#E63946" }}
       >
         {submitting ? (
           <span className="flex items-center justify-center gap-2">
@@ -135,11 +141,13 @@ function StripeCheckoutForm({
   pdfData,
   thumbnailUrl,
   buildPdfForUpload,
+  converter,
 }: {
   onSuccess: (transactionId?: string) => void;
   pdfData?: PdfPayload;
   thumbnailUrl?: string;
   buildPdfForUpload?: () => Promise<{ base64: string; name: string; size: number } | null>;
+  converter?: { label: string; price: string };
 }) {
   const { t, lang } = useLanguage();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -246,10 +254,12 @@ function StripeCheckoutForm({
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-1">
-            <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+            <div className="w-4 h-4 rounded-full bg-[#1E9E63] flex items-center justify-center flex-shrink-0">
               <Check className="w-2.5 h-2.5 text-white" />
             </div>
-            <p className="text-xs font-semibold text-slate-800">{(t as any).paywall_doc_ready ?? "Your document is ready!"}</p>
+            <p className="text-xs font-semibold text-slate-800">
+              {converter ? `Your ${converter.label} file is ready!` : ((t as any).paywall_doc_ready ?? "Your document is ready!")}
+            </p>
           </div>
           <p className="text-[11px] text-slate-500 truncate">{pdfData?.name ?? "document.pdf"}</p>
         </div>
@@ -257,10 +267,12 @@ function StripeCheckoutForm({
       <div className="hidden md:flex flex-col items-center justify-center bg-[#f4f5f7] p-8" style={{ minWidth: 260, maxWidth: 280 }}>
         {/* Header */}
         <div className="flex items-center gap-2 mb-5 w-full">
-          <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+          <div className="w-6 h-6 rounded-full bg-[#1E9E63] flex items-center justify-center flex-shrink-0">
             <Check className="w-3.5 h-3.5 text-white" />
           </div>
-          <p className="text-sm font-semibold text-slate-800">{(t as any).paywall_doc_ready ?? "Your document is ready!"}</p>
+          <p className="text-sm font-semibold text-slate-800">
+            {converter ? `Your ${converter.label} file is ready!` : ((t as any).paywall_doc_ready ?? "Your document is ready!")}
+          </p>
         </div>
         {/* PDF thumbnail */}
         <div
@@ -304,13 +316,13 @@ function StripeCheckoutForm({
               return (
                 <div key={step.key} className="flex items-center gap-2">
                   {idx < curr ? (
-                    <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center"><Check className="w-2.5 h-2.5 text-white" /></div>
+                    <div className="w-4 h-4 rounded-full bg-[#1E9E63] flex items-center justify-center"><Check className="w-2.5 h-2.5 text-white" /></div>
                   ) : idx === curr ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-[#1565C0]" />
+                    <Loader2 className="w-4 h-4 animate-spin text-[#E63946]" />
                   ) : (
                     <div className="w-4 h-4 rounded-full border-2 border-slate-200" />
                   )}
-                  <span className={`text-xs font-medium ${idx < curr ? "text-blue-600" : idx === curr ? "text-[#1565C0]" : "text-slate-300"}`}>
+                  <span className={`text-xs font-medium ${idx < curr ? "text-[#1E9E63]" : idx === curr ? "text-[#E63946]" : "text-slate-300"}`}>
                     {step.label}
                   </span>
                 </div>
@@ -324,19 +336,23 @@ function StripeCheckoutForm({
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
         <div className="px-6 py-5 space-y-5">
           {/* Pricing breakdown */}
-          <div className="rounded-xl p-5 text-center" style={{ background: "linear-gradient(135deg, #1565C0, #1976D2)" }}>
-            <p className="text-sm text-blue-100 mb-1">{t.paywall_your_pdf}</p>
-            <p className="text-3xl font-extrabold text-white tracking-tight">{t.paywall_only_for}</p>
+          <div className="rounded-xl p-5 text-center" style={{ background: "linear-gradient(135deg, #0A0A0B, #1A1A1C)" }}>
+            <p className="text-sm text-white/70 mb-1">
+              {converter ? `Your ${converter.label} file` : t.paywall_your_pdf}
+            </p>
+            <p className="text-3xl font-extrabold text-white tracking-tight">
+              {converter ? <>only <span style={{ color: "#E63946" }}>{converter.price}</span></> : t.paywall_only_for}
+            </p>
           </div>
 
           {/* Stripe form */}
           {stripePromise && clientSecret ? (
-            <Elements stripe={stripePromise} options={{ clientSecret, locale: (lang as any) || "auto", appearance: { theme: "stripe", variables: { colorPrimary: "#1565C0", borderRadius: "10px" } } }}>
+            <Elements stripe={stripePromise} options={{ clientSecret, locale: (lang as any) || "auto", appearance: { theme: "stripe", variables: { colorPrimary: "#E63946", borderRadius: "10px" } } }}>
               <PaymentForm onSuccess={handleComplete} userCountry={userCountry} userPostalCode={userPostalCode} />
             </Elements>
           ) : (
             <div className="flex items-center justify-center py-10">
-              <Loader2 className="w-7 h-7 animate-spin text-[#1565C0]" />
+              <Loader2 className="w-7 h-7 animate-spin text-[#E63946]" />
             </div>
           )}
         </div>
@@ -354,6 +370,7 @@ export default function PaywallModal({
   onPaymentSuccess,
   thumbnailUrl,
   buildPdfForUpload,
+  converter,
 }: PaywallModalProps) {
   const { t, lang } = useLanguage();
   const s = getAuthStrings(lang);
@@ -472,11 +489,16 @@ export default function PaywallModal({
         {currentStep === "auth-choice" && (
           <div className="p-8">
             <div className="text-center mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-[#1565C0] flex items-center justify-center mx-auto mb-4">
+              <div className="w-14 h-14 rounded-2xl bg-[#0A0A0B] flex items-center justify-center mx-auto mb-4 relative">
                 <FileText className="w-7 h-7 text-white" />
+                <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#E63946] ring-2 ring-white" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">{emailMode === "register" ? s.paywallTitle : t.paywall_login}</h2>
-              <p className="text-sm text-gray-500">{emailMode === "register" ? s.paywallSubtitle : t.paywall_enter_email}</p>
+              <p className="text-sm text-gray-500">
+                {converter
+                  ? `to download your ${converter.label} file`
+                  : (emailMode === "register" ? s.paywallSubtitle : t.paywall_enter_email)}
+              </p>
             </div>
             <div className="max-w-sm mx-auto space-y-3">
               <div className="relative group">
@@ -503,12 +525,12 @@ export default function PaywallModal({
               </div>
               <div>
                 <label className="text-xs font-semibold text-gray-700 block mb-1">Email</label>
-                <input type="email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} placeholder="tu@email.com" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1565C0]" />
+                <input type="email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} placeholder="tu@email.com" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A0A0B]" />
               </div>
               <div>
                 <label className="text-xs font-semibold text-gray-700 block mb-1">{t.paywall_password}</label>
                 <div className="relative">
-                  <input type={showPassword ? "text" : "password"} value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} placeholder={emailMode === "register" ? t.paywall_password_min : t.paywall_password} className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-[#1565C0]" onKeyDown={(e) => e.key === "Enter" && handleEmailSubmit()} />
+                  <input type={showPassword ? "text" : "password"} value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} placeholder={emailMode === "register" ? t.paywall_password_min : t.paywall_password} className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A0A0B]" onKeyDown={(e) => e.key === "Enter" && handleEmailSubmit()} />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -525,15 +547,15 @@ export default function PaywallModal({
                       setGdprAccepted(e.target.checked);
                       if (e.target.checked) setGdprError(false);
                     }}
-                    className={`mt-0.5 w-4 h-4 shrink-0 cursor-pointer ${gdprError ? "accent-red-600" : "accent-[#1565C0]"}`}
+                    className={`mt-0.5 w-4 h-4 shrink-0 cursor-pointer ${gdprError ? "accent-red-600" : "accent-[#E63946]"}`}
                   />
                   <span className={`text-xs leading-relaxed ${gdprError ? "text-red-700" : "text-gray-500"}`}>
                     {s.gdprPrefix}{" "}
-                    <a href={`/${lang}/terms`} target="_blank" rel="noreferrer" className="underline text-[#1565C0] hover:text-[#0D47A1]" onClick={(e) => e.stopPropagation()}>
+                    <a href={`/${lang}/terms`} target="_blank" rel="noreferrer" className="underline text-[#E63946] hover:text-[#C72738]" onClick={(e) => e.stopPropagation()}>
                       {s.termsLinkLabel}
                     </a>
                     {s.gdprAnd}
-                    <a href={`/${lang}/privacy`} target="_blank" rel="noreferrer" className="underline text-[#1565C0] hover:text-[#0D47A1]" onClick={(e) => e.stopPropagation()}>
+                    <a href={`/${lang}/privacy`} target="_blank" rel="noreferrer" className="underline text-[#E63946] hover:text-[#C72738]" onClick={(e) => e.stopPropagation()}>
                       {s.privacyLinkLabel}
                     </a>
                     {s.gdprSuffix}
@@ -543,15 +565,15 @@ export default function PaywallModal({
               <button
                 onClick={handleEmailSubmit}
                 disabled={emailLoading}
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-white font-bold text-sm hover:bg-[#0D47A1] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                style={{ backgroundColor: emailLoading ? "#9ca3af" : (emailMode === "register" && !gdprAccepted) ? "#9ca3af" : "#1565C0" }}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-white font-bold text-sm hover:bg-[#C72738] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                style={{ backgroundColor: emailLoading ? "#9ca3af" : (emailMode === "register" && !gdprAccepted) ? "#9ca3af" : "#E63946" }}
               >
                 {emailLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> {emailMode === "register" ? t.paywall_registering : t.paywall_logging_in}</> : (emailMode === "register" ? t.paywall_register : t.paywall_login)}
               </button>
               <div className="text-center text-sm text-gray-500 pt-1">
                 {emailMode === "register"
-                  ? <>{t.paywall_have_account}{" "}<button onClick={() => setEmailMode("login")} className="text-[#1565C0] font-semibold hover:underline">{t.paywall_login}</button></>
-                  : <>{t.paywall_no_account}{" "}<button onClick={() => setEmailMode("register")} className="text-[#1565C0] font-semibold hover:underline">{t.paywall_register}</button></>}
+                  ? <>{t.paywall_have_account}{" "}<button onClick={() => setEmailMode("login")} className="text-[#E63946] font-semibold hover:underline">{t.paywall_login}</button></>
+                  : <>{t.paywall_no_account}{" "}<button onClick={() => setEmailMode("register")} className="text-[#E63946] font-semibold hover:underline">{t.paywall_register}</button></>}
               </div>
             </div>
           </div>
@@ -564,6 +586,7 @@ export default function PaywallModal({
             pdfData={effectivePdfData}
             thumbnailUrl={thumbnailUrl}
             buildPdfForUpload={buildPdfForUpload}
+            converter={converter}
           />
         )}
       </div>
