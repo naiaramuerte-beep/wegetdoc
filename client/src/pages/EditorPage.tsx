@@ -169,7 +169,7 @@ function EditorUploadZone({ lang }: { lang: string }) {
 export default function EditorPage() {
   const { pendingFile, pendingTool, pendingPaywall, setPendingPaywall, isRestoringFromSession } = usePdfFile();
   const [, navigate] = useLocation();
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const isFileFree = pendingTool ? FILE_FREE_TOOLS.includes(pendingTool) : false;
   const hasDraft = Boolean(localStorage.getItem("pdfpro_editor_draft"));
 
