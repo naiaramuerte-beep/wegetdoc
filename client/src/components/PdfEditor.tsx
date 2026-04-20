@@ -187,14 +187,15 @@ interface HistoryEntry {
 
 // ── Toolbar button ─────────────────────────────────────────────
 function ToolBtn({
-  icon: Icon, label, active, onClick, disabled,
+  icon: Icon, label, active, onClick, disabled, dataTour,
 }: {
   icon: React.ElementType; label: string; active?: boolean;
-  onClick: () => void; disabled?: boolean;
+  onClick: () => void; disabled?: boolean; dataTour?: string;
 }) {
   return (
     <button
       title={label}
+      data-tour={dataTour}
       disabled={disabled}
       onClick={onClick}
       className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded transition-all text-xs select-none"
@@ -4336,7 +4337,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       )}
 
       {/* ── TOP TOOLBAR — desktop only ── */}
-      <div className="hidden md:flex items-center gap-1 px-3 py-1.5 border-b min-w-0" style={{ backgroundColor: "#FFFFFF", borderColor: "#f1f5f9" }}>
+      <div data-tour="toolbar" className="hidden md:flex items-center gap-1 px-3 py-1.5 border-b min-w-0" style={{ backgroundColor: "#FFFFFF", borderColor: "#f1f5f9" }}>
         {/* Undo / Redo */}
         <button title={t.editor_undo + " (Ctrl+Z)"} onClick={undo} disabled={historyIndex <= 0} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
           <Undo2 className="w-4 h-4" style={{ color: "#1A3A5C" }} />
@@ -4348,9 +4349,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         {/* Tool buttons — centered */}
         <div className="flex items-center gap-0.5 flex-1 justify-center overflow-x-auto" style={{ scrollbarWidth: "none" }}>
           {[
-            { id: "sign" as ToolName, icon: PenTool, label: t.editor_sign },
+            { id: "sign" as ToolName, icon: PenTool, label: t.editor_sign, dataTour: "tool-sign" },
             { id: "text" as ToolName, icon: Type, label: t.editor_add_text },
-            { id: "edit-text" as ToolName, icon: Type, label: t.editor_edit_text },
+            { id: "edit-text" as ToolName, icon: Type, label: t.editor_edit_text, dataTour: "tool-edit-text" },
             { id: "highlight" as ToolName, icon: Highlighter, label: t.editor_highlight },
             { id: "eraser" as ToolName, icon: Eraser, label: t.editor_eraser },
             { id: "brush" as ToolName, icon: Brush, label: t.editor_brush },
@@ -4364,8 +4365,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             { id: "split" as ToolName, icon: Scissors, label: (t as any).editor_split ?? "Split" },
             { id: "move" as ToolName, icon: Move, label: t.editor_move },
             { id: "notes" as ToolName, icon: StickyNote, label: t.editor_notes },
-          ].map(({ id, icon, label }) => (
-            <ToolBtn key={id} icon={icon} label={label} active={activeTool === id} onClick={() => { setActiveTool(id); setSelectedId(null); setShowMobilePanel(true); }} />
+          ].map((tool) => (
+            <ToolBtn key={tool.id} icon={tool.icon} label={tool.label} dataTour={(tool as any).dataTour} active={activeTool === tool.id} onClick={() => { setActiveTool(tool.id); setSelectedId(null); setShowMobilePanel(true); }} />
           ))}
         </div>
         {/* Page actions */}
@@ -4394,6 +4395,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         </button>
         {/* Download */}
         <button
+          data-tour="download-btn"
           onClick={downloadPdf}
           className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-white text-sm font-semibold transition-all shrink-0 shadow-sm hover:shadow-md"
           style={{ backgroundColor: "#E63946" }}
@@ -4406,7 +4408,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             {/* ── BODY: thumbnails + viewer + tool panel ── */}
       <div className="flex flex-1 overflow-hidden relative">
         {/* LEFT: Page thumbnails — hidden on mobile */}
-        <div className="hidden md:flex w-[150px] border-r overflow-y-auto flex-col gap-2 py-3 px-2" style={{ backgroundColor: "#ffffff", borderColor: "#f1f5f9" }}>
+        <div data-tour="thumbnails" className="hidden md:flex w-[150px] border-r overflow-y-auto flex-col gap-2 py-3 px-2" style={{ backgroundColor: "#ffffff", borderColor: "#f1f5f9" }}>
           {/* Page count */}
           <div className="flex items-center justify-between px-1 mb-1">
             <span className="text-[10px] font-semibold" style={{ color: "#64748b" }}>{totalPages} {totalPages === 1 ? "page" : "pages"}</span>

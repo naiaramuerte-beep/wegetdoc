@@ -11,7 +11,8 @@ import { usePdfFile } from "@/contexts/PdfFileContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Pencil, X as XIcon, Check, FileText, Upload, ArrowRight, RefreshCw, CheckCircle2, Shield, Monitor } from "lucide-react";
+import { Pencil, X as XIcon, Check, FileText, Upload, ArrowRight, RefreshCw, CheckCircle2, Shield, Monitor, HelpCircle } from "lucide-react";
+import { ProductTour, launchTour, resetTourSeen } from "@/components/ProductTour";
 
 const FILE_FREE_TOOLS = ["jpg-to-pdf", "png-to-pdf", "word-to-pdf", "excel-to-pdf", "ppt-to-pdf"];
 
@@ -208,6 +209,7 @@ export default function EditorPage() {
   }
 
   return (
+    <ProductTour pdfReady>
     <div className="flex flex-col" style={{ height: "100dvh", overflow: "hidden" }}>
       {/* ── Custom Editor Header Bar ── */}
       <div className="flex items-center justify-between px-3 md:px-4 h-11 md:h-12 shrink-0 border-b"
@@ -232,16 +234,26 @@ export default function EditorPage() {
               </button>
             </div>
           ) : (
-            <button onClick={startEdit} className="flex items-center gap-1.5 min-w-0 hover:bg-white/5 rounded px-2 py-0.5 transition-colors group" title="Click to rename">
+            <button data-tour="filename" onClick={startEdit} className="flex items-center gap-1.5 min-w-0 hover:bg-white/5 rounded px-2 py-0.5 transition-colors group" title="Click to rename">
               <span className="text-sm font-medium truncate" style={{ color: "rgba(255,255,255,0.85)" }}>{fileName}</span>
               <Pencil className="w-3 h-3 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "rgba(255,255,255,0.5)" }} />
             </button>
           )}
         </div>
-        {/* Right: Close */}
-        <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors shrink-0" title="Close editor">
-          <XIcon className="w-5 h-5" style={{ color: "rgba(255,255,255,0.7)" }} />
-        </button>
+        {/* Right: Help (desktop only) + Close */}
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={() => { resetTourSeen(); launchTour(); }}
+            className="hidden md:inline-flex p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+            title={t.tour_show}
+            aria-label={t.tour_show}
+          >
+            <HelpCircle className="w-[18px] h-[18px]" style={{ color: "rgba(255,255,255,0.7)" }} />
+          </button>
+          <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors" title="Close editor">
+            <XIcon className="w-5 h-5" style={{ color: "rgba(255,255,255,0.7)" }} />
+          </button>
+        </div>
       </div>
 
       {/* Full-screen editor */}
@@ -257,5 +269,6 @@ export default function EditorPage() {
         />
       </div>
     </div>
+    </ProductTour>
   );
 }
