@@ -4339,12 +4339,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       {/* ── TOP TOOLBAR — desktop only ── */}
       <div className="hidden md:flex items-center gap-1 px-3 py-1.5 border-b min-w-0" style={{ backgroundColor: "#FFFFFF", borderColor: "#f1f5f9" }}>
         {/* Undo / Redo */}
-        <button title={t.editor_undo + " (Ctrl+Z)"} onClick={undo} disabled={historyIndex <= 0} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
-          <Undo2 className="w-4 h-4" style={{ color: "#1A3A5C" }} />
-        </button>
-        <button title={t.editor_redo + " (Ctrl+Y)"} onClick={redo} disabled={historyIndex >= history.length - 1} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
-          <Redo2 className="w-4 h-4" style={{ color: "#1A3A5C" }} />
-        </button>
+        <div data-tour="history" className="flex items-center gap-0 shrink-0">
+          <button title={t.editor_undo + " (Ctrl+Z)"} onClick={undo} disabled={historyIndex <= 0} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
+            <Undo2 className="w-4 h-4" style={{ color: "#1A3A5C" }} />
+          </button>
+          <button title={t.editor_redo + " (Ctrl+Y)"} onClick={redo} disabled={historyIndex >= history.length - 1} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
+            <Redo2 className="w-4 h-4" style={{ color: "#1A3A5C" }} />
+          </button>
+        </div>
         <div className="w-px h-5 mx-1 shrink-0" style={{ backgroundColor: "#f1f5f9" }} />
         {/* Tool buttons — centered */}
         <div data-tour="toolbar" className="flex items-center gap-0.5 flex-1 justify-center overflow-x-auto" style={{ scrollbarWidth: "none" }}>
@@ -4384,6 +4386,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         <div className="w-px h-5 mx-1 shrink-0" style={{ backgroundColor: "#f1f5f9" }} />
         {/* Save */}
         <button
+          data-tour="save-btn"
           onClick={savePdf}
           disabled={isSaving || !pdfBytes}
           className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all shrink-0 border"
