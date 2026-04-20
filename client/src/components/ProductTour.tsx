@@ -49,6 +49,8 @@ function useSteps(): StepType[] {
         boxShadow: "0 20px 48px rgba(10,10,11,0.14)",
         border: `1px solid ${LINE}`,
         fontFamily: "inherit",
+        minWidth: 320,
+        maxWidth: 360,
       }),
     },
   };
@@ -133,8 +135,23 @@ export function ProductTour({
       styles={{
         maskWrapper: (base) => ({ ...base, color: "rgba(10,10,11,0.55)" }),
         badge: (base) => ({ ...base, background: ACCENT }),
+        controls: (base) => ({
+          ...base,
+          marginTop: 16,
+          flexWrap: "nowrap" as const,
+          gap: 8,
+        }),
+        navigation: (base) => ({
+          ...base,
+          flexWrap: "nowrap" as const,
+          gap: 6,
+          margin: "0 8px",
+        }),
         dot: (base, { current, disabled }: any = {}) => ({
           ...base,
+          width: 6,
+          height: 6,
+          margin: 0,
           background: current ? ACCENT : "#E4E4E7",
           opacity: disabled ? 0.4 : 1,
         }),

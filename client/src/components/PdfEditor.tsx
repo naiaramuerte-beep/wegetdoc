@@ -4337,7 +4337,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       )}
 
       {/* ── TOP TOOLBAR — desktop only ── */}
-      <div data-tour="toolbar" className="hidden md:flex items-center gap-1 px-3 py-1.5 border-b min-w-0" style={{ backgroundColor: "#FFFFFF", borderColor: "#f1f5f9" }}>
+      <div className="hidden md:flex items-center gap-1 px-3 py-1.5 border-b min-w-0" style={{ backgroundColor: "#FFFFFF", borderColor: "#f1f5f9" }}>
         {/* Undo / Redo */}
         <button title={t.editor_undo + " (Ctrl+Z)"} onClick={undo} disabled={historyIndex <= 0} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
           <Undo2 className="w-4 h-4" style={{ color: "#1A3A5C" }} />
@@ -4347,7 +4347,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         </button>
         <div className="w-px h-5 mx-1 shrink-0" style={{ backgroundColor: "#f1f5f9" }} />
         {/* Tool buttons — centered */}
-        <div className="flex items-center gap-0.5 flex-1 justify-center overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+        <div data-tour="toolbar" className="flex items-center gap-0.5 flex-1 justify-center overflow-x-auto" style={{ scrollbarWidth: "none" }}>
           {[
             { id: "sign" as ToolName, icon: PenTool, label: t.editor_sign, dataTour: "tool-sign" },
             { id: "text" as ToolName, icon: Type, label: t.editor_add_text },
