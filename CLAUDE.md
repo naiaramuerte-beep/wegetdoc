@@ -99,3 +99,4 @@ Online PDF editor SaaS — edit, convert, sign, and protect PDFs in the browser.
     - `loadNativeTextBlocks` backfills its result into existing history entries for that page (PDF-native data, not a user action) so undoing past the first edit doesn't erase detected text.
     - `allNativeTextBlocksRef` mirrors the state so `pushHistory` can snapshot without closure races.
 11. **Mobile UX: no tool preselected on PDF open.** Desktop keeps "edit-text" as default; on mobile (`window.innerWidth < 768`) the default is `pointer`, avoiding auto-opening the tool sheet on file load.
+12. **Google Tag Manager (GTM-5MTRQR7W) installed.** `client/index.html`: JS snippet at top of `<head>` (before gtag.js), `<noscript>` iframe right after `<body>`. CSP in `server/_core/index.ts` already allows `googletagmanager.com` in script-src/frame-src/img-src/connect-src.
