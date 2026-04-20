@@ -60,7 +60,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="w-10 h-10 border-4 border-blue-700 border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-[#E63946] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -86,7 +86,7 @@ export default function Dashboard() {
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
               {/* User info */}
               <div className="p-5 border-b border-slate-100">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-700 to-emerald-600 flex items-center justify-center text-white font-bold text-lg mb-3">
+                <div className="w-12 h-12 rounded-full bg-[#0A0A0B] flex items-center justify-center text-white font-bold text-lg mb-3">
                   {user?.name?.charAt(0)?.toUpperCase() ?? user?.email?.charAt(0)?.toUpperCase() ?? "U"}
                 </div>
                 <p className="font-semibold text-slate-800 truncate">{user?.name ?? t.dash_user}</p>
@@ -105,7 +105,7 @@ export default function Dashboard() {
                     onClick={() => setActiveTab(item.id)}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                       activeTab === item.id
-                        ? "bg-blue-50 text-blue-800"
+                        ? "bg-[#FDECEE] text-[#E63946]"
                         : "text-slate-600 hover:bg-slate-50"
                     }`}
                   >
@@ -244,7 +244,7 @@ function AccountTab({ user }: { user: any }) {
           <Button
             onClick={handleSave}
             disabled={updateMutation.isPending}
-            className="bg-blue-700 hover:bg-blue-800 text-white px-6"
+            className="bg-[#E63946] hover:bg-[#C72738] text-white px-6"
           >
             {updateMutation.isPending ? t.dash_saving : t.dash_save_changes}
           </Button>
@@ -465,7 +465,7 @@ function DocumentsTab() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-8 px-2 gap-1 text-blue-700 hover:text-blue-800 hover:bg-blue-50"
+                      className="h-8 px-2 gap-1 text-[#E63946] hover:text-[#C72738] hover:bg-[#FDECEE]"
                       title={t.dash_edit_in_editor}
                       onClick={() => handleEditDocument(doc)}
                     >
@@ -558,7 +558,7 @@ function TeamTab() {
   });
 
   const roleColors: Record<string, string> = {
-    editor: "bg-blue-50 text-blue-800",
+    editor: "bg-[#FDECEE] text-[#E63946]",
     viewer: "bg-slate-100 text-slate-600",
     admin: "bg-purple-50 text-purple-700",
   };
@@ -573,7 +573,7 @@ function TeamTab() {
         <Button
           size="sm"
           onClick={() => setShowForm(!showForm)}
-          className="bg-blue-700 hover:bg-blue-800 text-white"
+          className="bg-[#E63946] hover:bg-[#C72738] text-white"
         >
           <Plus size={14} className="mr-1.5" />
           {t.dash_invite}
@@ -611,7 +611,7 @@ function TeamTab() {
               size="sm"
               onClick={() => inviteMutation.mutate({ email, role })}
               disabled={!email.trim() || inviteMutation.isPending}
-              className="bg-blue-700 hover:bg-blue-800 text-white"
+              className="bg-[#E63946] hover:bg-[#C72738] text-white"
             >
               <Mail size={14} className="mr-1.5" />
               {t.dash_send_invite}
@@ -698,7 +698,7 @@ function DashboardPaymentForm({ onSuccess }: { onSuccess: () => void }) {
       <button
         type="submit"
         disabled={!stripe || submitting}
-        className="w-full mt-4 py-3 rounded-xl bg-blue-700 text-white font-semibold text-sm hover:bg-blue-800 transition-colors disabled:opacity-50"
+        className="w-full mt-4 py-3 rounded-xl bg-[#E63946] text-white font-semibold text-sm hover:bg-[#C72738] transition-colors disabled:opacity-50"
       >
         {submitting ? (
           <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> ...</span>
@@ -737,7 +737,7 @@ function DashboardStripeInline({ onComplete }: { onComplete: () => void }) {
   if (!stripePromise || !clientSecret) {
     return (
       <div className="flex items-center justify-center py-10">
-        <Loader2 className="w-6 h-6 animate-spin text-blue-700" />
+        <Loader2 className="w-6 h-6 animate-spin text-[#E63946]" />
         <span className="ml-2 text-sm text-slate-500">{t.dash_loading_payment}</span>
       </div>
     );
@@ -814,7 +814,7 @@ function BillingTab() {
         isPremium
           ? sub?.cancelAtPeriodEnd
             ? "bg-gradient-to-br from-amber-500 to-orange-600 text-white border-amber-400"
-            : "bg-gradient-to-br from-blue-700 to-blue-900 text-white border-blue-600"
+            : "bg-[#0A0A0B] text-white border-[#1A1A1C]"
           : "bg-white border-slate-100"
       }`}>
         <div className="flex items-start justify-between gap-4">
@@ -843,7 +843,7 @@ function BillingTab() {
                 </p>
               </div>
             ) : isPremium ? (
-              <p className="text-blue-100 text-sm">
+              <p className="text-white/80 text-sm">
                 {expiryDateStr
                   ? `${t.dash_next_renewal} ${expiryDateStr}`
                   : t.dash_active_access}
@@ -858,7 +858,7 @@ function BillingTab() {
             {isPremium && sub?.plan !== "trial" ? (
               <div>
                 <p className="text-3xl font-bold text-white">19,99€</p>
-                <p className={`text-xs ${sub?.cancelAtPeriodEnd ? "text-amber-200" : "text-blue-200"}`}>{t.dash_per_month}</p>
+                <p className={`text-xs ${sub?.cancelAtPeriodEnd ? "text-amber-200" : "text-white/60"}`}>{t.dash_per_month}</p>
               </div>
             ) : !isPremium ? (
               <p className="text-3xl font-bold text-slate-800">{t.dash_basic}</p>
@@ -918,8 +918,8 @@ function BillingTab() {
               t.dash_feature_watermark,
             ].map((feature) => (
               <div key={feature} className="flex items-center gap-2.5">
-                <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <Check size={12} className="text-blue-700" />
+                <div className="w-5 h-5 rounded-full bg-[#FDECEE] flex items-center justify-center flex-shrink-0">
+                  <Check size={12} className="text-[#E63946]" />
                 </div>
                 <span className="text-sm text-slate-700">{feature}</span>
               </div>
@@ -928,7 +928,7 @@ function BillingTab() {
 
           <div className="mt-6">
             <Button
-              className="w-full bg-blue-700 hover:bg-blue-800 text-white"
+              className="w-full bg-[#E63946] hover:bg-[#C72738] text-white"
               onClick={openInlineCheckout}
               disabled={showInlineCheckout}
             >
@@ -941,10 +941,10 @@ function BillingTab() {
 
       {/* Inline Stripe Checkout */}
       {showInlineCheckout && !isPremium && (
-        <div id="billing-checkout-section" className="bg-white rounded-2xl shadow-sm border border-blue-200 overflow-hidden">
+        <div id="billing-checkout-section" className="bg-white rounded-2xl shadow-sm border border-[#E8E8EC] overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between" style={{ backgroundColor: "#f8fafc" }}>
             <div className="flex items-center gap-2">
-              <CreditCard size={18} className="text-blue-700" />
+              <CreditCard size={18} className="text-[#E63946]" />
               <h3 className="font-bold text-slate-800">{t.dash_complete_subscription}</h3>
             </div>
             <button onClick={() => setShowInlineCheckout(false)} className="text-sm text-slate-500 hover:text-slate-700 hover:underline">{t.dash_cancel}</button>
@@ -981,18 +981,18 @@ function BillingTab() {
             {/* Info box */}
             <div className="bg-slate-50 rounded-xl p-4 mb-5 space-y-2">
               <div className="flex items-center gap-2">
-                <Check size={15} className="text-blue-500 flex-shrink-0" />
+                <Check size={15} className="text-[#1E9E63] flex-shrink-0" />
                 <p className="text-sm text-slate-700">
                   {t.dash_keep_access_until}{" "}
                   <strong>{expiryDateStr ?? t.dash_end_of_period}</strong>.
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <Check size={15} className="text-blue-500 flex-shrink-0" />
+                <Check size={15} className="text-[#1E9E63] flex-shrink-0" />
                 <p className="text-sm text-slate-700">{t.dash_no_auto_charges}</p>
               </div>
               <div className="flex items-center gap-2">
-                <Check size={15} className="text-blue-500 flex-shrink-0" />
+                <Check size={15} className="text-[#1E9E63] flex-shrink-0" />
                 <p className="text-sm text-slate-700">{t.dash_docs_accessible}</p>
               </div>
             </div>

@@ -181,7 +181,7 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
                 >
                   <div
                     className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-white shadow-sm"
-                    style={{ background: colors.gradient }}
+                    style={{ backgroundColor: "#0A0A0B" }}
                   >
                     {user?.name?.charAt(0)?.toUpperCase() ?? user?.email?.charAt(0)?.toUpperCase() ?? "U"}
                   </div>
