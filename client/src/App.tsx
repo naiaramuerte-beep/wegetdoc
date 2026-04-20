@@ -33,6 +33,7 @@ const Blog = lazy(() => import("./pages/Blog"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
 const ToolLanding = lazy(() => import("./pages/ToolLanding"));
 const ConverterPage = lazy(() => import("./pages/ConverterPage"));
+const PdfConverterHub = lazy(() => import("./pages/PdfConverterHub"));
 const AdLandingPage = lazy(() => import("./pages/AdLanding"));
 
 // Slugs that route to the standalone PDF→X converter (not the editor).
@@ -42,8 +43,12 @@ const CONVERTER_ROUTES: Record<string, "docx" | "xlsx" | "pptx" | "jpg"> = {
   "pdf-to-excel":      "xlsx",
   "pdf-to-powerpoint": "pptx",
   "pdf-to-jpg":        "jpg",
-  "pdf-converter":     "docx", // generic landing — defaults to Word
 };
+
+// Generic /pdf-converter landing — visitors arriving from broad keywords
+// don't know which target format they want, so we show a picker hub
+// instead of an upload form.
+const HUB_SLUG = "pdf-converter";
 import { AD_PAGES } from "./pages/AdLanding";
 const LandingTest = lazy(() => import("./pages/LandingTest"));
 
@@ -142,9 +147,16 @@ function Router() {
       {!isFastDoc && <Route path="/blog" component={() => <Redirect to="/es/blog" />} />}
       {!isFastDoc && <Route path="/blog/:slug" component={({ params }) => <Redirect to={`/es/blog/${params.slug}`} />} />}
 
+      {/* Generic PDF converter hub — picker page where the user chooses the
+          target format, then gets routed to the dedicated ConverterPage. */}
+      {LANGUAGES.map(({ code }) => (
+        <Route key={`${code}-conv-hub`} path={`/${code}/${HUB_SLUG}`} component={PdfConverterHub} />
+      ))}
+      <Route path={`/${HUB_SLUG}`} component={() => <Redirect to={`/en/${HUB_SLUG}`} />} />
+
       {/* Standalone converter pages (PDF → X) — must be registered BEFORE the
           generic ToolLanding loop so wouter's Switch matches them first.
-          `key={target}` forces a fresh component instance when the user
+          `key={slug}` forces a fresh component instance when the user
           navigates between converters (e.g. PDF→Word → PDF→Excel) so leftover
           state (uploaded file, paywall, preview) doesn't bleed across. */}
       {LANGUAGES.map(({ code }) =>
@@ -156,15 +168,15 @@ function Router() {
         <Route key={`conv-redirect-${slug}`} path={`/${slug}`} component={() => <Redirect to={`/en/${slug}`} />} />
       ))}
 
-      {/* Tool landing pages — language-prefixed (skips slugs handled by ConverterPage above) */}
+      {/* Tool landing pages — language-prefixed (skips slugs handled by ConverterPage / hub above) */}
       {LANGUAGES.map(({ code }) =>
-        TOOL_LANDINGS.filter(tool => !(tool.slug in CONVERTER_ROUTES)).map(tool => (
+        TOOL_LANDINGS.filter(tool => !(tool.slug in CONVERTER_ROUTES) && tool.slug !== HUB_SLUG).map(tool => (
           <Route key={`${code}-${tool.slug}`} path={`/${code}/${tool.slug}`} component={() => <ToolLanding tool={tool} />} />
         ))
       )}
 
       {/* Tool landing redirects without lang prefix */}
-      {TOOL_LANDINGS.filter(tool => !(tool.slug in CONVERTER_ROUTES)).map(tool => (
+      {TOOL_LANDINGS.filter(tool => !(tool.slug in CONVERTER_ROUTES) && tool.slug !== HUB_SLUG).map(tool => (
         <Route key={`redirect-${tool.slug}`} path={`/${tool.slug}`} component={() => <Redirect to={`/en/${tool.slug}`} />} />
       ))}
 
