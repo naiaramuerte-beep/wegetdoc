@@ -151,13 +151,21 @@ export function ProductTour({
       nextButton={({ currentStep, stepsLength, setIsOpen, setCurrentStep }) => {
         const isLast = currentStep === stepsLength - 1;
         return (
-          <button
-            onClick={() => {
-              if (isLast) { markTourSeen(); setIsOpen(false); }
-              else setCurrentStep((s) => s + 1);
-            }}
-            className="px-4 py-1.5 rounded-lg text-[13px] font-semibold bg-[#E63946] text-white hover:bg-[#C72738] shadow-sm transition-all"
-          >{isLast ? t.tour_done : t.tour_next}</button>
+          <div className="flex items-center gap-2">
+            {!isLast && (
+              <button
+                onClick={() => { markTourSeen(); setIsOpen(false); }}
+                className="px-3 py-1.5 rounded-lg text-[13px] font-medium text-[#5A5A62] hover:bg-[#F6F6F7] transition-colors"
+              >{t.tour_skip}</button>
+            )}
+            <button
+              onClick={() => {
+                if (isLast) { markTourSeen(); setIsOpen(false); }
+                else setCurrentStep((s) => s + 1);
+              }}
+              className="px-4 py-1.5 rounded-lg text-[13px] font-semibold bg-[#E63946] text-white hover:bg-[#C72738] shadow-sm transition-all"
+            >{isLast ? t.tour_done : t.tour_next}</button>
+          </div>
         );
       }}
     >
