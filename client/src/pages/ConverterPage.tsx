@@ -165,16 +165,17 @@ function SquiggleUnderline({ children }: { children: React.ReactNode }) {
   );
 }
 
-function renderHeadline(title: string, highlight: string) {
-  if (!title.includes(highlight)) return <>{title}</>;
-  const idx = title.indexOf(highlight);
+// "Convert PDF to <Format>" headline — colours PDF red (with squiggle) and
+// the target format in its corporate colour (Word blue, Excel green, etc.).
+function renderHeadline(formatLabel: string, formatColor: string) {
   return (
     <>
-      {title.slice(0, idx)}
+      Convert{" "}
       <SquiggleUnderline>
-        <span style={{ color: ACCENT }}>{highlight}</span>
+        <span style={{ color: ACCENT }}>PDF</span>
       </SquiggleUnderline>
-      {title.slice(idx + highlight.length)}
+      {" "}to{" "}
+      <span style={{ color: formatColor }}>{formatLabel}</span>
     </>
   );
 }
@@ -399,7 +400,7 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
           </p>
 
           <h1 className="text-center text-3xl md:text-5xl font-extrabold leading-[1.1] tracking-[-0.02em] mb-4">
-            {renderHeadline(copy.title, copy.highlight)}
+            {renderHeadline(FORMAT_META[target].label, FORMAT_META[target].color)}
           </h1>
           <p className="text-center text-[15px] md:text-base max-w-xl mx-auto mb-10" style={{ color: MUTED }}>
             {copy.subtitle}

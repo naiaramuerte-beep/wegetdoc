@@ -124,7 +124,9 @@ export default function PdfConverterHub() {
 
           {/* Headline */}
           <h1 className="text-center text-3xl md:text-5xl font-extrabold leading-[1.1] tracking-[-0.02em] mb-4">
-            Convert PDF to <SquiggleUnderline><span style={{ color: ACCENT }}>anything</span></SquiggleUnderline>
+            Convert{" "}
+            <SquiggleUnderline><span style={{ color: ACCENT }}>PDF</span></SquiggleUnderline>
+            {" "}to anything
           </h1>
           <p className="text-center text-[15px] md:text-base max-w-xl mx-auto mb-12" style={{ color: MUTED }}>
             Pick the format you need below — we'll convert your file in seconds, with layout and formatting preserved.
