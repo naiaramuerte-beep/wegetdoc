@@ -18,6 +18,22 @@ const ACCENT = "#E63946";
 const INK = "#0A0A0B";
 const MUTED = "#5A5A62";
 
+// Red squiggle underline — matches the Home hero / converter landings.
+function SquiggleUnderline({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="relative inline-block px-0.5">
+      {children}
+      <svg
+        className="absolute left-0 right-0 -bottom-1.5 w-full pointer-events-none"
+        viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true"
+        height="12"
+      >
+        <path d="M2 9 Q 60 4, 150 5 T 298 7 L 296 11 Q 150 9, 4 12 Z" fill={ACCENT} />
+      </svg>
+    </span>
+  );
+}
+
 function LogoSvg() {
   return (
     <svg width="56" height="56" viewBox="0 0 512 512" fill="none" aria-hidden="true">
@@ -108,7 +124,7 @@ export default function PdfConverterHub() {
 
           {/* Headline */}
           <h1 className="text-center text-3xl md:text-5xl font-extrabold leading-[1.1] tracking-[-0.02em] mb-4">
-            Convert PDF to <span style={{ color: ACCENT }}>anything</span>
+            Convert PDF to <SquiggleUnderline><span style={{ color: ACCENT }}>anything</span></SquiggleUnderline>
           </h1>
           <p className="text-center text-[15px] md:text-base max-w-xl mx-auto mb-12" style={{ color: MUTED }}>
             Pick the format you need below — we'll convert your file in seconds, with layout and formatting preserved.

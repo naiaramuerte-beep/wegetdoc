@@ -148,13 +148,32 @@ function LogoSvg() {
   );
 }
 
+// Red squiggle underline — same asset used on the Home hero so landings share
+// the identity. Lives in SVG space so it scales with font-size around it.
+function SquiggleUnderline({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="relative inline-block px-0.5">
+      {children}
+      <svg
+        className="absolute left-0 right-0 -bottom-1.5 w-full pointer-events-none"
+        viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true"
+        height="12"
+      >
+        <path d="M2 9 Q 60 4, 150 5 T 298 7 L 296 11 Q 150 9, 4 12 Z" fill={ACCENT} />
+      </svg>
+    </span>
+  );
+}
+
 function renderHeadline(title: string, highlight: string) {
   if (!title.includes(highlight)) return <>{title}</>;
   const idx = title.indexOf(highlight);
   return (
     <>
       {title.slice(0, idx)}
-      <span style={{ color: ACCENT }}>{highlight}</span>
+      <SquiggleUnderline>
+        <span style={{ color: ACCENT }}>{highlight}</span>
+      </SquiggleUnderline>
       {title.slice(idx + highlight.length)}
     </>
   );
