@@ -1153,6 +1153,51 @@ export async function getUserTimeline(userId: number) {
   };
 }
 
+/**
+ * QA-only: create a fake trial sub in local DB without touching Stripe.
+ * Lets the admin test the trial-limit gate end-to-end without paying €0,50.
+ * The "Activar 19,99€" upgrade button will fail because the stripeSubscriptionId
+ * is synthetic — admin should then click Reset to clean up.
+ */
+export async function createFakeTrialSub(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  // Don't create if there's already an active/trialing/past_due sub.
+  const existing = await getActiveSubscription(userId);
+  if (existing && ["active", "trialing", "past_due"].includes(existing.status)) {
+    return { success: false, error: "User already has an active sub" };
+  }
+  const now = new Date();
+  const trialEnd = new Date(Date.now() + 48 * 60 * 60 * 1000);
+  const syntheticSubId = `fake_sub_qa_${userId}_${Date.now()}`;
+  await upsertSubscription({
+    userId,
+    stripeCustomerId: `fake_cus_qa_${userId}`,
+    stripeSubscriptionId: syntheticSubId,
+    plan: "trial",
+    status: "active",
+    currentPeriodStart: now,
+    currentPeriodEnd: trialEnd,
+    cancelAtPeriodEnd: false,
+  });
+  await markDocumentsPaid(userId);
+  return { success: true, stripeSubscriptionId: syntheticSubId, trialEnd: trialEnd.toISOString() };
+}
+
+/**
+ * QA-only: delete the fake trial sub (identified by synthetic stripe id).
+ */
+export async function deleteFakeTrialSub(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const result: any = await db.delete(subscriptions)
+    .where(and(
+      eq(subscriptions.userId, userId),
+      like(subscriptions.stripeSubscriptionId, "fake_sub_qa_%"),
+    ));
+  return { success: true, affected: result.affectedRows ?? 0 };
+}
+
 // ─── Admin self-test helpers (for trial flow QA without real payments) ──
 
 /**

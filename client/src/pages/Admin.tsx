@@ -129,6 +129,17 @@ export default function Admin() {
     },
     onError: (err) => toast.error(err.message || "Error"),
   });
+  const createFakeSubMut = trpc.admin.createFakeTrialSub.useMutation({
+    onSuccess: (r) => {
+      if (!r.success) toast.error(r.error || "No se pudo crear");
+      else toast.success(`Sub trial falsa creada (ID: ${r.stripeSubscriptionId}). Ahora eres "trial". Prueba el flujo.`);
+    },
+    onError: (err) => toast.error(err.message || "Error"),
+  });
+  const deleteFakeSubMut = trpc.admin.deleteFakeTrialSub.useMutation({
+    onSuccess: (r) => toast.success(`Sub trial falsa eliminada (${r.affected} rows)`),
+    onError: (err) => toast.error(err.message || "Error"),
+  });
   const [previewPaywallReason, setPreviewPaywallReason] = useState<"standard" | "trial-limit" | null>(null);
   const createCouponMut = trpc.admin.createCoupon.useMutation({
     onSuccess: (r) => { toast.success(`Cupón creado: ${r.code}`); utils.admin.coupons.invalidate(); },
@@ -1935,32 +1946,57 @@ export default function Admin() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <button
+                    onClick={() => createFakeSubMut.mutate()}
+                    disabled={createFakeSubMut.isPending}
+                    className="px-4 py-3 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-60"
+                    style={{ backgroundColor: "#8b5cf6" }}
+                  >
+                    {createFakeSubMut.isPending ? "Creando…" : "1. Crear sub trial falsa (sin Stripe)"}
+                  </button>
+                  <button
                     onClick={() => simulateTrialMut.mutate()}
                     disabled={simulateTrialMut.isPending}
                     className="px-4 py-3 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-60"
                     style={{ backgroundColor: "#f59e0b" }}
                   >
-                    {simulateTrialMut.isPending ? "Simulando…" : "Simular trial limit alcanzado"}
-                  </button>
-                  <button
-                    onClick={() => resetTrialMut.mutate()}
-                    disabled={resetTrialMut.isPending}
-                    className="px-4 py-3 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-60"
-                    style={{ backgroundColor: "#10b981" }}
-                  >
-                    {resetTrialMut.isPending ? "Reseteando…" : "Resetear mi trial usage"}
+                    {simulateTrialMut.isPending ? "Simulando…" : "2. Simular 2 descargas hechas"}
                   </button>
                   <button
                     onClick={() => setPreviewPaywallReason("trial-limit")}
                     className="px-4 py-3 rounded-lg text-sm font-semibold text-white transition-colors"
                     style={{ backgroundColor: "#1565C0" }}
                   >
-                    Previsualizar paywall trial-limit
+                    Previsualizar paywall upgrade
                   </button>
                 </div>
-                <p className="text-[11px] text-gray-500 leading-relaxed pt-2 border-t" style={{ borderColor: "#1e2433" }}>
-                  <strong className="text-gray-400">Cómo testear el flujo completo:</strong> 1) "Simular trial limit". 2) Ve a un PDF en el editor. 3) Pulsa Descargar → debe aparecer el modal de upgrade con el botón "Activar 19,99€". 4) Click cancelar → vuelve. 5) "Resetear" aquí para empezar de nuevo.
-                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <button
+                    onClick={() => resetTrialMut.mutate()}
+                    disabled={resetTrialMut.isPending}
+                    className="px-4 py-2.5 rounded-lg text-xs font-semibold text-white transition-colors disabled:opacity-60"
+                    style={{ backgroundColor: "#10b981" }}
+                  >
+                    {resetTrialMut.isPending ? "Reseteando…" : "↺ Resetear mis descargas"}
+                  </button>
+                  <button
+                    onClick={() => deleteFakeSubMut.mutate()}
+                    disabled={deleteFakeSubMut.isPending}
+                    className="px-4 py-2.5 rounded-lg text-xs font-semibold text-white transition-colors disabled:opacity-60"
+                    style={{ backgroundColor: "#6b7280" }}
+                  >
+                    {deleteFakeSubMut.isPending ? "Eliminando…" : "↺ Eliminar sub trial falsa"}
+                  </button>
+                </div>
+                <div className="text-[11px] text-gray-500 leading-relaxed pt-3 border-t space-y-2" style={{ borderColor: "#1e2433" }}>
+                  <p><strong className="text-gray-300">Flujo end-to-end sin pagar:</strong></p>
+                  <ol className="list-decimal ml-4 space-y-1 text-gray-400">
+                    <li>Click <strong className="text-violet-400">"1. Crear sub trial falsa"</strong> → obtienes sub trial solo en DB local.</li>
+                    <li>Click <strong className="text-amber-400">"2. Simular 2 descargas hechas"</strong> → stampa 2 de tus docs como downloaded.</li>
+                    <li>Abre un PDF en el editor (tuyo, subido antes) → pulsa <strong>Descargar</strong> → debe aparecer el paywall de upgrade.</li>
+                    <li>Verás el mensaje + botón "Continuar sin límites 19,99€/mes". <strong className="text-red-400">NO pulses Activar</strong> — fallará porque la sub es falsa (protección esperada).</li>
+                    <li>Cuando acabes: limpia con <strong className="text-emerald-400">Resetear descargas</strong> + <strong>Eliminar sub falsa</strong>.</li>
+                  </ol>
+                </div>
               </div>
             </div>
           )}

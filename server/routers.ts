@@ -933,6 +933,35 @@ export const appRouter = router({
       return r;
     }),
 
+    // QA only: spin up a fake trial sub in DB (no Stripe) so the admin can
+    // test the download gate end-to-end without paying €0,50.
+    createFakeTrialSub: adminProcedure.mutation(async ({ ctx }) => {
+      const { createFakeTrialSub } = await import("./db");
+      const r = await createFakeTrialSub(ctx.user.id);
+      await recordAuditEntry({
+        adminId: ctx.user.id,
+        adminEmail: ctx.user.email ?? null,
+        action: "test_create_fake_trial_sub",
+        targetType: "user",
+        targetId: String(ctx.user.id),
+        metadata: r,
+      });
+      return r;
+    }),
+    deleteFakeTrialSub: adminProcedure.mutation(async ({ ctx }) => {
+      const { deleteFakeTrialSub } = await import("./db");
+      const r = await deleteFakeTrialSub(ctx.user.id);
+      await recordAuditEntry({
+        adminId: ctx.user.id,
+        adminEmail: ctx.user.email ?? null,
+        action: "test_delete_fake_trial_sub",
+        targetType: "user",
+        targetId: String(ctx.user.id),
+        metadata: { affected: r.affected },
+      });
+      return r;
+    }),
+
     // ── Coupons (F7) ─────────────────────────────────────────
     coupons: adminProcedure.query(async () => {
       return listStripeCoupons();
