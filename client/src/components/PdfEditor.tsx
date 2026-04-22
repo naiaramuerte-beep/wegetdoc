@@ -4990,19 +4990,35 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       contentEditable
                       suppressContentEditableWarning
                       ref={el => {
-                        if (el && document.activeElement !== el) {
-                          // Set initial content — use HTML if previously saved as rich text
-                          const content = block.editedHtml || block.editedStr || block.str;
-                          if (block.editedHtml) el.innerHTML = content;
-                          else el.innerText = content;
+                        // Safari on macOS had two problems here:
+                        //   (a) the `document.activeElement !== el` check is unreliable
+                        //       on first render because focus hasn't moved yet, so the
+                        //       ref kept re-initialising content on every render and
+                        //       wiped whatever the user typed;
+                        //   (b) calling el.focus() + range.selectNodeContents() on an
+                        //       element that's already focused clears the selection
+                        //       mid-typing in WebKit.
+                        // Fix: only initialise ONCE per element, using a data flag.
+                        if (!el || el.dataset.editInit === "1") return;
+                        el.dataset.editInit = "1";
+                        const content = block.editedHtml || block.editedStr || block.str;
+                        if (block.editedHtml) el.innerHTML = content;
+                        else el.innerText = content;
+                        // Defer focus + selection so WebKit settles the DOM mutation
+                        // before we try to create a Range on it.
+                        requestAnimationFrame(() => {
                           el.focus();
-                          const range = document.createRange();
-                          range.selectNodeContents(el);
-                          range.collapse(false);
-                          const sel = window.getSelection();
-                          sel?.removeAllRanges();
-                          sel?.addRange(range);
-                        }
+                          try {
+                            const range = document.createRange();
+                            range.selectNodeContents(el);
+                            range.collapse(false);
+                            const sel = window.getSelection();
+                            sel?.removeAllRanges();
+                            sel?.addRange(range);
+                          } catch {
+                            // Safari can throw if the node is detached — ignore, focus alone is enough.
+                          }
+                        });
                       }}
                       onBlur={(e) => {
                         const el = e.currentTarget as HTMLElement;
