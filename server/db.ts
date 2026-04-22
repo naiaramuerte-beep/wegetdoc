@@ -699,7 +699,7 @@ export async function listStripeCoupons() {
     stripe.promotionCodes.list({ limit: 100 }),
   ]);
   const byCouponId = new Map<string, any[]>();
-  for (const p of promos.data) {
+  for (const p of promos.data as any[]) {
     const cid = typeof p.coupon === "string" ? p.coupon : p.coupon?.id;
     if (!cid) continue;
     if (!byCouponId.has(cid)) byCouponId.set(cid, []);

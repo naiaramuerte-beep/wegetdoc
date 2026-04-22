@@ -16,7 +16,7 @@ import {
   Search, Trash2, ShieldCheck, ShieldOff, Mail, ChevronDown, ChevronUp,
   CreditCard, Settings, BookOpen, BarChart2, UserX, RefreshCw, Eye, EyeOff,
   ArrowLeft, Crown, Rss, Star, Calendar, Zap, AlertTriangle, RotateCcw,
-  Webhook, ClipboardList, StickyNote,
+  Webhook, ClipboardList, StickyNote, X,
 } from "lucide-react";
 
 // Date-range presets used by the Billing tab. "today" includes today only,

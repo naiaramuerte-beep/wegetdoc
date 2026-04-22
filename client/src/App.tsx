@@ -93,7 +93,7 @@ function Router() {
 
       {/* Language-prefixed routes — one block per lang */}
       {LANGUAGES.map(({ code }) => (
-        <Route key={code} path={`/${code}`} component={Home} />
+        <Route key={code} path={`/${code}`} component={() => <Home />} />
       ))}
       {LANGUAGES.map(({ code }) => (
         <Route key={`${code}-editor`} path={`/${code}/editor`} component={EditorPage} />

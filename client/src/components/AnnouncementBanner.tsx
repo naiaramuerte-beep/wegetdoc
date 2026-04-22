@@ -33,7 +33,9 @@ export default function AnnouncementBanner() {
   // Use the message itself as the dismiss key so a new message reappears.
   if (dismissed === annQ.data.message) return null;
 
-  const colors = LEVEL_STYLES[annQ.data.level] ?? LEVEL_STYLES.info;
+  // Narrow once so TS knows .message / .level are defined in the closures below.
+  const announcement = annQ.data;
+  const colors = LEVEL_STYLES[announcement.level] ?? LEVEL_STYLES.info;
 
   return (
     <div
@@ -41,11 +43,11 @@ export default function AnnouncementBanner() {
       style={{ backgroundColor: colors.bg, color: colors.fg, borderBottom: `1px solid ${colors.border}` }}
       role="alert"
     >
-      <span className="max-w-3xl">{annQ.data.message}</span>
+      <span className="max-w-3xl">{announcement.message}</span>
       <button
         onClick={() => {
-          try { sessionStorage.setItem(DISMISS_KEY, annQ.data.message); } catch {}
-          setDismissed(annQ.data.message);
+          try { sessionStorage.setItem(DISMISS_KEY, announcement.message); } catch {}
+          setDismissed(announcement.message);
         }}
         aria-label="Dismiss"
         className="opacity-70 hover:opacity-100 transition-opacity"

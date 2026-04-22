@@ -286,6 +286,9 @@ export type TranslationKeys = {
   paywall_your_pdf: string;
   paywall_only_for: string;
   paywall_7day_access: string;
+  paywall_trial_limit_title: string;
+  paywall_trial_limit_body: string;
+  paywall_trial_limit_cta: string;
   paywall_doc_ready: string;
   paywall_one_step: string;
   paywall_or: string;
@@ -433,6 +436,7 @@ export type TranslationKeys = {
   editor_compress: string;
   editor_split: string;
   editor_merge: string;
+  editor_convert?: string;
   editor_move: string;
   editor_notes: string;
   editor_download: string;
@@ -891,7 +895,7 @@ export const translations: Translations = {
     paywall_card_number: "Número de tarjeta",
     paywall_loading_form: "Cargando el formulario de pago...",
     paywall_gpay_soon: "Google Pay se habilitará una vez configurado el período de prueba.",
-    paywall_legal_text: "Al pulsar 'Descargar', aceptas que, si no cancelas antes de que concluya la prueba de 48 horas (0€), se facturarán 19,99€/mes de forma automática hasta que canceles. Puedes darte de baja en cualquier momento desde tu perfil. Aceptas nuestras Condiciones del servicio y Aviso de privacidad.",
+    paywall_legal_text: "Al pulsar 'Descargar', aceptas que, si no cancelas antes de que concluya la prueba de 48 horas (0,50€), se facturarán 19,99€/mes de forma automática hasta que canceles. Puedes darte de baja en cualquier momento desde tu perfil. Aceptas nuestras Condiciones del servicio y Aviso de privacidad.",
     paywall_pay_download: "Pagar y descargar",
     paywall_processing: "En proceso...",
     paywall_your_pdf: "Tu PDF por solo",
@@ -1043,7 +1047,6 @@ export const translations: Translations = {
     editor_protect: "Bloquear",
     editor_compress: "Reducir",
     editor_split: "Dividir",
-    editor_convert: "Convertir",
     editor_convert: "Convertir",
     editor_merge: "Unir",
     editor_move: "Desplazar",
@@ -1829,7 +1832,7 @@ export const translations: Translations = {
     paywall_card_number: "Card number",
     paywall_loading_form: "Loading checkout form...",
     paywall_gpay_soon: "Google Pay becomes available once the trial setup is complete.",
-    paywall_legal_text: "By pressing 'Download', you acknowledge that if the 48-hour trial (€0) is not cancelled beforehand, a recurring charge of €19.99/month will apply until you cancel. Cancellation is available any time from your account. You accept our Terms & Conditions and Privacy Notice.",
+    paywall_legal_text: "By pressing 'Download', you acknowledge that if the 48-hour trial (€0.50) is not cancelled beforehand, a recurring charge of €19.99/month will apply until you cancel. Cancellation is available any time from your account. You accept our Terms & Conditions and Privacy Notice.",
     paywall_pay_download: "Checkout & download",
     paywall_processing: "Working on it...",
     paywall_your_pdf: "Your PDF for only",
@@ -2766,7 +2769,7 @@ export const translations: Translations = {
     paywall_card_number: "Numéro de carte",
     paywall_loading_form: "Chargement du formulaire...",
     paywall_gpay_soon: "Google Pay sera disponible après la configuration de l'essai.",
-    paywall_legal_text: "En cliquant sur 'Télécharger', vous acceptez que si vous n'annulez pas avant la fin de l'essai de 48 heures (0€), vous serez automatiquement facturé 19,99€/mois jusqu'à l'annulation. Vous pouvez annuler à tout moment. Vous acceptez nos CGU et Politique de confidentialité.",
+    paywall_legal_text: "En cliquant sur 'Télécharger', vous acceptez que si vous n'annulez pas avant la fin de l'essai de 48 heures (0,50€), vous serez automatiquement facturé 19,99€/mois jusqu'à l'annulation. Vous pouvez annuler à tout moment. Vous acceptez nos CGU et Politique de confidentialité.",
     paywall_pay_download: "Payer et télécharger",
     paywall_processing: "Traitement...",
     paywall_your_pdf: "Votre PDF pour seulement",
@@ -3414,7 +3417,7 @@ export const translations: Translations = {
     paywall_card_number: "Kartennummer",
     paywall_loading_form: "Zahlungsformular wird geladen...",
     paywall_gpay_soon: "Google Pay wird nach der Testeinrichtung verfügbar sein.",
-    paywall_legal_text: "Mit Klick auf 'Herunterladen' erklären Sie sich damit einverstanden, dass wenn Sie nicht vor Ende der 7-tägigen Testphase (0€) kündigen, automatisch 19,99€/Monat abgebucht werden. Sie können jederzeit kündigen. Sie stimmen unseren AGB und Datenschutzrichtlinien zu.",
+    paywall_legal_text: "Mit Klick auf 'Herunterladen' erklären Sie sich damit einverstanden, dass wenn Sie nicht vor Ende der 48-Stunden-Testphase (0,50€) kündigen, automatisch 19,99€/Monat abgebucht werden. Sie können jederzeit kündigen. Sie stimmen unseren AGB und Datenschutzrichtlinien zu.",
     paywall_pay_download: "Bezahlen und herunterladen",
     paywall_processing: "Verarbeitung...",
     paywall_your_pdf: "Ihr PDF für nur",
@@ -4062,7 +4065,7 @@ export const translations: Translations = {
     paywall_card_number: "Número do cartão",
     paywall_loading_form: "Carregando formulário de pagamento...",
     paywall_gpay_soon: "Google Pay estará disponível após configurar o período de teste.",
-    paywall_legal_text: "Ao clicar em 'Baixar', você concorda que, se não cancelar antes do fim do período de teste de 48 horas (0€), será cobrado automaticamente 19,99€/mês até cancelar. Você pode cancelar a qualquer momento. Você concorda com nossos Termos e Política de Privacidade.",
+    paywall_legal_text: "Ao clicar em 'Baixar', você concorda que, se não cancelar antes do fim do período de teste de 48 horas (0,50€), será cobrado automaticamente 19,99€/mês até cancelar. Você pode cancelar a qualquer momento. Você concorda com nossos Termos e Política de Privacidade.",
     paywall_pay_download: "Pagar e baixar",
     paywall_processing: "Processando...",
     paywall_your_pdf: "Seu PDF por apenas",
@@ -4710,7 +4713,7 @@ export const translations: Translations = {
     paywall_card_number: "Numero di carta",
     paywall_loading_form: "Caricamento modulo di pagamento...",
     paywall_gpay_soon: "Google Pay sarà disponibile dopo la configurazione del periodo di prova.",
-    paywall_legal_text: "Cliccando su 'Scarica', accetti che se non annulli prima della fine del periodo di prova di 48 ore (0€), ti verranno addebitati automaticamente 19,99€/mese fino all'annullamento. Puoi annullare in qualsiasi momento. Accetti i nostri Termini di servizio e la nostra Informativa sulla privacy.",
+    paywall_legal_text: "Cliccando su 'Scarica', accetti che se non annulli prima della fine del periodo di prova di 48 ore (0,50€), ti verranno addebitati automaticamente 19,99€/mese fino all'annullamento. Puoi annullare in qualsiasi momento. Accetti i nostri Termini di servizio e la nostra Informativa sulla privacy.",
     paywall_pay_download: "Paga e scarica",
     paywall_processing: "Elaborazione...",
     paywall_your_pdf: "Il tuo PDF per solo",
@@ -5358,7 +5361,7 @@ export const translations: Translations = {
     paywall_card_number: "Kaartnummer",
     paywall_loading_form: "Betalingsformulier laden...",
     paywall_gpay_soon: "Google Pay is beschikbaar na het instellen van de proefperiode.",
-    paywall_legal_text: "Door op 'Downloaden' te klikken, gaat u ermee akkoord dat als u niet annuleert vóór het einde van de proefperiode van 48 uur (0€), automatisch €19,99/maand in rekening wordt gebracht. U kunt op elk moment annuleren. U gaat akkoord met onze Voorwaarden en Privacybeleid.",
+    paywall_legal_text: "Door op 'Downloaden' te klikken, gaat u ermee akkoord dat als u niet annuleert vóór het einde van de proefperiode van 48 uur (0,50€), automatisch €19,99/maand in rekening wordt gebracht. U kunt op elk moment annuleren. U gaat akkoord met onze Voorwaarden en Privacybeleid.",
     paywall_pay_download: "Betalen en downloaden",
     paywall_processing: "Verwerken...",
     paywall_your_pdf: "Je PDF voor slechts",
@@ -6006,7 +6009,7 @@ export const translations: Translations = {
     paywall_card_number: "Numer karty",
     paywall_loading_form: "Ładowanie formularza płatności...",
     paywall_gpay_soon: "Google Pay będzie dostępny po skonfigurowaniu okresu próbnego.",
-     paywall_legal_text: "Klikając 'Pobierz', zgadzasz się, że jeśli nie anulujesz przed końcem okresu próbnego 48 godzin (0€), będziesz automatycznie obciążany 19,99€/miesiąc do momentu anulowania. Możesz anulować w dowolnym momencie. Zgadzasz się z naszymi Warunkami i Polityką prywatności.",
+     paywall_legal_text: "Klikając 'Pobierz', zgadzasz się, że jeśli nie anulujesz przed końcem okresu próbnego 48 godzin (0,50€), będziesz automatycznie obciążany 19,99€/miesiąc do momentu anulowania. Możesz anulować w dowolnym momencie. Zgadzasz się z naszymi Warunkami i Polityką prywatności.",
     paywall_pay_download: "Zapłać i pobrać",
     paywall_processing: "Przetwarzanie...",
     paywall_your_pdf: "Twój PDF za jedyne",
@@ -6654,7 +6657,7 @@ export const translations: Translations = {
     paywall_card_number: "Номер карты",
     paywall_loading_form: "Загрузка формы оплаты...",
     paywall_gpay_soon: "Google Pay будет доступен после настройки пробного периода.",
-    paywall_legal_text: "Нажимая 'Скачать', вы соглашаетесь, что если не отмените до окончания 7-дневного пробного периода (0€), с вас будет автоматически сниматься 19,99€/месяц до отмены. Вы можете отменить в любое время. Вы соглашаетесь с нашими Условиями и Политикой конфиденциальности.",
+    paywall_legal_text: "Нажимая 'Скачать', вы соглашаетесь, что если не отмените до окончания 48-часового пробного периода (0,50€), с вас будет автоматически сниматься 19,99€/месяц до отмены. Вы можете отменить в любое время. Вы соглашаетесь с нашими Условиями и Политикой конфиденциальности.",
     paywall_pay_download: "Оплатить и скачать",
     paywall_processing: "Обработка...",
     paywall_your_pdf: "Ваш PDF всего за",
@@ -7302,7 +7305,7 @@ export const translations: Translations = {
     paywall_card_number: "卡号",
     paywall_loading_form: "加载支付表单...",
     paywall_gpay_soon: "完成试用设置后，Google Pay将可用。",
-    paywall_legal_text: "点击'下载'，即表示您同意，如果您在免赘48小时试用期结束前未取消(0€)，将每月自动收卆19.99€直至取消。您可以随时取消。您同意我们的服务条款和隐私政策。",
+    paywall_legal_text: "点击'下载'，即表示您同意，如果您在48小时试用期结束前未取消(0,50€)，将每月自动收卆19.99€直至取消。您可以随时取消。您同意我们的服务条款和隐私政策。",
     paywall_pay_download: "支付并下载",
     paywall_processing: "处理中...",
     paywall_your_pdf: "您的 PDF 仅需",
