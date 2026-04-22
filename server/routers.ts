@@ -49,6 +49,7 @@ import {
   getCancelReasonsAgg,
   getCanceledSubscriptions,
   getPastDueSubs,
+  getRevenueByCountry,
   getStorageByUser,
   getStripeChargesList,
   getStripeRevenue,
@@ -710,6 +711,11 @@ export const appRouter = router({
     // ── Cancel reasons (F4) ───────────────────────────────────
     cancelReasons: adminProcedure.query(async () => {
       return getCancelReasonsAgg();
+    }),
+
+    // ── Geography of MRR (A4) ─────────────────────────────────
+    revenueByCountry: adminProcedure.query(async () => {
+      return getRevenueByCountry();
     }),
 
     promoteUser: adminProcedure

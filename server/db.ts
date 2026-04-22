@@ -1078,6 +1078,38 @@ export async function setCancelReason(opts: {
 }
 
 /**
+ * MRR by country — groups active subs by the user's country. Feeds a
+ * geo distribution card on the admin dashboard. Uses the same hardcoded
+ * monthly/annual pricing as getBillingStats so the numbers align.
+ */
+export async function getRevenueByCountry() {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select({
+    country: users.country,
+    plan: subscriptions.plan,
+    count: sql<number>`count(*)`,
+  }).from(subscriptions)
+    .innerJoin(users, eq(subscriptions.userId, users.id))
+    .where(sql`${subscriptions.status} IN ('active', 'trialing')`)
+    .groupBy(users.country, subscriptions.plan);
+
+  const byCountry = new Map<string, { country: string; subs: number; mrrEur: number }>();
+  for (const r of rows) {
+    const c = r.country || "Desconocido";
+    const existing = byCountry.get(c) || { country: c, subs: 0, mrrEur: 0 };
+    existing.subs += Number(r.count);
+    // Trials project to monthly price (consistent with mrrCommitted).
+    if (r.plan === "monthly" || r.plan === "trial") existing.mrrEur += Number(r.count) * 19.99;
+    else if (r.plan === "annual") existing.mrrEur += Number(r.count) * (99 / 12);
+    byCountry.set(c, existing);
+  }
+  return Array.from(byCountry.values())
+    .sort((a, b) => b.mrrEur - a.mrrEur)
+    .map((r) => ({ ...r, mrrEur: Math.round(r.mrrEur * 100) / 100 }));
+}
+
+/**
  * Aggregated cancellation reasons for the admin dashboard.
  */
 export async function getCancelReasonsAgg() {

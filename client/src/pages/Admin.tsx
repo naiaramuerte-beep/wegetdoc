@@ -117,6 +117,7 @@ export default function Admin() {
   const webhookEventsQ = trpc.admin.webhookEvents.useQuery({ limit: 100 }, { enabled: !!user && user.role === "admin" && tab === "webhooks", refetchInterval: tab === "webhooks" ? 15000 : false });
   const auditLogQ = trpc.admin.auditLog.useQuery({ limit: 100 }, { enabled: !!user && user.role === "admin" && tab === "audit" });
   const cancelReasonsQ = trpc.admin.cancelReasons.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "billing" });
+  const geoQ = trpc.admin.revenueByCountry.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "billing" });
   const updateNotesMut = trpc.admin.updateUserNotes.useMutation({
     onSuccess: () => {
       toast.success("Notas guardadas");
@@ -799,6 +800,44 @@ export default function Admin() {
                       </p>
                     )}
                   </div>
+
+                  {/* ── GEO DISTRIBUTION (A4) ── */}
+                  {geoQ.data && geoQ.data.length > 0 && (
+                    <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}>
+                      <div className="px-5 py-3 border-b" style={{ borderColor: "#1e2433" }}>
+                        <p className="text-sm font-semibold text-white">MRR por país</p>
+                        <p className="text-[11px] text-gray-500 mt-0.5">Solo suscripciones activas + trials (proyectados a €19,99).</p>
+                      </div>
+                      <div className="p-5 space-y-2">
+                        {(() => {
+                          const max = Math.max(...geoQ.data.map((g: any) => g.mrrEur), 0.01);
+                          return geoQ.data.slice(0, 12).map((g: any) => {
+                            const pct = (g.mrrEur / max) * 100;
+                            return (
+                              <div key={g.country} className="flex items-center gap-3">
+                                <div className="w-28 text-xs text-gray-300 truncate">{g.country}</div>
+                                <div className="flex-1 h-5 rounded" style={{ backgroundColor: "#0a0d14" }}>
+                                  <div
+                                    className="h-full rounded transition-all"
+                                    style={{
+                                      width: `${pct}%`,
+                                      background: "linear-gradient(90deg, #E63946, #1565C0)",
+                                    }}
+                                  />
+                                </div>
+                                <div className="w-16 text-right text-xs text-gray-200 font-mono">
+                                  {formatEur(g.mrrEur)}
+                                </div>
+                                <div className="w-10 text-right text-[10px] text-gray-500">
+                                  {g.subs} sub{g.subs !== 1 ? "s" : ""}
+                                </div>
+                              </div>
+                            );
+                          });
+                        })()}
+                      </div>
+                    </div>
+                  )}
 
                   {/* ── CANCELLATION REASONS (F4) ── */}
                   {cancelReasonsQ.data && cancelReasonsQ.data.length > 0 && (
@@ -1732,8 +1771,8 @@ export default function Admin() {
                     {[
                       { key: "site_name", label: "Nombre del sitio", placeholder: brandName },
                       { key: "support_email", label: "Email de soporte", placeholder: "soporte@editorpdf.net" },
-                      { key: "trial_price_eur", label: "Precio prueba 7 días (€)", placeholder: "0.99" },
-                      { key: "monthly_price_eur", label: "Precio mensual (€)", placeholder: "9.99" },
+                      { key: "trial_price_eur", label: "Precio prueba 48h (€)", placeholder: "0.50" },
+                      { key: "monthly_price_eur", label: "Precio mensual (€)", placeholder: "19.99" },
                     ].map((setting) => {
                       const current =
                         settingsQ.data?.find((s) => s.key === setting.key)?.value ?? "";
@@ -1751,6 +1790,51 @@ export default function Admin() {
                     })}
                   </div>
                 )}
+              </div>
+
+              {/* Feature flags (O4) — boolean toggles stored in site_settings */}
+              <div
+                className="rounded-xl border p-5 space-y-4"
+                style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
+              >
+                <div>
+                  <p className="text-sm font-semibold text-white">Feature flags</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Activa o desactiva funcionalidades sin necesidad de re-desplegar.</p>
+                </div>
+                <div className="space-y-2">
+                  {[
+                    { key: "flag_converter_enabled", label: "Converter PDF→X habilitado", desc: "Landings /pdf-to-word, /pdf-to-excel, etc." },
+                    { key: "flag_product_tour_enabled", label: "Product tour habilitado", desc: "Onboarding 9 pasos en el editor (desktop)." },
+                    { key: "flag_blog_enabled", label: "Blog habilitado", desc: "Ruta /blog y enlaces del footer." },
+                    { key: "flag_promo_banner", label: "Banner promocional visible", desc: "Anuncio superior en todas las landings." },
+                    { key: "flag_ads_tracking", label: "Google Ads conversion tracking", desc: "Dispara eventos de gtag en /payment/success." },
+                  ].map((flag) => {
+                    const current = settingsQ.data?.find((s) => s.key === flag.key)?.value === "true";
+                    return (
+                      <div key={flag.key} className="flex items-center justify-between py-2.5 border-b last:border-0" style={{ borderColor: "#1e2433" }}>
+                        <div className="min-w-0 flex-1 pr-3">
+                          <p className="text-sm text-white font-medium">{flag.label}</p>
+                          <p className="text-[11px] text-gray-500 mt-0.5">{flag.desc}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => saveSettingMut.mutate({ key: flag.key, value: current ? "false" : "true" })}
+                          className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0"
+                          style={{ backgroundColor: current ? "#10b981" : "#475569" }}
+                        >
+                          <span
+                            className="inline-block h-5 w-5 rounded-full bg-white transition-transform"
+                            style={{ transform: `translateX(${current ? "22px" : "2px"})` }}
+                          />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-gray-500 pt-2 border-t" style={{ borderColor: "#1e2433" }}>
+                  💡 Los flags se leen desde <code className="font-mono">site_settings</code>. Para usarlos en el código:{" "}
+                  <code className="font-mono">await getSiteSetting("flag_xxx") === "true"</code>.
+                </p>
               </div>
             </div>
           )}
