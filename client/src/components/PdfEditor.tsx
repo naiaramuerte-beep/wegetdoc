@@ -410,6 +410,16 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     retry: false,
   });
   const isPremium = subData?.isPremium ?? false;
+  // Trial-limit gate: when the user has already consumed their 2 free PDF
+  // downloads during the €0,50 trial, block further downloads and open the
+  // paywall in upgrade mode.
+  const { data: trialUsage, refetch: refetchTrialUsage } = trpc.subscription.trialUsage.useQuery(
+    undefined,
+    { retry: false, enabled: isPremium } // only relevant after user has any active sub
+  );
+  const trialBlocked = trialUsage?.blocked === true;
+  const [paywallReason, setPaywallReason] = useState<"trial-limit" | undefined>(undefined);
+  const recordDownloadMut = trpc.subscription.recordDownload.useMutation();
   const { t } = useLanguage();
   const { isAuthenticated, refresh: refreshAuth } = useAuth();
   const { saveEditedPdfToSession, savePdfToSession, setPendingPaywall, setPendingFile, pendingFile, pendingEditedPdf, clearPendingEditedPdf, pendingPaywall: ctxPendingPaywall } = usePdfFile();
@@ -2873,9 +2883,28 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         setSavedDocId(result.docId);
       }
 
-      // Step 4: If premium → download immediately
+      // Step 4: If premium → check trial limit gate, then download
       if (isPremium || result?.isPremium) {
+        // Trial users who already downloaded 2 PDFs this period get blocked here.
+        if (result?.docId) {
+          try {
+            const gate = await recordDownloadMut.mutateAsync({ docId: result.docId });
+            if (!gate.allowed && gate.reason === "trial-limit") {
+              toast.dismiss("dl");
+              setPdfDataForPaywall({ base64, name: docName, size: docSize });
+              setPaywallReason("trial-limit");
+              setShowPaywall(true);
+              setIsAutoSaving(false);
+              return;
+            }
+          } catch (err) {
+            // Non-fatal: if the gate fails, fall through and allow the download
+            // (the server-side endpoint also enforces, this is just UX polish).
+            console.warn("[downloadPdf] trial gate check failed:", err);
+          }
+        }
         triggerDownload(pdfOut);
+        refetchTrialUsage();
         toast.success(t.editor_toast_download_success ?? "PDF downloaded successfully", { id: "dl" });
         setIsAutoSaving(false);
         return;
@@ -5327,7 +5356,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       {/* Paywall modal */}
       <PaywallModal
         isOpen={showPaywall}
-        onClose={() => setShowPaywall(false)}
+        onClose={() => { setShowPaywall(false); setPaywallReason(undefined); }}
+        reason={paywallReason}
         pdfData={pdfDataForPaywall}
         thumbnailUrl={paywallThumbnail ?? thumbnails[0]}
         buildPdfForUpload={async () => {

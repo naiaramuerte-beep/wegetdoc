@@ -552,12 +552,25 @@ ${allUrls.map(u => `  <url>
       const user = await sdk.authenticateRequest(req as any);
       const docId = parseInt(req.params.id, 10);
       if (!docId) { res.status(400).json({ error: "Invalid id" }); return; }
+      // Trial usage gate: blocks the 3rd distinct PDF download during trial.
+      const { canDownloadForUser, recordDocumentDownload } = await import("../db");
+      const gate = await canDownloadForUser(user.id, docId);
+      if (!gate.allowed) {
+        res.status(403).json({
+          error: (gate as any).reason ?? "blocked",
+          usage: (gate as any).usage,
+          limit: (gate as any).limit,
+        });
+        return;
+      }
       const doc = await getDocumentById(docId, user.id);
       if (!doc || !doc.fileKey) { res.status(404).json({ error: "Document not found" }); return; }
       const { url } = await storageGet(doc.fileKey, 300);
       const response = await fetch(url);
       if (!response.ok) { res.status(500).json({ error: "Failed to fetch from storage" }); return; }
       const buffer = Buffer.from(await response.arrayBuffer());
+      // Record the download (stamps firstDownloadedAt on the first hit only).
+      await recordDocumentDownload(user.id, docId);
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", `inline; filename="${doc.name || "document.pdf"}"`);
       res.send(buffer);

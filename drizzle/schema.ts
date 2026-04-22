@@ -80,6 +80,9 @@ export const documents = mysqlTable("documents", {
   paymentStatus: mysqlEnum("paymentStatus", ["pending", "paid"]).default("pending").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  // First time this doc was downloaded by the owner. Used to count trial usage
+  // — re-downloads of the same doc don't count toward the 2-PDF trial limit.
+  firstDownloadedAt: timestamp("firstDownloadedAt"),
 });
 
 export type Document = typeof documents.$inferSelect;

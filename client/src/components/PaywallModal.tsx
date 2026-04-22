@@ -32,6 +32,13 @@ interface PaywallModalProps {
    * of the editor-default "your PDF". Only affects rendering — no flow change.
    */
   converter?: { label: string; price: string };
+  /**
+   * When set to "trial-limit", renders a minimal 1-click upgrade view
+   * (user already has a trial sub + saved card; just needs to end trial now
+   * to charge €19.99 immediately). Falls back to the full checkout if the
+   * saved card is declined.
+   */
+  reason?: "trial-limit";
 }
 
 type Step = "auth-choice" | "plans";
@@ -371,6 +378,7 @@ export default function PaywallModal({
   thumbnailUrl,
   buildPdfForUpload,
   converter,
+  reason,
 }: PaywallModalProps) {
   const { t, lang } = useLanguage();
   const s = getAuthStrings(lang);
@@ -462,6 +470,32 @@ export default function PaywallModal({
     if (onPaymentSuccess) onPaymentSuccess(transactionId);
   };
 
+  // ── Trial-limit 1-click upgrade ─────────────────────────────
+  const [upgradeFallbackToCheckout, setUpgradeFallbackToCheckout] = useState(false);
+  const upgradeTrialNowMut = trpc.subscription.upgradeTrialNow.useMutation();
+  const utils2 = trpc.useUtils();
+  const handleUpgradeNow = async () => {
+    try {
+      const r = await upgradeTrialNowMut.mutateAsync();
+      if (r.success) {
+        toast.success("¡Suscripción activada! Ya puedes seguir descargando.");
+        await Promise.all([
+          utils2.subscription.status.invalidate(),
+          utils2.subscription.trialUsage.invalidate(),
+        ]);
+        onClose();
+        if (onPaymentSuccess) onPaymentSuccess();
+      } else {
+        // Card declined or some other failure → fall through to full checkout.
+        toast.error(r.error || "La tarjeta fue rechazada. Introduce otra.");
+        setUpgradeFallbackToCheckout(true);
+      }
+    } catch (err) {
+      toast.error((err as Error).message || "Error al activar la suscripción");
+      setUpgradeFallbackToCheckout(true);
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -480,8 +514,54 @@ export default function PaywallModal({
           <X className="w-4 h-4 text-slate-500" />
         </button>
 
+        {/* ── Trial-limit reached (1-click upgrade) ── */}
+        {reason === "trial-limit" && !upgradeFallbackToCheckout && (
+          <div className="p-8">
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 rounded-2xl bg-[#0A0A0B] flex items-center justify-center mx-auto mb-4 relative">
+                <Lock className="w-7 h-7 text-white" />
+                <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#E63946] ring-2 ring-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                {(t as any).paywall_trial_limit_title ?? "Has usado tus 2 PDFs del trial"}
+              </h2>
+              <p className="text-sm text-gray-500">
+                {(t as any).paywall_trial_limit_body ?? "Activa tu suscripción mensual por 19,99€ para seguir procesando PDFs sin límite."}
+              </p>
+            </div>
+
+            {/* Pricing highlight */}
+            <div className="max-w-sm mx-auto rounded-xl p-5 text-center mb-5" style={{ background: "linear-gradient(135deg, #0A0A0B, #1A1A1C)" }}>
+              <p className="text-sm text-white/70 mb-1">Suscripción mensual</p>
+              <p className="text-3xl font-extrabold text-white tracking-tight">
+                <span style={{ color: "#E63946" }}>19,99€</span>
+                <span className="text-base text-white/50 font-normal ml-1">/mes</span>
+              </p>
+              <p className="text-xs text-white/60 mt-2">Se cobrará ahora a tu tarjeta guardada</p>
+            </div>
+
+            <div className="max-w-sm mx-auto space-y-2">
+              <button
+                onClick={handleUpgradeNow}
+                disabled={upgradeTrialNowMut.isPending}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-white font-bold text-sm hover:bg-[#C72738] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                style={{ backgroundColor: upgradeTrialNowMut.isPending ? "#9ca3af" : "#E63946" }}
+              >
+                {upgradeTrialNowMut.isPending ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Activando…</>
+                ) : (
+                  (t as any).paywall_trial_limit_cta ?? "Activar suscripción (19,99€/mes)"
+                )}
+              </button>
+              <p className="text-[10px] text-center text-gray-400 leading-relaxed">
+                Puedes cancelar en cualquier momento desde tu panel. Sin permanencia.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* ── Unified Auth (Google + email/password + GDPR) ── */}
-        {currentStep === "auth-choice" && (
+        {reason !== "trial-limit" && currentStep === "auth-choice" && (
           <div className="p-8">
             <div className="text-center mb-6">
               <div className="w-14 h-14 rounded-2xl bg-[#0A0A0B] flex items-center justify-center mx-auto mb-4 relative">
@@ -559,7 +639,7 @@ export default function PaywallModal({
         )}
 
         {/* ── Payment step ── */}
-        {currentStep === "plans" && (
+        {(reason !== "trial-limit" || upgradeFallbackToCheckout) && currentStep === "plans" && (
           <StripeCheckoutForm
             onSuccess={handlePaymentSuccess}
             pdfData={effectivePdfData}

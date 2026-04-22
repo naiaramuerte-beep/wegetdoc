@@ -1153,6 +1153,142 @@ export async function getUserTimeline(userId: number) {
   };
 }
 
+// ─── Trial usage limit (2 PDFs per €0.50 trial) ──────────────────
+
+const TRIAL_DOWNLOAD_LIMIT_DEFAULT = 2;
+const MONTHLY_PRICE_EUR_FIXED = 19.99;
+
+async function readTrialLimit(): Promise<number> {
+  const val = await getSiteSetting("trial_download_limit");
+  const parsed = val ? parseInt(val, 10) : NaN;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : TRIAL_DOWNLOAD_LIMIT_DEFAULT;
+}
+
+/**
+ * Stamp the document as downloaded (first time only). Used by the download
+ * gate so re-downloads of the same doc don't count toward the trial limit.
+ */
+export async function recordDocumentDownload(userId: number, docId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(documents)
+    .set({ firstDownloadedAt: new Date() })
+    .where(and(
+      eq(documents.id, docId),
+      eq(documents.userId, userId),
+      isNull(documents.firstDownloadedAt),
+    ));
+}
+
+/**
+ * How many distinct PDFs the user has downloaded during the current trial
+ * period. Returns {count, limit, periodStart} — limit/periodStart null when
+ * the user is not on a trial sub (caller should skip the gate in that case).
+ */
+export async function getTrialUsageCount(userId: number) {
+  const db = await getDb();
+  if (!db) return { count: 0, limit: null, periodStart: null, isTrialing: false };
+
+  const sub = await getActiveSubscription(userId);
+  if (!sub || sub.plan !== "trial") {
+    return { count: 0, limit: null, periodStart: null, isTrialing: false };
+  }
+  const periodStart = sub.currentPeriodStart;
+  if (!periodStart) {
+    return { count: 0, limit: await readTrialLimit(), periodStart: null, isTrialing: true };
+  }
+  const [row] = await db.select({ count: sql<number>`count(*)` })
+    .from(documents)
+    .where(and(
+      eq(documents.userId, userId),
+      sql`${documents.firstDownloadedAt} IS NOT NULL`,
+      sql`${documents.firstDownloadedAt} >= ${periodStart}`,
+    ));
+  return {
+    count: Number(row?.count ?? 0),
+    limit: await readTrialLimit(),
+    periodStart: periodStart.toISOString(),
+    isTrialing: true,
+  };
+}
+
+/**
+ * Gate for the download endpoint. Returns {allowed} plus context for the
+ * client (reason, usage, limit) when blocked.
+ */
+export async function canDownloadForUser(userId: number, docId: number) {
+  const db = await getDb();
+  if (!db) return { allowed: false, reason: "db-unavailable" as const };
+
+  const sub = await getActiveSubscription(userId);
+  // Paying (monthly/annual active) → always allowed.
+  if (sub && (sub.plan === "monthly" || sub.plan === "annual") && sub.status === "active") {
+    return { allowed: true as const };
+  }
+  // No sub at all → normal paywall handles it; we don't gate here.
+  if (!sub) return { allowed: true as const };
+  // Trial sub: check re-download + usage.
+  if (sub.plan === "trial") {
+    const [doc] = await db.select({ id: documents.id, firstDownloadedAt: documents.firstDownloadedAt })
+      .from(documents)
+      .where(and(eq(documents.id, docId), eq(documents.userId, userId)))
+      .limit(1);
+    if (!doc) return { allowed: false, reason: "doc-not-found" as const };
+    // Re-download of an already-counted doc — free.
+    if (doc.firstDownloadedAt && sub.currentPeriodStart && doc.firstDownloadedAt >= sub.currentPeriodStart) {
+      return { allowed: true as const };
+    }
+    const usage = await getTrialUsageCount(userId);
+    if (usage.limit !== null && usage.count >= usage.limit) {
+      return {
+        allowed: false as const,
+        reason: "trial-limit" as const,
+        usage: usage.count,
+        limit: usage.limit,
+      };
+    }
+    return { allowed: true as const };
+  }
+  // past_due / incomplete / canceled trial → block.
+  return { allowed: false, reason: "no-active-subscription" as const };
+}
+
+/**
+ * Force-end the trial by telling Stripe to end it "now", which triggers the
+ * €19.99 recurring charge against the saved card immediately. The existing
+ * invoice.paid webhook will transition our local row to plan=monthly/status=active.
+ * Returns {success, error?} so the caller can fall back to the full paywall
+ * when the card is rejected.
+ */
+export async function upgradeTrialImmediately(userId: number) {
+  const sub = await getActiveSubscription(userId);
+  if (!sub) return { success: false as const, error: "No active subscription" };
+  if (sub.plan !== "trial") return { success: false as const, error: "Not on trial" };
+  if (!sub.stripeSubscriptionId) return { success: false as const, error: "Stripe sub id missing" };
+
+  const { getStripe } = await import("./_core/stripe");
+  const stripe = getStripe();
+  try {
+    // end_behavior defaults fine; passing proration_behavior='none' avoids
+    // surprise credits/charges when shortening the trial.
+    await stripe.subscriptions.update(sub.stripeSubscriptionId, {
+      trial_end: "now",
+      proration_behavior: "none",
+    });
+    // Best-effort immediate local update; webhook will also fire and confirm.
+    const db = await getDb();
+    if (db) {
+      await db.update(subscriptions)
+        .set({ plan: "monthly", status: "active" })
+        .where(eq(subscriptions.id, sub.id));
+    }
+    return { success: true as const, chargedAmountEur: MONTHLY_PRICE_EUR_FIXED };
+  } catch (err) {
+    const msg = (err as Error).message ?? String(err);
+    return { success: false as const, error: msg };
+  }
+}
+
 // ─── Webhook events log (F2) ─────────────────────────────────────
 
 /**

@@ -269,6 +269,55 @@ export const appRouter = router({
       return { success: true };
     }),
 
+    // ── Trial usage gate ────────────────────────────────────
+    trialUsage: protectedProcedure.query(async ({ ctx }) => {
+      const { getTrialUsageCount } = await import("./db");
+      const usage = await getTrialUsageCount(ctx.user.id);
+      const blocked = usage.isTrialing && usage.limit !== null && usage.count >= usage.limit;
+      return {
+        isTrialing: usage.isTrialing,
+        usage: usage.count,
+        limit: usage.limit,
+        blocked,
+      };
+    }),
+
+    // ── Record a download (increments trial counter if applicable) ──
+    recordDownload: protectedProcedure
+      .input(z.object({ docId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const { canDownloadForUser, recordDocumentDownload } = await import("./db");
+        const gate = await canDownloadForUser(ctx.user.id, input.docId);
+        if (!gate.allowed) {
+          return {
+            allowed: false as const,
+            reason: (gate as any).reason ?? "blocked",
+            usage: (gate as any).usage,
+            limit: (gate as any).limit,
+          };
+        }
+        await recordDocumentDownload(ctx.user.id, input.docId);
+        return { allowed: true as const };
+      }),
+
+    // ── 1-click upgrade: end trial now + charge saved card ──
+    upgradeTrialNow: protectedProcedure.mutation(async ({ ctx }) => {
+      const { upgradeTrialImmediately, recordAuditEntry, getActiveSubscription } = await import("./db");
+      const sub = await getActiveSubscription(ctx.user.id);
+      const result = await upgradeTrialImmediately(ctx.user.id);
+      if (result.success) {
+        await recordAuditEntry({
+          adminId: ctx.user.id,
+          adminEmail: ctx.user.email ?? null,
+          action: "upgrade_trial_now",
+          targetType: "subscription",
+          targetId: sub?.stripeSubscriptionId ?? "",
+          metadata: { chargedAmountEur: result.chargedAmountEur },
+        });
+      }
+      return result;
+    }),
+
     // After intro payment succeeds: set default payment method, create monthly subscription, save to DB
     confirmSetup: protectedProcedure.mutation(async ({ ctx }) => {
       const { getStripe } = await import("./_core/stripe");
