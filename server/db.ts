@@ -515,33 +515,53 @@ export async function setGoogleId(userId: number, googleId: string) {
 }
 
 // ─── MRR & Billing Stats ──────────────────────────────────────
-export async function getBillingStats() {
+// MRR pricing constants — should match Stripe configuration.
+// trial = no recurring revenue (intro charge of €0.50 is one-time, not MRR);
+// monthly = €19.99/mo; annual = €99/yr → ~€8.25/mo equivalent.
+const MONTHLY_PRICE_EUR = 19.99;
+const ANNUAL_PRICE_EUR = 99;
+const INTRO_PRICE_EUR = 0.50;
+
+/**
+ * Billing & subscription stats from the local DB. Optional date range narrows
+ * the "new subs/users in range" counters; everything else is point-in-time.
+ *
+ * MRR is computed strictly from `active` subs with monthly/annual plans —
+ * trials don't contribute (intro €0.50 is one-time, not recurring). A
+ * separate `mrrCommitted` projects what MRR will be once trials convert.
+ */
+export async function getBillingStats(opts?: { from?: Date; to?: Date }) {
   const db = await getDb();
   if (!db) return null;
 
   const now = new Date();
+  const from = opts?.from ?? new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const to = opts?.to ?? now;
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const startOfWeek = new Date(startOfDay);
   startOfWeek.setDate(startOfDay.getDate() - startOfDay.getDay());
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const startOfYear = new Date(now.getFullYear(), 0, 1);
 
   const [
-    allActiveSubs,
+    allActiveSubs,        // status = active (paying)
+    allTrialingSubs,      // status = trialing (in 7-day trial)
     allCanceledSubs,
+    subsToCancel,         // active/trialing with cancelAtPeriodEnd = true
     subsThisMonth,
     subsThisWeek,
     subsToday,
+    subsInRange,
     totalUsers,
     newUsersToday,
     newUsersWeek,
     newUsersMonth,
+    newUsersInRange,
   ] = await Promise.all([
-    db.select().from(subscriptions).where(
-      sql`${subscriptions.status} IN ('active', 'trialing')`
-    ),
+    db.select().from(subscriptions).where(eq(subscriptions.status, "active")),
+    db.select().from(subscriptions).where(eq(subscriptions.status, "trialing")),
+    db.select({ count: sql<number>`count(*)` }).from(subscriptions).where(eq(subscriptions.status, "canceled")),
     db.select({ count: sql<number>`count(*)` }).from(subscriptions).where(
-      eq(subscriptions.status, "canceled")
+      sql`${subscriptions.cancelAtPeriodEnd} = true AND ${subscriptions.status} IN ('active', 'trialing')`
     ),
     db.select({ count: sql<number>`count(*)` }).from(subscriptions).where(
       sql`${subscriptions.createdAt} >= ${startOfMonth} AND ${subscriptions.status} IN ('active', 'trialing')`
@@ -552,22 +572,36 @@ export async function getBillingStats() {
     db.select({ count: sql<number>`count(*)` }).from(subscriptions).where(
       sql`${subscriptions.createdAt} >= ${startOfDay} AND ${subscriptions.status} IN ('active', 'trialing')`
     ),
+    db.select({ count: sql<number>`count(*)` }).from(subscriptions).where(
+      sql`${subscriptions.createdAt} >= ${from} AND ${subscriptions.createdAt} <= ${to} AND ${subscriptions.status} IN ('active', 'trialing')`
+    ),
     db.select({ count: sql<number>`count(*)` }).from(users),
     db.select({ count: sql<number>`count(*)` }).from(users).where(sql`${users.createdAt} >= ${startOfDay}`),
     db.select({ count: sql<number>`count(*)` }).from(users).where(sql`${users.createdAt} >= ${startOfWeek}`),
     db.select({ count: sql<number>`count(*)` }).from(users).where(sql`${users.createdAt} >= ${startOfMonth}`),
+    db.select({ count: sql<number>`count(*)` }).from(users).where(sql`${users.createdAt} >= ${from} AND ${users.createdAt} <= ${to}`),
   ]);
 
-  // Calculate MRR: trial = 0.50€, monthly = 19.99€, annual = 99€/12
+  // Real MRR: only paying subs (status=active). Trials contribute 0 until they convert.
+  const mrrPerSub = (plan: string | null) => {
+    if (plan === "monthly") return MONTHLY_PRICE_EUR;
+    if (plan === "annual") return ANNUAL_PRICE_EUR / 12;
+    return 0;
+  };
   let mrr = 0;
-  for (const sub of allActiveSubs) {
-    if (sub.plan === "trial") mrr += 0.50;
-    else if (sub.plan === "monthly") mrr += 19.99;
-    else if (sub.plan === "annual") mrr += 99 / 12;
+  for (const sub of allActiveSubs) mrr += mrrPerSub(sub.plan);
+
+  // MRR comprometido: what MRR will be once all trials convert (active + trialing).
+  let mrrCommitted = mrr;
+  for (const sub of allTrialingSubs) {
+    // Trial subs don't have plan set yet in some flows — assume monthly.
+    mrrCommitted += mrrPerSub(sub.plan === "trial" ? "monthly" : sub.plan);
   }
 
-  // Monthly revenue breakdown (last 12 months)
-  const monthlyRevenue: { month: string; revenue: number; subs: number }[] = [];
+  // New-subs-by-month chart (12-month rolling). Counts only successful subs
+  // (any non-incomplete status). Revenue per month sums what each sub paid:
+  // trial month gets €0.50 intro, monthly converts to €19.99 from month 2.
+  const monthlySubs: { month: string; revenue: number; subs: number }[] = [];
   for (let i = 11; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
@@ -576,34 +610,137 @@ export async function getBillingStats() {
     );
     let rev = 0;
     for (const s of monthSubs) {
-      if (s.plan === "trial") rev += 0.50;
-      else if (s.plan === "monthly") rev += 19.99;
-      else if (s.plan === "annual") rev += 99;
+      // Each new sub triggered an intro €0.50 charge.
+      rev += INTRO_PRICE_EUR;
+      // Plus, if active monthly, recurring €19.99 (skip annual / trial).
+      if (s.plan === "monthly" && s.status === "active") rev += MONTHLY_PRICE_EUR;
+      else if (s.plan === "annual" && s.status === "active") rev += ANNUAL_PRICE_EUR;
     }
-    monthlyRevenue.push({
+    monthlySubs.push({
       month: d.toLocaleString("es-ES", { month: "short", year: "2-digit" }),
       revenue: Math.round(rev * 100) / 100,
       subs: monthSubs.length,
     });
   }
 
+  const canceledTotal = Number(allCanceledSubs[0]?.count ?? 0);
+  const activeAndTrialingTotal = allActiveSubs.length + allTrialingSubs.length;
+
   return {
+    // MRR / ARR
     mrr: Math.round(mrr * 100) / 100,
     arr: Math.round(mrr * 12 * 100) / 100,
+    mrrCommitted: Math.round(mrrCommitted * 100) / 100,
+    arrCommitted: Math.round(mrrCommitted * 12 * 100) / 100,
+    // Subs counters
     activeSubscriptions: allActiveSubs.length,
-    canceledSubscriptions: Number(allCanceledSubs[0]?.count ?? 0),
+    trialingSubscriptions: allTrialingSubs.length,
+    subsAboutToCancel: Number(subsToCancel[0]?.count ?? 0),
+    canceledSubscriptions: canceledTotal,
+    // Periodic counts (point-in-time anchors)
     newSubsToday: Number(subsToday[0]?.count ?? 0),
     newSubsWeek: Number(subsThisWeek[0]?.count ?? 0),
     newSubsMonth: Number(subsThisMonth[0]?.count ?? 0),
+    newSubsInRange: Number(subsInRange[0]?.count ?? 0),
+    // Users
     totalUsers: Number(totalUsers[0]?.count ?? 0),
     newUsersToday: Number(newUsersToday[0]?.count ?? 0),
     newUsersWeek: Number(newUsersWeek[0]?.count ?? 0),
     newUsersMonth: Number(newUsersMonth[0]?.count ?? 0),
-    monthlyRevenue,
-    churnRate: allActiveSubs.length > 0
-      ? Math.round((Number(allCanceledSubs[0]?.count ?? 0) / (allActiveSubs.length + Number(allCanceledSubs[0]?.count ?? 0))) * 100 * 10) / 10
+    newUsersInRange: Number(newUsersInRange[0]?.count ?? 0),
+    monthlyRevenue: monthlySubs,
+    churnRate: activeAndTrialingTotal > 0
+      ? Math.round((canceledTotal / (activeAndTrialingTotal + canceledTotal)) * 100 * 10) / 10
       : 0,
+    // Range echo (so the client can verify what was queried)
+    range: { from: from.toISOString(), to: to.toISOString() },
   };
+}
+
+// In-memory cache for Stripe revenue queries — Stripe API can take 1-3s and
+// the same date range is often re-queried as the admin clicks around.
+const stripeRevenueCache = new Map<string, { data: any; expires: number }>();
+const STRIPE_REVENUE_CACHE_MS = 60 * 1000;
+
+/**
+ * Real cash revenue from Stripe for a date range. Pulls all charges (paid &
+ * succeeded) within the range and aggregates: gross amount, refunds, net.
+ *
+ * Returns euros. If Stripe is configured in another currency this would need
+ * a conversion step — for now we assume EUR (matches our Stripe account).
+ */
+export async function getStripeRevenue(opts: { from: Date; to: Date }) {
+  const cacheKey = `${opts.from.getTime()}-${opts.to.getTime()}`;
+  const cached = stripeRevenueCache.get(cacheKey);
+  if (cached && cached.expires > Date.now()) return cached.data;
+
+  const { getStripe } = await import("./_core/stripe");
+  const stripe = getStripe();
+
+  const fromTs = Math.floor(opts.from.getTime() / 1000);
+  const toTs = Math.floor(opts.to.getTime() / 1000);
+
+  let grossCents = 0;
+  let refundedCents = 0;
+  let chargesCount = 0;
+  let refundsCount = 0;
+
+  // Paginate through charges in range (max 100 per page).
+  let hasMore = true;
+  let startingAfter: string | undefined = undefined;
+  while (hasMore) {
+    const page: any = await stripe.charges.list({
+      created: { gte: fromTs, lte: toTs },
+      limit: 100,
+      starting_after: startingAfter,
+    });
+    for (const charge of page.data) {
+      if (!charge.paid || charge.status !== "succeeded") continue;
+      grossCents += charge.amount;
+      refundedCents += charge.amount_refunded ?? 0;
+      chargesCount += 1;
+      if ((charge.amount_refunded ?? 0) > 0) refundsCount += 1;
+    }
+    hasMore = page.has_more;
+    if (hasMore) startingAfter = page.data[page.data.length - 1]?.id;
+  }
+
+  const grossEur = grossCents / 100;
+  const refundedEur = refundedCents / 100;
+  const netEur = grossEur - refundedEur;
+
+  const data = {
+    grossEur: Math.round(grossEur * 100) / 100,
+    refundedEur: Math.round(refundedEur * 100) / 100,
+    netEur: Math.round(netEur * 100) / 100,
+    chargesCount,
+    refundsCount,
+    range: { from: opts.from.toISOString(), to: opts.to.toISOString() },
+  };
+  stripeRevenueCache.set(cacheKey, { data, expires: Date.now() + STRIPE_REVENUE_CACHE_MS });
+  return data;
+}
+
+/**
+ * List of subs that are scheduled to cancel at the end of their period —
+ * shows who's about to churn so the admin can reach out.
+ */
+export async function getSubsAboutToCancel() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: users.id,
+    name: users.name,
+    email: users.email,
+    country: users.country,
+    plan: subscriptions.plan,
+    status: subscriptions.status,
+    currentPeriodEnd: subscriptions.currentPeriodEnd,
+    stripeCustomerId: subscriptions.stripeCustomerId,
+  }).from(users)
+    .innerJoin(subscriptions, eq(users.id, subscriptions.userId))
+    .where(sql`${subscriptions.cancelAtPeriodEnd} = true AND ${subscriptions.status} IN ('active', 'trialing')`)
+    .orderBy(subscriptions.currentPeriodEnd);
 }
 
 export async function getCanceledSubscriptions() {

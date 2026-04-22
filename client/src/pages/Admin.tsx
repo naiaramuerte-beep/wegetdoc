@@ -15,8 +15,42 @@ import {
   Users, DollarSign, TrendingUp, TrendingDown, MessageSquare, FileText,
   Search, Trash2, ShieldCheck, ShieldOff, Mail, ChevronDown, ChevronUp,
   CreditCard, Settings, BookOpen, BarChart2, UserX, RefreshCw, Eye, EyeOff,
-  ArrowLeft, Crown, Rss, Star,
+  ArrowLeft, Crown, Rss, Star, Calendar, Zap, AlertTriangle, RotateCcw,
 } from "lucide-react";
+
+// Date-range presets used by the Billing tab. "today" includes today only,
+// "yesterday" only yesterday, the rest are rolling N-day windows.
+type RangePreset = "today" | "yesterday" | "7d" | "30d" | "month" | "ytd" | "custom";
+function rangeFromPreset(preset: RangePreset, customFrom?: string, customTo?: string): { from: Date; to: Date; label: string } {
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  switch (preset) {
+    case "today":
+      return { from: startOfToday, to: now, label: "Hoy" };
+    case "yesterday": {
+      const start = new Date(startOfToday); start.setDate(start.getDate() - 1);
+      const end = new Date(startOfToday); end.setMilliseconds(end.getMilliseconds() - 1);
+      return { from: start, to: end, label: "Ayer" };
+    }
+    case "7d": {
+      const start = new Date(startOfToday); start.setDate(start.getDate() - 6);
+      return { from: start, to: now, label: "Últimos 7 días" };
+    }
+    case "30d": {
+      const start = new Date(startOfToday); start.setDate(start.getDate() - 29);
+      return { from: start, to: now, label: "Últimos 30 días" };
+    }
+    case "month":
+      return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: now, label: "Mes actual" };
+    case "ytd":
+      return { from: new Date(now.getFullYear(), 0, 1), to: now, label: "Año actual" };
+    case "custom": {
+      const from = customFrom ? new Date(customFrom) : startOfToday;
+      const to = customTo ? new Date(customTo + "T23:59:59") : now;
+      return { from, to, label: "Personalizado" };
+    }
+  }
+}
 import BlogAdmin from "./BlogAdmin";
 import TrustpilotAdmin from "./TrustpilotAdmin";
 
@@ -33,9 +67,25 @@ export default function Admin() {
   const [legalContent, setLegalContent] = useState("");
 
 
+  // Date range for Billing tab
+  const [rangePreset, setRangePreset] = useState<RangePreset>("today");
+  const [customFrom, setCustomFrom] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [customTo, setCustomTo] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const range = rangeFromPreset(rangePreset, customFrom, customTo);
+
   // Queries
   const statsQ = trpc.admin.stats.useQuery(undefined, { enabled: !!user && user.role === "admin" });
-  const billingQ = trpc.admin.billingStats.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "billing" });
+  const billingQ = trpc.admin.billingStats.useQuery(
+    { from: range.from.toISOString(), to: range.to.toISOString() },
+    { enabled: !!user && user.role === "admin" && tab === "billing" }
+  );
+  const stripeRevQ = trpc.admin.stripeRevenue.useQuery(
+    { from: range.from.toISOString(), to: range.to.toISOString() },
+    { enabled: !!user && user.role === "admin" && tab === "billing", staleTime: 60 * 1000 }
+  );
+  const subsAboutToCancelQ = trpc.admin.subsAboutToCancel.useQuery(undefined, {
+    enabled: !!user && user.role === "admin" && tab === "billing",
+  });
   const usersQ = trpc.admin.users.useQuery({ search: userSearch }, { enabled: !!user && user.role === "admin" && tab === "users" });
   const canceledQ = trpc.admin.canceledSubscriptions.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "canceled" });
   const messagesQ = trpc.admin.contactMessages.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "messages" });
@@ -130,7 +180,12 @@ export default function Admin() {
           </div>
         </div>
         <button
-          onClick={() => { utils.admin.stats.invalidate(); utils.admin.billingStats.invalidate(); }}
+          onClick={() => {
+            utils.admin.stats.invalidate();
+            utils.admin.billingStats.invalidate();
+            utils.admin.stripeRevenue.invalidate();
+            utils.admin.subsAboutToCancel.invalidate();
+          }}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:text-white transition-colors"
           style={{ backgroundColor: "#1e2433" }}
         >
@@ -220,7 +275,61 @@ export default function Admin() {
           {/* ── BILLING & MRR ── */}
           {tab === "billing" && (
             <div className="space-y-6">
-              <h2 className="text-lg font-semibold text-white">Facturación &amp; MRR</h2>
+              <div className="flex items-start justify-between flex-wrap gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold text-white">Facturación &amp; MRR</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Datos del rango: <span className="text-gray-200 font-medium">{range.label}</span> · {range.from.toLocaleString("es-ES")} → {range.to.toLocaleString("es-ES")}
+                  </p>
+                </div>
+              </div>
+
+              {/* Date range picker */}
+              <div className="rounded-xl p-3 border flex flex-wrap items-center gap-2"
+                style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}>
+                <Calendar size={14} className="text-gray-400 ml-1" />
+                {([
+                  ["today", "Hoy"],
+                  ["yesterday", "Ayer"],
+                  ["7d", "7 días"],
+                  ["30d", "30 días"],
+                  ["month", "Mes"],
+                  ["ytd", "Año"],
+                  ["custom", "Custom"],
+                ] as const).map(([id, label]) => (
+                  <button
+                    key={id}
+                    onClick={() => setRangePreset(id)}
+                    className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
+                    style={{
+                      backgroundColor: rangePreset === id ? "#1565C0" : "transparent",
+                      color: rangePreset === id ? "white" : "#94a3b8",
+                      border: rangePreset === id ? "1px solid #1565C0" : "1px solid #1e2433",
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+                {rangePreset === "custom" && (
+                  <div className="flex items-center gap-2 ml-2">
+                    <input
+                      type="date"
+                      value={customFrom}
+                      onChange={(e) => setCustomFrom(e.target.value)}
+                      className="px-2 py-1 rounded-md text-xs text-white"
+                      style={{ backgroundColor: "#0a0d14", border: "1px solid #1e2433" }}
+                    />
+                    <span className="text-xs text-gray-500">→</span>
+                    <input
+                      type="date"
+                      value={customTo}
+                      onChange={(e) => setCustomTo(e.target.value)}
+                      className="px-2 py-1 rounded-md text-xs text-white"
+                      style={{ backgroundColor: "#0a0d14", border: "1px solid #1e2433" }}
+                    />
+                  </div>
+                )}
+              </div>
 
               {billingQ.isLoading ? (
                 <div className="flex items-center justify-center h-40">
@@ -228,77 +337,228 @@ export default function Admin() {
                 </div>
               ) : billing ? (
                 <>
-                  {/* Top KPIs */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {[
-                      {
-                        label: "MRR",
-                        value: formatEur(billing.mrr),
-                        sub: "Ingresos mensuales recurrentes",
-                        icon: <TrendingUp size={18} />,
-                        color: "#10b981",
-                      },
-                      {
-                        label: "ARR",
-                        value: formatEur(billing.arr),
-                        sub: "Ingresos anuales recurrentes",
-                        icon: <DollarSign size={18} />,
-                        color: "#1565C0",
-                      },
-                      {
-                        label: "Suscripciones activas",
-                        value: billing.activeSubscriptions,
-                        sub: `${billing.newSubsMonth} nuevas este mes`,
-                        icon: <CreditCard size={18} />,
-                        color: "#8b5cf6",
-                      },
-                      {
-                        label: "Churn rate",
-                        value: `${billing.churnRate}%`,
-                        sub: `${billing.canceledSubscriptions} canceladas total`,
-                        icon: <TrendingDown size={18} />,
-                        color: "#ef4444",
-                      },
-                    ].map((card) => (
-                      <div
-                        key={card.label}
-                        className="rounded-xl p-4 border"
-                        style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-xs text-gray-400">{card.label}</p>
-                          <div
-                            className="w-7 h-7 rounded-lg flex items-center justify-center"
-                            style={{ backgroundColor: card.color + "20", color: card.color }}
-                          >
-                            {card.icon}
+                  {/* ── REAL CASH FROM STRIPE (range-aware) ── */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Ingresos reales (Stripe)</p>
+                      {stripeRevQ.isLoading && (
+                        <span className="text-[10px] text-gray-500 inline-flex items-center gap-1">
+                          <RefreshCw size={10} className="animate-spin" /> consultando…
+                        </span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      {[
+                        {
+                          label: "Ingresos brutos",
+                          value: stripeRevQ.data ? formatEur(stripeRevQ.data.grossEur) : "—",
+                          sub: "Cobros antes de comisiones",
+                          icon: <DollarSign size={18} />,
+                          color: "#10b981",
+                        },
+                        {
+                          label: "Ingresos netos",
+                          value: stripeRevQ.data ? formatEur(stripeRevQ.data.netEur) : "—",
+                          sub: "Brutos − reembolsos",
+                          icon: <Zap size={18} />,
+                          color: "#22c55e",
+                        },
+                        {
+                          label: "Cobros en rango",
+                          value: stripeRevQ.data?.chargesCount ?? "—",
+                          sub: `${billing.newSubsInRange} suscripciones nuevas`,
+                          icon: <CreditCard size={18} />,
+                          color: "#8b5cf6",
+                        },
+                        {
+                          label: "Reembolsos",
+                          value: stripeRevQ.data ? formatEur(stripeRevQ.data.refundedEur) : "—",
+                          sub: `${stripeRevQ.data?.refundsCount ?? 0} reembolsos`,
+                          icon: <RotateCcw size={18} />,
+                          color: "#f59e0b",
+                        },
+                      ].map((card) => (
+                        <div
+                          key={card.label}
+                          className="rounded-xl p-4 border"
+                          style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs text-gray-400">{card.label}</p>
+                            <div
+                              className="w-7 h-7 rounded-lg flex items-center justify-center"
+                              style={{ backgroundColor: card.color + "20", color: card.color }}
+                            >
+                              {card.icon}
+                            </div>
                           </div>
+                          <p className="text-2xl font-bold text-white">{card.value}</p>
+                          <p className="text-xs text-gray-500 mt-1">{card.sub}</p>
                         </div>
-                        <p className="text-2xl font-bold text-white">{card.value}</p>
-                        <p className="text-xs text-gray-500 mt-1">{card.sub}</p>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
 
-                  {/* Period stats */}
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[
-                      { label: "Nuevas suscripciones hoy", value: billing.newSubsToday },
-                      { label: "Nuevas suscripciones esta semana", value: billing.newSubsWeek },
-                      { label: "Nuevas suscripciones este mes", value: billing.newSubsMonth },
-                      { label: "Nuevos usuarios hoy", value: billing.newUsersToday },
-                      { label: "Nuevos usuarios esta semana", value: billing.newUsersWeek },
-                      { label: "Nuevos usuarios este mes", value: billing.newUsersMonth },
-                    ].map((s) => (
-                      <div
-                        key={s.label}
-                        className="rounded-xl p-4 border"
-                        style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
-                      >
-                        <p className="text-xs text-gray-400 mb-1">{s.label}</p>
-                        <p className="text-2xl font-bold text-white">{s.value}</p>
+                  {/* ── MRR / ARR (point-in-time, NOT range-aware) ── */}
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">MRR · ARR · Churn</p>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      {[
+                        {
+                          label: "MRR",
+                          value: formatEur(billing.mrr),
+                          sub: "Solo suscripciones cobrando",
+                          icon: <TrendingUp size={18} />,
+                          color: "#10b981",
+                        },
+                        {
+                          label: "MRR comprometido",
+                          value: formatEur(billing.mrrCommitted),
+                          sub: `Incluye ${billing.trialingSubscriptions} en trial`,
+                          icon: <TrendingUp size={18} />,
+                          color: "#1565C0",
+                        },
+                        {
+                          label: "ARR",
+                          value: formatEur(billing.arr),
+                          sub: "Recurring × 12",
+                          icon: <DollarSign size={18} />,
+                          color: "#8b5cf6",
+                        },
+                        {
+                          label: "Churn rate",
+                          value: `${billing.churnRate}%`,
+                          sub: `${billing.canceledSubscriptions} canceladas total`,
+                          icon: <TrendingDown size={18} />,
+                          color: "#ef4444",
+                        },
+                      ].map((card) => (
+                        <div
+                          key={card.label}
+                          className="rounded-xl p-4 border"
+                          style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs text-gray-400">{card.label}</p>
+                            <div
+                              className="w-7 h-7 rounded-lg flex items-center justify-center"
+                              style={{ backgroundColor: card.color + "20", color: card.color }}
+                            >
+                              {card.icon}
+                            </div>
+                          </div>
+                          <p className="text-2xl font-bold text-white">{card.value}</p>
+                          <p className="text-xs text-gray-500 mt-1">{card.sub}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ── SUBSCRIPTION BREAKDOWN ── */}
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Suscripciones</p>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      {[
+                        { label: "Activas (cobrando)",  value: billing.activeSubscriptions,    color: "#10b981", icon: <CreditCard size={18} /> },
+                        { label: "En trial (7 días)",   value: billing.trialingSubscriptions,  color: "#1565C0", icon: <Zap size={18} /> },
+                        { label: "Por cancelar",        value: billing.subsAboutToCancel,      color: "#f59e0b", icon: <AlertTriangle size={18} />, sub: "Cancel at period end" },
+                        { label: "Canceladas total",    value: billing.canceledSubscriptions,  color: "#ef4444", icon: <UserX size={18} /> },
+                      ].map((card) => (
+                        <div
+                          key={card.label}
+                          className="rounded-xl p-4 border"
+                          style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs text-gray-400">{card.label}</p>
+                            <div
+                              className="w-7 h-7 rounded-lg flex items-center justify-center"
+                              style={{ backgroundColor: card.color + "20", color: card.color }}
+                            >
+                              {card.icon}
+                            </div>
+                          </div>
+                          <p className="text-2xl font-bold text-white">{card.value}</p>
+                          {card.sub && <p className="text-xs text-gray-500 mt-1">{card.sub}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ── PERIOD COUNTERS ── */}
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Crecimiento</p>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      {[
+                        { label: `Suscripciones (${range.label.toLowerCase()})`, value: billing.newSubsInRange, color: "#10b981" },
+                        { label: `Usuarios (${range.label.toLowerCase()})`,      value: billing.newUsersInRange, color: "#1565C0" },
+                        { label: "Suscripciones hoy",                            value: billing.newSubsToday,  color: "#8b5cf6" },
+                        { label: "Usuarios hoy",                                 value: billing.newUsersToday, color: "#8b5cf6" },
+                        { label: "Suscripciones esta semana",                    value: billing.newSubsWeek,   color: "#94a3b8" },
+                        { label: "Usuarios esta semana",                         value: billing.newUsersWeek,  color: "#94a3b8" },
+                        { label: "Suscripciones este mes",                       value: billing.newSubsMonth,  color: "#94a3b8" },
+                        { label: "Usuarios este mes",                            value: billing.newUsersMonth, color: "#94a3b8" },
+                      ].map((s) => (
+                        <div
+                          key={s.label}
+                          className="rounded-xl p-4 border"
+                          style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
+                        >
+                          <p className="text-xs text-gray-400 mb-1">{s.label}</p>
+                          <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ── ABOUT-TO-CANCEL TABLE ── */}
+                  <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}>
+                    <div className="px-5 py-3 border-b flex items-center justify-between" style={{ borderColor: "#1e2433" }}>
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle size={14} className="text-amber-500" />
+                        <p className="text-sm font-semibold text-white">Suscripciones que se van a cancelar</p>
                       </div>
-                    ))}
+                      <p className="text-xs text-gray-500">
+                        {subsAboutToCancelQ.data?.length ?? 0} en cola
+                      </p>
+                    </div>
+                    {subsAboutToCancelQ.data && subsAboutToCancelQ.data.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead style={{ backgroundColor: "#0a0d14" }}>
+                            <tr className="text-left text-gray-400">
+                              <th className="px-4 py-2 font-medium">Email</th>
+                              <th className="px-4 py-2 font-medium">Plan</th>
+                              <th className="px-4 py-2 font-medium">Estado</th>
+                              <th className="px-4 py-2 font-medium">Fin del periodo</th>
+                              <th className="px-4 py-2 font-medium">País</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {subsAboutToCancelQ.data.map((s: any) => (
+                              <tr key={s.id} className="border-t" style={{ borderColor: "#1e2433" }}>
+                                <td className="px-4 py-2 text-white">{s.email}</td>
+                                <td className="px-4 py-2 text-gray-300">{s.plan}</td>
+                                <td className="px-4 py-2">
+                                  <span className="inline-flex px-2 py-0.5 rounded text-[10px] font-semibold"
+                                    style={{ backgroundColor: s.status === "trialing" ? "#1565C020" : "#10b98120", color: s.status === "trialing" ? "#60a5fa" : "#10b981" }}>
+                                    {s.status}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-2 text-gray-300">
+                                  {s.currentPeriodEnd ? new Date(s.currentPeriodEnd).toLocaleDateString("es-ES") : "—"}
+                                </td>
+                                <td className="px-4 py-2 text-gray-400">{s.country ?? "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className="px-5 py-6 text-center text-xs text-gray-500">
+                        Ningún cliente con cancelación programada — buena señal.
+                      </p>
+                    )}
                   </div>
 
                   {/* Revenue chart */}

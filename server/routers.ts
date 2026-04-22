@@ -45,6 +45,8 @@ import {
   getAllSubscribedUsers,
   getBillingStats,
   getCanceledSubscriptions,
+  getStripeRevenue,
+  getSubsAboutToCancel,
   getBlogPosts,
   getBlogPost,
   getBlogPostById,
@@ -558,12 +560,37 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    billingStats: adminProcedure.query(async () => {
-      return getBillingStats();
-    }),
+    billingStats: adminProcedure
+      .input(
+        z.object({
+          from: z.string().datetime().optional(),
+          to: z.string().datetime().optional(),
+        }).optional()
+      )
+      .query(async ({ input }) => {
+        const from = input?.from ? new Date(input.from) : undefined;
+        const to = input?.to ? new Date(input.to) : undefined;
+        return getBillingStats({ from, to });
+      }),
+
+    stripeRevenue: adminProcedure
+      .input(z.object({
+        from: z.string().datetime(),
+        to: z.string().datetime(),
+      }))
+      .query(async ({ input }) => {
+        return getStripeRevenue({
+          from: new Date(input.from),
+          to: new Date(input.to),
+        });
+      }),
 
     canceledSubscriptions: adminProcedure.query(async () => {
       return getCanceledSubscriptions();
+    }),
+
+    subsAboutToCancel: adminProcedure.query(async () => {
+      return getSubsAboutToCancel();
     }),
 
     promoteUser: adminProcedure
