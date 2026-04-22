@@ -26,11 +26,11 @@ Access to advanced features requires creating a user account. The user assumes f
 
 ### 3.1 Initial Trial Period
 
-The service includes a **7-day trial period** at an initial cost of **0.50 EUR** (taxes included). During this period, the user will have full access to all advanced features.
+The service includes a **48-hour trial period** at an initial cost of **0.50 EUR** (taxes included). During this period, the user will have full access to all advanced features.
 
 ### 3.2 Recurring Charges
 
-**IMPORTANT NOTICE:** By completing the initial payment of 0.50 EUR, the user **expressly authorizes** EditorPDF to charge **19.99 EUR/month** (taxes included) to the registered payment method once the 7-day trial period has concluded. This charge will recur monthly until the user cancels their subscription.
+**IMPORTANT NOTICE:** By completing the initial payment of 0.50 EUR, the user **expressly authorizes** EditorPDF to charge **19.99 EUR/month** (taxes included) to the registered payment method once the 48-hour trial period has concluded. This charge will recur monthly until the user cancels their subscription.
 
 ### 3.3 Cancellation
 

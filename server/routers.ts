@@ -259,7 +259,7 @@ export const appRouter = router({
 
       // Create the monthly subscription with a trial period so first charge is delayed
       // The intro 0,50€ was already charged via PaymentIntent
-      const trialEnd = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60; // 7 days from now
+      const trialEnd = Math.floor(Date.now() / 1000) + 48 * 60 * 60; // 48 hours from now
       const subscription = await stripe.subscriptions.create({
         customer: customer.id,
         items: [{ price: ENV.stripePriceId }],

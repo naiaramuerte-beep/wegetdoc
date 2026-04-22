@@ -19,7 +19,7 @@ const termsContent = `
 <h2>4. Modelo de suscripcion y precios</h2>
 <p>editorpdf.net opera mediante un modelo de suscripcion con las siguientes condiciones:</p>
 <ul>
-  <li><strong>Periodo de prueba:</strong> El usuario puede acceder al servicio completo durante 7 dias por un coste de 0,50 EUR.</li>
+  <li><strong>Periodo de prueba:</strong> El usuario puede acceder al servicio completo durante 48 horas por un coste de 0,50 EUR.</li>
   <li><strong>Suscripcion mensual:</strong> Tras finalizar el periodo de prueba, la suscripcion se renueva automaticamente a un precio de 19,99 EUR al mes.</li>
   <li>La renovacion es automatica salvo que el usuario cancele su suscripcion antes de que finalice el periodo de facturacion vigente.</li>
 </ul>

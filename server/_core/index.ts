@@ -70,7 +70,7 @@ async function startServer() {
           if (!userId) break;
           const stripeSubscriptionId = session.subscription as string;
           const stripeCustomerId = session.customer as string;
-          const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+          const trialEnd = new Date(Date.now() + 48 * 60 * 60 * 1000);
           await db.upsertSubscription({
             userId,
             stripeCustomerId,

@@ -544,7 +544,7 @@ export async function getBillingStats(opts?: { from?: Date; to?: Date }) {
 
   const [
     allActiveSubs,        // status = active (paying)
-    allTrialingSubs,      // status = trialing (in 7-day trial)
+    allTrialingSubs,      // status = trialing (in 48-hour trial)
     allCanceledSubs,
     subsToCancel,         // active/trialing with cancelAtPeriodEnd = true
     subsThisMonth,

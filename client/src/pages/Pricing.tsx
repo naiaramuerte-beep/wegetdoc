@@ -40,10 +40,10 @@ export default function Pricing() {
   const pricingFaqs = [
     {
       question: t.pricing_faq_q1 ?? "Can I try all features during the trial?",
-      answer: t.pricing_faq_a1 ?? "During the 7-day trial you have access to basic editing features. For unlimited access, you'll need the monthly plan.",
+      answer: t.pricing_faq_a1 ?? "During the 48-hour trial you have access to basic editing features. For unlimited access, you'll need the monthly plan.",
     },
     {
-      question: t.pricing_faq_q2 ?? "What happens after the 7-day trial?",
+      question: t.pricing_faq_q2 ?? "What happens after the 48-hour trial?",
       answer: t.pricing_faq_a2 ?? "After the trial, your plan automatically renews to the monthly plan. You can cancel anytime before the trial ends.",
     },
     {
