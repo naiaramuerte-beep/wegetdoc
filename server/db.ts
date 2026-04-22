@@ -967,6 +967,94 @@ export async function deleteBlogPost(id: number) {
   await db.delete(blogPosts).where(eq(blogPosts.id, id));
 }
 
+/**
+ * Liveness probe for the core integrations. Each check returns ok/error +
+ * latency so the admin dashboard can spot outages quickly. Stripe and R2 do
+ * lightweight read-only calls; DB just runs `SELECT 1`; CloudConvert / Resend
+ * only verify that the API keys are present (no paid call made).
+ */
+export async function getHealthChecks() {
+  const runCheck = async <T,>(name: string, fn: () => Promise<T>): Promise<{ name: string; ok: boolean; latencyMs: number; detail?: string }> => {
+    const t0 = Date.now();
+    try {
+      await fn();
+      return { name, ok: true, latencyMs: Date.now() - t0 };
+    } catch (err) {
+      return { name, ok: false, latencyMs: Date.now() - t0, detail: (err as Error).message };
+    }
+  };
+
+  const [dbCheck, stripeCheck, r2Check, resendCheck, cloudConvertCheck] = await Promise.all([
+    runCheck("Database (MySQL)", async () => {
+      const db = await getDb();
+      if (!db) throw new Error("DB client not initialised");
+      await db.execute(sql`SELECT 1`);
+    }),
+    runCheck("Stripe API", async () => {
+      const { getStripe } = await import("./_core/stripe");
+      const stripe = getStripe();
+      // Cheapest read we can do — retrieve the account metadata.
+      await stripe.balance.retrieve();
+    }),
+    runCheck("Cloudflare R2", async () => {
+      const endpoint = process.env.R2_ENDPOINT;
+      const key = process.env.R2_ACCESS_KEY_ID ?? process.env.CF_R2_ACCESS_KEY_ID;
+      const bucket = process.env.R2_BUCKET_NAME ?? process.env.CF_R2_BUCKET_NAME;
+      if (!endpoint || !key || !bucket) throw new Error("R2 credentials missing");
+      // HEAD the bucket endpoint (no auth needed to confirm DNS/reachability).
+      const resp = await fetch(endpoint, { method: "HEAD" });
+      if (resp.status >= 500) throw new Error(`R2 endpoint returned ${resp.status}`);
+    }),
+    runCheck("Resend", async () => {
+      if (!process.env.RESEND_API_KEY) throw new Error("RESEND_API_KEY not set");
+    }),
+    runCheck("CloudConvert", async () => {
+      if (!process.env.CLOUDCONVERT_API_KEY) throw new Error("CLOUDCONVERT_API_KEY not set");
+    }),
+  ]);
+
+  return [dbCheck, stripeCheck, r2Check, resendCheck, cloudConvertCheck];
+}
+
+/**
+ * Everything we know about a single user — basic info, subscriptions,
+ * recent docs, messages they sent. Feeds the admin user-timeline modal.
+ */
+export async function getUserTimeline(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const [userRow] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!userRow) return null;
+
+  const [subs, docs, messages] = await Promise.all([
+    db.select().from(subscriptions)
+      .where(eq(subscriptions.userId, userId))
+      .orderBy(desc(subscriptions.createdAt)),
+    db.select({
+      id: documents.id,
+      name: documents.name,
+      fileSize: documents.fileSize,
+      paymentStatus: documents.paymentStatus,
+      createdAt: documents.createdAt,
+    }).from(documents)
+      .where(eq(documents.userId, userId))
+      .orderBy(desc(documents.createdAt))
+      .limit(50),
+    db.select().from(contactMessages)
+      .where(eq(contactMessages.userId, userId))
+      .orderBy(desc(contactMessages.createdAt))
+      .limit(20),
+  ]);
+
+  return {
+    user: userRow,
+    subscriptions: subs,
+    documents: docs,
+    messages,
+  };
+}
+
 // ─── Webhook events log (F2) ─────────────────────────────────────
 
 /**

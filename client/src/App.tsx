@@ -29,6 +29,7 @@ const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
 const LegalPage = lazy(() => import("./pages/LegalPage"));
 const CancelSubscription = lazy(() => import("./pages/CancelSubscription"));
 const CookieBanner = lazy(() => import("./components/CookieBanner"));
+const AnnouncementBanner = lazy(() => import("./components/AnnouncementBanner"));
 const Blog = lazy(() => import("./pages/Blog"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
 const ToolLanding = lazy(() => import("./pages/ToolLanding"));
@@ -228,6 +229,9 @@ function App() {
           <PdfFileProvider>
             <TooltipProvider>
               <Toaster position="top-center" duration={2000} style={{ top: "60px" }} />
+              <Suspense fallback={null}>
+                <AnnouncementBanner />
+              </Suspense>
               <Suspense fallback={<LazyFallback />}>
                 <Router />
               </Suspense>

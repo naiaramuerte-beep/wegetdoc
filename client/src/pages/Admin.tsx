@@ -118,6 +118,12 @@ export default function Admin() {
   const auditLogQ = trpc.admin.auditLog.useQuery({ limit: 100 }, { enabled: !!user && user.role === "admin" && tab === "audit" });
   const cancelReasonsQ = trpc.admin.cancelReasons.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "billing" });
   const geoQ = trpc.admin.revenueByCountry.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "billing" });
+  const healthQ = trpc.admin.healthChecks.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "overview", refetchInterval: tab === "overview" ? 30000 : false });
+  const [timelineUserId, setTimelineUserId] = useState<number | null>(null);
+  const timelineQ = trpc.admin.userTimeline.useQuery(
+    { userId: timelineUserId ?? 0 },
+    { enabled: timelineUserId !== null }
+  );
   const updateNotesMut = trpc.admin.updateUserNotes.useMutation({
     onSuccess: () => {
       toast.success("Notas guardadas");
@@ -344,6 +350,44 @@ export default function Admin() {
                 >
                   Ver estadísticas de facturación →
                 </button>
+              </div>
+
+              {/* ── HEALTH CHECKS (O1) ── */}
+              <div
+                className="rounded-xl border overflow-hidden"
+                style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
+              >
+                <div className="px-5 py-3 border-b flex items-center justify-between" style={{ borderColor: "#1e2433" }}>
+                  <div>
+                    <p className="text-sm font-semibold text-white">Estado de servicios</p>
+                    <p className="text-[11px] text-gray-500 mt-0.5">Comprueba la salud de integraciones críticas. Auto-refresca cada 30s.</p>
+                  </div>
+                  {healthQ.isLoading && (
+                    <RefreshCw size={13} className="animate-spin text-gray-400" />
+                  )}
+                </div>
+                <div className="divide-y" style={{ borderColor: "#1e2433" }}>
+                  {healthQ.data?.map((c: any) => (
+                    <div key={c.name} className="flex items-center justify-between px-5 py-3" style={{ borderColor: "#1e2433" }}>
+                      <div className="flex items-center gap-3">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ backgroundColor: c.ok ? "#10b981" : "#ef4444", boxShadow: c.ok ? "0 0 8px #10b981" : "0 0 8px #ef4444" }}
+                        />
+                        <div>
+                          <p className="text-sm text-white font-medium">{c.name}</p>
+                          {!c.ok && c.detail && (
+                            <p className="text-[11px] text-red-300 mt-0.5 font-mono">{c.detail}</p>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-xs text-gray-400 font-mono">{c.latencyMs} ms</span>
+                    </div>
+                  ))}
+                  {!healthQ.data && !healthQ.isLoading && (
+                    <p className="px-5 py-6 text-center text-xs text-gray-500">Sin datos.</p>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -1352,6 +1396,13 @@ export default function Admin() {
                               <StickyNote size={14} />
                             </button>
                             <button
+                              onClick={() => setTimelineUserId(u.id)}
+                              title="Ver timeline del usuario"
+                              className="p-1.5 rounded transition-colors hover:bg-gray-700 text-gray-400 hover:text-blue-400"
+                            >
+                              <ClipboardList size={14} />
+                            </button>
+                            <button
                               onClick={() => {
                                 if (confirm(`¿Eliminar usuario ${u.email}?`)) {
                                   deleteUserMut.mutate({ userId: u.id });
@@ -1773,6 +1824,8 @@ export default function Admin() {
                       { key: "support_email", label: "Email de soporte", placeholder: "soporte@editorpdf.net" },
                       { key: "trial_price_eur", label: "Precio prueba 48h (€)", placeholder: "0.50" },
                       { key: "monthly_price_eur", label: "Precio mensual (€)", placeholder: "19.99" },
+                      { key: "promo_banner_text", label: "Texto del banner promocional", placeholder: "¡Oferta especial! 20% de descuento…" },
+                      { key: "promo_banner_level", label: "Nivel del banner (info / warning / success)", placeholder: "info" },
                     ].map((setting) => {
                       const current =
                         settingsQ.data?.find((s) => s.key === setting.key)?.value ?? "";
@@ -1842,6 +1895,177 @@ export default function Admin() {
           {!isFastDoc && tab === "trustpilot" && <TrustpilotAdmin />}
         </main>
       </div>
+
+      {/* ── USER TIMELINE MODAL (U1) ── */}
+      {timelineUserId !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
+          onClick={(e) => e.target === e.currentTarget && setTimelineUserId(null)}
+        >
+          <div
+            className="relative w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+            style={{ backgroundColor: "#0f1117", border: "1px solid #1e2433", maxHeight: "90vh" }}
+          >
+            <div className="px-6 py-4 border-b flex items-center justify-between" style={{ borderColor: "#1e2433" }}>
+              <div>
+                <p className="text-sm font-semibold text-white">Timeline del usuario</p>
+                {timelineQ.data?.user && (
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {timelineQ.data.user.email} · ID {timelineQ.data.user.id}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => setTimelineUserId(null)}
+                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10"
+              >
+                <X className="w-4 h-4 text-gray-300" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto p-6 space-y-5">
+              {timelineQ.isLoading ? (
+                <p className="text-center text-gray-400">Cargando…</p>
+              ) : !timelineQ.data ? (
+                <p className="text-center text-gray-500">Usuario no encontrado.</p>
+              ) : (
+                <>
+                  {/* User summary */}
+                  <div className="rounded-xl p-4 grid grid-cols-2 md:grid-cols-4 gap-3" style={{ backgroundColor: "#131720", border: "1px solid #1e2433" }}>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-gray-500">Nombre</p>
+                      <p className="text-sm text-white">{timelineQ.data.user.name ?? "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-gray-500">Rol</p>
+                      <p className="text-sm text-white">{timelineQ.data.user.role}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-gray-500">País</p>
+                      <p className="text-sm text-white">{timelineQ.data.user.country ?? "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-gray-500">Registro</p>
+                      <p className="text-sm text-white">{new Date(timelineQ.data.user.createdAt).toLocaleDateString("es-ES")}</p>
+                    </div>
+                    <div className="col-span-2 md:col-span-4">
+                      <p className="text-[10px] uppercase tracking-wide text-gray-500">Último acceso</p>
+                      <p className="text-sm text-white">{new Date(timelineQ.data.user.lastSignedIn).toLocaleString("es-ES")}</p>
+                    </div>
+                    {(timelineQ.data.user as any).adminNotes && (
+                      <div className="col-span-2 md:col-span-4 pt-2 border-t" style={{ borderColor: "#1e2433" }}>
+                        <p className="text-[10px] uppercase tracking-wide text-amber-500">Notas internas</p>
+                        <p className="text-sm text-amber-200 whitespace-pre-wrap">{(timelineQ.data.user as any).adminNotes}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Subscriptions */}
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Suscripciones ({timelineQ.data.subscriptions.length})</p>
+                    {timelineQ.data.subscriptions.length === 0 ? (
+                      <p className="text-sm text-gray-500 italic">Sin suscripciones.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {timelineQ.data.subscriptions.map((s: any) => (
+                          <div key={s.id} className="rounded-lg p-3 text-xs flex items-center gap-3" style={{ backgroundColor: "#131720", border: "1px solid #1e2433" }}>
+                            <span
+                              className="inline-flex px-2 py-0.5 rounded text-[10px] font-semibold"
+                              style={{
+                                backgroundColor:
+                                  s.status === "active" ? "#10b98120" :
+                                  s.status === "trialing" ? "#1565C020" :
+                                  s.status === "past_due" ? "#ef444420" :
+                                  s.status === "canceled" ? "#6b728020" : "#6b728020",
+                                color:
+                                  s.status === "active" ? "#10b981" :
+                                  s.status === "trialing" ? "#60a5fa" :
+                                  s.status === "past_due" ? "#ef4444" :
+                                  "#9ca3af",
+                              }}
+                            >{s.status}</span>
+                            <span className="text-gray-200 font-medium">{s.plan}</span>
+                            <span className="text-gray-400 flex-1">
+                              {s.currentPeriodEnd ? `hasta ${new Date(s.currentPeriodEnd).toLocaleDateString("es-ES")}` : "—"}
+                            </span>
+                            {s.cancelReason && (
+                              <span className="text-amber-400 text-[11px]">cancel: {s.cancelReason}</span>
+                            )}
+                            {s.stripeCustomerId && (
+                              <a
+                                href={`https://dashboard.stripe.com/customers/${s.stripeCustomerId}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[#E63946] hover:underline"
+                              >Stripe →</a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Documents */}
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Documentos recientes ({timelineQ.data.documents.length})</p>
+                    {timelineQ.data.documents.length === 0 ? (
+                      <p className="text-sm text-gray-500 italic">Sin documentos.</p>
+                    ) : (
+                      <div className="rounded-lg overflow-hidden" style={{ border: "1px solid #1e2433" }}>
+                        <table className="w-full text-xs">
+                          <tbody>
+                            {timelineQ.data.documents.slice(0, 15).map((d: any) => (
+                              <tr key={d.id} className="border-t" style={{ borderColor: "#1e2433" }}>
+                                <td className="px-3 py-1.5 text-white truncate max-w-[260px]">{d.name}</td>
+                                <td className="px-3 py-1.5 text-right text-gray-300 font-mono w-20">
+                                  {d.fileSize < 1024 * 1024 ? `${(d.fileSize / 1024).toFixed(0)} KB` : `${(d.fileSize / (1024 * 1024)).toFixed(1)} MB`}
+                                </td>
+                                <td className="px-3 py-1.5 w-20">
+                                  <span
+                                    className="inline-flex px-1.5 py-0.5 rounded text-[10px]"
+                                    style={{
+                                      backgroundColor: d.paymentStatus === "paid" ? "#10b98120" : "#f59e0b20",
+                                      color: d.paymentStatus === "paid" ? "#10b981" : "#f59e0b",
+                                    }}
+                                  >{d.paymentStatus}</span>
+                                </td>
+                                <td className="px-3 py-1.5 text-gray-500 w-28 text-right">
+                                  {new Date(d.createdAt).toLocaleDateString("es-ES")}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Messages */}
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Mensajes de contacto ({timelineQ.data.messages.length})</p>
+                    {timelineQ.data.messages.length === 0 ? (
+                      <p className="text-sm text-gray-500 italic">Sin mensajes.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {timelineQ.data.messages.slice(0, 10).map((m: any) => (
+                          <div key={m.id} className="rounded-lg p-3 text-xs" style={{ backgroundColor: "#131720", border: "1px solid #1e2433" }}>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-white font-medium">{m.subject}</span>
+                              <span className="text-gray-500 text-[10px]">{new Date(m.createdAt).toLocaleString("es-ES")}</span>
+                            </div>
+                            <p className="text-gray-300 whitespace-pre-wrap">{m.message}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

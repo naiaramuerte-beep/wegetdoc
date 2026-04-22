@@ -48,12 +48,14 @@ import {
   getBillingStats,
   getCancelReasonsAgg,
   getCanceledSubscriptions,
+  getHealthChecks,
   getPastDueSubs,
   getRevenueByCountry,
   getStorageByUser,
   getStripeChargesList,
   getStripeRevenue,
   getSubsAboutToCancel,
+  getUserTimeline,
   getWebhookEvents,
   recordAuditEntry,
   refundStripeCharge,
@@ -77,6 +79,28 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 
 export const appRouter = router({
   system: systemRouter,
+
+  // ─── Public site config (no auth) ──────────────────────────────
+  site: router({
+    /**
+     * Announcement banner shown site-wide. Returns null when the flag is
+     * off or no message is configured, so the client can skip rendering.
+     */
+    announcement: publicProcedure.query(async () => {
+      const [enabled, text, level] = await Promise.all([
+        getSiteSetting("flag_promo_banner"),
+        getSiteSetting("promo_banner_text"),
+        getSiteSetting("promo_banner_level"),
+      ]);
+      if (enabled !== "true") return null;
+      const message = text?.trim();
+      if (!message) return null;
+      return {
+        message,
+        level: (level ?? "info") as "info" | "warning" | "success",
+      };
+    }),
+  }),
 
   // ─── Auth ──────────────────────────────────────────────────────
   auth: router({
@@ -716,6 +740,18 @@ export const appRouter = router({
     // ── Geography of MRR (A4) ─────────────────────────────────
     revenueByCountry: adminProcedure.query(async () => {
       return getRevenueByCountry();
+    }),
+
+    // ── User 360° timeline (U1) ──────────────────────────────
+    userTimeline: adminProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ input }) => {
+        return getUserTimeline(input.userId);
+      }),
+
+    // ── Health checks (O1) ────────────────────────────────────
+    healthChecks: adminProcedure.query(async () => {
+      return getHealthChecks();
     }),
 
     promoteUser: adminProcedure
