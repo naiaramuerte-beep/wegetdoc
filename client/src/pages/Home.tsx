@@ -295,7 +295,16 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => {
+                    // The Convert tab doesn't have a single target format (Word vs Excel
+                    // vs PPT vs JPG), so instead of opening the editor with one tool,
+                    // route visitors to the dedicated converter hub to pick the format.
+                    if (tab.id === "convert") {
+                      navigate(`/${lang}/pdf-converter`);
+                      return;
+                    }
+                    setActiveTab(tab.id);
+                  }}
                   className={`${visibility} shrink-0 px-2.5 py-1.5 rounded-full text-[12px] font-semibold border transition-all items-center gap-1.5 whitespace-nowrap ${
                     active
                       ? "bg-[#0A0A0B] text-white border-[#0A0A0B] shadow-sm"
