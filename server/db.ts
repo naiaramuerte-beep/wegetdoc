@@ -682,6 +682,56 @@ const stripeRevenueCache = new Map<string, { data: any; expires: number }>();
 const STRIPE_REVENUE_CACHE_MS = 60 * 1000;
 
 /**
+ * Per-charge listing for the Billing tab so admin can refund individual
+ * charges without jumping to Stripe dashboard. Returns the last N charges
+ * (most recent first) with owner email resolved from customer object.
+ */
+export async function getStripeChargesList(opts?: { limit?: number }) {
+  const { getStripe } = await import("./_core/stripe");
+  const stripe = getStripe();
+  const limit = Math.min(100, opts?.limit ?? 50);
+
+  const page = await stripe.charges.list({ limit, expand: ["data.customer"] });
+  return page.data
+    .filter((c: any) => c.paid && c.status === "succeeded")
+    .map((c: any) => ({
+      id: c.id,
+      amountEur: c.amount / 100,
+      refundedEur: (c.amount_refunded ?? 0) / 100,
+      fullyRefunded: c.refunded ?? false,
+      currency: c.currency?.toUpperCase() ?? "EUR",
+      created: new Date(c.created * 1000).toISOString(),
+      customerEmail:
+        (typeof c.customer === "object" && c.customer && "email" in c.customer
+          ? (c.customer as any).email
+          : null) ?? c.billing_details?.email ?? null,
+      customerId: typeof c.customer === "string" ? c.customer : (c.customer as any)?.id ?? null,
+      description: c.description ?? null,
+    }));
+}
+
+/**
+ * Refund a Stripe charge. Returns the refund object. Partial refunds supported
+ * via optional amountEur; if omitted, Stripe refunds the remaining balance.
+ */
+export async function refundStripeCharge(opts: { chargeId: string; amountEur?: number; reason?: "duplicate" | "fraudulent" | "requested_by_customer" }) {
+  const { getStripe } = await import("./_core/stripe");
+  const stripe = getStripe();
+  const params: any = { charge: opts.chargeId };
+  if (opts.amountEur !== undefined) params.amount = Math.round(opts.amountEur * 100);
+  if (opts.reason) params.reason = opts.reason;
+  const refund = await stripe.refunds.create(params);
+  // Invalidate revenue cache so admin panel reflects the refund immediately.
+  stripeRevenueCache.clear();
+  return {
+    id: refund.id,
+    amountEur: (refund.amount ?? 0) / 100,
+    status: refund.status,
+    chargeId: refund.charge as string,
+  };
+}
+
+/**
  * Real cash revenue from Stripe for a date range. Pulls all charges (paid &
  * succeeded) within the range and aggregates: gross amount, refunds, net.
  *

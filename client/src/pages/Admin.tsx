@@ -96,6 +96,17 @@ export default function Admin() {
   const pastDueSubsQ = trpc.admin.pastDueSubs.useQuery(undefined, {
     enabled: !!user && user.role === "admin" && tab === "billing",
   });
+  const chargesQ = trpc.admin.stripeCharges.useQuery({ limit: 50 }, {
+    enabled: !!user && user.role === "admin" && tab === "billing",
+  });
+  const refundMut = trpc.admin.refundCharge.useMutation({
+    onSuccess: (r) => {
+      toast.success(`Reembolso OK: ${formatEur(r.amountEur)} (${r.id})`);
+      utils.admin.stripeCharges.invalidate();
+      utils.admin.stripeRevenue.invalidate();
+    },
+    onError: (err) => toast.error(err.message || "Error al reembolsar"),
+  });
   const usersQ = trpc.admin.users.useQuery({ search: userSearch }, { enabled: !!user && user.role === "admin" && tab === "users" });
   const subscribersQ = trpc.admin.subscribedUsers.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "subscribers" });
   const [docSearch, setDocSearch] = useState("");
@@ -685,6 +696,93 @@ export default function Admin() {
                     ) : (
                       <p className="px-5 py-6 text-center text-xs text-gray-500">
                         Ningún cobro fallido — todos los pagos recurrentes al día.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* ── RECENT CHARGES + REFUND ── */}
+                  <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}>
+                    <div className="px-5 py-3 border-b flex items-center justify-between" style={{ borderColor: "#1e2433" }}>
+                      <div className="flex items-center gap-2">
+                        <CreditCard size={14} className="text-gray-400" />
+                        <p className="text-sm font-semibold text-white">Últimos cobros (reembolso en 1 click)</p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {chargesQ.data?.length ?? 0} cobros
+                      </p>
+                    </div>
+                    {chargesQ.isLoading ? (
+                      <div className="flex items-center justify-center h-24">
+                        <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    ) : chargesQ.data && chargesQ.data.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead style={{ backgroundColor: "#0a0d14" }}>
+                            <tr className="text-left text-gray-400">
+                              <th className="px-4 py-2 font-medium">Fecha</th>
+                              <th className="px-4 py-2 font-medium">Cliente</th>
+                              <th className="px-4 py-2 font-medium text-right">Importe</th>
+                              <th className="px-4 py-2 font-medium text-right">Reembolsado</th>
+                              <th className="px-4 py-2 font-medium">Charge ID</th>
+                              <th className="px-4 py-2 font-medium">Acción</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {chargesQ.data.map((c: any) => {
+                              const remaining = c.amountEur - c.refundedEur;
+                              return (
+                                <tr key={c.id} className="border-t" style={{ borderColor: "#1e2433" }}>
+                                  <td className="px-4 py-2 text-gray-300">
+                                    {new Date(c.created).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" })}
+                                  </td>
+                                  <td className="px-4 py-2 text-white">{c.customerEmail ?? "—"}</td>
+                                  <td className="px-4 py-2 text-right text-gray-100 font-mono">{formatEur(c.amountEur)}</td>
+                                  <td className="px-4 py-2 text-right">
+                                    {c.refundedEur > 0 ? (
+                                      <span className="text-amber-400 font-mono">{formatEur(c.refundedEur)}</span>
+                                    ) : (
+                                      <span className="text-gray-600">—</span>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <a
+                                      href={`https://dashboard.stripe.com/payments/${c.id}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-[11px] font-mono text-gray-400 hover:text-[#E63946]"
+                                    >
+                                      {c.id.slice(0, 20)}…
+                                    </a>
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    {c.fullyRefunded || remaining <= 0 ? (
+                                      <span className="text-[10px] text-gray-500">Reembolsado</span>
+                                    ) : (
+                                      <button
+                                        disabled={refundMut.isPending}
+                                        onClick={() => {
+                                          const msg = `¿Reembolsar ${formatEur(remaining)} al cliente ${c.customerEmail ?? c.id}?\n\nEsto es irreversible.`;
+                                          if (confirm(msg)) {
+                                            refundMut.mutate({ chargeId: c.id, reason: "requested_by_customer" });
+                                          }
+                                        }}
+                                        className="px-2.5 py-1 rounded-md text-[11px] font-semibold text-white transition-colors disabled:opacity-50"
+                                        style={{ backgroundColor: "#E63946" }}
+                                      >
+                                        Reembolsar
+                                      </button>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className="px-5 py-6 text-center text-xs text-gray-500">
+                        Sin cobros recientes.
                       </p>
                     )}
                   </div>

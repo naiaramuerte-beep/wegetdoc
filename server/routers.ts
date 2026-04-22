@@ -48,8 +48,10 @@ import {
   getCanceledSubscriptions,
   getPastDueSubs,
   getStorageByUser,
+  getStripeChargesList,
   getStripeRevenue,
   getSubsAboutToCancel,
+  refundStripeCharge,
   getBlogPosts,
   getBlogPost,
   getBlogPostById,
@@ -625,6 +627,22 @@ export const appRouter = router({
     storageByUser: adminProcedure.query(async () => {
       return getStorageByUser();
     }),
+
+    stripeCharges: adminProcedure
+      .input(z.object({ limit: z.number().optional() }).optional())
+      .query(async ({ input }) => {
+        return getStripeChargesList({ limit: input?.limit });
+      }),
+
+    refundCharge: adminProcedure
+      .input(z.object({
+        chargeId: z.string().min(1),
+        amountEur: z.number().positive().optional(),
+        reason: z.enum(["duplicate", "fraudulent", "requested_by_customer"]).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        return refundStripeCharge(input);
+      }),
 
     promoteUser: adminProcedure
       .input(z.object({ userId: z.number(), role: z.enum(["user", "admin"]) }))
