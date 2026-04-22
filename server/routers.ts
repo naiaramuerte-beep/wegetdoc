@@ -43,12 +43,15 @@ import {
   markContactMessageRead,
   getAdminStats,
   getAllSubscribedUsers,
+  createCoupon,
+  deleteCoupon,
   getAllDocuments,
   getAuditLog,
   getBillingStats,
   getCancelReasonsAgg,
   getCanceledSubscriptions,
   getHealthChecks,
+  listStripeCoupons,
   getPastDueSubs,
   getRevenueByCountry,
   getStorageByUser,
@@ -753,6 +756,48 @@ export const appRouter = router({
     healthChecks: adminProcedure.query(async () => {
       return getHealthChecks();
     }),
+
+    // ── Coupons (F7) ─────────────────────────────────────────
+    coupons: adminProcedure.query(async () => {
+      return listStripeCoupons();
+    }),
+
+    createCoupon: adminProcedure
+      .input(z.object({
+        code: z.string().min(1).max(64),
+        percentOff: z.number().min(1).max(100).optional(),
+        amountOff: z.number().positive().optional(),
+        duration: z.enum(["once", "forever", "repeating"]),
+        durationInMonths: z.number().min(1).max(24).optional(),
+        maxRedemptions: z.number().min(1).optional(),
+        expiresAtIso: z.string().datetime().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const result = await createCoupon(input);
+        await recordAuditEntry({
+          adminId: ctx.user.id,
+          adminEmail: ctx.user.email ?? null,
+          action: "create_coupon",
+          targetType: "stripe_coupon",
+          targetId: result.couponId,
+          metadata: { code: input.code, percentOff: input.percentOff, amountOff: input.amountOff, duration: input.duration },
+        });
+        return result;
+      }),
+
+    deleteCoupon: adminProcedure
+      .input(z.object({ couponId: z.string().min(1) }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteCoupon(input.couponId);
+        await recordAuditEntry({
+          adminId: ctx.user.id,
+          adminEmail: ctx.user.email ?? null,
+          action: "delete_coupon",
+          targetType: "stripe_coupon",
+          targetId: input.couponId,
+        });
+        return { success: true };
+      }),
 
     promoteUser: adminProcedure
       .input(z.object({ userId: z.number(), role: z.enum(["user", "admin"]) }))

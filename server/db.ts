@@ -684,6 +684,104 @@ export async function getBillingStats(opts?: { from?: Date; to?: Date }) {
 const stripeRevenueCache = new Map<string, { data: any; expires: number }>();
 const STRIPE_REVENUE_CACHE_MS = 60 * 1000;
 
+// ─── Stripe coupons / promotion codes (F7) ────────────────────
+
+/**
+ * List active coupons + their redemption counts. Combines stripe.coupons.list
+ * and stripe.promotionCodes.list so the admin sees both the "backend" coupon
+ * and the user-facing code (e.g. BLACKFRIDAY50).
+ */
+export async function listStripeCoupons() {
+  const { getStripe } = await import("./_core/stripe");
+  const stripe = getStripe();
+  const [coupons, promos] = await Promise.all([
+    stripe.coupons.list({ limit: 100 }),
+    stripe.promotionCodes.list({ limit: 100 }),
+  ]);
+  const byCouponId = new Map<string, any[]>();
+  for (const p of promos.data) {
+    const cid = typeof p.coupon === "string" ? p.coupon : p.coupon?.id;
+    if (!cid) continue;
+    if (!byCouponId.has(cid)) byCouponId.set(cid, []);
+    byCouponId.get(cid)!.push({
+      id: p.id, code: p.code, active: p.active,
+      timesRedeemed: p.times_redeemed, maxRedemptions: p.max_redemptions,
+      expiresAt: p.expires_at ? new Date(p.expires_at * 1000).toISOString() : null,
+    });
+  }
+  return coupons.data.map((c: any) => ({
+    id: c.id,
+    name: c.name ?? c.id,
+    percentOff: c.percent_off ?? null,
+    amountOff: c.amount_off != null ? c.amount_off / 100 : null,
+    currency: c.currency?.toUpperCase() ?? "EUR",
+    duration: c.duration, // "once" | "forever" | "repeating"
+    durationInMonths: c.duration_in_months ?? null,
+    valid: c.valid,
+    timesRedeemed: c.times_redeemed ?? 0,
+    maxRedemptions: c.max_redemptions ?? null,
+    promotionCodes: byCouponId.get(c.id) ?? [],
+    created: new Date(c.created * 1000).toISOString(),
+  }));
+}
+
+/**
+ * Create a coupon + promotion code in one shot. Simpler UX than Stripe's
+ * two-step model for ad-hoc campaigns.
+ */
+export async function createCoupon(opts: {
+  code: string;
+  percentOff?: number;
+  amountOff?: number;
+  duration: "once" | "forever" | "repeating";
+  durationInMonths?: number;
+  maxRedemptions?: number;
+  expiresAtIso?: string;
+}) {
+  const { getStripe } = await import("./_core/stripe");
+  const stripe = getStripe();
+
+  if (!opts.percentOff && !opts.amountOff) {
+    throw new Error("Must provide percentOff or amountOff");
+  }
+
+  const couponParams: any = {
+    name: opts.code,
+    duration: opts.duration,
+  };
+  if (opts.percentOff) couponParams.percent_off = opts.percentOff;
+  if (opts.amountOff) {
+    couponParams.amount_off = Math.round(opts.amountOff * 100);
+    couponParams.currency = "eur";
+  }
+  if (opts.duration === "repeating" && opts.durationInMonths) {
+    couponParams.duration_in_months = opts.durationInMonths;
+  }
+  if (opts.maxRedemptions) couponParams.max_redemptions = opts.maxRedemptions;
+  const coupon = await stripe.coupons.create(couponParams);
+
+  const promoParams: any = { coupon: coupon.id, code: opts.code };
+  if (opts.maxRedemptions) promoParams.max_redemptions = opts.maxRedemptions;
+  if (opts.expiresAtIso) promoParams.expires_at = Math.floor(new Date(opts.expiresAtIso).getTime() / 1000);
+  const promo = await stripe.promotionCodes.create(promoParams);
+
+  return {
+    couponId: coupon.id,
+    promoId: promo.id,
+    code: promo.code,
+  };
+}
+
+/**
+ * Delete a coupon (and optionally its promotion codes become inactive).
+ */
+export async function deleteCoupon(couponId: string) {
+  const { getStripe } = await import("./_core/stripe");
+  const stripe = getStripe();
+  await stripe.coupons.del(couponId);
+  return { success: true };
+}
+
 /**
  * Per-charge listing for the Billing tab so admin can refund individual
  * charges without jumping to Stripe dashboard. Returns the last N charges

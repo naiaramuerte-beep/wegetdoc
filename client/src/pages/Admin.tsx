@@ -55,7 +55,7 @@ function rangeFromPreset(preset: RangePreset, customFrom?: string, customTo?: st
 import BlogAdmin from "./BlogAdmin";
 import TrustpilotAdmin from "./TrustpilotAdmin";
 
-type AdminTab = "overview" | "billing" | "users" | "subscribers" | "documents" | "canceled" | "messages" | "webhooks" | "audit" | "legal" | "settings" | "blog" | "trustpilot";
+type AdminTab = "overview" | "billing" | "users" | "subscribers" | "documents" | "canceled" | "coupons" | "messages" | "webhooks" | "audit" | "legal" | "settings" | "blog" | "trustpilot";
 
 export default function Admin() {
   const [, navigate] = useLocation();
@@ -116,6 +116,15 @@ export default function Admin() {
   const canceledQ = trpc.admin.canceledSubscriptions.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "canceled" });
   const webhookEventsQ = trpc.admin.webhookEvents.useQuery({ limit: 100 }, { enabled: !!user && user.role === "admin" && tab === "webhooks", refetchInterval: tab === "webhooks" ? 15000 : false });
   const auditLogQ = trpc.admin.auditLog.useQuery({ limit: 100 }, { enabled: !!user && user.role === "admin" && tab === "audit" });
+  const couponsQ = trpc.admin.coupons.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "coupons" });
+  const createCouponMut = trpc.admin.createCoupon.useMutation({
+    onSuccess: (r) => { toast.success(`Cupón creado: ${r.code}`); utils.admin.coupons.invalidate(); },
+    onError: (err) => toast.error(err.message || "Error al crear cupón"),
+  });
+  const deleteCouponMut = trpc.admin.deleteCoupon.useMutation({
+    onSuccess: () => { toast.success("Cupón eliminado"); utils.admin.coupons.invalidate(); },
+    onError: (err) => toast.error(err.message || "Error al eliminar cupón"),
+  });
   const cancelReasonsQ = trpc.admin.cancelReasons.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "billing" });
   const geoQ = trpc.admin.revenueByCountry.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "billing" });
   const healthQ = trpc.admin.healthChecks.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "overview", refetchInterval: tab === "overview" ? 30000 : false });
@@ -198,6 +207,7 @@ export default function Admin() {
     { id: "subscribers", label: "Suscriptores", icon: <Crown size={16} /> },
     { id: "documents", label: "Documentos", icon: <FileText size={16} /> },
     { id: "canceled", label: "Bajas", icon: <UserX size={16} /> },
+    { id: "coupons", label: "Cupones", icon: <TrendingUp size={16} /> },
     { id: "messages", label: "Mensajes", icon: <MessageSquare size={16} /> },
     { id: "webhooks", label: "Webhooks", icon: <Webhook size={16} /> },
     { id: "audit", label: "Audit log", icon: <ClipboardList size={16} /> },
@@ -1507,6 +1517,15 @@ export default function Admin() {
             </div>
           )}
 
+          {/* ── COUPONS (F7) ── */}
+          {tab === "coupons" && (
+            <CouponsTab
+              couponsQ={couponsQ}
+              createCouponMut={createCouponMut}
+              deleteCouponMut={deleteCouponMut}
+            />
+          )}
+
           {/* ── MESSAGES ── */}
           {tab === "messages" && (
             <div className="space-y-4">
@@ -2115,5 +2134,180 @@ function SettingRow({
     </div>
   );
 }
+
+// ─── CouponsTab (F7) ──────────────────────────────────────────
+function CouponsTab({ couponsQ, createCouponMut, deleteCouponMut }: { couponsQ: any; createCouponMut: any; deleteCouponMut: any }) {
+  const [form, setForm] = useState({
+    code: "",
+    percentOff: "20",
+    duration: "once" as "once" | "forever" | "repeating",
+    durationInMonths: "",
+    maxRedemptions: "",
+    expiresAt: "",
+  });
+  const submit = () => {
+    if (!form.code.trim()) { toast.error("El código es obligatorio"); return; }
+    const percent = parseFloat(form.percentOff);
+    if (!percent || percent < 1 || percent > 100) { toast.error("Porcentaje debe ser 1-100"); return; }
+    createCouponMut.mutate({
+      code: form.code.trim().toUpperCase(),
+      percentOff: percent,
+      duration: form.duration,
+      durationInMonths: form.duration === "repeating" && form.durationInMonths ? parseInt(form.durationInMonths) : undefined,
+      maxRedemptions: form.maxRedemptions ? parseInt(form.maxRedemptions) : undefined,
+      expiresAtIso: form.expiresAt ? new Date(form.expiresAt + "T23:59:59").toISOString() : undefined,
+    });
+    setForm({ code: "", percentOff: "20", duration: "once", durationInMonths: "", maxRedemptions: "", expiresAt: "" });
+  };
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-lg font-semibold text-white">Cupones de descuento</h2>
+
+      {/* Create form */}
+      <div className="rounded-xl border p-5 space-y-3" style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}>
+        <p className="text-sm font-semibold text-white">Crear cupón</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label className="text-[11px] text-gray-400 block mb-1">Código (user-facing)</label>
+            <input
+              type="text" placeholder="BLACKFRIDAY50"
+              value={form.code}
+              onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
+              className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600"
+              style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
+            />
+          </div>
+          <div>
+            <label className="text-[11px] text-gray-400 block mb-1">% descuento</label>
+            <input
+              type="number" min="1" max="100"
+              value={form.percentOff}
+              onChange={(e) => setForm({ ...form, percentOff: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600"
+              style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
+            />
+          </div>
+          <div>
+            <label className="text-[11px] text-gray-400 block mb-1">Duración</label>
+            <select
+              value={form.duration}
+              onChange={(e) => setForm({ ...form, duration: e.target.value as any })}
+              className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600"
+              style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
+            >
+              <option value="once">Una vez</option>
+              <option value="forever">Siempre</option>
+              <option value="repeating">N meses</option>
+            </select>
+          </div>
+          {form.duration === "repeating" && (
+            <div>
+              <label className="text-[11px] text-gray-400 block mb-1">Meses</label>
+              <input
+                type="number" min="1" max="24" placeholder="3"
+                value={form.durationInMonths}
+                onChange={(e) => setForm({ ...form, durationInMonths: e.target.value })}
+                className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600"
+                style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
+              />
+            </div>
+          )}
+          <div>
+            <label className="text-[11px] text-gray-400 block mb-1">Máx. usos (opcional)</label>
+            <input
+              type="number" min="1" placeholder="100"
+              value={form.maxRedemptions}
+              onChange={(e) => setForm({ ...form, maxRedemptions: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600"
+              style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
+            />
+          </div>
+          <div>
+            <label className="text-[11px] text-gray-400 block mb-1">Fecha caducidad (opcional)</label>
+            <input
+              type="date"
+              value={form.expiresAt}
+              onChange={(e) => setForm({ ...form, expiresAt: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600"
+              style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
+            />
+          </div>
+        </div>
+        <button
+          onClick={submit}
+          disabled={createCouponMut.isPending}
+          className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-60"
+          style={{ backgroundColor: "#E63946" }}
+        >
+          {createCouponMut.isPending ? "Creando…" : "Crear cupón"}
+        </button>
+      </div>
+
+      {/* List */}
+      <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}>
+        <div className="px-5 py-3 border-b" style={{ borderColor: "#1e2433" }}>
+          <p className="text-sm font-semibold text-white">Cupones activos ({couponsQ.data?.length ?? 0})</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead style={{ backgroundColor: "#0a0d14" }}>
+              <tr className="text-left text-gray-400">
+                <th className="px-4 py-2 font-medium">Código</th>
+                <th className="px-4 py-2 font-medium">Descuento</th>
+                <th className="px-4 py-2 font-medium">Duración</th>
+                <th className="px-4 py-2 font-medium text-right">Usos</th>
+                <th className="px-4 py-2 font-medium">Expira</th>
+                <th className="px-4 py-2 font-medium">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {couponsQ.isLoading ? (
+                <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-500">Cargando…</td></tr>
+              ) : !couponsQ.data?.length ? (
+                <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-500">Sin cupones creados todavía.</td></tr>
+              ) : couponsQ.data.map((c: any) => {
+                const code = c.promotionCodes[0]?.code ?? c.id;
+                const expires = c.promotionCodes[0]?.expiresAt;
+                return (
+                  <tr key={c.id} className="border-t" style={{ borderColor: "#1e2433" }}>
+                    <td className="px-4 py-2 text-white font-mono font-bold">{code}</td>
+                    <td className="px-4 py-2 text-[#E63946] font-semibold">
+                      {c.percentOff ? `${c.percentOff}%` : `€${c.amountOff}`}
+                    </td>
+                    <td className="px-4 py-2 text-gray-300">
+                      {c.duration === "once" ? "Una vez" : c.duration === "forever" ? "Siempre" : `${c.durationInMonths} meses`}
+                    </td>
+                    <td className="px-4 py-2 text-right text-gray-200 font-mono">
+                      {c.timesRedeemed}
+                      {c.maxRedemptions && <span className="text-gray-500"> / {c.maxRedemptions}</span>}
+                    </td>
+                    <td className="px-4 py-2 text-gray-400">
+                      {expires ? new Date(expires).toLocaleDateString("es-ES") : "—"}
+                    </td>
+                    <td className="px-4 py-2">
+                      <button
+                        onClick={() => {
+                          if (confirm(`¿Eliminar cupón ${code}? Esto es irreversible.`)) {
+                            deleteCouponMut.mutate({ couponId: c.id });
+                          }
+                        }}
+                        className="px-2.5 py-1 rounded-md text-[11px] font-semibold text-white"
+                        style={{ backgroundColor: "#dc2626" }}
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 
