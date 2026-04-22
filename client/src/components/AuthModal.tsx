@@ -41,8 +41,6 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [forgotEmail, setForgotEmail] = useState("");
-  const [gdprAccepted, setGdprAccepted] = useState(false);
-  const [gdprError, setGdprError] = useState(false);
 
   const utils = trpc.useUtils();
 
@@ -85,11 +83,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (mode === "signup") {
-      if (!gdprAccepted) {
-        setGdprError(true);
-        toast.error(s.gdprRequired);
-        return;
-      }
+      // Consent is implicit via the legal disclaimer under the submit button.
       registerMutation.mutate({ email, password, name: name || undefined });
     } else if (mode === "login") {
       loginMutation.mutate({ email, password });
@@ -99,13 +93,6 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
   };
 
   const googleHref = `/api/auth/google?origin=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}&returnPath=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname + window.location.search : "/")}`;
-  const handleGoogleClick = (e: React.MouseEvent) => {
-    if (mode === "signup" && !gdprAccepted) {
-      e.preventDefault();
-      setGdprError(true);
-      toast.error(s.gdprRequired);
-    }
-  };
 
   const isLoading = registerMutation.isPending || loginMutation.isPending || forgotMutation.isPending;
 
@@ -199,9 +186,7 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
             <div className="relative group">
               <a
                 href={googleHref}
-                onClick={handleGoogleClick}
-                aria-disabled={mode === "signup" && !gdprAccepted}
-                className={`w-full py-2.5 rounded-lg border border-gray-200 text-sm font-semibold flex items-center justify-center gap-2.5 transition-colors cursor-pointer ${mode === "signup" && !gdprAccepted ? "opacity-60 text-gray-500 hover:bg-gray-50" : "text-gray-700 hover:bg-gray-50"}`}
+                className="w-full py-2.5 rounded-lg border border-gray-200 text-sm font-semibold flex items-center justify-center gap-2.5 transition-colors cursor-pointer text-gray-700 hover:bg-gray-50"
               >
                 <GoogleIcon />
                 {t.paywall_continue_google}
@@ -276,44 +261,31 @@ export default function AuthModal({ open, onClose, defaultMode = "signup", onSuc
               </div>
             )}
 
-            {/* GDPR checkbox (solo en signup) — se resalta en rojo si el usuario intenta enviar sin marcarlo */}
-            {mode === "signup" && (
-              <label
-                className={`flex items-start gap-2 cursor-pointer select-none rounded-lg transition-all duration-200 ${gdprError ? "ring-2 ring-red-500 bg-red-50 p-2" : "pt-1"}`}
-              >
-                <input
-                  type="checkbox"
-                  checked={gdprAccepted}
-                  onChange={(e) => {
-                    setGdprAccepted(e.target.checked);
-                    if (e.target.checked) setGdprError(false);
-                  }}
-                  className={`mt-0.5 w-4 h-4 shrink-0 cursor-pointer ${gdprError ? "accent-red-600" : "accent-[#E63946]"}`}
-                />
-                <span className={`text-xs leading-relaxed ${gdprError ? "text-red-700" : "text-gray-500"}`}>
-                  {s.gdprPrefix}{" "}
-                  <a href={`/${lang}/terms`} target="_blank" rel="noreferrer" className="underline text-[#E63946] hover:text-[#C72738]" onClick={(e) => e.stopPropagation()}>
-                    {s.termsLinkLabel}
-                  </a>
-                  {s.gdprAnd}
-                  <a href={`/${lang}/privacy`} target="_blank" rel="noreferrer" className="underline text-[#E63946] hover:text-[#C72738]" onClick={(e) => e.stopPropagation()}>
-                    {s.privacyLinkLabel}
-                  </a>
-                  {s.gdprSuffix}
-                </span>
-              </label>
-            )}
-
-            {/* Submit: stays clickable even when GDPR is unchecked — on click we highlight the checkbox + toast. */}
+            {/* Submit — consent is implicit via the legal text below (pdfe style). */}
             <button
               type="submit"
               disabled={isLoading}
               className="w-full py-2.5 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all mt-1 disabled:opacity-60 disabled:cursor-not-allowed"
-              style={{ backgroundColor: isLoading ? "#9ca3af" : (mode === "signup" && !gdprAccepted) ? "#9ca3af" : "#E63946" }}
+              style={{ backgroundColor: isLoading ? "#9ca3af" : "#E63946" }}
             >
               {isLoading && <Loader2 size={15} className="animate-spin" />}
               {mode === "signup" ? t.paywall_register : t.paywall_login}
             </button>
+
+            {/* Legal disclaimer — shown only on signup, replaces the blocking checkbox. */}
+            {mode === "signup" && (
+              <p className="text-[11px] text-center text-gray-400 leading-relaxed mt-1">
+                {s.gdprPrefix}{" "}
+                <a href={`/${lang}/terms`} target="_blank" rel="noreferrer" className="underline text-gray-500 hover:text-[#E63946]">
+                  {s.termsLinkLabel}
+                </a>
+                {s.gdprAnd}
+                <a href={`/${lang}/privacy`} target="_blank" rel="noreferrer" className="underline text-gray-500 hover:text-[#E63946]">
+                  {s.privacyLinkLabel}
+                </a>
+                {s.gdprSuffix}
+              </p>
+            )}
 
             {/* Switch mode */}
             {mode === "signup" ? (
