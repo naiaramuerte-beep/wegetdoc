@@ -395,6 +395,13 @@ export default function PaywallModal({
   const loginMutation = trpc.auth.login.useMutation();
   const { refresh } = useAuth();
 
+  // ── Trial-limit 1-click upgrade hooks ───────────────────────
+  // IMPORTANT: these MUST be called unconditionally, before any early
+  // return, or React hits error #310 (hook count changes between renders).
+  const [upgradeFallbackToCheckout, setUpgradeFallbackToCheckout] = useState(false);
+  const upgradeTrialNowMut = trpc.subscription.upgradeTrialNow.useMutation();
+  const utils2 = trpc.useUtils();
+
   if (!isOpen) return null;
 
   const currentStep = isAuthenticated ? "plans" : step;
@@ -470,10 +477,7 @@ export default function PaywallModal({
     if (onPaymentSuccess) onPaymentSuccess(transactionId);
   };
 
-  // ── Trial-limit 1-click upgrade ─────────────────────────────
-  const [upgradeFallbackToCheckout, setUpgradeFallbackToCheckout] = useState(false);
-  const upgradeTrialNowMut = trpc.subscription.upgradeTrialNow.useMutation();
-  const utils2 = trpc.useUtils();
+  // ── Trial-limit 1-click upgrade handler (hooks already declared above) ──
   const handleUpgradeNow = async () => {
     try {
       const r = await upgradeTrialNowMut.mutateAsync();
