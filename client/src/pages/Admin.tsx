@@ -16,6 +16,7 @@ import {
   Search, Trash2, ShieldCheck, ShieldOff, Mail, ChevronDown, ChevronUp,
   CreditCard, Settings, BookOpen, BarChart2, UserX, RefreshCw, Eye, EyeOff,
   ArrowLeft, Crown, Rss, Star, Calendar, Zap, AlertTriangle, RotateCcw,
+  Webhook, ClipboardList, StickyNote,
 } from "lucide-react";
 
 // Date-range presets used by the Billing tab. "today" includes today only,
@@ -54,7 +55,7 @@ function rangeFromPreset(preset: RangePreset, customFrom?: string, customTo?: st
 import BlogAdmin from "./BlogAdmin";
 import TrustpilotAdmin from "./TrustpilotAdmin";
 
-type AdminTab = "overview" | "billing" | "users" | "subscribers" | "documents" | "canceled" | "messages" | "legal" | "settings" | "blog" | "trustpilot";
+type AdminTab = "overview" | "billing" | "users" | "subscribers" | "documents" | "canceled" | "messages" | "webhooks" | "audit" | "legal" | "settings" | "blog" | "trustpilot";
 
 export default function Admin() {
   const [, navigate] = useLocation();
@@ -113,6 +114,16 @@ export default function Admin() {
   const docsQ = trpc.admin.documents.useQuery({ search: docSearch }, { enabled: !!user && user.role === "admin" && tab === "documents" });
   const storageQ = trpc.admin.storageByUser.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "documents" });
   const canceledQ = trpc.admin.canceledSubscriptions.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "canceled" });
+  const webhookEventsQ = trpc.admin.webhookEvents.useQuery({ limit: 100 }, { enabled: !!user && user.role === "admin" && tab === "webhooks", refetchInterval: tab === "webhooks" ? 15000 : false });
+  const auditLogQ = trpc.admin.auditLog.useQuery({ limit: 100 }, { enabled: !!user && user.role === "admin" && tab === "audit" });
+  const cancelReasonsQ = trpc.admin.cancelReasons.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "billing" });
+  const updateNotesMut = trpc.admin.updateUserNotes.useMutation({
+    onSuccess: () => {
+      toast.success("Notas guardadas");
+      utils.admin.users.invalidate();
+    },
+    onError: (err) => toast.error(err.message || "Error"),
+  });
   const messagesQ = trpc.admin.contactMessages.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "messages" });
   const legalQ = trpc.admin.legalPages.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "legal" });
   const settingsQ = trpc.admin.settings.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "settings" });
@@ -181,6 +192,8 @@ export default function Admin() {
     { id: "documents", label: "Documentos", icon: <FileText size={16} /> },
     { id: "canceled", label: "Bajas", icon: <UserX size={16} /> },
     { id: "messages", label: "Mensajes", icon: <MessageSquare size={16} /> },
+    { id: "webhooks", label: "Webhooks", icon: <Webhook size={16} /> },
+    { id: "audit", label: "Audit log", icon: <ClipboardList size={16} /> },
     { id: "legal", label: "Páginas legales", icon: <BookOpen size={16} /> },
     { id: "settings", label: "Ajustes", icon: <Settings size={16} /> },
     ...(!isFastDoc ? [{ id: "blog" as AdminTab, label: "Blog", icon: <Rss size={16} /> }] : []),
@@ -787,6 +800,36 @@ export default function Admin() {
                     )}
                   </div>
 
+                  {/* ── CANCELLATION REASONS (F4) ── */}
+                  {cancelReasonsQ.data && cancelReasonsQ.data.length > 0 && (
+                    <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}>
+                      <div className="px-5 py-3 border-b" style={{ borderColor: "#1e2433" }}>
+                        <p className="text-sm font-semibold text-white">Motivos de cancelación</p>
+                        <p className="text-[11px] text-gray-500 mt-0.5">Agregado de motivos reportados por usuarios que cancelaron.</p>
+                      </div>
+                      <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {cancelReasonsQ.data.map((r: any) => {
+                          const label: Record<string, string> = {
+                            too_expensive: "Demasiado caro",
+                            not_using: "No lo uso",
+                            missing_feature: "Falta función",
+                            bug_or_issue: "Bug / problema",
+                            switched_tool: "Cambié de herramienta",
+                            temporary: "Temporal",
+                            other: "Otro",
+                            unknown: "Sin motivo",
+                          };
+                          return (
+                            <div key={r.reason} className="rounded-lg p-3" style={{ backgroundColor: "#0a0d14" }}>
+                              <p className="text-[10px] uppercase tracking-wide text-gray-500 mb-1">{label[r.reason] ?? r.reason}</p>
+                              <p className="text-xl font-bold text-white">{r.count}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Revenue chart */}
                   <div
                     className="rounded-xl p-5 border"
@@ -1257,6 +1300,20 @@ export default function Admin() {
                             )}
                             <button
                               onClick={() => {
+                                const current = (u as any).adminNotes ?? "";
+                                const next = prompt(`Notas internas para ${u.email}:`, current);
+                                if (next !== null && next !== current) {
+                                  updateNotesMut.mutate({ userId: u.id, notes: next });
+                                }
+                              }}
+                              title={(u as any).adminNotes ? "Notas: " + (u as any).adminNotes : "Añadir notas"}
+                              className="p-1.5 rounded transition-colors hover:bg-gray-700"
+                              style={{ color: (u as any).adminNotes ? "#fbbf24" : "#64748b" }}
+                            >
+                              <StickyNote size={14} />
+                            </button>
+                            <button
+                              onClick={() => {
                                 if (confirm(`¿Eliminar usuario ${u.email}?`)) {
                                   deleteUserMut.mutate({ userId: u.id });
                                 }
@@ -1425,6 +1482,134 @@ export default function Admin() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ── WEBHOOKS (F2) ── */}
+          {tab === "webhooks" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-white">Webhooks de Stripe</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">Últimos 100 eventos recibidos. Auto-refresca cada 15s.</p>
+                </div>
+                <button
+                  onClick={() => utils.admin.webhookEvents.invalidate()}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-white inline-flex items-center gap-1.5"
+                  style={{ backgroundColor: "#1e2433" }}
+                >
+                  <RefreshCw size={13} />
+                  Refrescar
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { label: "Total (100)", value: webhookEventsQ.data?.length ?? 0, color: "#94a3b8" },
+                  { label: "OK", value: webhookEventsQ.data?.filter((e: any) => e.status === "ok").length ?? 0, color: "#10b981" },
+                  { label: "Error", value: webhookEventsQ.data?.filter((e: any) => e.status === "error").length ?? 0, color: "#ef4444" },
+                  { label: "Tipos únicos", value: new Set((webhookEventsQ.data ?? []).map((e: any) => e.eventType)).size, color: "#1565C0" },
+                ].map((s) => (
+                  <div key={s.label} className="rounded-xl p-4 border" style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}>
+                    <p className="text-xs text-gray-400 mb-1">{s.label}</p>
+                    <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#1e2433", backgroundColor: "#131720" }}>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead style={{ backgroundColor: "#0a0d14" }}>
+                      <tr className="text-left text-gray-400">
+                        <th className="px-4 py-2 font-medium">Cuándo</th>
+                        <th className="px-4 py-2 font-medium">Tipo</th>
+                        <th className="px-4 py-2 font-medium">Estado</th>
+                        <th className="px-4 py-2 font-medium text-right">ms</th>
+                        <th className="px-4 py-2 font-medium">Event ID</th>
+                        <th className="px-4 py-2 font-medium">Detalle</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {webhookEventsQ.isLoading ? (
+                        <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-500">Cargando…</td></tr>
+                      ) : !webhookEventsQ.data?.length ? (
+                        <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-500">Todavía sin eventos. El próximo webhook que llegue aparecerá aquí.</td></tr>
+                      ) : webhookEventsQ.data.map((e: any) => (
+                        <tr key={e.id} className="border-t" style={{ borderColor: "#1e2433" }}>
+                          <td className="px-4 py-2 text-gray-300 whitespace-nowrap">
+                            {new Date(e.receivedAt).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "medium" })}
+                          </td>
+                          <td className="px-4 py-2 text-white font-mono text-[11px]">{e.eventType}</td>
+                          <td className="px-4 py-2">
+                            <span
+                              className="inline-flex px-2 py-0.5 rounded text-[10px] font-semibold"
+                              style={{
+                                backgroundColor: e.status === "ok" ? "#10b98120" : "#ef444420",
+                                color: e.status === "ok" ? "#10b981" : "#ef4444",
+                              }}
+                            >
+                              {e.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-right text-gray-300 font-mono">{e.durationMs}</td>
+                          <td className="px-4 py-2 text-gray-400 font-mono text-[10px]">{e.eventId ?? "—"}</td>
+                          <td className="px-4 py-2 text-gray-400 max-w-[320px] truncate" title={e.errorMessage ?? ""}>
+                            {e.errorMessage ?? (e.payload ? "payload OK" : "—")}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── AUDIT LOG (S1) ── */}
+          {tab === "audit" && (
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Audit log</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Últimas 100 acciones de admin. Se registra cada refund, promoción de usuario y edición de notas.</p>
+              </div>
+
+              <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#1e2433", backgroundColor: "#131720" }}>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead style={{ backgroundColor: "#0a0d14" }}>
+                      <tr className="text-left text-gray-400">
+                        <th className="px-4 py-2 font-medium">Cuándo</th>
+                        <th className="px-4 py-2 font-medium">Admin</th>
+                        <th className="px-4 py-2 font-medium">Acción</th>
+                        <th className="px-4 py-2 font-medium">Objetivo</th>
+                        <th className="px-4 py-2 font-medium">Metadata</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {auditLogQ.isLoading ? (
+                        <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-500">Cargando…</td></tr>
+                      ) : !auditLogQ.data?.length ? (
+                        <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-500">Sin entradas todavía. El log se llena al hacer acciones (refunds, cambios de rol, etc.).</td></tr>
+                      ) : auditLogQ.data.map((e: any) => (
+                        <tr key={e.id} className="border-t" style={{ borderColor: "#1e2433" }}>
+                          <td className="px-4 py-2 text-gray-300 whitespace-nowrap">
+                            {new Date(e.createdAt).toLocaleString("es-ES")}
+                          </td>
+                          <td className="px-4 py-2 text-white">{e.adminEmail ?? `#${e.adminId}`}</td>
+                          <td className="px-4 py-2 text-gray-200 font-mono text-[11px]">{e.action}</td>
+                          <td className="px-4 py-2 text-gray-400">
+                            {e.targetType ? `${e.targetType}: ${e.targetId}` : "—"}
+                          </td>
+                          <td className="px-4 py-2 text-gray-500 font-mono text-[10px] max-w-[320px] truncate" title={e.metadata ?? ""}>
+                            {e.metadata ?? "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           )}
 

@@ -44,14 +44,20 @@ import {
   getAdminStats,
   getAllSubscribedUsers,
   getAllDocuments,
+  getAuditLog,
   getBillingStats,
+  getCancelReasonsAgg,
   getCanceledSubscriptions,
   getPastDueSubs,
   getStorageByUser,
   getStripeChargesList,
   getStripeRevenue,
   getSubsAboutToCancel,
+  getWebhookEvents,
+  recordAuditEntry,
   refundStripeCharge,
+  setCancelReason,
+  setUserAdminNotes,
   getBlogPosts,
   getBlogPost,
   getBlogPostById,
@@ -514,15 +520,29 @@ export const appRouter = router({
 
     deactivateUser: adminProcedure
       .input(z.object({ userId: z.number() }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
         await deactivateUser(input.userId);
+        await recordAuditEntry({
+          adminId: ctx.user.id,
+          adminEmail: ctx.user.email ?? null,
+          action: "deactivate_user",
+          targetType: "user",
+          targetId: String(input.userId),
+        });
         return { success: true };
       }),
 
     deleteUser: adminProcedure
       .input(z.object({ userId: z.number() }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
         await deleteUserById(input.userId);
+        await recordAuditEntry({
+          adminId: ctx.user.id,
+          adminEmail: ctx.user.email ?? null,
+          action: "delete_user",
+          targetType: "user",
+          targetId: String(input.userId),
+        });
         return { success: true };
       }),
 
@@ -640,18 +660,74 @@ export const appRouter = router({
         amountEur: z.number().positive().optional(),
         reason: z.enum(["duplicate", "fraudulent", "requested_by_customer"]).optional(),
       }))
-      .mutation(async ({ input }) => {
-        return refundStripeCharge(input);
+      .mutation(async ({ ctx, input }) => {
+        const result = await refundStripeCharge(input);
+        await recordAuditEntry({
+          adminId: ctx.user.id,
+          adminEmail: ctx.user.email ?? null,
+          action: "refund_charge",
+          targetType: "stripe_charge",
+          targetId: input.chargeId,
+          metadata: { amountEur: result.amountEur, reason: input.reason },
+        });
+        return result;
       }),
+
+    // ── Webhook event log (F2) ────────────────────────────────
+    webhookEvents: adminProcedure
+      .input(z.object({
+        limit: z.number().optional(),
+        type: z.string().optional(),
+        status: z.enum(["ok", "error"]).optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return getWebhookEvents({ limit: input?.limit, type: input?.type, status: input?.status });
+      }),
+
+    // ── Audit log (S1) ────────────────────────────────────────
+    auditLog: adminProcedure
+      .input(z.object({ limit: z.number().optional() }).optional())
+      .query(async ({ input }) => {
+        return getAuditLog({ limit: input?.limit });
+      }),
+
+    // ── User notes (U3) ───────────────────────────────────────
+    updateUserNotes: adminProcedure
+      .input(z.object({ userId: z.number(), notes: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        await setUserAdminNotes(input.userId, input.notes);
+        await recordAuditEntry({
+          adminId: ctx.user.id,
+          adminEmail: ctx.user.email ?? null,
+          action: "update_user_notes",
+          targetType: "user",
+          targetId: String(input.userId),
+          metadata: { length: input.notes.length },
+        });
+        return { success: true };
+      }),
+
+    // ── Cancel reasons (F4) ───────────────────────────────────
+    cancelReasons: adminProcedure.query(async () => {
+      return getCancelReasonsAgg();
+    }),
 
     promoteUser: adminProcedure
       .input(z.object({ userId: z.number(), role: z.enum(["user", "admin"]) }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
         const db = await import("./db").then(m => m.getDb());
         if (!db) return { success: false };
         const { users } = await import("../drizzle/schema");
         const { eq } = await import("drizzle-orm");
         await db.update(users).set({ role: input.role }).where(eq(users.id, input.userId));
+        await recordAuditEntry({
+          adminId: ctx.user.id,
+          adminEmail: ctx.user.email ?? null,
+          action: "promote_user",
+          targetType: "user",
+          targetId: String(input.userId),
+          metadata: { newRole: input.role },
+        });
         return { success: true };
       }),
 

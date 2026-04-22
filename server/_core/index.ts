@@ -61,6 +61,7 @@ async function startServer() {
     }
 
     console.log("[Stripe Webhook] Event:", event.type);
+    const __webhookT0 = Date.now();
 
     try {
       switch (event.type) {
@@ -156,8 +157,26 @@ async function startServer() {
           break;
         }
       }
+      // Persist the successful delivery so the admin monitor has a trail.
+      await db.recordWebhookEvent({
+        provider: "stripe",
+        eventId: (event as any).id,
+        eventType: event.type,
+        status: "ok",
+        durationMs: Date.now() - __webhookT0,
+        payload: event.data?.object,
+      });
     } catch (err) {
       console.error("[Stripe Webhook] Error handling event:", err);
+      await db.recordWebhookEvent({
+        provider: "stripe",
+        eventId: (event as any).id,
+        eventType: event.type,
+        status: "error",
+        errorMessage: (err as Error)?.message ?? String(err),
+        durationMs: Date.now() - __webhookT0,
+        payload: event.data?.object,
+      });
     }
 
     res.json({ received: true });

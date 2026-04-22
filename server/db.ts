@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
   InsertBlogPost,
+  auditLog,
   blogPosts,
   contactMessages,
   documents,
@@ -12,6 +13,7 @@ import {
   subscriptions,
   teamInvitations,
   users,
+  webhookEvents,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -103,6 +105,7 @@ export async function getAllUsers(search?: string) {
     createdAt: users.createdAt,
     updatedAt: users.updatedAt,
     lastSignedIn: users.lastSignedIn,
+    adminNotes: users.adminNotes,
     // Subscription info
     subStatus: subscriptions.status,
     subPlan: subscriptions.plan,
@@ -962,4 +965,129 @@ export async function deleteBlogPost(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.delete(blogPosts).where(eq(blogPosts.id, id));
+}
+
+// ─── Webhook events log (F2) ─────────────────────────────────────
+
+/**
+ * Persist a webhook delivery so admins can audit what Stripe sent us
+ * and whether our handler succeeded. Call from the webhook handler.
+ */
+export async function recordWebhookEvent(opts: {
+  provider?: string;
+  eventId?: string;
+  eventType: string;
+  status: "ok" | "error";
+  errorMessage?: string;
+  durationMs?: number;
+  payload?: unknown;
+}) {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.insert(webhookEvents).values({
+      provider: opts.provider ?? "stripe",
+      eventId: opts.eventId ?? null,
+      eventType: opts.eventType,
+      status: opts.status,
+      errorMessage: opts.errorMessage ?? null,
+      durationMs: opts.durationMs ?? 0,
+      // Truncate payload to avoid blowing up the text column on huge events.
+      payload: opts.payload ? JSON.stringify(opts.payload).slice(0, 8000) : null,
+    });
+  } catch (err) {
+    console.error("[recordWebhookEvent] failed:", err);
+  }
+}
+
+export async function getWebhookEvents(opts?: { limit?: number; type?: string; status?: "ok" | "error" }) {
+  const db = await getDb();
+  if (!db) return [];
+  const limit = Math.min(500, opts?.limit ?? 100);
+  let q = db.select().from(webhookEvents);
+  if (opts?.type) q = q.where(eq(webhookEvents.eventType, opts.type)) as any;
+  if (opts?.status) q = q.where(eq(webhookEvents.status, opts.status)) as any;
+  return q.orderBy(desc(webhookEvents.receivedAt)).limit(limit);
+}
+
+// ─── Audit log (S1) ──────────────────────────────────────────────
+
+/**
+ * Record an admin-initiated action so we have an immutable trail. Log
+ * destructive / permission-changing actions at minimum (refund, delete,
+ * promote, impersonate, update subscription).
+ */
+export async function recordAuditEntry(opts: {
+  adminId: number;
+  adminEmail?: string | null;
+  action: string;
+  targetType?: string;
+  targetId?: string;
+  metadata?: unknown;
+  ipAddress?: string;
+}) {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.insert(auditLog).values({
+      adminId: opts.adminId,
+      adminEmail: opts.adminEmail ?? null,
+      action: opts.action,
+      targetType: opts.targetType ?? null,
+      targetId: opts.targetId ?? null,
+      metadata: opts.metadata ? JSON.stringify(opts.metadata).slice(0, 4000) : null,
+      ipAddress: opts.ipAddress ?? null,
+    });
+  } catch (err) {
+    console.error("[recordAuditEntry] failed:", err);
+  }
+}
+
+export async function getAuditLog(opts?: { limit?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  const limit = Math.min(500, opts?.limit ?? 100);
+  return db.select().from(auditLog).orderBy(desc(auditLog.createdAt)).limit(limit);
+}
+
+// ─── User admin notes (U3) ───────────────────────────────────────
+
+export async function setUserAdminNotes(userId: number, notes: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ adminNotes: notes }).where(eq(users.id, userId));
+}
+
+// ─── Cancellation reason capture (F4) ────────────────────────────
+
+export async function setCancelReason(opts: {
+  userId: number;
+  reason: "too_expensive" | "not_using" | "missing_feature" | "bug_or_issue" | "switched_tool" | "temporary" | "other";
+  feedback?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Apply to the user's active-ish subscription so the reason is stored next
+  // to the actual billing row. Status filter keeps us away from old canceled rows.
+  await db.update(subscriptions)
+    .set({ cancelReason: opts.reason, cancelFeedback: opts.feedback ?? null })
+    .where(and(
+      eq(subscriptions.userId, opts.userId),
+      sql`${subscriptions.status} IN ('active', 'trialing', 'canceled', 'past_due')`
+    ));
+}
+
+/**
+ * Aggregated cancellation reasons for the admin dashboard.
+ */
+export async function getCancelReasonsAgg() {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select({
+    reason: subscriptions.cancelReason,
+    count: sql<number>`count(*)`,
+  }).from(subscriptions)
+    .where(sql`${subscriptions.cancelReason} IS NOT NULL`)
+    .groupBy(subscriptions.cancelReason);
+  return rows.map((r) => ({ reason: r.reason ?? "unknown", count: Number(r.count) }));
 }

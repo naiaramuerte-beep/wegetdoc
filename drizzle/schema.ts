@@ -26,6 +26,8 @@ export const users = mysqlTable("users", {
   // Soft delete: when set, the account is "deleted" but the row is kept for audit/recovery.
   // All auth lookups must filter WHERE deletedAt IS NULL.
   deletedAt: timestamp("deletedAt"),
+  // Internal admin-only notes about this user (support context, VIP tags, etc.).
+  adminNotes: text("adminNotes"),
 });
 
 export type User = typeof users.$inferSelect;
@@ -47,6 +49,17 @@ export const subscriptions = mysqlTable("subscriptions", {
   cancelAtPeriodEnd: boolean("cancelAtPeriodEnd").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  // Reason captured from the user when they cancel — powers churn analysis.
+  cancelReason: mysqlEnum("cancelReason", [
+    "too_expensive",
+    "not_using",
+    "missing_feature",
+    "bug_or_issue",
+    "switched_tool",
+    "temporary",
+    "other",
+  ]),
+  cancelFeedback: text("cancelFeedback"),
 });
 
 export type Subscription = typeof subscriptions.$inferSelect;
@@ -167,3 +180,42 @@ export const blogPosts = mysqlTable("blog_posts", {
 
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type InsertBlogPost = typeof blogPosts.$inferInsert;
+
+/**
+ * Webhook events — persisted log of Stripe (or other) webhook deliveries so
+ * the admin can trace whether events arrived and were processed successfully.
+ * Capped retention: keep last ~500 rows via periodic pruning (future job).
+ */
+export const webhookEvents = mysqlTable("webhook_events", {
+  id: int("id").autoincrement().primaryKey(),
+  provider: varchar("provider", { length: 32 }).default("stripe").notNull(),
+  eventId: varchar("eventId", { length: 128 }),
+  eventType: varchar("eventType", { length: 128 }).notNull(),
+  status: mysqlEnum("status", ["ok", "error"]).notNull(),
+  errorMessage: text("errorMessage"),
+  durationMs: int("durationMs").default(0).notNull(),
+  payload: text("payload"),
+  receivedAt: timestamp("receivedAt").defaultNow().notNull(),
+});
+
+export type WebhookEvent = typeof webhookEvents.$inferSelect;
+export type InsertWebhookEvent = typeof webhookEvents.$inferInsert;
+
+/**
+ * Audit log — who did what in the admin panel. Keeps an immutable trail for
+ * investigating incidents (rogue admins, bad refunds, role escalations).
+ */
+export const auditLog = mysqlTable("audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  adminId: int("adminId").notNull(),
+  adminEmail: varchar("adminEmail", { length: 320 }),
+  action: varchar("action", { length: 64 }).notNull(),
+  targetType: varchar("targetType", { length: 64 }),
+  targetId: varchar("targetId", { length: 128 }),
+  metadata: text("metadata"),
+  ipAddress: varchar("ipAddress", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AuditLog = typeof auditLog.$inferSelect;
+export type InsertAuditLog = typeof auditLog.$inferInsert;
