@@ -13,6 +13,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Pencil, X as XIcon, Check, FileText, Upload, ArrowRight, RefreshCw, CheckCircle2, Shield, Monitor, HelpCircle } from "lucide-react";
 import { ProductTour, launchTour, resetTourSeen } from "@/components/ProductTour";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
 const FILE_FREE_TOOLS = ["jpg-to-pdf", "png-to-pdf", "word-to-pdf", "excel-to-pdf", "ppt-to-pdf"];
 
@@ -170,6 +171,7 @@ export default function EditorPage() {
   const { pendingFile, pendingTool, pendingPaywall, setPendingPaywall, isRestoringFromSession } = usePdfFile();
   const [, navigate] = useLocation();
   const { lang, t } = useLanguage();
+  const { productTourEnabled } = useFeatureFlags();
   const isFileFree = pendingTool ? FILE_FREE_TOOLS.includes(pendingTool) : false;
   const hasDraft = Boolean(localStorage.getItem("pdfpro_editor_draft"));
 
@@ -208,8 +210,10 @@ export default function EditorPage() {
     return <EditorUploadZone lang={lang} />;
   }
 
+  // When the product-tour flag is off, skip the auto-start (but leave the
+  // ProductTour wrapper in place so the "?" help button keeps working).
   return (
-    <ProductTour pdfReady>
+    <ProductTour pdfReady={productTourEnabled}>
     <div className="flex flex-col" style={{ height: "100dvh", overflow: "hidden" }}>
       {/* ── Custom Editor Header Bar ── */}
       <div className="flex items-center justify-between px-3 md:px-4 h-11 md:h-12 shrink-0 border-b"

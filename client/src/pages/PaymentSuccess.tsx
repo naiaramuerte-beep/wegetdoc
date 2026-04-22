@@ -2,14 +2,17 @@ import { useEffect, useState } from "react";
 import { CheckCircle, ArrowRight, Upload, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
 export default function PaymentSuccess() {
   const utils = trpc.useUtils();
   const [, navigate] = useLocation();
   const [countdown, setCountdown] = useState(5);
+  const { adsTrackingEnabled } = useFeatureFlags();
 
-  // Google Ads conversion tracking (Compra)
+  // Google Ads conversion tracking (Compra) — gated by flag_ads_tracking.
   useEffect(() => {
+    if (!adsTrackingEnabled) return;
     if (typeof window !== 'undefined' && (window as any).gtag) {
       const params = new URLSearchParams(window.location.search);
       const txn = params.get('txn') || '';
@@ -20,7 +23,7 @@ export default function PaymentSuccess() {
         'currency': 'EUR',
       });
     }
-  }, []);
+  }, [adsTrackingEnabled]);
 
   useEffect(() => {
     // Invalidate subscription status so it refreshes

@@ -13,6 +13,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { PdfFileProvider } from "./contexts/PdfFileContext";
 import { LANGUAGES, detectLangFromBrowser } from "./lib/i18n";
+import { useFeatureFlags } from "./hooks/useFeatureFlags";
 import Home from "./pages/Home";
 import { isFastDoc } from "./lib/brand";
 import { TOOL_LANDINGS } from "./pages/ToolLanding";
@@ -86,6 +87,7 @@ function RootRedirect() {
 }
 
 function Router() {
+  const { converterEnabled, blogEnabled } = useFeatureFlags();
   return (
     <Switch>
       {/* Root redirect to browser language */}
@@ -136,36 +138,31 @@ function Router() {
         <Route key={`${code}-cancel`} path={`/${code}/cancelar-suscripcion`} component={CancelSubscription} />
       ))}
 
-      {/* Blog routes — language-prefixed */}
-      {!isFastDoc && LANGUAGES.map(({ code }) => (
+      {/* Blog routes — language-prefixed, gated by flag_blog_enabled */}
+      {!isFastDoc && blogEnabled && LANGUAGES.map(({ code }) => (
         <Route key={`${code}-blog`} path={`/${code}/blog`} component={Blog} />
       ))}
-      {!isFastDoc && LANGUAGES.map(({ code }) => (
+      {!isFastDoc && blogEnabled && LANGUAGES.map(({ code }) => (
         <Route key={`${code}-blog-post`} path={`/${code}/blog/:slug`} component={BlogPost} />
       ))}
 
       {/* Blog legacy routes */}
-      {!isFastDoc && <Route path="/blog" component={() => <Redirect to="/es/blog" />} />}
-      {!isFastDoc && <Route path="/blog/:slug" component={({ params }) => <Redirect to={`/es/blog/${params.slug}`} />} />}
+      {!isFastDoc && blogEnabled && <Route path="/blog" component={() => <Redirect to="/es/blog" />} />}
+      {!isFastDoc && blogEnabled && <Route path="/blog/:slug" component={({ params }) => <Redirect to={`/es/blog/${params.slug}`} />} />}
 
-      {/* Generic PDF converter hub — picker page where the user chooses the
-          target format, then gets routed to the dedicated ConverterPage. */}
-      {LANGUAGES.map(({ code }) => (
+      {/* Generic PDF converter hub — gated by flag_converter_enabled */}
+      {converterEnabled && LANGUAGES.map(({ code }) => (
         <Route key={`${code}-conv-hub`} path={`/${code}/${HUB_SLUG}`} component={PdfConverterHub} />
       ))}
-      <Route path={`/${HUB_SLUG}`} component={() => <Redirect to={`/en/${HUB_SLUG}`} />} />
+      {converterEnabled && <Route path={`/${HUB_SLUG}`} component={() => <Redirect to={`/en/${HUB_SLUG}`} />} />}
 
-      {/* Standalone converter pages (PDF → X) — must be registered BEFORE the
-          generic ToolLanding loop so wouter's Switch matches them first.
-          `key={slug}` forces a fresh component instance when the user
-          navigates between converters (e.g. PDF→Word → PDF→Excel) so leftover
-          state (uploaded file, paywall, preview) doesn't bleed across. */}
-      {LANGUAGES.map(({ code }) =>
+      {/* Standalone converter pages (PDF → X) — gated by flag_converter_enabled */}
+      {converterEnabled && LANGUAGES.map(({ code }) =>
         Object.entries(CONVERTER_ROUTES).map(([slug, target]) => (
           <Route key={`${code}-conv-${slug}`} path={`/${code}/${slug}`} component={() => <ConverterPage key={slug} target={target} />} />
         ))
       )}
-      {Object.keys(CONVERTER_ROUTES).map(slug => (
+      {converterEnabled && Object.keys(CONVERTER_ROUTES).map(slug => (
         <Route key={`conv-redirect-${slug}`} path={`/${slug}`} component={() => <Redirect to={`/en/${slug}`} />} />
       ))}
 

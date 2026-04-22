@@ -88,6 +88,8 @@ export const appRouter = router({
     /**
      * Announcement banner shown site-wide. Returns null when the flag is
      * off or no message is configured, so the client can skip rendering.
+     * Banner flag is EXPLICIT opt-in — unlike the other flags, we don't
+     * want a banner unless the admin actively turns it on.
      */
     announcement: publicProcedure.query(async () => {
       const [enabled, text, level] = await Promise.all([
@@ -101,6 +103,29 @@ export const appRouter = router({
       return {
         message,
         level: (level ?? "info") as "info" | "warning" | "success",
+      };
+    }),
+
+    /**
+     * Feature flags consumed by the client. Default = ON when the
+     * site_settings row is missing. Admin must explicitly set "false"
+     * to disable a feature. That way the app behaves normally out of
+     * the box but the admin can kill-switch a feature without deploy.
+     */
+    flags: publicProcedure.query(async () => {
+      const [converter, tour, blog, ads] = await Promise.all([
+        getSiteSetting("flag_converter_enabled"),
+        getSiteSetting("flag_product_tour_enabled"),
+        getSiteSetting("flag_blog_enabled"),
+        getSiteSetting("flag_ads_tracking"),
+      ]);
+      // Default to enabled unless explicitly "false"
+      const on = (v: string | null | undefined) => v !== "false";
+      return {
+        converterEnabled: on(converter),
+        productTourEnabled: on(tour),
+        blogEnabled: on(blog),
+        adsTrackingEnabled: on(ads),
       };
     }),
   }),
