@@ -806,6 +806,34 @@ export const appRouter = router({
       return getHealthChecks();
     }),
 
+    // ── Admin self-test: reset / simulate trial usage ────────
+    resetMyTrialUsage: adminProcedure.mutation(async ({ ctx }) => {
+      const { resetMyTrialUsage } = await import("./db");
+      const r = await resetMyTrialUsage(ctx.user.id);
+      await recordAuditEntry({
+        adminId: ctx.user.id,
+        adminEmail: ctx.user.email ?? null,
+        action: "test_reset_trial_usage",
+        targetType: "user",
+        targetId: String(ctx.user.id),
+        metadata: { affected: r.affected },
+      });
+      return r;
+    }),
+    simulateTrialLimitReached: adminProcedure.mutation(async ({ ctx }) => {
+      const { simulateTrialLimitReached } = await import("./db");
+      const r = await simulateTrialLimitReached(ctx.user.id);
+      await recordAuditEntry({
+        adminId: ctx.user.id,
+        adminEmail: ctx.user.email ?? null,
+        action: "test_simulate_trial_limit",
+        targetType: "user",
+        targetId: String(ctx.user.id),
+        metadata: { stamped: r.stamped },
+      });
+      return r;
+    }),
+
     // ── Coupons (F7) ─────────────────────────────────────────
     coupons: adminProcedure.query(async () => {
       return listStripeCoupons();

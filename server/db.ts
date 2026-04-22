@@ -1153,6 +1153,47 @@ export async function getUserTimeline(userId: number) {
   };
 }
 
+// ─── Admin self-test helpers (for trial flow QA without real payments) ──
+
+/**
+ * Reset trial usage on all docs for the admin themselves — stamps firstDownloadedAt
+ * back to NULL so the gate re-evaluates from scratch. Scoped to ONE user's own
+ * docs for safety; does not touch anyone else.
+ */
+export async function resetMyTrialUsage(userId: number) {
+  const db = await getDb();
+  if (!db) return { success: false, affected: 0 };
+  const result: any = await db.update(documents)
+    .set({ firstDownloadedAt: null })
+    .where(eq(documents.userId, userId));
+  return { success: true, affected: result.affectedRows ?? 0 };
+}
+
+/**
+ * Simulate the "2 downloads consumed" state by stamping firstDownloadedAt=now()
+ * on up to 2 of the user's docs. If the user has fewer than 2 docs, stamps as
+ * many as exist. Next download will trigger the trial-limit paywall.
+ */
+export async function simulateTrialLimitReached(userId: number) {
+  const db = await getDb();
+  if (!db) return { success: false, stamped: 0 };
+  const rows = await db.select({ id: documents.id })
+    .from(documents)
+    .where(eq(documents.userId, userId))
+    .orderBy(desc(documents.createdAt))
+    .limit(2);
+  if (rows.length === 0) {
+    return { success: false, stamped: 0, error: "You have no documents yet — upload one first." };
+  }
+  const now = new Date();
+  for (const row of rows) {
+    await db.update(documents)
+      .set({ firstDownloadedAt: now })
+      .where(eq(documents.id, row.id));
+  }
+  return { success: true, stamped: rows.length };
+}
+
 // ─── Trial usage limit (2 PDFs per €0.50 trial) ──────────────────
 
 const TRIAL_DOWNLOAD_LIMIT_DEFAULT = 2;

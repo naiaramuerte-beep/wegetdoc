@@ -54,6 +54,7 @@ function rangeFromPreset(preset: RangePreset, customFrom?: string, customTo?: st
 }
 import BlogAdmin from "./BlogAdmin";
 import TrustpilotAdmin from "./TrustpilotAdmin";
+import PaywallModal from "@/components/PaywallModal";
 
 type AdminTab = "overview" | "billing" | "users" | "subscribers" | "documents" | "canceled" | "coupons" | "messages" | "webhooks" | "audit" | "legal" | "settings" | "blog" | "trustpilot";
 
@@ -117,6 +118,18 @@ export default function Admin() {
   const webhookEventsQ = trpc.admin.webhookEvents.useQuery({ limit: 100 }, { enabled: !!user && user.role === "admin" && tab === "webhooks", refetchInterval: tab === "webhooks" ? 15000 : false });
   const auditLogQ = trpc.admin.auditLog.useQuery({ limit: 100 }, { enabled: !!user && user.role === "admin" && tab === "audit" });
   const couponsQ = trpc.admin.coupons.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "coupons" });
+  const resetTrialMut = trpc.admin.resetMyTrialUsage.useMutation({
+    onSuccess: (r) => toast.success(`Trial reseteado (${r.affected} docs)`),
+    onError: (err) => toast.error(err.message || "Error"),
+  });
+  const simulateTrialMut = trpc.admin.simulateTrialLimitReached.useMutation({
+    onSuccess: (r) => {
+      if (!r.success) toast.error(r.error || "No se pudo simular");
+      else toast.success(`Marcados ${r.stamped} docs. Ahora intenta descargar → debería aparecer paywall.`);
+    },
+    onError: (err) => toast.error(err.message || "Error"),
+  });
+  const [previewPaywallReason, setPreviewPaywallReason] = useState<"standard" | "trial-limit" | null>(null);
   const createCouponMut = trpc.admin.createCoupon.useMutation({
     onSuccess: (r) => { toast.success(`Cupón creado: ${r.code}`); utils.admin.coupons.invalidate(); },
     onError: (err) => toast.error(err.message || "Error al crear cupón"),
@@ -1908,12 +1921,60 @@ export default function Admin() {
                   <code className="font-mono">await getSiteSetting("flag_xxx") === "true"</code>.
                 </p>
               </div>
+
+              {/* Test / QA panel — no real payments involved */}
+              <div
+                className="rounded-xl border p-5 space-y-4"
+                style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
+              >
+                <div>
+                  <p className="text-sm font-semibold text-white">🧪 QA / Test panel (trial flow)</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Prueba el gate de 2 PDFs del trial sin esperar a descargar 3 documentos reales. No se cobra nada.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <button
+                    onClick={() => simulateTrialMut.mutate()}
+                    disabled={simulateTrialMut.isPending}
+                    className="px-4 py-3 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-60"
+                    style={{ backgroundColor: "#f59e0b" }}
+                  >
+                    {simulateTrialMut.isPending ? "Simulando…" : "Simular trial limit alcanzado"}
+                  </button>
+                  <button
+                    onClick={() => resetTrialMut.mutate()}
+                    disabled={resetTrialMut.isPending}
+                    className="px-4 py-3 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-60"
+                    style={{ backgroundColor: "#10b981" }}
+                  >
+                    {resetTrialMut.isPending ? "Reseteando…" : "Resetear mi trial usage"}
+                  </button>
+                  <button
+                    onClick={() => setPreviewPaywallReason("trial-limit")}
+                    className="px-4 py-3 rounded-lg text-sm font-semibold text-white transition-colors"
+                    style={{ backgroundColor: "#1565C0" }}
+                  >
+                    Previsualizar paywall trial-limit
+                  </button>
+                </div>
+                <p className="text-[11px] text-gray-500 leading-relaxed pt-2 border-t" style={{ borderColor: "#1e2433" }}>
+                  <strong className="text-gray-400">Cómo testear el flujo completo:</strong> 1) "Simular trial limit". 2) Ve a un PDF en el editor. 3) Pulsa Descargar → debe aparecer el modal de upgrade con el botón "Activar 19,99€". 4) Click cancelar → vuelve. 5) "Resetear" aquí para empezar de nuevo.
+                </p>
+              </div>
             </div>
           )}
           {!isFastDoc && tab === "blog" && <BlogAdmin />}
           {!isFastDoc && tab === "trustpilot" && <TrustpilotAdmin />}
         </main>
       </div>
+
+      {/* ── QA: Paywall preview (no real state change) ── */}
+      <PaywallModal
+        isOpen={previewPaywallReason !== null}
+        onClose={() => setPreviewPaywallReason(null)}
+        reason={previewPaywallReason === "trial-limit" ? "trial-limit" : undefined}
+      />
 
       {/* ── USER TIMELINE MODAL (U1) ── */}
       {timelineUserId !== null && (
