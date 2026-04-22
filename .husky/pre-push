@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+# Blocks pushing to any branch if ESLint (rules-of-hooks, undef, etc.) or
+# TypeScript fails. This exists because on 2026-04-22 we pushed a hooks
+# violation that crashed production — it will not happen again.
+
+set -e
+
+echo "🔍 Running ESLint (react-hooks/rules-of-hooks, no-undef)..."
+npx eslint "client/src/**/*.{ts,tsx}" "server/**/*.ts" --max-warnings 9999
+
+echo "🔍 Running tsc (type check)..."
+pnpm run check
+
+echo "✅ Pre-push checks passed"
