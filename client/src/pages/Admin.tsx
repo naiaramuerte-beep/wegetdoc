@@ -93,6 +93,9 @@ export default function Admin() {
   const subsAboutToCancelQ = trpc.admin.subsAboutToCancel.useQuery(undefined, {
     enabled: !!user && user.role === "admin" && tab === "billing",
   });
+  const pastDueSubsQ = trpc.admin.pastDueSubs.useQuery(undefined, {
+    enabled: !!user && user.role === "admin" && tab === "billing",
+  });
   const usersQ = trpc.admin.users.useQuery({ search: userSearch }, { enabled: !!user && user.role === "admin" && tab === "users" });
   const canceledQ = trpc.admin.canceledSubscriptions.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "canceled" });
   const messagesQ = trpc.admin.contactMessages.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "messages" });
@@ -192,6 +195,7 @@ export default function Admin() {
             utils.admin.billingStats.invalidate();
             utils.admin.stripeRevenue.invalidate();
             utils.admin.subsAboutToCancel.invalidate();
+            utils.admin.pastDueSubs.invalidate();
           }}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:text-white transition-colors"
           style={{ backgroundColor: "#1e2433" }}
@@ -477,10 +481,11 @@ export default function Admin() {
                   {/* ── SUBSCRIPTION BREAKDOWN ── */}
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Suscripciones</p>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
                       {[
                         { label: "Pagando recurrente",  value: (billing as any).payingSubscriptions ?? 0,  color: "#10b981", icon: <CreditCard size={18} />, sub: "Plan monthly/annual" },
                         { label: "En trial (48h)",      value: billing.trialingSubscriptions,  color: "#1565C0", icon: <Zap size={18} />, sub: "Convertirán en 48h" },
+                        { label: "Cobro fallido",       value: (billing as any).pastDueSubscriptions ?? 0, color: "#ef4444", icon: <RotateCcw size={18} />, sub: "Stripe reintentando" },
                         { label: "Por cancelar",        value: billing.subsAboutToCancel,      color: "#f59e0b", icon: <AlertTriangle size={18} />, sub: "Cancel at period end" },
                         { label: "Canceladas total",    value: billing.canceledSubscriptions,  color: "#ef4444", icon: <UserX size={18} /> },
                       ].map((card) => (
@@ -577,6 +582,69 @@ export default function Admin() {
                     ) : (
                       <p className="px-5 py-6 text-center text-xs text-gray-500">
                         Ningún cliente con cancelación programada — buena señal.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* ── PAST-DUE (failed recurring charge) TABLE ── */}
+                  <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}>
+                    <div className="px-5 py-3 border-b flex items-center justify-between" style={{ borderColor: "#1e2433" }}>
+                      <div className="flex items-center gap-2">
+                        <RotateCcw size={14} className="text-red-500" />
+                        <p className="text-sm font-semibold text-white">Cobro fallido — Stripe reintentando</p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {pastDueSubsQ.data?.length ?? 0} {pastDueSubsQ.data?.length === 1 ? "cliente" : "clientes"}
+                      </p>
+                    </div>
+                    {pastDueSubsQ.data && pastDueSubsQ.data.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead style={{ backgroundColor: "#0a0d14" }}>
+                            <tr className="text-left text-gray-400">
+                              <th className="px-4 py-2 font-medium">Email</th>
+                              <th className="px-4 py-2 font-medium">Nombre</th>
+                              <th className="px-4 py-2 font-medium">Plan</th>
+                              <th className="px-4 py-2 font-medium">Fin del periodo</th>
+                              <th className="px-4 py-2 font-medium">País</th>
+                              <th className="px-4 py-2 font-medium">Stripe</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pastDueSubsQ.data.map((s: any) => (
+                              <tr key={s.id} className="border-t" style={{ borderColor: "#1e2433" }}>
+                                <td className="px-4 py-2 text-white">{s.email}</td>
+                                <td className="px-4 py-2 text-gray-300">{s.name || "—"}</td>
+                                <td className="px-4 py-2 text-gray-300">{s.plan}</td>
+                                <td className="px-4 py-2 text-gray-300">
+                                  {s.currentPeriodEnd ? new Date(s.currentPeriodEnd).toLocaleDateString("es-ES") : "—"}
+                                </td>
+                                <td className="px-4 py-2 text-gray-400">{s.country ?? "—"}</td>
+                                <td className="px-4 py-2">
+                                  {s.stripeCustomerId ? (
+                                    <a
+                                      href={`https://dashboard.stripe.com/customers/${s.stripeCustomerId}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-[#E63946] hover:underline"
+                                    >
+                                      Ver en Stripe →
+                                    </a>
+                                  ) : (
+                                    <span className="text-gray-500">—</span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        <p className="px-5 py-3 text-[11px] text-gray-500 border-t" style={{ borderColor: "#1e2433" }}>
+                          Stripe reintenta el cobro automáticamente durante ~3 semanas (smart retries). Si todos los intentos fallan, la sub se cancela.
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="px-5 py-6 text-center text-xs text-gray-500">
+                        Ningún cobro fallido — todos los pagos recurrentes al día.
                       </p>
                     )}
                   </div>

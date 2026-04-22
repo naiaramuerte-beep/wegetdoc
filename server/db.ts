@@ -546,6 +546,7 @@ export async function getBillingStats(opts?: { from?: Date; to?: Date }) {
     allActiveSubs,        // status = active (paying)
     allTrialingSubs,      // status = trialing (in 48-hour trial)
     allCanceledSubs,
+    pastDueCount,         // status = past_due (recurring charge failed)
     subsToCancel,         // active/trialing with cancelAtPeriodEnd = true
     subsThisMonth,
     subsThisWeek,
@@ -560,6 +561,7 @@ export async function getBillingStats(opts?: { from?: Date; to?: Date }) {
     db.select().from(subscriptions).where(eq(subscriptions.status, "active")),
     db.select().from(subscriptions).where(eq(subscriptions.status, "trialing")),
     db.select({ count: sql<number>`count(*)` }).from(subscriptions).where(eq(subscriptions.status, "canceled")),
+    db.select({ count: sql<number>`count(*)` }).from(subscriptions).where(eq(subscriptions.status, "past_due")),
     db.select({ count: sql<number>`count(*)` }).from(subscriptions).where(
       sql`${subscriptions.cancelAtPeriodEnd} = true AND ${subscriptions.status} IN ('active', 'trialing')`
     ),
@@ -651,6 +653,7 @@ export async function getBillingStats(opts?: { from?: Date; to?: Date }) {
     activeSubscriptions: allActiveSubs.length,
     trialingSubscriptions: subsOnTrial,
     payingSubscriptions: subsPayingRecurring,
+    pastDueSubscriptions: Number(pastDueCount[0]?.count ?? 0),
     subsAboutToCancel: Number(subsToCancel[0]?.count ?? 0),
     canceledSubscriptions: canceledTotal,
     // Periodic counts (point-in-time anchors)
@@ -735,6 +738,30 @@ export async function getStripeRevenue(opts: { from: Date; to: Date }) {
   };
   stripeRevenueCache.set(cacheKey, { data, expires: Date.now() + STRIPE_REVENUE_CACHE_MS });
   return data;
+}
+
+/**
+ * List of subs whose recurring charge failed. Stripe is automatically
+ * retrying these — if retries exhaust the sub gets canceled. Surfacing
+ * them in admin lets the operator reach out before that happens.
+ */
+export async function getPastDueSubs() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: users.id,
+    name: users.name,
+    email: users.email,
+    country: users.country,
+    plan: subscriptions.plan,
+    status: subscriptions.status,
+    currentPeriodEnd: subscriptions.currentPeriodEnd,
+    stripeCustomerId: subscriptions.stripeCustomerId,
+    stripeSubscriptionId: subscriptions.stripeSubscriptionId,
+  }).from(users)
+    .innerJoin(subscriptions, eq(users.id, subscriptions.userId))
+    .where(eq(subscriptions.status, "past_due"))
+    .orderBy(subscriptions.currentPeriodEnd);
 }
 
 /**

@@ -45,6 +45,7 @@ import {
   getAllSubscribedUsers,
   getBillingStats,
   getCanceledSubscriptions,
+  getPastDueSubs,
   getStripeRevenue,
   getSubsAboutToCancel,
   getBlogPosts,
@@ -607,6 +608,10 @@ export const appRouter = router({
 
     subsAboutToCancel: adminProcedure.query(async () => {
       return getSubsAboutToCancel();
+    }),
+
+    pastDueSubs: adminProcedure.query(async () => {
+      return getPastDueSubs();
     }),
 
     promoteUser: adminProcedure
