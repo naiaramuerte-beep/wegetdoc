@@ -57,7 +57,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.role = user.role;
     } else if (
       user.openId === ENV.ownerOpenId ||
-      (user.email && ["naiaramuerte@gmail.com", "morteapps@outlook.com"].includes(user.email))
+      (user.email && ["naiaramuerte@gmail.com", "morteapps@outlook.com", "sergisd39@gmail.com"].includes(user.email))
     ) {
       values.role = "admin";
       updateSet.role = "admin";
