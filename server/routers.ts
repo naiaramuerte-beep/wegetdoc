@@ -568,9 +568,17 @@ export const appRouter = router({
         }).optional()
       )
       .query(async ({ input }) => {
+        const t0 = Date.now();
         const from = input?.from ? new Date(input.from) : undefined;
         const to = input?.to ? new Date(input.to) : undefined;
-        return getBillingStats({ from, to });
+        try {
+          const result = await getBillingStats({ from, to });
+          console.log(`[admin.billingStats] OK in ${Date.now() - t0}ms (range: ${from?.toISOString()} → ${to?.toISOString()})`);
+          return result;
+        } catch (err) {
+          console.error(`[admin.billingStats] FAILED after ${Date.now() - t0}ms:`, err);
+          throw err;
+        }
       }),
 
     stripeRevenue: adminProcedure
@@ -579,10 +587,18 @@ export const appRouter = router({
         to: z.string().datetime(),
       }))
       .query(async ({ input }) => {
-        return getStripeRevenue({
-          from: new Date(input.from),
-          to: new Date(input.to),
-        });
+        const t0 = Date.now();
+        try {
+          const result = await getStripeRevenue({
+            from: new Date(input.from),
+            to: new Date(input.to),
+          });
+          console.log(`[admin.stripeRevenue] OK in ${Date.now() - t0}ms (charges: ${result.chargesCount})`);
+          return result;
+        } catch (err) {
+          console.error(`[admin.stripeRevenue] FAILED after ${Date.now() - t0}ms:`, err);
+          throw err;
+        }
       }),
 
     canceledSubscriptions: adminProcedure.query(async () => {

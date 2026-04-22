@@ -332,8 +332,21 @@ export default function Admin() {
               </div>
 
               {billingQ.isLoading ? (
-                <div className="flex items-center justify-center h-40">
+                <div className="flex flex-col items-center justify-center h-40 gap-3">
                   <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-xs text-gray-500">Cargando datos…</p>
+                </div>
+              ) : billingQ.error ? (
+                <div className="rounded-xl p-5 border" style={{ backgroundColor: "#1a0a0a", borderColor: "#7f1d1d" }}>
+                  <p className="text-sm font-semibold text-red-300 mb-1">Error al cargar facturación</p>
+                  <p className="text-xs text-red-200/80 font-mono">{billingQ.error.message}</p>
+                  <button
+                    onClick={() => billingQ.refetch()}
+                    className="mt-3 px-3 py-1.5 rounded-md text-xs font-medium text-white"
+                    style={{ backgroundColor: "#dc2626" }}
+                  >
+                    Reintentar
+                  </button>
                 </div>
               ) : billing ? (
                 <>
