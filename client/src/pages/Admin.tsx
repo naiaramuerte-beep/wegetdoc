@@ -2,7 +2,7 @@
    EditorPDF Admin Panel — Dashboard completo
    MRR, ARR, estadísticas de facturación, usuarios, pagos, legal
    ============================================================= */
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -67,20 +67,27 @@ export default function Admin() {
   const [legalContent, setLegalContent] = useState("");
 
 
-  // Date range for Billing tab
+  // Date range for Billing tab. Must be memoized — recalculating on every
+  // render produces a fresh `to = new Date()` every time, which changes the
+  // ISO string and retriggers the useQuery, causing an infinite refetch loop.
   const [rangePreset, setRangePreset] = useState<RangePreset>("today");
   const [customFrom, setCustomFrom] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [customTo, setCustomTo] = useState<string>(() => new Date().toISOString().slice(0, 10));
-  const range = rangeFromPreset(rangePreset, customFrom, customTo);
+  const range = useMemo(
+    () => rangeFromPreset(rangePreset, customFrom, customTo),
+    [rangePreset, customFrom, customTo]
+  );
+  const rangeFromISO = range.from.toISOString();
+  const rangeToISO = range.to.toISOString();
 
   // Queries
   const statsQ = trpc.admin.stats.useQuery(undefined, { enabled: !!user && user.role === "admin" });
   const billingQ = trpc.admin.billingStats.useQuery(
-    { from: range.from.toISOString(), to: range.to.toISOString() },
+    { from: rangeFromISO, to: rangeToISO },
     { enabled: !!user && user.role === "admin" && tab === "billing" }
   );
   const stripeRevQ = trpc.admin.stripeRevenue.useQuery(
-    { from: range.from.toISOString(), to: range.to.toISOString() },
+    { from: rangeFromISO, to: rangeToISO },
     { enabled: !!user && user.role === "admin" && tab === "billing", staleTime: 60 * 1000 }
   );
   const subsAboutToCancelQ = trpc.admin.subsAboutToCancel.useQuery(undefined, {
