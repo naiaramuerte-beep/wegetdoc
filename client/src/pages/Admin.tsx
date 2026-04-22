@@ -439,9 +439,9 @@ export default function Admin() {
                           color: "#1565C0",
                         },
                         {
-                          label: "ARR",
-                          value: formatEur(billing.arr),
-                          sub: "Recurring × 12",
+                          label: "ARR comprometido",
+                          value: formatEur((billing as any).arrCommitted ?? billing.arr),
+                          sub: `ARR real: ${formatEur(billing.arr)}`,
                           icon: <DollarSign size={18} />,
                           color: "#8b5cf6",
                         },
@@ -479,8 +479,8 @@ export default function Admin() {
                     <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Suscripciones</p>
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                       {[
-                        { label: "Activas (cobrando)",  value: billing.activeSubscriptions,    color: "#10b981", icon: <CreditCard size={18} /> },
-                        { label: "En trial (7 días)",   value: billing.trialingSubscriptions,  color: "#1565C0", icon: <Zap size={18} /> },
+                        { label: "Pagando recurrente",  value: (billing as any).payingSubscriptions ?? 0,  color: "#10b981", icon: <CreditCard size={18} />, sub: "Plan monthly/annual" },
+                        { label: "En trial (48h)",      value: billing.trialingSubscriptions,  color: "#1565C0", icon: <Zap size={18} />, sub: "Convertirán en 48h" },
                         { label: "Por cancelar",        value: billing.subsAboutToCancel,      color: "#f59e0b", icon: <AlertTriangle size={18} />, sub: "Cancel at period end" },
                         { label: "Canceladas total",    value: billing.canceledSubscriptions,  color: "#ef4444", icon: <UserX size={18} /> },
                       ].map((card) => (

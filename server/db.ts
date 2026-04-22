@@ -582,20 +582,28 @@ export async function getBillingStats(opts?: { from?: Date; to?: Date }) {
     db.select({ count: sql<number>`count(*)` }).from(users).where(sql`${users.createdAt} >= ${from} AND ${users.createdAt} <= ${to}`),
   ]);
 
-  // Real MRR: only paying subs (status=active). Trials contribute 0 until they convert.
+  // Real MRR: subs currently paying recurring (plan = monthly | annual).
+  // Trials (plan = 'trial') contribute 0 until Stripe charges them post-trial
+  // and the webhook transitions plan → 'monthly'.
   const mrrPerSub = (plan: string | null) => {
     if (plan === "monthly") return MONTHLY_PRICE_EUR;
     if (plan === "annual") return ANNUAL_PRICE_EUR / 12;
     return 0;
   };
   let mrr = 0;
-  for (const sub of allActiveSubs) mrr += mrrPerSub(sub.plan);
-
-  // MRR comprometido: what MRR will be once all trials convert (active + trialing).
-  let mrrCommitted = mrr;
+  let mrrCommitted = 0;
+  // Count active rows: pay-what-you're-on for MRR, but project every live sub
+  // (trial included) at €19.99/mo for MRR comprometido, since trials convert
+  // to monthly unless cancelled.
+  for (const sub of allActiveSubs) {
+    mrr += mrrPerSub(sub.plan);
+    mrrCommitted += sub.plan === "trial" ? MONTHLY_PRICE_EUR : mrrPerSub(sub.plan);
+  }
+  // allTrialingSubs is rarely populated in this app (we use status='active' +
+  // plan='trial' during the trial period), but count it defensively in case a
+  // sub lands in Stripe-native trialing state via webhook.
   for (const sub of allTrialingSubs) {
-    // Trial subs don't have plan set yet in some flows — assume monthly.
-    mrrCommitted += mrrPerSub(sub.plan === "trial" ? "monthly" : sub.plan);
+    mrrCommitted += sub.plan === "annual" ? ANNUAL_PRICE_EUR / 12 : MONTHLY_PRICE_EUR;
   }
 
   // New-subs-by-month chart (12-month rolling). Counts only successful subs
@@ -625,6 +633,13 @@ export async function getBillingStats(opts?: { from?: Date; to?: Date }) {
 
   const canceledTotal = Number(allCanceledSubs[0]?.count ?? 0);
   const activeAndTrialingTotal = allActiveSubs.length + allTrialingSubs.length;
+  // Subs currently in their trial window regardless of how we track status.
+  // In this app trials live as status='active' + plan='trial'; we also fold in
+  // Stripe-native status='trialing' for robustness.
+  const subsOnTrial =
+    allActiveSubs.filter((s) => s.plan === "trial").length + allTrialingSubs.length;
+  const subsPayingRecurring =
+    allActiveSubs.filter((s) => s.plan === "monthly" || s.plan === "annual").length;
 
   return {
     // MRR / ARR
@@ -634,7 +649,8 @@ export async function getBillingStats(opts?: { from?: Date; to?: Date }) {
     arrCommitted: Math.round(mrrCommitted * 12 * 100) / 100,
     // Subs counters
     activeSubscriptions: allActiveSubs.length,
-    trialingSubscriptions: allTrialingSubs.length,
+    trialingSubscriptions: subsOnTrial,
+    payingSubscriptions: subsPayingRecurring,
     subsAboutToCancel: Number(subsToCancel[0]?.count ?? 0),
     canceledSubscriptions: canceledTotal,
     // Periodic counts (point-in-time anchors)
