@@ -145,12 +145,14 @@ function PaymentForm({ onSuccess, userCountry, userPostalCode }: { onSuccess: (p
 // ── Stripe checkout form with PDF preview ──────────────────────────────
 function StripeCheckoutForm({
   onSuccess,
+  onClose,
   pdfData,
   thumbnailUrl,
   buildPdfForUpload,
   converter,
 }: {
   onSuccess: (transactionId?: string) => void;
+  onClose: () => void;
   pdfData?: PdfPayload;
   thumbnailUrl?: string;
   buildPdfForUpload?: () => Promise<{ base64: string; name: string; size: number } | null>;
@@ -161,6 +163,10 @@ function StripeCheckoutForm({
   const [progressStep, setProgressStep] = useState<"idle" | "checkout" | "saving" | "done">("idle");
   const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  // Set to true if the server told us the user already has an active sub —
+  // guard against the double-pay bug. The UI renders a notice instead of
+  // the checkout form in that case.
+  const [alreadySubscribed, setAlreadySubscribed] = useState(false);
 
   const [userCountry, setUserCountry] = useState("ES");
   const [userPostalCode, setUserPostalCode] = useState("");
@@ -183,14 +189,21 @@ function StripeCheckoutForm({
   }, [stripeConfigQ.data?.publishableKey]);
 
   useEffect(() => {
-    if (!stripeConfigQ.data?.publishableKey || clientSecret) return;
+    if (!stripeConfigQ.data?.publishableKey || clientSecret || alreadySubscribed) return;
     createCheckoutSession.mutateAsync().then((res) => {
       if (res.clientSecret) setClientSecret(res.clientSecret);
     }).catch((err) => {
+      // Backend blocks creating a second intro PaymentIntent when the user
+      // already has an active/trialing sub. Surface a clear message instead
+      // of a generic error toast.
+      if (err?.message === "ALREADY_SUBSCRIBED" || err?.data?.code === "PRECONDITION_FAILED") {
+        setAlreadySubscribed(true);
+        return;
+      }
       console.error("[Stripe] Failed to create checkout session:", err);
       toast.error("Error loading payment form. Please try again.");
     });
-  }, [stripeConfigQ.data?.publishableKey]);
+  }, [stripeConfigQ.data?.publishableKey, alreadySubscribed]);
 
   const uploadPdfViaRest = async (data: { base64: string; name: string; size: number }): Promise<void> => {
     const binary = atob(data.base64);
@@ -352,8 +365,25 @@ function StripeCheckoutForm({
             </p>
           </div>
 
-          {/* Stripe form */}
-          {stripePromise && clientSecret ? (
+          {/* Stripe form OR "already subscribed" notice */}
+          {alreadySubscribed ? (
+            <div className="rounded-xl p-5 border bg-amber-50" style={{ borderColor: "#fcd34d" }}>
+              <p className="text-sm font-semibold text-amber-900 mb-1">Ya tienes una suscripción activa</p>
+              <p className="text-xs text-amber-800 leading-relaxed">
+                Detectamos que ya pagaste tu trial de 0,50€ desde esta cuenta.
+                No permitimos cobrar dos veces el mismo trial. Si has usado tus 2
+                descargas, espera al cargo automático de los 19,99€ o cancela tu
+                cuenta antes. Si crees que esto es un error, escribe a soporte.
+              </p>
+              <button
+                onClick={onClose}
+                className="mt-3 px-3 py-2 rounded-lg text-xs font-medium text-white"
+                style={{ backgroundColor: "#0A0A0B" }}
+              >
+                Cerrar
+              </button>
+            </div>
+          ) : stripePromise && clientSecret ? (
             <Elements stripe={stripePromise} options={{ clientSecret, locale: (lang as any) || "auto", appearance: { theme: "stripe", variables: { colorPrimary: "#E63946", borderRadius: "10px" } } }}>
               <PaymentForm onSuccess={handleComplete} userCountry={userCountry} userPostalCode={userPostalCode} />
             </Elements>
@@ -646,6 +676,7 @@ export default function PaywallModal({
         {(reason !== "trial-limit" || upgradeFallbackToCheckout) && currentStep === "plans" && (
           <StripeCheckoutForm
             onSuccess={handlePaymentSuccess}
+            onClose={onClose}
             pdfData={effectivePdfData}
             thumbnailUrl={thumbnailUrl}
             buildPdfForUpload={buildPdfForUpload}

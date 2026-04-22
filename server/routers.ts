@@ -347,7 +347,7 @@ export const appRouter = router({
     confirmSetup: protectedProcedure.mutation(async ({ ctx }) => {
       const { getStripe } = await import("./_core/stripe");
       const { ENV } = await import("./_core/env");
-      const { upsertSubscription, markDocumentsPaid } = await import("./db");
+      const { upsertSubscription, markDocumentsPaid, getActiveSubscription } = await import("./db");
       const stripe = getStripe();
 
       if (!ENV.stripePriceId) {
@@ -359,6 +359,47 @@ export const appRouter = router({
       const customer = existingCustomers.data[0];
       if (!customer) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stripe customer not found" });
+      }
+
+      // ── Idempotency guard ─────────────────────────────────────
+      // If the user already has an active/trialing sub (our DB OR Stripe),
+      // don't create a second one — this prevents the duplicate-sub bug
+      // where a double-click / refresh during checkout would create two
+      // trials and charge €0.50 twice.
+      const existingLocal = await getActiveSubscription(ctx.user.id);
+      if (existingLocal && ["active", "trialing", "past_due"].includes(existingLocal.status)) {
+        return {
+          alreadySubscribed: true,
+          subscriptionId: existingLocal.stripeSubscriptionId,
+          plan: existingLocal.plan,
+          status: existingLocal.status,
+        };
+      }
+      const existingRemote = await stripe.subscriptions.list({
+        customer: customer.id,
+        status: "all",
+        limit: 5,
+      });
+      const liveRemote = existingRemote.data.find((s: any) => ["active", "trialing", "past_due"].includes(s.status));
+      if (liveRemote) {
+        // Reconcile local DB if it missed the sub; don't create a new one.
+        const r = liveRemote as any;
+        await upsertSubscription({
+          userId: ctx.user.id,
+          stripeCustomerId: customer.id,
+          stripeSubscriptionId: r.id,
+          plan: r.status === "trialing" ? "trial" : "monthly",
+          status: r.status,
+          currentPeriodStart: r.current_period_start ? new Date(r.current_period_start * 1000) : undefined,
+          currentPeriodEnd: r.current_period_end ? new Date(r.current_period_end * 1000) : undefined,
+          cancelAtPeriodEnd: r.cancel_at_period_end ?? false,
+        } as any);
+        return {
+          alreadySubscribed: true,
+          subscriptionId: liveRemote.id,
+          plan: liveRemote.status === "trialing" ? "trial" : "monthly",
+          status: liveRemote.status,
+        };
       }
 
       // Get the payment method saved by the PaymentIntent (setup_future_usage: "off_session")
@@ -378,6 +419,10 @@ export const appRouter = router({
         items: [{ price: ENV.stripePriceId }],
         trial_end: trialEnd,
         metadata: { userId: ctx.user.id.toString(), phase: "monthly" },
+      }, {
+        // Idempotency key prevents Stripe from creating a duplicate sub on
+        // retry of this same mutation within 24h.
+        idempotencyKey: `sub-create-${ctx.user.id}-${customer.id}`,
       });
 
       // Save to DB
@@ -424,15 +469,44 @@ export const appRouter = router({
     createCheckoutSession: protectedProcedure.mutation(async ({ ctx }) => {
       const { getStripe } = await import("./_core/stripe");
       const { ENV } = await import("./_core/env");
+      const { getActiveSubscription } = await import("./db");
       const stripe = getStripe();
 
       if (!ENV.stripeIntroPriceId) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stripe intro price not configured" });
       }
 
+      // ── Prevent paying the €0.50 trial twice ────────────────────
+      // If the user already has an active/trialing/past_due sub, they shouldn't
+      // be going through the intro flow again — they should either wait for
+      // trial_end to fire the monthly charge or use the 1-click upgrade.
+      // Returning an error here stops the frontend from creating a second
+      // PaymentIntent → no double charge possible.
+      const existing = await getActiveSubscription(ctx.user.id);
+      if (existing && ["active", "trialing", "past_due"].includes(existing.status)) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "ALREADY_SUBSCRIBED",
+        });
+      }
+      // Belt-and-suspenders: also check Stripe directly in case our local
+      // DB lost track of the sub (e.g., webhook never fired, manual Stripe
+      // cancel-but-still-active). Prevents the exact bug that happened today.
+      const customersList = await stripe.customers.list({ email: ctx.user.email ?? undefined, limit: 1 });
+      const prevCustomer = customersList.data[0];
+      if (prevCustomer) {
+        const remoteSubs = await stripe.subscriptions.list({ customer: prevCustomer.id, status: "all", limit: 5 });
+        const hasLive = remoteSubs.data.some((s: any) => ["active", "trialing", "past_due"].includes(s.status));
+        if (hasLive) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "ALREADY_SUBSCRIBED",
+          });
+        }
+      }
+
       // Find or create Stripe customer
-      const existingCustomers = await stripe.customers.list({ email: ctx.user.email ?? undefined, limit: 1 });
-      let customer = existingCustomers.data[0];
+      let customer = prevCustomer;
       if (!customer) {
         customer = await stripe.customers.create({
           email: ctx.user.email ?? undefined,
