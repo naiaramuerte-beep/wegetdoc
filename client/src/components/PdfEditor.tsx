@@ -4307,19 +4307,19 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         <div
           className="flex items-center gap-3 px-4 py-2.5 border-b"
           style={{
-            backgroundColor: "rgba(76, 175, 80, 0.35)",
-            borderColor: "rgba(46, 125, 50, 0.4)",
+            backgroundColor: "#E8F7EF",
+            borderColor: "#1E9E63",
           }}
         >
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <CheckCircle className="w-5 h-5 flex-shrink-0" style={{ color: "#1E88E5" }} />
+            <CheckCircle className="w-5 h-5 flex-shrink-0" style={{ color: "#1E9E63" }} />
             <div className="min-w-0">
-              <p className="text-sm font-semibold truncate" style={{ color: "#1565C0" }}>
+              <p className="text-sm font-semibold truncate" style={{ color: "#0A0A0B" }}>
                 {convertedFromFile.type.startsWith("image/")
                   ? (t.editor_image_converted_title ?? "Tu imagen ya es un PDF")
                   : (t.editor_file_converted_title ?? "Tu archivo ya es un PDF")}
               </p>
-              <p className="text-xs truncate" style={{ color: "#1E88E5" }}>
+              <p className="text-xs truncate" style={{ color: "#1A1A1C" }}>
                 {convertedFromFile.type.startsWith("image/")
                   ? ((t as any).editor_image_converted_desc_v2 ?? `"${convertedFromFile.name}" se ha convertido a PDF. Puedes añadir texto, firmas e imágenes encima, pero no editar el texto original de la imagen.`)
                   : (t.editor_file_converted_desc ?? `"${convertedFromFile.name}" se ha convertido a PDF automáticamente. Ya puedes editarlo y descargarlo.`)}
@@ -4328,10 +4328,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           </div>
           <button
             onClick={() => setShowConvertedBanner(false)}
-            className="p-1 rounded-full hover:bg-white/50 transition-colors flex-shrink-0"
+            className="p-1 rounded-full hover:bg-white/60 transition-colors flex-shrink-0"
             title="Cerrar"
           >
-            <X className="w-4 h-4" style={{ color: "#1E88E5" }} />
+            <X className="w-4 h-4" style={{ color: "#5A5A62" }} />
           </button>
         </div>
       )}
