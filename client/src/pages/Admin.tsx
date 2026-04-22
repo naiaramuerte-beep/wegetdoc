@@ -54,7 +54,7 @@ function rangeFromPreset(preset: RangePreset, customFrom?: string, customTo?: st
 import BlogAdmin from "./BlogAdmin";
 import TrustpilotAdmin from "./TrustpilotAdmin";
 
-type AdminTab = "overview" | "billing" | "users" | "canceled" | "messages" | "legal" | "settings" | "blog" | "trustpilot";
+type AdminTab = "overview" | "billing" | "users" | "subscribers" | "documents" | "canceled" | "messages" | "legal" | "settings" | "blog" | "trustpilot";
 
 export default function Admin() {
   const [, navigate] = useLocation();
@@ -97,6 +97,10 @@ export default function Admin() {
     enabled: !!user && user.role === "admin" && tab === "billing",
   });
   const usersQ = trpc.admin.users.useQuery({ search: userSearch }, { enabled: !!user && user.role === "admin" && tab === "users" });
+  const subscribersQ = trpc.admin.subscribedUsers.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "subscribers" });
+  const [docSearch, setDocSearch] = useState("");
+  const docsQ = trpc.admin.documents.useQuery({ search: docSearch }, { enabled: !!user && user.role === "admin" && tab === "documents" });
+  const storageQ = trpc.admin.storageByUser.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "documents" });
   const canceledQ = trpc.admin.canceledSubscriptions.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "canceled" });
   const messagesQ = trpc.admin.contactMessages.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "messages" });
   const legalQ = trpc.admin.legalPages.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "legal" });
@@ -162,6 +166,8 @@ export default function Admin() {
     { id: "overview", label: "Resumen", icon: <BarChart2 size={16} /> },
     { id: "billing", label: "Facturación & MRR", icon: <DollarSign size={16} /> },
     { id: "users", label: "Usuarios", icon: <Users size={16} /> },
+    { id: "subscribers", label: "Suscriptores", icon: <Crown size={16} /> },
+    { id: "documents", label: "Documentos", icon: <FileText size={16} /> },
     { id: "canceled", label: "Bajas", icon: <UserX size={16} /> },
     { id: "messages", label: "Mensajes", icon: <MessageSquare size={16} /> },
     { id: "legal", label: "Páginas legales", icon: <BookOpen size={16} /> },
@@ -172,6 +178,29 @@ export default function Admin() {
 
   const formatEur = (n: number) =>
     `€${n.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  // Quote CSV cells safely (commas / quotes / newlines are wrapped).
+  const csvEscape = (val: unknown): string => {
+    if (val === null || val === undefined) return "";
+    const s = val instanceof Date ? val.toISOString() : String(val);
+    if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+    return s;
+  };
+  const downloadCsv = (rows: Record<string, unknown>[], filename: string) => {
+    if (!rows.length) return;
+    const headers = Object.keys(rows[0]);
+    const body = rows.map((r) => headers.map((h) => csvEscape(r[h])).join(",")).join("\n");
+    const csv = headers.join(",") + "\n" + body;
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#0f1117", color: "#e2e8f0" }}>
@@ -212,22 +241,33 @@ export default function Admin() {
           style={{ borderColor: "#1e2433", backgroundColor: "#0a0d14" }}
         >
           <nav className="p-3 flex flex-col gap-1">
-            {tabs.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-left transition-colors w-full"
-                style={{
-                  backgroundColor: tab === t.id ? "#0D47A1" : "transparent",
-                  color: tab === t.id ? "white" : "#94a3b8",
-                }}
-                onMouseEnter={(e) => { if (tab !== t.id) e.currentTarget.style.backgroundColor = "#1e2433"; }}
-                onMouseLeave={(e) => { if (tab !== t.id) e.currentTarget.style.backgroundColor = "transparent"; }}
-              >
-                {t.icon}
-                {t.label}
-              </button>
-            ))}
+            {tabs.map((t) => {
+              const unread = t.id === "messages" ? (stats?.unreadMessages ?? 0) : 0;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-left transition-colors w-full"
+                  style={{
+                    backgroundColor: tab === t.id ? "#0D47A1" : "transparent",
+                    color: tab === t.id ? "white" : "#94a3b8",
+                  }}
+                  onMouseEnter={(e) => { if (tab !== t.id) e.currentTarget.style.backgroundColor = "#1e2433"; }}
+                  onMouseLeave={(e) => { if (tab !== t.id) e.currentTarget.style.backgroundColor = "transparent"; }}
+                >
+                  {t.icon}
+                  <span className="flex-1">{t.label}</span>
+                  {unread > 0 && (
+                    <span
+                      className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-bold text-white"
+                      style={{ backgroundColor: "#E63946" }}
+                    >
+                      {unread > 99 ? "99+" : unread}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </nav>
         </aside>
 
@@ -723,21 +763,292 @@ export default function Admin() {
             </div>
           )}
 
+          {/* ── SUBSCRIBERS (historic + current) ── */}
+          {tab === "subscribers" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-white">Suscriptores</h2>
+                <button
+                  onClick={() => {
+                    if (!subscribersQ.data?.length) return;
+                    downloadCsv(
+                      subscribersQ.data.map((s: any) => ({
+                        email: s.email,
+                        name: s.name,
+                        plan: s.plan,
+                        status: s.subStatus,
+                        country: s.country,
+                        currentPeriodEnd: s.currentPeriodEnd,
+                        createdAt: s.createdAt,
+                        lastSignedIn: s.lastSignedIn,
+                        stripeCustomerId: s.stripeCustomerId,
+                      })),
+                      `subscribers-${new Date().toISOString().slice(0, 10)}.csv`
+                    );
+                  }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-white"
+                  style={{ backgroundColor: "#1e2433" }}
+                >
+                  Exportar CSV
+                </button>
+              </div>
+              {subscribersQ.isLoading ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : (
+                <div className="rounded-xl border overflow-x-auto" style={{ borderColor: "#1e2433" }}>
+                  <table className="w-full text-xs">
+                    <thead style={{ backgroundColor: "#0a0d14" }}>
+                      <tr className="text-left text-gray-400">
+                        <th className="px-4 py-2 font-medium">Email</th>
+                        <th className="px-4 py-2 font-medium">Nombre</th>
+                        <th className="px-4 py-2 font-medium">Plan</th>
+                        <th className="px-4 py-2 font-medium">Estado</th>
+                        <th className="px-4 py-2 font-medium">Fin periodo</th>
+                        <th className="px-4 py-2 font-medium">País</th>
+                        <th className="px-4 py-2 font-medium">Stripe</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {subscribersQ.data?.map((s: any) => (
+                        <tr key={s.id} className="border-t" style={{ borderColor: "#1e2433" }}>
+                          <td className="px-4 py-2 text-white">{s.email}</td>
+                          <td className="px-4 py-2 text-gray-300">{s.name || "—"}</td>
+                          <td className="px-4 py-2 text-gray-300">{s.plan}</td>
+                          <td className="px-4 py-2">
+                            <span
+                              className="inline-flex px-2 py-0.5 rounded text-[10px] font-semibold"
+                              style={{
+                                backgroundColor:
+                                  s.subStatus === "active" ? "#10b98120" :
+                                  s.subStatus === "trialing" ? "#1565C020" :
+                                  s.subStatus === "past_due" ? "#ef444420" :
+                                  s.subStatus === "canceled" ? "#6b728020" : "#6b728020",
+                                color:
+                                  s.subStatus === "active" ? "#10b981" :
+                                  s.subStatus === "trialing" ? "#60a5fa" :
+                                  s.subStatus === "past_due" ? "#ef4444" :
+                                  "#9ca3af",
+                              }}
+                            >
+                              {s.subStatus}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-gray-300">
+                            {s.currentPeriodEnd ? new Date(s.currentPeriodEnd).toLocaleDateString("es-ES") : "—"}
+                          </td>
+                          <td className="px-4 py-2 text-gray-400">{s.country ?? "—"}</td>
+                          <td className="px-4 py-2">
+                            {s.stripeCustomerId ? (
+                              <a
+                                href={`https://dashboard.stripe.com/customers/${s.stripeCustomerId}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[#E63946] hover:underline"
+                              >
+                                Ver →
+                              </a>
+                            ) : (
+                              <span className="text-gray-500">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                      {!subscribersQ.data?.length && (
+                        <tr>
+                          <td colSpan={7} className="px-4 py-6 text-center text-gray-500">
+                            Sin suscriptores todavía.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── DOCUMENTS ── */}
+          {tab === "documents" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <h2 className="text-lg font-semibold text-white">Documentos</h2>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Buscar por nombre o email..."
+                      value={docSearch}
+                      onChange={(e) => setDocSearch(e.target.value)}
+                      className="pl-8 pr-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600"
+                      style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#131720" }}
+                    />
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (!docsQ.data?.length) return;
+                      downloadCsv(
+                        docsQ.data.map((d: any) => ({
+                          id: d.id,
+                          name: d.name,
+                          user: d.userEmail,
+                          sizeBytes: d.fileSize,
+                          paymentStatus: d.paymentStatus,
+                          createdAt: d.createdAt,
+                        })),
+                        `documents-${new Date().toISOString().slice(0, 10)}.csv`
+                      );
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-white"
+                    style={{ backgroundColor: "#1e2433" }}
+                  >
+                    Exportar CSV
+                  </button>
+                </div>
+              </div>
+
+              {/* Storage by user — top 10 */}
+              <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#1e2433", backgroundColor: "#131720" }}>
+                <div className="px-5 py-3 border-b" style={{ borderColor: "#1e2433" }}>
+                  <p className="text-sm font-semibold text-white">Top usuarios por almacenamiento (R2)</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead style={{ backgroundColor: "#0a0d14" }}>
+                      <tr className="text-left text-gray-400">
+                        <th className="px-4 py-2 font-medium">Email</th>
+                        <th className="px-4 py-2 font-medium">Nombre</th>
+                        <th className="px-4 py-2 font-medium text-right">Documentos</th>
+                        <th className="px-4 py-2 font-medium text-right">Almacenamiento</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {storageQ.data?.slice(0, 10).map((s: any) => (
+                        <tr key={s.userId} className="border-t" style={{ borderColor: "#1e2433" }}>
+                          <td className="px-4 py-2 text-white">{s.email}</td>
+                          <td className="px-4 py-2 text-gray-300">{s.name || "—"}</td>
+                          <td className="px-4 py-2 text-right text-gray-300">{s.docCount}</td>
+                          <td className="px-4 py-2 text-right text-gray-200 font-mono">
+                            {(() => {
+                              const b = Number(s.totalBytes) || 0;
+                              if (b < 1024) return `${b} B`;
+                              if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+                              if (b < 1024 * 1024 * 1024) return `${(b / (1024 * 1024)).toFixed(1)} MB`;
+                              return `${(b / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+                            })()}
+                          </td>
+                        </tr>
+                      ))}
+                      {!storageQ.data?.length && (
+                        <tr><td colSpan={4} className="px-4 py-4 text-center text-gray-500">Sin datos</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Documents list */}
+              <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#1e2433", backgroundColor: "#131720" }}>
+                <div className="px-5 py-3 border-b flex items-center justify-between" style={{ borderColor: "#1e2433" }}>
+                  <p className="text-sm font-semibold text-white">Últimos documentos</p>
+                  <p className="text-xs text-gray-500">
+                    {docsQ.data?.length ?? 0} resultados
+                  </p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead style={{ backgroundColor: "#0a0d14" }}>
+                      <tr className="text-left text-gray-400">
+                        <th className="px-4 py-2 font-medium">Nombre</th>
+                        <th className="px-4 py-2 font-medium">Usuario</th>
+                        <th className="px-4 py-2 font-medium text-right">Tamaño</th>
+                        <th className="px-4 py-2 font-medium">Pago</th>
+                        <th className="px-4 py-2 font-medium">Fecha</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {docsQ.data?.map((d: any) => (
+                        <tr key={d.id} className="border-t" style={{ borderColor: "#1e2433" }}>
+                          <td className="px-4 py-2 text-white truncate max-w-[260px]">{d.name}</td>
+                          <td className="px-4 py-2 text-gray-300">{d.userEmail ?? "—"}</td>
+                          <td className="px-4 py-2 text-right text-gray-200 font-mono">
+                            {(() => {
+                              const b = d.fileSize || 0;
+                              if (b < 1024) return `${b} B`;
+                              if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+                              return `${(b / (1024 * 1024)).toFixed(1)} MB`;
+                            })()}
+                          </td>
+                          <td className="px-4 py-2">
+                            <span
+                              className="inline-flex px-2 py-0.5 rounded text-[10px] font-semibold"
+                              style={{
+                                backgroundColor: d.paymentStatus === "paid" ? "#10b98120" : "#f59e0b20",
+                                color: d.paymentStatus === "paid" ? "#10b981" : "#f59e0b",
+                              }}
+                            >
+                              {d.paymentStatus}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-gray-400">
+                            {new Date(d.createdAt).toLocaleString("es-ES")}
+                          </td>
+                        </tr>
+                      ))}
+                      {!docsQ.data?.length && (
+                        <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-500">Sin documentos.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ── USERS ── */}
           {tab === "users" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-white">Gestión de usuarios</h2>
-                <div className="relative">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Buscar por email..."
-                    value={userSearch}
-                    onChange={(e) => setUserSearch(e.target.value)}
-                    className="pl-8 pr-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600"
-                    style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#131720" }}
-                  />
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Buscar por email..."
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      className="pl-8 pr-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600"
+                      style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#131720" }}
+                    />
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (!usersQ.data?.length) return;
+                      downloadCsv(
+                        usersQ.data.map((u: any) => ({
+                          id: u.id,
+                          name: u.name,
+                          email: u.email,
+                          role: u.role,
+                          country: u.country,
+                          subStatus: u.subStatus,
+                          plan: u.subPlan,
+                          stripeCustomerId: u.stripeCustomerId,
+                          currentPeriodEnd: u.currentPeriodEnd,
+                          createdAt: u.createdAt,
+                          lastSignedIn: u.lastSignedIn,
+                        })),
+                        `users-${new Date().toISOString().slice(0, 10)}.csv`
+                      );
+                    }}
+                    className="px-3 py-2 rounded-lg text-xs font-medium text-white"
+                    style={{ backgroundColor: "#1e2433" }}
+                  >
+                    Exportar CSV
+                  </button>
                 </div>
               </div>
 
@@ -869,7 +1180,29 @@ export default function Admin() {
           {/* ── CANCELED ── */}
           {tab === "canceled" && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-white">Usuarios que se han dado de baja</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-white">Usuarios que se han dado de baja</h2>
+                <button
+                  onClick={() => {
+                    if (!canceledQ.data?.length) return;
+                    downloadCsv(
+                      canceledQ.data.map((c: any) => ({
+                        name: c.name,
+                        email: c.email,
+                        plan: c.plan,
+                        canceledAt: c.canceledAt,
+                        country: c.country,
+                        stripeCustomerId: c.stripeCustomerId,
+                      })),
+                      `canceled-${new Date().toISOString().slice(0, 10)}.csv`
+                    );
+                  }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-white"
+                  style={{ backgroundColor: "#1e2433" }}
+                >
+                  Exportar CSV
+                </button>
+              </div>
               <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#1e2433" }}>
                 <table className="w-full text-sm">
                   <thead>

@@ -43,9 +43,11 @@ import {
   markContactMessageRead,
   getAdminStats,
   getAllSubscribedUsers,
+  getAllDocuments,
   getBillingStats,
   getCanceledSubscriptions,
   getPastDueSubs,
+  getStorageByUser,
   getStripeRevenue,
   getSubsAboutToCancel,
   getBlogPosts,
@@ -612,6 +614,16 @@ export const appRouter = router({
 
     pastDueSubs: adminProcedure.query(async () => {
       return getPastDueSubs();
+    }),
+
+    documents: adminProcedure
+      .input(z.object({ search: z.string().optional(), limit: z.number().optional() }).optional())
+      .query(async ({ input }) => {
+        return getAllDocuments({ search: input?.search, limit: input?.limit });
+      }),
+
+    storageByUser: adminProcedure.query(async () => {
+      return getStorageByUser();
     }),
 
     promoteUser: adminProcedure

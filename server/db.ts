@@ -741,6 +741,59 @@ export async function getStripeRevenue(opts: { from: Date; to: Date }) {
 }
 
 /**
+ * Admin doc listing: every document joined with its owner. Supports a simple
+ * search over filename/user email. Ordered by most recent first, capped at
+ * 500 rows by default — the admin rarely needs more at once and pulling the
+ * whole table via tRPC would balloon.
+ */
+export async function getAllDocuments(opts?: { search?: string; limit?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  const limit = opts?.limit ?? 500;
+  const s = opts?.search?.trim();
+
+  const base = db.select({
+    id: documents.id,
+    name: documents.name,
+    fileKey: documents.fileKey,
+    fileUrl: documents.fileUrl,
+    fileSize: documents.fileSize,
+    paymentStatus: documents.paymentStatus,
+    createdAt: documents.createdAt,
+    updatedAt: documents.updatedAt,
+    userId: users.id,
+    userEmail: users.email,
+    userName: users.name,
+  }).from(documents).leftJoin(users, eq(documents.userId, users.id));
+
+  const query = s
+    ? base.where(sql`${documents.name} LIKE ${"%" + s + "%"} OR ${users.email} LIKE ${"%" + s + "%"}`)
+    : base;
+
+  return query.orderBy(desc(documents.createdAt)).limit(limit);
+}
+
+/**
+ * Top N users by storage used (sum of fileSize across their docs). Surfaces
+ * heavy R2 consumers so the admin can investigate abuse or charge enterprise.
+ */
+export async function getStorageByUser(limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    userId: users.id,
+    email: users.email,
+    name: users.name,
+    totalBytes: sql<number>`COALESCE(SUM(${documents.fileSize}), 0)`,
+    docCount: sql<number>`COUNT(${documents.id})`,
+  }).from(users)
+    .leftJoin(documents, eq(users.id, documents.userId))
+    .groupBy(users.id, users.email, users.name)
+    .orderBy(sql`COALESCE(SUM(${documents.fileSize}), 0) DESC`)
+    .limit(limit);
+}
+
+/**
  * List of subs whose recurring charge failed. Stripe is automatically
  * retrying these — if retries exhaust the sub gets canceled. Surfacing
  * them in admin lets the operator reach out before that happens.
