@@ -312,6 +312,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
   // Mobile panel state
   const [showMobilePanel, setShowMobilePanel] = useState(false);
+  // Visibility of fade+chevron indicators on the mobile horizontal-scroll
+  // toolbar. Right starts true (we know the row overflows on every viewport
+  // we ship to). Left flips on once the user actually scrolls.
+  const mobileToolbarRef = useRef<HTMLDivElement | null>(null);
+  const [mobileToolbarFadeRight, setMobileToolbarFadeRight] = useState(true);
+  const [mobileToolbarFadeLeft, setMobileToolbarFadeLeft] = useState(false);
 
   // Compress state
   const [compressQuality, setCompressQuality] = useState(70);
@@ -5281,7 +5287,19 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
         {/* Tools row — horizontal scroll with fade indicator */}
         <div className="relative">
-        <div className="flex items-center overflow-x-auto gap-0 px-1 py-1" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+        <div
+          ref={mobileToolbarRef}
+          onScroll={(e) => {
+            const el = e.currentTarget;
+            // Show right fade only while there's still content to scroll to.
+            const hasMoreRight = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
+            const hasMoreLeft = el.scrollLeft > 4;
+            setMobileToolbarFadeRight(hasMoreRight);
+            setMobileToolbarFadeLeft(hasMoreLeft);
+          }}
+          className="flex items-center overflow-x-auto gap-0 px-1 py-1"
+          style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
+        >
           {/* Rotate page button — first position on mobile */}
           <button
             onClick={rotatePage}
@@ -5292,21 +5310,22 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             <span style={{ fontSize: 10, whiteSpace: "nowrap" }}>{t.editor_rotate}</span>
           </button>
           {[
-            { id: "notes" as ToolName, icon: StickyNote, label: t.editor_notes },
-            { id: "move" as ToolName, icon: Move, label: t.editor_move },
-            { id: "sign" as ToolName, icon: PenTool, label: t.editor_sign },
-            { id: "text" as ToolName, icon: Type, label: t.editor_add_text },
-            { id: "edit-text" as ToolName, icon: Type, label: t.editor_edit_text },
+            // Order optimized for mobile: most-used tools first.
+            { id: "text" as ToolName,      icon: Type,        label: t.editor_add_text },
+            { id: "edit-text" as ToolName, icon: Type,        label: t.editor_edit_text },
+            { id: "sign" as ToolName,      icon: PenTool,     label: t.editor_sign },
             { id: "highlight" as ToolName, icon: Highlighter, label: t.editor_highlight },
-            { id: "brush" as ToolName, icon: Brush, label: t.editor_brush },
-            { id: "eraser" as ToolName, icon: Eraser, label: t.editor_eraser },
-            { id: "image" as ToolName, icon: ImageIcon, label: t.editor_image },
-            { id: "shapes" as ToolName, icon: Shapes, label: t.editor_shapes },
-            { id: "find" as ToolName, icon: Search, label: t.editor_find },
-            { id: "protect" as ToolName, icon: Shield, label: t.editor_protect },
-            { id: "compress" as ToolName, icon: Minimize2, label: t.editor_compress },
-            { id: "merge" as ToolName, icon: Layers, label: (t as any).editor_merge ?? "Merge" },
-            { id: "split" as ToolName, icon: Scissors, label: (t as any).editor_split ?? "Split" },
+            { id: "image" as ToolName,     icon: ImageIcon,   label: t.editor_image },
+            { id: "shapes" as ToolName,    icon: Shapes,      label: t.editor_shapes },
+            { id: "eraser" as ToolName,    icon: Eraser,      label: t.editor_eraser },
+            { id: "brush" as ToolName,     icon: Brush,       label: t.editor_brush },
+            { id: "find" as ToolName,      icon: Search,      label: t.editor_find },
+            { id: "notes" as ToolName,     icon: StickyNote,  label: t.editor_notes },
+            { id: "move" as ToolName,      icon: Move,        label: t.editor_move },
+            { id: "protect" as ToolName,   icon: Shield,      label: t.editor_protect },
+            { id: "compress" as ToolName,  icon: Minimize2,   label: t.editor_compress },
+            { id: "merge" as ToolName,     icon: Layers,      label: (t as any).editor_merge ?? "Merge" },
+            { id: "split" as ToolName,     icon: Scissors,    label: (t as any).editor_split ?? "Split" },
           ].map(({ id, icon: Icon, label }) => (
             <button
               key={id}
@@ -5340,8 +5359,27 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             </button>
           ))}
         </div>
-        {/* Fade gradient on right to indicate more tools */}
-        <div className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none" style={{ background: "linear-gradient(to right, transparent, white)" }} />
+        {/* Fade + chevron indicator that there are more tools when scrolled. */}
+        {mobileToolbarFadeRight && (
+          <div
+            className="absolute right-0 top-0 bottom-0 pointer-events-none flex items-center justify-end pr-1"
+            style={{
+              width: 28,
+              background: "linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.95) 60%, white)",
+            }}
+          >
+            <ChevronRight className="w-4 h-4 animate-pulse" style={{ color: "#94a3b8" }} />
+          </div>
+        )}
+        {mobileToolbarFadeLeft && (
+          <div
+            className="absolute left-0 top-0 bottom-0 pointer-events-none flex items-center justify-start pl-1"
+            style={{
+              width: 24,
+              background: "linear-gradient(to left, rgba(255,255,255,0), rgba(255,255,255,0.9) 60%, white)",
+            }}
+          />
+        )}
         </div>
         {/* Download row */}
         <div className="flex items-center gap-2 px-3 pb-3 pt-1">
