@@ -4953,7 +4953,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       setTypingBlockId(null);
                       setEditingBlockText(block.editedStr ?? block.str);
                       if (block.fontColor) setEditTextColor(block.fontColor);
-                      setShowMobilePanel(true);
+                      // Desktop keeps the format panel open; on mobile it covers
+                      // the PDF and blocks inline editing, so leave it collapsed
+                      // — user can tap the chevron to reveal formatting options.
+                      if (typeof window !== "undefined" && window.innerWidth >= 768) {
+                        setShowMobilePanel(true);
+                      }
                     }
                   }}
                   onDoubleClick={(e) => {
