@@ -948,11 +948,15 @@ export async function getStorageByUser(limit = 50) {
  * List of subs whose recurring charge failed. Stripe is automatically
  * retrying these — if retries exhaust the sub gets canceled. Surfacing
  * them in admin lets the operator reach out before that happens.
+ *
+ * Each row is enriched with the decline reason from Stripe so the operator
+ * can see exactly why the charge failed (insufficient_funds, card_declined,
+ * expired_card, etc.) without jumping to the Stripe dashboard.
  */
 export async function getPastDueSubs() {
   const db = await getDb();
   if (!db) return [];
-  return db.select({
+  const rows = await db.select({
     id: users.id,
     name: users.name,
     email: users.email,
@@ -966,6 +970,115 @@ export async function getPastDueSubs() {
     .innerJoin(subscriptions, eq(users.id, subscriptions.userId))
     .where(eq(subscriptions.status, "past_due"))
     .orderBy(subscriptions.currentPeriodEnd);
+
+  if (rows.length === 0) return [];
+
+  const { getStripe } = await import("./_core/stripe");
+  const stripe = getStripe();
+
+  // Fetch decline detail in parallel — past-due set is small (<20 typically).
+  const enriched = await Promise.all(rows.map(async (row) => {
+    const base = { ...row, declineCode: null as string | null, declineMessage: null as string | null, attemptCount: 0, nextAttemptAt: null as string | null, amountDueEur: null as number | null };
+    if (!row.stripeSubscriptionId) return base;
+    try {
+      const sub = await stripe.subscriptions.retrieve(row.stripeSubscriptionId, {
+        expand: ["latest_invoice.payment_intent"],
+      }) as any;
+      const invoice = sub.latest_invoice;
+      if (!invoice) return base;
+      base.attemptCount = invoice.attempt_count ?? 0;
+      base.nextAttemptAt = invoice.next_payment_attempt ? new Date(invoice.next_payment_attempt * 1000).toISOString() : null;
+      base.amountDueEur = typeof invoice.amount_due === "number" ? invoice.amount_due / 100 : null;
+      const pi = invoice.payment_intent;
+      if (pi && typeof pi === "object" && pi.last_payment_error) {
+        base.declineCode = pi.last_payment_error.decline_code ?? pi.last_payment_error.code ?? null;
+        base.declineMessage = pi.last_payment_error.message ?? null;
+      }
+    } catch {
+      // Stripe fetch failed — leave nullable fields as null.
+    }
+    return base;
+  }));
+
+  return enriched;
+}
+
+/**
+ * Finds subs created in the last N hours whose initial invoice did NOT
+ * succeed — used to detect trials that were created but never collected
+ * the 0,50€ intro charge. These are normally users who abandoned at the
+ * 3DS screen, entered a bad card, or dropped off before `confirmPayment`.
+ */
+export async function getRecentSubsWithoutPayment(opts?: { hours?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  const hours = opts?.hours ?? 24;
+  const since = new Date(Date.now() - hours * 3600 * 1000);
+
+  const rows = await db.select({
+    id: users.id,
+    name: users.name,
+    email: users.email,
+    country: users.country,
+    plan: subscriptions.plan,
+    status: subscriptions.status,
+    createdAt: subscriptions.createdAt,
+    stripeCustomerId: subscriptions.stripeCustomerId,
+    stripeSubscriptionId: subscriptions.stripeSubscriptionId,
+  }).from(users)
+    .innerJoin(subscriptions, eq(users.id, subscriptions.userId))
+    .where(sql`${subscriptions.createdAt} >= ${since}`)
+    .orderBy(desc(subscriptions.createdAt));
+
+  if (rows.length === 0) return [];
+
+  const { getStripe } = await import("./_core/stripe");
+  const stripe = getStripe();
+
+  const enriched = await Promise.all(rows.map(async (row) => {
+    const base: any = {
+      ...row,
+      invoiceStatus: null as string | null,
+      paymentIntentStatus: null as string | null,
+      declineCode: null as string | null,
+      declineMessage: null as string | null,
+      amountDueEur: null as number | null,
+      hostedInvoiceUrl: null as string | null,
+      isSuspicious: false as boolean,
+    };
+    if (!row.stripeSubscriptionId || row.stripeSubscriptionId.startsWith("fake_sub_qa_")) {
+      // Fake QA subs or missing Stripe ID → flag as suspicious-ish but distinct.
+      base.isSuspicious = row.stripeSubscriptionId?.startsWith("fake_sub_qa_") ? false : true;
+      return base;
+    }
+    try {
+      const sub = await stripe.subscriptions.retrieve(row.stripeSubscriptionId, {
+        expand: ["latest_invoice.payment_intent"],
+      }) as any;
+      const invoice = sub.latest_invoice;
+      if (!invoice) return base;
+      base.invoiceStatus = invoice.status ?? null;
+      base.amountDueEur = typeof invoice.amount_due === "number" ? invoice.amount_due / 100 : null;
+      base.hostedInvoiceUrl = invoice.hosted_invoice_url ?? null;
+      const pi = invoice.payment_intent;
+      if (pi && typeof pi === "object") {
+        base.paymentIntentStatus = pi.status ?? null;
+        if (pi.last_payment_error) {
+          base.declineCode = pi.last_payment_error.decline_code ?? pi.last_payment_error.code ?? null;
+          base.declineMessage = pi.last_payment_error.message ?? null;
+        }
+      }
+      // Suspicious = sub exists but invoice wasn't paid within the window.
+      // `paid` invoices or `trialing` subs with amount_due=0 are healthy.
+      base.isSuspicious = invoice.status !== "paid" && invoice.status !== "void";
+    } catch {
+      base.isSuspicious = true; // couldn't verify with Stripe — flag it
+    }
+    return base;
+  }));
+
+  // Surface suspicious first; fall back to the rest after.
+  return enriched.sort((a: any, b: any) => Number(b.isSuspicious) - Number(a.isSuspicious));
 }
 
 /**

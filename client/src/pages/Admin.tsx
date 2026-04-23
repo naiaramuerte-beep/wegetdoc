@@ -98,6 +98,9 @@ export default function Admin() {
   const pastDueSubsQ = trpc.admin.pastDueSubs.useQuery(undefined, {
     enabled: !!user && user.role === "admin" && tab === "billing",
   });
+  const recentSubsNoPayQ = trpc.admin.recentSubsWithoutPayment.useQuery({ hours: 24 }, {
+    enabled: !!user && user.role === "admin" && tab === "billing",
+  });
   const chargesQ = trpc.admin.stripeCharges.useQuery({ limit: 50 }, {
     enabled: !!user && user.role === "admin" && tab === "billing",
   });
@@ -746,9 +749,11 @@ export default function Admin() {
                           <thead style={{ backgroundColor: "#0a0d14" }}>
                             <tr className="text-left text-gray-400">
                               <th className="px-4 py-2 font-medium">Email</th>
-                              <th className="px-4 py-2 font-medium">Nombre</th>
                               <th className="px-4 py-2 font-medium">Plan</th>
-                              <th className="px-4 py-2 font-medium">Fin del periodo</th>
+                              <th className="px-4 py-2 font-medium">Importe</th>
+                              <th className="px-4 py-2 font-medium">Motivo del rechazo</th>
+                              <th className="px-4 py-2 font-medium">Intentos</th>
+                              <th className="px-4 py-2 font-medium">Próximo intento</th>
                               <th className="px-4 py-2 font-medium">País</th>
                               <th className="px-4 py-2 font-medium">Stripe</th>
                             </tr>
@@ -757,10 +762,27 @@ export default function Admin() {
                             {pastDueSubsQ.data.map((s: any) => (
                               <tr key={s.id} className="border-t" style={{ borderColor: "#1e2433" }}>
                                 <td className="px-4 py-2 text-white">{s.email}</td>
-                                <td className="px-4 py-2 text-gray-300">{s.name || "—"}</td>
                                 <td className="px-4 py-2 text-gray-300">{s.plan}</td>
                                 <td className="px-4 py-2 text-gray-300">
-                                  {s.currentPeriodEnd ? new Date(s.currentPeriodEnd).toLocaleDateString("es-ES") : "—"}
+                                  {typeof s.amountDueEur === "number" ? formatEur(s.amountDueEur) : "—"}
+                                </td>
+                                <td className="px-4 py-2">
+                                  {s.declineCode ? (
+                                    <div>
+                                      <span className="inline-block px-2 py-0.5 rounded text-[10px] font-mono mr-1" style={{ backgroundColor: "#ef444420", color: "#ef4444" }}>
+                                        {s.declineCode}
+                                      </span>
+                                      {s.declineMessage && (
+                                        <span className="text-gray-400 text-[11px]">{s.declineMessage}</span>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-gray-500">—</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-2 text-gray-300">{s.attemptCount ?? 0}</td>
+                                <td className="px-4 py-2 text-gray-400">
+                                  {s.nextAttemptAt ? new Date(s.nextAttemptAt).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" }) : "—"}
                                 </td>
                                 <td className="px-4 py-2 text-gray-400">{s.country ?? "—"}</td>
                                 <td className="px-4 py-2">
@@ -771,7 +793,7 @@ export default function Admin() {
                                       rel="noreferrer"
                                       className="text-[#E63946] hover:underline"
                                     >
-                                      Ver en Stripe →
+                                      Ver →
                                     </a>
                                   ) : (
                                     <span className="text-gray-500">—</span>
@@ -788,6 +810,110 @@ export default function Admin() {
                     ) : (
                       <p className="px-5 py-6 text-center text-xs text-gray-500">
                         Ningún cobro fallido — todos los pagos recurrentes al día.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* ── TRIALS CREATED IN LAST 24H WITHOUT A SUCCESSFUL PAYMENT ── */}
+                  <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}>
+                    <div className="px-5 py-3 border-b flex items-center justify-between" style={{ borderColor: "#1e2433" }}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-amber-500">⚠</span>
+                        <p className="text-sm font-semibold text-white">Suscripciones recientes sin cobro confirmado (últimas 24h)</p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {recentSubsNoPayQ.data?.filter((s: any) => s.isSuspicious).length ?? 0} sospechosas · {recentSubsNoPayQ.data?.length ?? 0} total
+                      </p>
+                    </div>
+                    {recentSubsNoPayQ.isLoading ? (
+                      <div className="flex items-center justify-center h-24">
+                        <div className="w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    ) : recentSubsNoPayQ.data && recentSubsNoPayQ.data.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead style={{ backgroundColor: "#0a0d14" }}>
+                            <tr className="text-left text-gray-400">
+                              <th className="px-4 py-2 font-medium">Email</th>
+                              <th className="px-4 py-2 font-medium">Plan</th>
+                              <th className="px-4 py-2 font-medium">Creada</th>
+                              <th className="px-4 py-2 font-medium">Invoice</th>
+                              <th className="px-4 py-2 font-medium">PaymentIntent</th>
+                              <th className="px-4 py-2 font-medium">Motivo</th>
+                              <th className="px-4 py-2 font-medium">Stripe</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {recentSubsNoPayQ.data.map((s: any) => (
+                              <tr key={s.id} className="border-t" style={{ borderColor: "#1e2433", backgroundColor: s.isSuspicious ? "#3a1d1d20" : "transparent" }}>
+                                <td className="px-4 py-2 text-white">
+                                  {s.isSuspicious && <span className="mr-1 text-amber-500">⚠</span>}
+                                  {s.email}
+                                </td>
+                                <td className="px-4 py-2 text-gray-300">{s.plan}</td>
+                                <td className="px-4 py-2 text-gray-400">
+                                  {s.createdAt ? new Date(s.createdAt).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" }) : "—"}
+                                </td>
+                                <td className="px-4 py-2">
+                                  {s.invoiceStatus ? (
+                                    <span className="inline-block px-2 py-0.5 rounded text-[10px] font-mono" style={{
+                                      backgroundColor: s.invoiceStatus === "paid" ? "#10b98120" : s.invoiceStatus === "open" ? "#f59e0b20" : "#6b728020",
+                                      color: s.invoiceStatus === "paid" ? "#10b981" : s.invoiceStatus === "open" ? "#f59e0b" : "#9ca3af",
+                                    }}>
+                                      {s.invoiceStatus}
+                                    </span>
+                                  ) : <span className="text-gray-500">—</span>}
+                                </td>
+                                <td className="px-4 py-2">
+                                  {s.paymentIntentStatus ? (
+                                    <span className="inline-block px-2 py-0.5 rounded text-[10px] font-mono" style={{
+                                      backgroundColor: s.paymentIntentStatus === "succeeded" ? "#10b98120" : "#ef444420",
+                                      color: s.paymentIntentStatus === "succeeded" ? "#10b981" : "#ef4444",
+                                    }}>
+                                      {s.paymentIntentStatus}
+                                    </span>
+                                  ) : <span className="text-gray-500">—</span>}
+                                </td>
+                                <td className="px-4 py-2 text-gray-400 max-w-xs">
+                                  {s.declineCode ? (
+                                    <div>
+                                      <span className="inline-block px-2 py-0.5 rounded text-[10px] font-mono mr-1" style={{ backgroundColor: "#ef444420", color: "#ef4444" }}>
+                                        {s.declineCode}
+                                      </span>
+                                      {s.declineMessage && (
+                                        <div className="text-[11px] mt-0.5">{s.declineMessage}</div>
+                                      )}
+                                    </div>
+                                  ) : s.stripeSubscriptionId?.startsWith("fake_sub_qa_") ? (
+                                    <span className="text-gray-500 text-[11px]">QA test (admin simulado)</span>
+                                  ) : (
+                                    <span className="text-gray-500">—</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-2">
+                                  {s.hostedInvoiceUrl ? (
+                                    <a href={s.hostedInvoiceUrl} target="_blank" rel="noreferrer" className="text-[#E63946] hover:underline">
+                                      Invoice →
+                                    </a>
+                                  ) : s.stripeCustomerId ? (
+                                    <a href={`https://dashboard.stripe.com/customers/${s.stripeCustomerId}`} target="_blank" rel="noreferrer" className="text-[#E63946] hover:underline">
+                                      Cliente →
+                                    </a>
+                                  ) : (
+                                    <span className="text-gray-500">—</span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        <p className="px-5 py-3 text-[11px] text-gray-500 border-t" style={{ borderColor: "#1e2433" }}>
+                          Invoice <span className="text-amber-500">open</span> = factura emitida sin cobrar (típico: usuario abandonó en 3DS). Invoice <span className="text-green-500">paid</span> = OK. PaymentIntent <span className="text-red-500">requires_action</span> = esperando confirmación del cliente.
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="px-5 py-6 text-center text-xs text-gray-500">
+                        Ninguna suscripción reciente — ningún cobro sospechoso.
                       </p>
                     )}
                   </div>

@@ -53,6 +53,7 @@ import {
   getHealthChecks,
   listStripeCoupons,
   getPastDueSubs,
+  getRecentSubsWithoutPayment,
   getRevenueByCountry,
   getStorageByUser,
   getStripeChargesList,
@@ -831,6 +832,12 @@ export const appRouter = router({
     pastDueSubs: adminProcedure.query(async () => {
       return getPastDueSubs();
     }),
+
+    recentSubsWithoutPayment: adminProcedure
+      .input(z.object({ hours: z.number().int().min(1).max(168).optional() }).optional())
+      .query(async ({ input }) => {
+        return getRecentSubsWithoutPayment({ hours: input?.hours });
+      }),
 
     documents: adminProcedure
       .input(z.object({ search: z.string().optional(), limit: z.number().optional() }).optional())
