@@ -108,3 +108,12 @@ temp/
 
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
+
+# Claude Code local state (settings, scheduled task locks)
+.claude/
+
+# Apryse WebViewer assets — 177MB of third-party binaries, not source
+client/public/webviewer/
+
+# Local test PDFs
+client/public/test.pdf
