@@ -575,12 +575,12 @@ export default function PaywallModal({
 
             {/* Pricing highlight */}
             <div className="max-w-sm mx-auto rounded-xl p-5 text-center mb-5" style={{ background: "linear-gradient(135deg, #0A0A0B, #1A1A1C)" }}>
-              <p className="text-sm text-white/70 mb-1">Suscripción mensual</p>
+              <p className="text-sm text-white/70 mb-1">{(t as any).paywall_trial_limit_card_label ?? "Suscripción mensual"}</p>
               <p className="text-3xl font-extrabold text-white tracking-tight">
                 <span style={{ color: "#E63946" }}>19,99€</span>
-                <span className="text-base text-white/50 font-normal ml-1">/mes</span>
+                <span className="text-base text-white/50 font-normal ml-1">{(t as any).paywall_trial_limit_per_month ?? "/mes"}</span>
               </p>
-              <p className="text-xs text-white/60 mt-2">Se cobrará ahora a tu tarjeta guardada</p>
+              <p className="text-xs text-white/60 mt-2">{(t as any).paywall_trial_limit_charge_note ?? "Se cobrará ahora a tu tarjeta guardada"}</p>
             </div>
 
             <div className="max-w-sm mx-auto space-y-2">
@@ -598,12 +598,12 @@ export default function PaywallModal({
               </button>
               {upgradeError && (
                 <div className="rounded-lg p-3 text-xs leading-relaxed" style={{ backgroundColor: "#FEF3C7", color: "#92400E", border: "1px solid #FCD34D" }}>
-                  <p className="font-semibold mb-1">No se pudo activar la suscripción</p>
+                  <p className="font-semibold mb-1">{(t as any).paywall_trial_limit_error_title ?? "No se pudo activar la suscripción"}</p>
                   <p>{upgradeError}</p>
                 </div>
               )}
               <p className="text-[10px] text-center text-gray-400 leading-relaxed">
-                Puedes cancelar en cualquier momento desde tu panel. Sin permanencia.
+                {(t as any).paywall_trial_limit_disclaimer ?? "Puedes cancelar en cualquier momento desde tu panel. Sin permanencia."}
               </p>
             </div>
           </div>

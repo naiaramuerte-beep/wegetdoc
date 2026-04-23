@@ -298,8 +298,17 @@ function DocumentsTab() {
   const [newFolderName, setNewFolderName] = useState("");
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [paywallReason, setPaywallReason] = useState<"trial-limit" | undefined>(undefined);
   const [, navigate] = useLocation();
   const { setPendingFile, setPendingTool } = usePdfFile();
+
+  const goToEditor = () => {
+    const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
+    const lang = langMatch ? langMatch[1] : "es";
+    setPendingFile(null);
+    setPendingTool(null);
+    navigate(`/${lang}/editor`);
+  };
 
   // ── Download document by ID (server fetches from R2 directly) ──
   const handleDownloadDocument = async (doc: any) => {
@@ -307,7 +316,19 @@ function DocumentsTab() {
     try {
       toast.loading(t.dash_preparing_download, { id: "download-doc" });
       const response = await fetch(`/api/documents/download/${doc.id}`, { credentials: "include" });
-      if (!response.ok) throw new Error(t.dash_download_error);
+      if (!response.ok) {
+        if (response.status === 403) {
+          let body: any = null;
+          try { body = await response.json(); } catch {}
+          if (body?.error === "trial-limit") {
+            toast.dismiss("download-doc");
+            setPaywallReason("trial-limit");
+            setShowPaywall(true);
+            return;
+          }
+        }
+        throw new Error(t.dash_download_error);
+      }
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -415,6 +436,24 @@ function DocumentsTab() {
           <p className="text-sm text-slate-400 text-center py-3">{t.dash_no_folders}</p>
         )}
       </div>
+
+      {/* Big CTA — Edit or create another document */}
+      <button
+        onClick={goToEditor}
+        className="group w-full rounded-2xl p-5 flex items-center justify-between gap-4 text-white font-semibold shadow-sm hover:shadow-md transition-all"
+        style={{ background: "linear-gradient(135deg, #0A0A0B 0%, #1A1A1C 55%, #E63946 140%)" }}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0 group-hover:bg-white/15 transition-colors">
+            <Edit3 size={18} className="text-white" />
+          </div>
+          <div className="text-left min-w-0">
+            <p className="text-sm sm:text-base font-bold truncate">{(t as any).dash_cta_new_doc ?? "Edit or create another document"}</p>
+            <p className="text-xs text-white/70 font-normal truncate">{(t as any).dash_cta_new_doc_sub ?? "Upload a new PDF and continue editing"}</p>
+          </div>
+        </div>
+        <ChevronRight size={20} className="text-white/70 group-hover:text-white group-hover:translate-x-1 transition-all flex-shrink-0" />
+      </button>
 
       {/* Documents */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
@@ -529,7 +568,12 @@ function DocumentsTab() {
       </div>
 
       {/* Paywall: shown when user tries to download without subscription */}
-      <PaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} action={t.dash_download} />
+      <PaywallModal
+        isOpen={showPaywall}
+        onClose={() => { setShowPaywall(false); setPaywallReason(undefined); }}
+        action={t.dash_download}
+        reason={paywallReason}
+      />
     </div>
   );
 }
