@@ -429,6 +429,7 @@ export default function PaywallModal({
   // IMPORTANT: these MUST be called unconditionally, before any early
   // return, or React hits error #310 (hook count changes between renders).
   const [upgradeFallbackToCheckout, setUpgradeFallbackToCheckout] = useState(false);
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
   const upgradeTrialNowMut = trpc.subscription.upgradeTrialNow.useMutation();
   const utils2 = trpc.useUtils();
 
@@ -509,6 +510,7 @@ export default function PaywallModal({
 
   // ── Trial-limit 1-click upgrade handler (hooks already declared above) ──
   const handleUpgradeNow = async () => {
+    setUpgradeError(null);
     try {
       const r = await upgradeTrialNowMut.mutateAsync();
       if (r.success) {
@@ -519,14 +521,21 @@ export default function PaywallModal({
         ]);
         onClose();
         if (onPaymentSuccess) onPaymentSuccess();
-      } else {
-        // Card declined or some other failure → fall through to full checkout.
+        return;
+      }
+      // Server distinguishes recoverable card issues from everything else.
+      // Only fall back to the full Stripe checkout when entering a different
+      // card might actually fix the problem.
+      const code = (r as any).code;
+      if (code === "CARD_ERROR") {
         toast.error(r.error || "La tarjeta fue rechazada. Introduce otra.");
         setUpgradeFallbackToCheckout(true);
+      } else {
+        // FAKE_QA_SUB / NO_SUB / NO_STRIPE_ID / STRIPE_ERROR → show inline.
+        setUpgradeError(r.error || "No pudimos activar tu suscripción ahora mismo.");
       }
     } catch (err) {
-      toast.error((err as Error).message || "Error al activar la suscripción");
-      setUpgradeFallbackToCheckout(true);
+      setUpgradeError((err as Error).message || "Error al activar la suscripción.");
     }
   };
 
@@ -587,6 +596,12 @@ export default function PaywallModal({
                   (t as any).paywall_trial_limit_cta ?? "Activar suscripción (19,99€/mes)"
                 )}
               </button>
+              {upgradeError && (
+                <div className="rounded-lg p-3 text-xs leading-relaxed" style={{ backgroundColor: "#FEF3C7", color: "#92400E", border: "1px solid #FCD34D" }}>
+                  <p className="font-semibold mb-1">No se pudo activar la suscripción</p>
+                  <p>{upgradeError}</p>
+                </div>
+              )}
               <p className="text-[10px] text-center text-gray-400 leading-relaxed">
                 Puedes cancelar en cualquier momento desde tu panel. Sin permanencia.
               </p>

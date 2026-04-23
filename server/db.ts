@@ -1348,20 +1348,27 @@ export async function canDownloadForUser(userId: number, docId: number) {
  */
 export async function upgradeTrialImmediately(userId: number) {
   const sub = await getActiveSubscription(userId);
-  if (!sub) return { success: false as const, error: "No active subscription" };
-  if (sub.plan !== "trial") return { success: false as const, error: "Not on trial" };
-  if (!sub.stripeSubscriptionId) return { success: false as const, error: "Stripe sub id missing" };
+  if (!sub) return { success: false as const, error: "No active subscription", code: "NO_SUB" as const };
+  if (sub.plan !== "trial") return { success: false as const, error: "Not on trial", code: "NOT_TRIAL" as const };
+  if (!sub.stripeSubscriptionId) return { success: false as const, error: "Stripe sub id missing", code: "NO_STRIPE_ID" as const };
+
+  // Reject fake QA subs early — these only exist locally; Stripe knows nothing
+  // about them, so trying to update them would 404. Surface a clear message.
+  if (sub.stripeSubscriptionId.startsWith("fake_sub_qa_")) {
+    return {
+      success: false as const,
+      error: "This is a QA test subscription. The upgrade button only works with real Stripe subscriptions — pay 0,50€ for real to test the upgrade flow.",
+      code: "FAKE_QA_SUB" as const,
+    };
+  }
 
   const { getStripe } = await import("./_core/stripe");
   const stripe = getStripe();
   try {
-    // end_behavior defaults fine; passing proration_behavior='none' avoids
-    // surprise credits/charges when shortening the trial.
     await stripe.subscriptions.update(sub.stripeSubscriptionId, {
       trial_end: "now",
       proration_behavior: "none",
     });
-    // Best-effort immediate local update; webhook will also fire and confirm.
     const db = await getDb();
     if (db) {
       await db.update(subscriptions)
@@ -1369,9 +1376,21 @@ export async function upgradeTrialImmediately(userId: number) {
         .where(eq(subscriptions.id, sub.id));
     }
     return { success: true as const, chargedAmountEur: MONTHLY_PRICE_EUR_FIXED };
-  } catch (err) {
-    const msg = (err as Error).message ?? String(err);
-    return { success: false as const, error: msg };
+  } catch (err: any) {
+    // Distinguish card-related Stripe errors (where re-entering a card might
+    // help) from everything else (where retrying with the same card or a new
+    // card won't help — sub doesn't exist, no default PM, etc.).
+    const stripeCode: string | undefined = err?.code ?? err?.raw?.code;
+    const cardCodes = new Set([
+      "card_declined", "expired_card", "incorrect_cvc",
+      "processing_error", "insufficient_funds",
+    ]);
+    const isCardIssue = stripeCode ? cardCodes.has(stripeCode) : false;
+    return {
+      success: false as const,
+      error: err?.message ?? String(err),
+      code: (isCardIssue ? "CARD_ERROR" : "STRIPE_ERROR") as "CARD_ERROR" | "STRIPE_ERROR",
+    };
   }
 }
 
