@@ -520,6 +520,24 @@ export const appRouter = router({
       const introPrice = await stripe.prices.retrieve(ENV.stripeIntroPriceId);
       const amount = introPrice.unit_amount ?? 50; // fallback 50 cents
 
+      // Dedupe: if the user opens the paywall multiple times without paying,
+      // reuse the most recent unconfirmed PaymentIntent instead of creating
+      // another one. Without this, the Stripe dashboard fills up with
+      // "Incomplete" rows — no charge happens, but it looks bad and a stale
+      // tab could later pay the wrong amount.
+      const recent = await stripe.paymentIntents.list({ customer: customer.id, limit: 10 });
+      const reusable = recent.data.find((pi: any) =>
+        pi.amount === amount &&
+        pi.metadata?.phase === "intro" &&
+        // Stripe's intermediate states where the PI is still usable from the client.
+        ["requires_payment_method", "requires_confirmation", "requires_action"].includes(pi.status) &&
+        // Only reuse if it's recent — avoids a 3-day-old client_secret that 3DS will reject.
+        Date.now() / 1000 - pi.created < 30 * 60
+      );
+      if (reusable && reusable.client_secret) {
+        return { clientSecret: reusable.client_secret, customerId: customer.id, reused: true };
+      }
+
       const paymentIntent = await stripe.paymentIntents.create({
         customer: customer.id,
         amount,
