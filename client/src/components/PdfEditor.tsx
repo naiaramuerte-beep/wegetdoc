@@ -1462,6 +1462,23 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     };
   }, []);
 
+  // Canvas is rendered at `vp.width * devicePixelRatio` internally but
+  // displayed at `vp.width` CSS pixels. `getCanvasPos(e)` returns coords
+  // scaled by DPR (needed for drawing on the canvas). Annotations stored
+  // from those coords need to be converted back to CSS pixel space so
+  // the overlay <div> renders on top of where the user actually dragged,
+  // and so the PDF export (which divides by `scale`) lands in the right
+  // PDF point. These ratios give the multiplier for that conversion.
+  const getCanvasToCssRatios = useCallback(() => {
+    const canvas = mainCanvasRef.current;
+    if (!canvas) return { rx: 1, ry: 1 };
+    const rect = canvas.getBoundingClientRect();
+    return {
+      rx: canvas.width ? rect.width / canvas.width : 1,
+      ry: canvas.height ? rect.height / canvas.height : 1,
+    };
+  }, []);
+
   const handleCanvasTouchStart = useCallback((e: React.TouchEvent) => {
     if (activeTool !== "brush" && activeTool !== "eraser" && activeTool !== "highlight") return;
     e.preventDefault();
@@ -1542,24 +1559,33 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       setAnnotations(prev => { const next = [...prev, { ...newAnn, id }]; pushHistory(next); return next; });
       setCurrentBrushPoints([]);
     } else if (activeTool === "eraser" && dragPreview && dragPreview.w > 5 && dragPreview.h > 5) {
+      // dragPreview is in canvas-internal coords (scaled by devicePixelRatio).
+      // The overlay <div> we render for this annotation and the PDF export both
+      // expect CSS pixel coords, so convert before persisting.
+      const { rx, ry } = getCanvasToCssRatios();
       const newAnn: Omit<Annotation, "id"> = {
-        type: "eraser", x: dragPreview.x, y: dragPreview.y,
-        width: dragPreview.w, height: dragPreview.h, page: currentPage,
+        type: "eraser",
+        x: dragPreview.x * rx, y: dragPreview.y * ry,
+        width: dragPreview.w * rx, height: dragPreview.h * ry,
+        page: currentPage,
       };
       const id = Math.random().toString(36).slice(2);
       setAnnotations(prev => { const next = [...prev, { ...newAnn, id }]; pushHistory(next); return next; });
       setDragPreview(null);
     } else if (activeTool === "highlight" && dragPreview && dragPreview.w > 5 && dragPreview.h > 5) {
+      // Same canvas→CSS conversion as the eraser branch above.
+      const { rx, ry } = getCanvasToCssRatios();
       const newAnn: Omit<Annotation, "id"> = {
-        type: "highlight", x: dragPreview.x, y: dragPreview.y,
-        width: dragPreview.w, height: dragPreview.h,
+        type: "highlight",
+        x: dragPreview.x * rx, y: dragPreview.y * ry,
+        width: dragPreview.w * rx, height: dragPreview.h * ry,
         page: currentPage, color: highlightColor,
       };
       const id = Math.random().toString(36).slice(2);
       setAnnotations(prev => { const next = [...prev, { ...newAnn, id }]; pushHistory(next); return next; });
       setDragPreview(null);
     }
-  }, [activeTool, currentBrushPoints, dragPreview, currentPage, brushColor, brushSize, highlightColor, pushHistory]);
+  }, [activeTool, getCanvasToCssRatios, currentBrushPoints, dragPreview, currentPage, brushColor, brushSize, highlightColor, pushHistory]);
 
   // ── Canvas mouse handlers (brush, eraser, highlight) ─────────
   const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
@@ -1636,24 +1662,32 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       setAnnotations(prev => { const next = [...prev, { ...newAnn, id }]; pushHistory(next); return next; });
       setCurrentBrushPoints([]);
     } else if (activeTool === "eraser" && dragPreview && dragPreview.w > 5 && dragPreview.h > 5) {
+      // dragPreview is in canvas-internal coords (scaled by devicePixelRatio).
+      // Convert to CSS pixels so the overlay <div> and the PDF export both
+      // land where the user actually dragged.
+      const { rx, ry } = getCanvasToCssRatios();
       const newAnn: Omit<Annotation, "id"> = {
-        type: "eraser", x: dragPreview.x, y: dragPreview.y,
-        width: dragPreview.w, height: dragPreview.h, page: currentPage,
+        type: "eraser",
+        x: dragPreview.x * rx, y: dragPreview.y * ry,
+        width: dragPreview.w * rx, height: dragPreview.h * ry,
+        page: currentPage,
       };
       const id = Math.random().toString(36).slice(2);
       setAnnotations(prev => { const next = [...prev, { ...newAnn, id }]; pushHistory(next); return next; });
       setDragPreview(null);
     } else if (activeTool === "highlight" && dragPreview && dragPreview.w > 5 && dragPreview.h > 5) {
+      const { rx, ry } = getCanvasToCssRatios();
       const newAnn: Omit<Annotation, "id"> = {
-        type: "highlight", x: dragPreview.x, y: dragPreview.y,
-        width: dragPreview.w, height: dragPreview.h,
+        type: "highlight",
+        x: dragPreview.x * rx, y: dragPreview.y * ry,
+        width: dragPreview.w * rx, height: dragPreview.h * ry,
         page: currentPage, color: highlightColor,
       };
       const id = Math.random().toString(36).slice(2);
       setAnnotations(prev => { const next = [...prev, { ...newAnn, id }]; pushHistory(next); return next; });
       setDragPreview(null);
     }
-  }, [activeTool, getCanvasPos, currentBrushPoints, dragPreview, currentPage, brushColor, brushSize, highlightColor, pushHistory]);
+  }, [activeTool, getCanvasPos, getCanvasToCssRatios, currentBrushPoints, dragPreview, currentPage, brushColor, brushSize, highlightColor, pushHistory]);
 
   const undo = useCallback(() => {
     if (historyIndex <= 0) return;
