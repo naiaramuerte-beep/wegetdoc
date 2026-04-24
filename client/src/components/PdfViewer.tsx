@@ -4,6 +4,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as pdfjsLib from "pdfjs-dist";
+import { pdfjsCompatOpts } from "@/lib/pdfjs-safe";
 
 // Use the bundled worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
@@ -43,7 +44,7 @@ export default function PdfViewer({
     setError(null);
 
     try {
-      const loadingTask = pdfjsLib.getDocument({ data: pdfBytes.slice() });
+      const loadingTask = pdfjsLib.getDocument({ data: pdfBytes.slice(), ...pdfjsCompatOpts() });
       const pdf = await loadingTask.promise;
 
       if (onPageCount) onPageCount(pdf.numPages);

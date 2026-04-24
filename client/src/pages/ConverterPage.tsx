@@ -20,15 +20,9 @@ import {
   FileType, FileImage, Layers, Scissors, Minimize2,
 } from "lucide-react";
 import { toast } from "sonner";
-
-// Polyfill Uint8Array.prototype.toHex (TC39 proposal) — required by pdfjs-dist v5+.
-if (typeof (Uint8Array.prototype as any)["toHex"] !== "function") {
-  (Uint8Array.prototype as any)["toHex"] = function () {
-    return Array.from(this as Uint8Array)
-      .map((b: number) => b.toString(16).padStart(2, "0"))
-      .join("");
-  };
-}
+// pdfjs-safe polyfills Uint8Array hex methods that pdfjs v5 requires.
+// Importing it here guarantees they run before the dynamic pdfjs import.
+import { pdfjsCompatOpts } from "@/lib/pdfjs-safe";
 
 // Configure pdfjs worker once per module — guards against re-init on hot-reload.
 let pdfjsReady: Promise<typeof import("pdfjs-dist/legacy/build/pdf.mjs")> | null = null;
@@ -50,7 +44,7 @@ async function renderPdfThumbnail(file: File, maxWidth = 240): Promise<string | 
   try {
     const pdfjsLib = await loadPdfjs();
     const arr = await file.arrayBuffer();
-    const doc = await pdfjsLib.getDocument({ data: new Uint8Array(arr) }).promise;
+    const doc = await pdfjsLib.getDocument({ data: new Uint8Array(arr), ...pdfjsCompatOpts() }).promise;
     const page = await doc.getPage(1);
     const baseViewport = page.getViewport({ scale: 1 });
     const scale = Math.min(2, maxWidth / baseViewport.width);
