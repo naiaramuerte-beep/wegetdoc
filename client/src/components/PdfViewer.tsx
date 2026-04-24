@@ -65,7 +65,6 @@ export default function PdfViewer({
       const renderTask = page.render({
         canvasContext: ctx,
         viewport,
-        canvas,
       });
 
       renderTaskRef.current = renderTask;
