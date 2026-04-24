@@ -2800,20 +2800,34 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   };
 
   // ── Helper: trigger browser download ──────────────────────────────
+  // Safari (macOS + iOS) silently cancels the download if the anchor isn't
+  // attached to the DOM or if `URL.revokeObjectURL` runs synchronously after
+  // `.click()` — the blob gets revoked before the navigation fires. Chromium
+  // and Firefox tolerate both, Safari doesn't. Keep DOM attach + delayed
+  // revoke for cross-browser parity.
   const triggerDownload = (pdfOut: Uint8Array, downloadName?: string) => {
     const blob = new Blob([pdfOut.buffer.slice(pdfOut.byteOffset, pdfOut.byteOffset + pdfOut.byteLength) as ArrayBuffer], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url;
+    const a = document.createElement("a");
+    a.href = url;
     a.download = downloadName ?? displayName ?? file?.name ?? "document.pdf";
-    a.click(); URL.revokeObjectURL(url);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   // ── Helper: trigger browser download for any blob ──────────────────────────────
+  // Same Safari caveats as triggerDownload above.
   const triggerBlobDownload = (blob: Blob, downloadName: string) => {
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url;
+    const a = document.createElement("a");
+    a.href = url;
     a.download = downloadName;
-    a.click(); URL.revokeObjectURL(url);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   // ── Ref to store pending tool download (blob + filename) for post-payment ──
