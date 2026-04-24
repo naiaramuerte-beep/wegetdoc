@@ -928,16 +928,28 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       fontFamily: string; fontSize: number; pdfFontName: string;
       fontWeight: string; fontStyle: string;
     }
-    const allItems = content.items as any[];
+    // Defensive: on some Safari versions pdfjs returns a TextContent object
+    // whose `items` key is missing or undefined (internal crash swallowed
+    // silently). Treat that as "no editable text" instead of letting the
+    // `for...of` below throw "undefined is not a function".
+    const allItems: any[] = Array.isArray((content as any)?.items) ? (content as any).items : [];
+    if (allItems.length === 0 && typeof console !== "undefined") {
+      // Log content shape once per page so we can diagnose Safari-specific
+      // breakage from the user's DevTools.
+      console.warn("[editorpdf] getTextContent returned no items", { page: pageNum, contentKeys: content ? Object.keys(content) : null });
+    }
     const paragraphs: LineItem[][] = [];
     let currentPara: LineItem[] = [];
 
     for (const item of allItems) {
       // Empty items mark paragraph boundaries
-      if (!item.str || !item.str.trim()) {
+      if (!item || !item.str || !item.str.trim()) {
         if (currentPara.length > 0) { paragraphs.push(currentPara); currentPara = []; }
         continue;
       }
+      // Defensive against rows without a transform matrix (rare but observed
+      // in some malformed PDFs on Safari).
+      if (!Array.isArray(item.transform) || item.transform.length < 6) continue;
       const [a, b, , , e, f] = item.transform as number[];
       const pdfFontSize = Math.sqrt(a * a + b * b);
       const pdfWidth = item.width ?? item.str.length * pdfFontSize * 0.6;
@@ -2729,7 +2741,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       for (let i = 1; i <= pdfDoc.numPages; i++) {
         const page = await pdfDoc.getPage(i);
         const content = await page.getTextContent();
-        const pageText = content.items
+        const items = Array.isArray((content as any)?.items) ? (content as any).items : [];
+        const pageText = items
           .map((item: any) => item.str || "")
           .join(" ");
         if (pageText.toLowerCase().includes(query)) {
