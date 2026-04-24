@@ -5393,12 +5393,24 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   }
                   return;
                 }
-                // Add text / Sign need options up front (font, color, signature tabs)
-                if (id === "text" || id === "sign") {
+                // Tools that need the panel open right away — either because
+                // the panel is where the user types / configures the action
+                // (notes, find, protect, merge, split), or because the panel
+                // surfaces critical controls that aren't discoverable
+                // otherwise (brush width/color, compress quality, sign tabs,
+                // add-text formatting).
+                const TOOLS_THAT_OPEN_SHEET: ToolName[] = [
+                  "text", "sign", "notes", "find", "brush",
+                  "protect", "compress", "merge", "split",
+                ];
+                if (TOOLS_THAT_OPEN_SHEET.includes(id)) {
                   setShowMobilePanel(true);
                   return;
                 }
-                // Everything else: activate tool but keep sheet collapsed — user taps chevron to expand
+                // Everything else (pointer, move, highlight, eraser,
+                // edit-text, shapes): activate the tool but keep the sheet
+                // collapsed — the user taps the chevron to expand if they
+                // want the formatting options.
               }}
               className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg shrink-0 transition-all"
               style={{
