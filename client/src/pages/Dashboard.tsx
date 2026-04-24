@@ -337,7 +337,9 @@ function DocumentsTab() {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Safari cancels the download if revoke runs before the navigation —
+      // delay by one tick to stay safe.
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
       toast.success(t.dash_doc_downloaded, { id: "download-doc" });
     } catch (err) {
       toast.error(t.dash_download_error, { id: "download-doc" });

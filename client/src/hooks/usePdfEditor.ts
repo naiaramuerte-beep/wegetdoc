@@ -194,14 +194,20 @@ export function usePdfEditor() {
   }, []);
 
   // ── Download helper ──────────────────────────────────────────
+  // Safari requires the anchor to be in the DOM and the blob URL to outlive
+  // the click() call by at least one tick; otherwise the download never
+  // starts. Chromium/Firefox tolerate the short form but this pattern works
+  // everywhere.
   const downloadBytes = useCallback((bytes: Uint8Array, name: string) => {
     const blob = new Blob([bytes.buffer as ArrayBuffer], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = name;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }, []);
 
   const downloadCurrent = useCallback(() => {
