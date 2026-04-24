@@ -5264,12 +5264,18 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           {renderToolPanel()}
         </div>
         {/* Mobile bottom sheet */}
+        {/* Anchored at `bottom: 170` (same as the page pill) so it clears the
+            fixed bottom toolbar instead of sitting behind it. `maxHeight` uses
+            dvh + a fixed offset so on short viewports the panel fills all the
+            vertical space above the toolbar — earlier values (bottom 130 /
+            maxHeight 60vh) hid the primary action buttons of the Protect /
+            Search / Notes / Signature panels on phones. */}
         <div
           className={[
-            "fixed left-0 right-0 bottom-[130px] z-40 md:hidden transition-transform duration-300 rounded-t-2xl overflow-hidden",
+            "fixed left-0 right-0 z-40 md:hidden transition-transform duration-300 rounded-t-2xl overflow-hidden",
             showMobilePanel ? "translate-y-0" : "translate-y-full",
           ].join(" ")}
-          style={{ backgroundColor: "#FFFFFF", boxShadow: "0 -4px 24px rgba(13, 51, 17, 0.18)", maxHeight: "60vh", overflowY: "auto" }}
+          style={{ bottom: 170, backgroundColor: "#FFFFFF", boxShadow: "0 -4px 24px rgba(13, 51, 17, 0.18)", maxHeight: "calc(100dvh - 210px)", overflowY: "auto" }}
         >
           {/* Sheet handle + close */}
           <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-white z-10" style={{ borderColor: "#f1f5f9" }}>
@@ -5281,7 +5287,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               <X className="w-4 h-4" style={{ color: "#64748b" }} />
             </button>
           </div>
-          {renderToolPanel()}
+          {/* Extra bottom padding so the last CTA of every tool panel has
+              breathing room and never looks flush against the sheet edge. */}
+          <div className="pb-6">
+            {renderToolPanel()}
+          </div>
         </div>
       </div>
 
