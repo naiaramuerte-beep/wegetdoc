@@ -23,34 +23,10 @@ import { encryptPDF } from "@pdfsmaller/pdf-encrypt-lite";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePdfFile } from "@/contexts/PdfFileContext";
 import { colors } from "@/lib/brand";
-// Polyfill Uint8Array.prototype.toHex (TC39 proposal) — needed by pdfjs-dist v5+
-// Some browsers (Chromium < 140, Firefox, Safari) don't support it yet.
-if (typeof (Uint8Array.prototype as any)["toHex"] !== "function") {
-  (Uint8Array.prototype as any)["toHex"] = function () {
-    return Array.from(this as Uint8Array)
-      .map((b: number) => b.toString(16).padStart(2, "0"))
-      .join("");
-  };
-}
-if (typeof (Uint8Array.prototype as any)["setFromHex"] !== "function") {
-  (Uint8Array.prototype as any)["setFromHex"] = function (hexString: string) {
-    const bytes = new Uint8Array(hexString.length / 2);
-    for (let i = 0; i < hexString.length; i += 2) {
-      bytes[i / 2] = parseInt(hexString.substring(i, i + 2), 16);
-    }
-    this.set(bytes);
-    return { read: hexString.length, written: bytes.length };
-  };
-}
-if (typeof (Uint8Array as any)["fromHex"] !== "function") {
-  (Uint8Array as any)["fromHex"] = function (hexString: string) {
-    const bytes = new Uint8Array(hexString.length / 2);
-    for (let i = 0; i < hexString.length; i += 2) {
-      bytes[i / 2] = parseInt(hexString.substring(i, i + 2), 16);
-    }
-    return bytes;
-  };
-}
+// pdfjs-safe must be imported before pdfjs-dist — it polyfills
+// Uint8Array hex methods (toHex / setFromHex / fromHex) that pdfjs v5
+// requires but WebKit < 18.4 doesn't ship natively.
+import { pdfjsCompatOpts } from "@/lib/pdfjs-safe";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import { PDFDocument, PDFDict, PDFName, PDFRef, PDFStream, rgb, StandardFonts, degrees } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
@@ -106,6 +82,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/legacy/build/pdf.worker.min.mjs",
   import.meta.url
 ).href;
+
 
 // ── Font options ──────────────────────────────────────────────
 const FONT_OPTIONS = [
@@ -590,7 +567,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       }
       setPdfBytes(bytes);
       setPdfLoadProgress(30);
-      const doc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
+      const doc = await pdfjsLib.getDocument({ data: bytes.slice(), ...pdfjsCompatOpts() }).promise;
       setPdfLoadProgress(50);
       setPdfDoc(doc);
       setTotalPages(doc.numPages);
@@ -2324,7 +2301,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const newBytes = new Uint8Array(out).slice();
       setPdfBytes(newBytes);
       // Use a fresh .slice() copy so pdf.js doesn't reuse cached document
-      const newDoc = await pdfjsLib.getDocument({ data: newBytes.slice() }).promise;
+      const newDoc = await pdfjsLib.getDocument({ data: newBytes.slice(), ...pdfjsCompatOpts() }).promise;
       setPdfDoc(newDoc);
       // Update thumbnail for the rotated page
       const rotatedPage = await newDoc.getPage(currentPage);
@@ -2355,7 +2332,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const out = await doc.save();
       const newBytes = new Uint8Array(out).slice();
       setPdfBytes(newBytes);
-      const newDoc = await pdfjsLib.getDocument({ data: newBytes.slice() }).promise;
+      const newDoc = await pdfjsLib.getDocument({ data: newBytes.slice(), ...pdfjsCompatOpts() }).promise;
       setPdfDoc(newDoc);
       setTotalPages(doc.getPageCount());
       const newPageNum = currentPage + 1;
@@ -2391,7 +2368,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const out = await doc.save();
       const newBytes = new Uint8Array(out).slice();
       setPdfBytes(newBytes);
-      const newDoc = await pdfjsLib.getDocument({ data: newBytes.slice() }).promise;
+      const newDoc = await pdfjsLib.getDocument({ data: newBytes.slice(), ...pdfjsCompatOpts() }).promise;
       setPdfDoc(newDoc);
       const newPageCount = doc.getPageCount(); // already removed, so this is the new count
       setTotalPages(newPageCount);
@@ -2414,7 +2391,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // Generate a thumbnail of the annotated PDF (first page)
   const generateAnnotatedThumbnail = async (pdfData: Uint8Array): Promise<string | undefined> => {
     try {
-      const doc = await pdfjsLib.getDocument({ data: pdfData.slice() }).promise;
+      const doc = await pdfjsLib.getDocument({ data: pdfData.slice(), ...pdfjsCompatOpts() }).promise;
       const page = await doc.getPage(1);
       const vp = page.getViewport({ scale: 0.5 });
       const c = document.createElement("canvas");
