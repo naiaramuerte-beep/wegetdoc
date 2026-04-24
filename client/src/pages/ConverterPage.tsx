@@ -54,7 +54,7 @@ async function renderPdfThumbnail(file: File, maxWidth = 240): Promise<string | 
     canvas.height = Math.ceil(viewport.height);
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
-    await page.render({ canvasContext: ctx, viewport, canvas } as any).promise;
+    await page.render({ canvasContext: ctx, viewport } as any).promise;
     return canvas.toDataURL("image/jpeg", 0.85);
   } catch (err) {
     console.warn("[ConverterPage] PDF preview failed:", err);

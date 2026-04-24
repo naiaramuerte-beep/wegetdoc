@@ -588,7 +588,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           const c = document.createElement("canvas");
           c.width = vp.width; c.height = vp.height;
           const ctx = c.getContext("2d")!;
-          await page.render({ canvas: c, viewport: vp } as any).promise;
+          await page.render({ canvasContext: c.getContext("2d")!, viewport: vp } as any).promise;
           thumbs.push(c.toDataURL());
         } catch (err) {
           console.warn(`[Thumbnail] Failed to render page ${i}:`, err);
@@ -635,7 +635,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     canvas.style.width = `${vp.width / dpr}px`;
     canvas.style.height = `${vp.height / dpr}px`;
     const ctx = canvas.getContext("2d")!;
-    await page.render({ canvas, viewport: vp } as any).promise;
+    await page.render({ canvasContext: ctx, viewport: vp } as any).promise;
     // Save clean canvas snapshot for text erasure/restore
     canvasSnapshotRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
     // Sync drawing canvas size
@@ -2185,7 +2185,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const vp = page.getViewport({ scale: 2 });
       const c = document.createElement("canvas");
       c.width = vp.width; c.height = vp.height;
-      await page.render({ canvas: c, viewport: vp } as any).promise;
+      await page.render({ canvasContext: c.getContext("2d")!, viewport: vp } as any).promise;
       const mimeType = format === "jpg" ? "image/jpeg" : "image/png";
       c.toBlob(async (blob) => {
         if (!blob) return;
@@ -2207,7 +2207,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         const vp = page.getViewport({ scale: 2 });
         const c = document.createElement("canvas");
         c.width = vp.width; c.height = vp.height;
-        await page.render({ canvas: c, viewport: vp } as any).promise;
+        await page.render({ canvasContext: c.getContext("2d")!, viewport: vp } as any).promise;
         await new Promise<void>((res) => {
           c.toBlob(async (blob) => {
             if (!blob) { res(); return; }
@@ -2321,7 +2321,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const c = document.createElement("canvas");
       c.width = vp.width; c.height = vp.height;
       const ctx = c.getContext("2d")!;
-      await rotatedPage.render({ canvas: c, viewport: vp } as any).promise;
+      await rotatedPage.render({ canvasContext: c.getContext("2d")!, viewport: vp } as any).promise;
       setThumbnails(prev => {
         const updated = [...prev];
         updated[currentPage - 1] = c.toDataURL();
@@ -2357,7 +2357,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const ctx = c.getContext("2d")!;
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, vp.width, vp.height);
-      await newPage.render({ canvas: c, viewport: vp } as any).promise;
+      await newPage.render({ canvasContext: c.getContext("2d")!, viewport: vp } as any).promise;
       setThumbnails(prev => {
         const updated = [...prev];
         updated.splice(currentPage, 0, c.toDataURL());
@@ -2408,7 +2408,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const vp = page.getViewport({ scale: 0.5 });
       const c = document.createElement("canvas");
       c.width = vp.width; c.height = vp.height;
-      await page.render({ canvas: c, viewport: vp } as any).promise;
+      await page.render({ canvasContext: c.getContext("2d")!, viewport: vp } as any).promise;
       const thumb = c.toDataURL();
       doc.destroy();
       return thumb;
