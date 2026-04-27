@@ -395,6 +395,20 @@ export async function getAllSiteSettings() {
   return db.select().from(siteSettings);
 }
 
+/**
+ * Read the active monthly subscription price from `site_settings`. Used by
+ * email templates, MRR calc, and anything else that needs the current price
+ * server-side. Returns numeric eur + a comma-formatted display string, both
+ * with a sane fallback so callers never have to handle nulls.
+ */
+export async function getActiveMonthlyPrice(): Promise<{ eur: number; formatted: string }> {
+  const raw = await getSiteSetting("subscription_price_eur");
+  const n = Number((raw ?? "").replace(",", "."));
+  const eur = Number.isFinite(n) && n > 0 ? n : 19.99;
+  const formatted = `${eur.toFixed(2).replace(".", ",")}€`;
+  return { eur, formatted };
+}
+
 // ─── Contact Messages ─────────────────────────────────────────
 export async function createContactMessage(data: {
   userId?: number;
@@ -419,6 +433,21 @@ export async function markContactMessageRead(id: number) {
   const db = await getDb();
   if (!db) return;
   await db.update(contactMessages).set({ read: true }).where(eq(contactMessages.id, id));
+}
+
+export async function getContactMessageById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const [row] = await db.select().from(contactMessages).where(eq(contactMessages.id, id)).limit(1);
+  return row ?? null;
+}
+
+export async function markContactMessageReplied(id: number, replyBody: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(contactMessages)
+    .set({ repliedAt: new Date(), replyBody, read: true })
+    .where(eq(contactMessages.id, id));
 }
 
 // ─── Admin stats ──────────────────────────────────────────────
@@ -518,10 +547,12 @@ export async function setGoogleId(userId: number, googleId: string) {
 }
 
 // ─── MRR & Billing Stats ──────────────────────────────────────
-// MRR pricing constants — should match Stripe configuration.
-// trial = no recurring revenue (intro charge of €0.50 is one-time, not MRR);
-// monthly = €19.99/mo; annual = €99/yr → ~€8.25/mo equivalent.
-const MONTHLY_PRICE_EUR = 19.99;
+// MRR pricing constants. Monthly is read from site_settings on each
+// stats query so an admin price change reflects in MRR projections.
+// Caveat: existing subs may have been created at a different price; we
+// can't tell from the local row what they actually pay (Stripe knows but
+// we'd need to fetch per sub). The numbers below are best-effort
+// projections based on the *current* price.
 const ANNUAL_PRICE_EUR = 99;
 const INTRO_PRICE_EUR = 0.50;
 
@@ -536,6 +567,11 @@ const INTRO_PRICE_EUR = 0.50;
 export async function getBillingStats(opts?: { from?: Date; to?: Date }) {
   const db = await getDb();
   if (!db) return null;
+
+  // Resolve the active monthly price once for this stats run so all the
+  // numbers below are consistent. See the constants block above for the
+  // caveat about historical subs at a different price.
+  const MONTHLY_PRICE_EUR = (await getActiveMonthlyPrice()).eur;
 
   const now = new Date();
   const from = opts?.from ?? new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -1355,7 +1391,6 @@ export async function simulateTrialLimitReached(userId: number) {
 // ─── Trial usage limit (2 PDFs per €0.50 trial) ──────────────────
 
 const TRIAL_DOWNLOAD_LIMIT_DEFAULT = 2;
-const MONTHLY_PRICE_EUR_FIXED = 19.99;
 
 async function readTrialLimit(): Promise<number> {
   const val = await getSiteSetting("trial_download_limit");
@@ -1488,7 +1523,7 @@ export async function upgradeTrialImmediately(userId: number) {
         .set({ plan: "monthly", status: "active" })
         .where(eq(subscriptions.id, sub.id));
     }
-    return { success: true as const, chargedAmountEur: MONTHLY_PRICE_EUR_FIXED };
+    return { success: true as const, chargedAmountEur: (await getActiveMonthlyPrice()).eur };
   } catch (err: any) {
     // Distinguish card-related Stripe errors (where re-entering a card might
     // help) from everything else (where retrying with the same card or a new

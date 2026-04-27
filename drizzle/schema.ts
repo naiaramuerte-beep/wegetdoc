@@ -144,6 +144,8 @@ export const contactMessages = mysqlTable("contact_messages", {
   message: text("message").notNull(),
   read: boolean("read").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+  repliedAt: timestamp("repliedAt"),
+  replyBody: text("replyBody"),
 });
 
 export type ContactMessage = typeof contactMessages.$inferSelect;
