@@ -2,15 +2,23 @@
  * Historically this module patched `Uint8Array.prototype.toHex / toBase64`
  * and forced main-thread pdfjs execution on Safari, because pdfjs-dist v5+
  * depended on those TC39 methods and crashed inside the worker on older
- * WebKit (the proposal only landed in Safari 18.2 / 18.4).
+ * WebKit. The app is now pinned to pdfjs-dist v4.x which doesn't need
+ * those patches.
  *
- * The app is now pinned to pdfjs-dist v4.x, which does NOT use those
- * methods at all, so the polyfills and the worker bypass are no longer
- * needed. `pdfjsCompatOpts()` returns `{}` and every call site keeps
- * spreading it for forward compatibility — if we ever jump back to v5+
- * the compat logic can land here again without touching the consumers.
+ * Current job: ensure CID-font CMaps are loaded so pdfjs can decode
+ * Cyrillic / Greek / CJK / Vietnamese text in PDFs that use composite
+ * fonts (very common in Eastern-European and Asian government documents).
+ * Without `cMapUrl`, pdfjs falls back to raw byte values and the user
+ * sees Latin-1 mojibake ("Ïîãîä…") instead of the original characters.
+ *
+ * The cmap files (~1.5 MB of `.bcmap` blobs) are copied from
+ * `node_modules/pdfjs-dist/cmaps/` to `client/public/cmaps/` so Vite
+ * serves them at `/cmaps/`.
  */
 
-export function pdfjsCompatOpts(): Record<string, never> {
-  return {};
+export function pdfjsCompatOpts(): { cMapUrl: string; cMapPacked: boolean } {
+  return {
+    cMapUrl: "/cmaps/",
+    cMapPacked: true,
+  };
 }
