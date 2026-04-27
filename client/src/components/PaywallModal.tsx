@@ -10,6 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { usePdfFile } from "@/contexts/PdfFileContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePricing } from "@/lib/usePricing";
 import { getAuthStrings } from "@/lib/authModalStrings";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
@@ -74,6 +75,7 @@ function PaymentForm({ onSuccess, userCountry, userPostalCode }: { onSuccess: (p
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
   const { t, lang } = useLanguage();
+  const { withPrice } = usePricing();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,7 +135,7 @@ function PaymentForm({ onSuccess, userCountry, userPostalCode }: { onSuccess: (p
 
       {/* Legal disclaimer — sourced from i18n so it follows the active locale */}
       <p className="text-[9px] text-slate-300 leading-relaxed text-center">
-        {t.paywall_legal_text}{" "}
+        {withPrice(t.paywall_legal_text)}{" "}
         <a href={`/${lang}/terms`} target="_blank" className="underline hover:text-slate-400">{t.paywall_terms}</a>
         {" · "}
         <a href={`/${lang}/privacy`} target="_blank" className="underline hover:text-slate-400">{t.paywall_privacy}</a>
@@ -159,6 +161,7 @@ function StripeCheckoutForm({
   converter?: { label: string; price: string };
 }) {
   const { t, lang } = useLanguage();
+  const { price } = usePricing();
   const [isProcessing, setIsProcessing] = useState(false);
   const [progressStep, setProgressStep] = useState<"idle" | "checkout" | "saving" | "done">("idle");
   const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
@@ -372,7 +375,7 @@ function StripeCheckoutForm({
               <p className="text-xs text-amber-800 leading-relaxed">
                 Detectamos que ya pagaste tu trial de 0,50€ desde esta cuenta.
                 No permitimos cobrar dos veces el mismo trial. Si has usado tus 2
-                descargas, espera al cargo automático de los 19,99€ o cancela tu
+                descargas, espera al cargo automático de los {price} o cancela tu
                 cuenta antes. Si crees que esto es un error, escribe a soporte.
               </p>
               <button
@@ -412,6 +415,7 @@ export default function PaywallModal({
 }: PaywallModalProps) {
   const { t, lang } = useLanguage();
   const s = getAuthStrings(lang);
+  const { price, withPrice } = usePricing();
   const { isAuthenticated } = useAuth();
   const { savePdfToSession, setPendingPaywall, pendingFile, pendingEditedPdf, clearPendingEditedPdf, saveEditedPdfToSession } = usePdfFile();
   const [step, setStep] = useState<Step>(isAuthenticated ? "plans" : "auth-choice");
@@ -569,7 +573,7 @@ export default function PaywallModal({
                 {(t as any).paywall_trial_limit_title ?? "Has usado tus 2 PDFs del trial"}
               </h2>
               <p className="text-sm text-gray-500">
-                {(t as any).paywall_trial_limit_body ?? "Activa tu suscripción mensual por 19,99€ para seguir procesando PDFs sin límite."}
+                {withPrice((t as any).paywall_trial_limit_body) || `Activa tu suscripción mensual por ${price} para seguir procesando PDFs sin límite.`}
               </p>
             </div>
 
@@ -577,7 +581,7 @@ export default function PaywallModal({
             <div className="max-w-sm mx-auto rounded-xl p-5 text-center mb-5" style={{ background: "linear-gradient(135deg, #0A0A0B, #1A1A1C)" }}>
               <p className="text-sm text-white/70 mb-1">{(t as any).paywall_trial_limit_card_label ?? "Suscripción mensual"}</p>
               <p className="text-3xl font-extrabold text-white tracking-tight">
-                <span style={{ color: "#E63946" }}>19,99€</span>
+                <span style={{ color: "#E63946" }}>{price}</span>
                 <span className="text-base text-white/50 font-normal ml-1">{(t as any).paywall_trial_limit_per_month ?? "/mes"}</span>
               </p>
               <p className="text-xs text-white/60 mt-2">{(t as any).paywall_trial_limit_charge_note ?? "Se cobrará ahora a tu tarjeta guardada"}</p>
@@ -593,7 +597,7 @@ export default function PaywallModal({
                 {upgradeTrialNowMut.isPending ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> Activando…</>
                 ) : (
-                  (t as any).paywall_trial_limit_cta ?? "Activar suscripción (19,99€/mes)"
+                  withPrice((t as any).paywall_trial_limit_cta) || `Activar suscripción (${price}/mes)`
                 )}
               </button>
               {upgradeError && (

@@ -3,14 +3,18 @@ import { CheckCircle, ArrowRight, Upload, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { usePricing } from "@/lib/usePricing";
 
 export default function PaymentSuccess() {
   const utils = trpc.useUtils();
   const [, navigate] = useLocation();
   const [countdown, setCountdown] = useState(5);
   const { adsTrackingEnabled } = useFeatureFlags();
+  const { priceEur } = usePricing();
 
   // Google Ads conversion tracking (Compra) — gated by flag_ads_tracking.
+  // Conversion value is the projected first-month charge (€19,99 / €39,90)
+  // sourced from the live admin-set price.
   useEffect(() => {
     if (!adsTrackingEnabled) return;
     if (typeof window !== 'undefined' && (window as any).gtag) {
@@ -19,11 +23,11 @@ export default function PaymentSuccess() {
       (window as any).gtag('event', 'conversion', {
         'send_to': 'AW-18071860641/pjCqCJ3srZkcEKHrqqlD',
         'transaction_id': txn,
-        'value': 19.99,
+        'value': priceEur,
         'currency': 'EUR',
       });
     }
-  }, [adsTrackingEnabled]);
+  }, [adsTrackingEnabled, priceEur]);
 
   useEffect(() => {
     // Invalidate subscription status so it refreshes
