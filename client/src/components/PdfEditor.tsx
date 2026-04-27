@@ -942,9 +942,19 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     let currentPara: LineItem[] = [];
 
     for (const item of allItems) {
-      // Empty items mark paragraph boundaries
+      // Skip whitespace-only items but DO NOT treat them as paragraph
+      // boundaries — pdf.js emits empty items between words too (notably
+      // for Cyrillic / CID-font PDFs), not just between paragraphs.
+      // Real paragraph breaks come from hasEOL or position/size shifts
+      // detected below.
       if (!item || !item.str || !item.str.trim()) {
-        if (currentPara.length > 0) { paragraphs.push(currentPara); currentPara = []; }
+        if (item && item.hasEOL && currentPara.length > 0) {
+          // Defer the actual paragraph flush to the position-shift logic
+          // below by tagging the last line; many PDFs emit hasEOL between
+          // every line of the same paragraph, so flushing here would
+          // over-segment too. Track the marker instead.
+          (currentPara[currentPara.length - 1] as any).hadEOL = true;
+        }
         continue;
       }
       // Defensive against rows without a transform matrix (rare but observed
@@ -1016,27 +1026,143 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       // Fallback: if still generic, use rawFamily
       if (fontFamily === "sans-serif") fontFamily = "Arimo, Arial, Helvetica, sans-serif";
       else if (fontFamily === "serif") fontFamily = "Tinos, Times New Roman, serif";
-      const canvasX = e * scale;
-      const canvasY = (pdfPageHeight - f) * scale - pdfFontSize * scale;
+      // Position via pdf.js's official viewport API. It handles page
+      // rotation and CropBox/MediaBox offsets that the manual math below
+      // doesn't cover — those offsets are the typical reason text blocks
+      // appear "outside" the visible page on Ukrainian/CIS government
+      // PDFs whose CropBox doesn't match the MediaBox origin.
+      // Fallback to the manual calc only if the API is unavailable.
+      let canvasX: number, canvasY: number;
+      const convert = (vp as any).convertToViewportPoint;
+      if (typeof convert === "function") {
+        const [vx, vy] = convert.call(vp, e, f) as [number, number];
+        canvasX = vx;
+        canvasY = vy - pdfFontSize * scale;
+      } else {
+        canvasX = e * scale;
+        canvasY = (pdfPageHeight - f) * scale - pdfFontSize * scale;
+      }
       const canvasW = pdfWidth * scale;
       const canvasH = pdfFontSize * scale * 1.4;
       const line: LineItem = { str: item.str, pdfX: e, pdfY: f, pdfWidth, pdfFontSize, fontFamily, pdfFontName, canvasX, canvasY, canvasW, canvasH, fontSize: pdfFontSize * scale, fontWeight, fontStyle };
 
-      // Also break on font size change or large position shift
+      // Decide whether `line` continues the current paragraph or starts a
+      // new one. Earlier heuristics relied on `yGap` (top of new line vs
+      // bottom of prev), which is fragile because canvasH = fontSize * 1.4
+      // makes consecutive lines with normal single-line spacing produce a
+      // slightly negative yGap — meaning real paragraph breaks AND
+      // mid-paragraph line wraps both look the same.
+      //
+      // Cleaner rule: two items belong to the same paragraph only if
+      // they're on the SAME visual line (their canvasY differs by less
+      // than half a font size) and use the same font. A line shift of any
+      // size triggers a new paragraph — this gives "one block per line"
+      // editing, which is what users expect when they tap a list item or
+      // a heading.
       if (currentPara.length > 0) {
         const prev = currentPara[currentPara.length - 1];
         const sizeChanged = Math.abs(line.fontSize - prev.fontSize) > 1;
-        const yGap = line.canvasY - (prev.canvasY + prev.canvasH);
-        const bigYGap = yGap > prev.canvasH * 0.3; // 30% line height = new paragraph
         const fontChanged = line.pdfFontName !== prev.pdfFontName;
-        const bigXShift = Math.abs(line.canvasX - prev.canvasX) > prev.canvasH * 2;
-        // If previous line is short (doesn't fill the block width), it's likely a standalone line
-        const prevLineShort = currentPara.length > 0 && prev.canvasW < line.canvasW * 0.7 && yGap > 0;
-        if (sizeChanged || bigYGap || fontChanged || bigXShift || prevLineShort) { paragraphs.push(currentPara); currentPara = []; }
+        const refSize = Math.min(line.fontSize, prev.fontSize);
+        const sameLine = Math.abs(line.canvasY - prev.canvasY) < refSize * 0.5;
+        if (!sameLine || sizeChanged || fontChanged) {
+          paragraphs.push(currentPara);
+          currentPara = [];
+        }
       }
       currentPara.push(line);
     }
     if (currentPara.length > 0) paragraphs.push(currentPara);
+
+    // ── Phase 2: group consecutive LINES into actual paragraphs ───────
+    // After the loop above, `paragraphs` holds one entry per visual line
+    // (items grouped by same canvasY). We now decide which lines should
+    // merge into a multi-line paragraph and which should stay as their
+    // own block (lists, headings, distinct paragraphs).
+    //
+    // Rules — a line starts a NEW paragraph if any of:
+    //   • the line starts with a list marker ("1.", "•", "a)", etc.)
+    //   • its font name or font size differs from the previous line
+    //   • the vertical gap to the previous line is larger than ~1.7×
+    //     line height (blank line) or negative (going backward / new
+    //     column)
+    //   • the line's left indent differs from the previous line by
+    //     more than ~2 font sizes
+    // Otherwise the line is treated as a continuation of the previous
+    // paragraph and merged into the same block.
+    const LIST_MARKER = /^\s*(?:\d{1,3}[.)°]|[a-zа-яёіїґєA-ZА-ЯЁІЇҐЄ][.)]|[•\-\*•●▪·–—])\s+\S/;
+    const lineText = (l: LineItem[]) => l.map(it => it.str).join(" ").trim();
+    const lineLeft = (l: LineItem[]) => Math.min(...l.map(it => it.canvasX));
+    const lineY = (l: LineItem[]) => l[0].canvasY;
+    const lineFontSize = (l: LineItem[]) => l[0].fontSize;
+    const lineFontName = (l: LineItem[]) => l[0].pdfFontName;
+
+    const grouped: LineItem[][] = [];
+    let currentGroup: LineItem[][] = [];
+    const flushGroup = () => {
+      if (currentGroup.length > 0) {
+        grouped.push(currentGroup.flat());
+        currentGroup = [];
+      }
+    };
+    for (const lineArr of paragraphs) {
+      if (lineArr.length === 0) continue;
+      if (currentGroup.length === 0) { currentGroup.push(lineArr); continue; }
+      const prev = currentGroup[currentGroup.length - 1];
+      const fsPrev = lineFontSize(prev);
+      const fsCur = lineFontSize(lineArr);
+      const yGap = lineY(lineArr) - lineY(prev);
+      const indentDelta = Math.abs(lineLeft(lineArr) - lineLeft(prev));
+      const startsList = LIST_MARKER.test(lineText(lineArr));
+      const sizeChanged = Math.abs(fsCur - fsPrev) > 1;
+      const fontChanged = lineFontName(lineArr) !== lineFontName(prev);
+      const bigGap = yGap > fsCur * 1.7;
+      const wentBackOrUp = yGap < fsCur * 0.2; // line went up or stayed (new column)
+      const indentChanged = indentDelta > fsCur * 2;
+      if (startsList || sizeChanged || fontChanged || bigGap || wentBackOrUp || indentChanged) {
+        flushGroup();
+        currentGroup.push(lineArr);
+      } else {
+        currentGroup.push(lineArr);
+      }
+    }
+    flushGroup();
+    paragraphs.length = 0;
+    paragraphs.push(...grouped.map(items => items as LineItem[]));
+
+    // ── Diagnostic: log out-of-bounds paragraphs (helps debug PDFs whose
+    // text-content positions don't match the rendered viewport, e.g. some
+    // Cyrillic / Ukrainian PDFs whose coordinate system differs from the
+    // visible MediaBox). ────────────────────────────────────────────────
+    if (paragraphs.length > 0) {
+      const canvasCssW = vp.width;   // viewport built with scale, no dpr
+      const canvasCssH = vp.height;
+      let oob = 0;
+      for (const para of paragraphs) {
+        for (const ln of para) {
+          if (ln.canvasX < -5 || ln.canvasY < -5 ||
+              ln.canvasX + ln.canvasW > canvasCssW + 5 ||
+              ln.canvasY + ln.canvasH > canvasCssH + 5) {
+            oob++;
+          }
+        }
+      }
+      if (oob > 0) {
+        const sample = paragraphs[0][0];
+        console.warn("[editorpdf] native text blocks out of bounds", {
+          page: pageNum,
+          oobCount: oob,
+          totalLines: paragraphs.reduce((n, p) => n + p.length, 0),
+          canvasSize: { w: Math.round(canvasCssW), h: Math.round(canvasCssH) },
+          firstBlockSample: {
+            pdfX: sample.pdfX, pdfY: sample.pdfY,
+            canvasX: Math.round(sample.canvasX), canvasY: Math.round(sample.canvasY),
+            canvasW: Math.round(sample.canvasW), canvasH: Math.round(sample.canvasH),
+            str: sample.str.slice(0, 30),
+          },
+        });
+      }
+    }
 
     // Step 2: Build one NativeTextBlock per paragraph
     const blocks: NativeTextBlock[] = [];
