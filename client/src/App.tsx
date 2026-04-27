@@ -37,6 +37,7 @@ const ToolLanding = lazy(() => import("./pages/ToolLanding"));
 const ConverterPage = lazy(() => import("./pages/ConverterPage"));
 const PdfConverterHub = lazy(() => import("./pages/PdfConverterHub"));
 const AdLandingPage = lazy(() => import("./pages/AdLanding"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 // Slugs that route to the standalone PDF→X converter (not the editor).
 // Each maps to a CloudConvert target format.
@@ -211,6 +212,7 @@ function Router() {
       <Route path="/cancelar-suscripcion" component={() => <Redirect to="/es/cancelar-suscripcion" />} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
+      <Route path="/reset-password" component={ResetPassword} />
 
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

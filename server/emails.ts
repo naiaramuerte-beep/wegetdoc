@@ -9,6 +9,8 @@ export async function sendSubscriptionConfirmationEmail(params: {
   amount: string;
   nextBillingDate: string;
   cancelUrl: string;
+  /** Optional override; defaults to the live admin-set price. */
+  monthlyPrice?: string;
 }) {
   if (!process.env.RESEND_API_KEY) {
     console.warn("[Email] RESEND_API_KEY not configured, skipping email");
@@ -16,6 +18,11 @@ export async function sendSubscriptionConfirmationEmail(params: {
   }
 
   const { to, userName, plan, amount, nextBillingDate, cancelUrl } = params;
+  let monthlyPrice = params.monthlyPrice;
+  if (!monthlyPrice) {
+    const { getActiveMonthlyPrice } = await import("./db");
+    monthlyPrice = (await getActiveMonthlyPrice()).formatted;
+  }
 
   try {
     await resend.emails.send({
@@ -53,7 +60,7 @@ export async function sendSubscriptionConfirmationEmail(params: {
       </tr>
       <tr>
         <td style="padding: 8px 0; color: #64748b;">Precio mensual:</td>
-        <td style="padding: 8px 0; text-align: right; font-weight: 600;">19,99€/mes</td>
+        <td style="padding: 8px 0; text-align: right; font-weight: 600;">${monthlyPrice}/mes</td>
       </tr>
     </table>
   </div>

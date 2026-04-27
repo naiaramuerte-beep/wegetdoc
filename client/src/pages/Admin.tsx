@@ -16,7 +16,7 @@ import {
   Search, Trash2, ShieldCheck, ShieldOff, Mail, ChevronDown, ChevronUp,
   CreditCard, Settings, BookOpen, BarChart2, UserX, RefreshCw, Eye, EyeOff,
   ArrowLeft, Crown, Rss, Star, Calendar, Zap, AlertTriangle, RotateCcw,
-  Webhook, ClipboardList, StickyNote, X,
+  Webhook, ClipboardList, StickyNote, X, Loader2, Check,
 } from "lucide-react";
 
 // Date-range presets used by the Billing tab. "today" includes today only,
@@ -186,6 +186,15 @@ export default function Admin() {
   const markReadMut = trpc.admin.markMessageRead.useMutation({
     onSuccess: () => utils.admin.contactMessages.invalidate(),
   });
+
+  const replyMessageMut = trpc.admin.replyToMessage.useMutation({
+    onSuccess: () => {
+      toast.success("Respuesta enviada por email");
+      utils.admin.contactMessages.invalidate();
+    },
+    onError: (err) => toast.error(err.message || "No se pudo enviar la respuesta"),
+  });
+  const [replyDraft, setReplyDraft] = useState<Record<number, string>>({});
 
   const saveLegalMut = trpc.admin.saveLegalPage.useMutation({
     onSuccess: () => {
@@ -1010,7 +1019,7 @@ export default function Admin() {
                     <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}>
                       <div className="px-5 py-3 border-b" style={{ borderColor: "#1e2433" }}>
                         <p className="text-sm font-semibold text-white">MRR por país</p>
-                        <p className="text-[11px] text-gray-500 mt-0.5">Solo suscripciones activas + trials (proyectados a €19,99).</p>
+                        <p className="text-[11px] text-gray-500 mt-0.5">Solo suscripciones activas + trials (proyectados al precio actual).</p>
                       </div>
                       <div className="p-5 space-y-2">
                         {(() => {
@@ -1726,15 +1735,46 @@ export default function Admin() {
                       {expandedMsg === msg.id && (
                         <div className="mt-3 pt-3 border-t" style={{ borderColor: "#1e2433" }}>
                           <p className="text-sm text-gray-300 whitespace-pre-wrap">{msg.message}</p>
-                          <a
-                            href={`mailto:${msg.email}?subject=Re: ${msg.subject}`}
-                            className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors"
-                            style={{ backgroundColor: "#1565C0" }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Mail size={12} />
-                            Responder por email
-                          </a>
+
+                          {(msg as any).repliedAt ? (
+                            <div className="mt-4 rounded-lg p-3 border" style={{ backgroundColor: "#0f2a1a", borderColor: "#15532e" }}>
+                              <p className="text-[11px] font-semibold text-emerald-300 uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+                                <Check size={12} />
+                                Respondido · {new Date((msg as any).repliedAt as string).toLocaleString("es-ES")}
+                              </p>
+                              <p className="text-sm text-gray-200 whitespace-pre-wrap">{(msg as any).replyBody as string}</p>
+                            </div>
+                          ) : (
+                            <div className="mt-4 space-y-2" onClick={(e) => e.stopPropagation()}>
+                              <textarea
+                                value={replyDraft[msg.id] ?? ""}
+                                onChange={(e) => setReplyDraft((prev) => ({ ...prev, [msg.id]: e.target.value }))}
+                                placeholder={`Hola ${msg.name}, gracias por escribir…`}
+                                rows={4}
+                                className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-[#E63946]"
+                                style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
+                              />
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-[10px] text-gray-500">Se enviará desde noreply@editorpdf.net con Reply-To a {msg.email}.</p>
+                                <button
+                                  onClick={() => {
+                                    const body = (replyDraft[msg.id] ?? "").trim();
+                                    if (!body) { toast.error("Escribe una respuesta"); return; }
+                                    replyMessageMut.mutate({ id: msg.id, body });
+                                  }}
+                                  disabled={replyMessageMut.isPending}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-colors disabled:opacity-60 flex-shrink-0"
+                                  style={{ backgroundColor: "#E63946" }}
+                                >
+                                  {replyMessageMut.isPending ? (
+                                    <><Loader2 size={12} className="animate-spin" /> Enviando…</>
+                                  ) : (
+                                    <><Mail size={12} /> Enviar respuesta</>
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

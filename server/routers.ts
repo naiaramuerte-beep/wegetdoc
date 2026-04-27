@@ -41,6 +41,8 @@ import {
   createContactMessage,
   getAllContactMessages,
   markContactMessageRead,
+  markContactMessageReplied,
+  getContactMessageById,
   getAdminStats,
   getAllSubscribedUsers,
   createCoupon,
@@ -211,18 +213,34 @@ export const appRouter = router({
         return { success: true, user: { id: user.id, email: user.email, name: user.name, role: user.role } };
       }),
 
-    // Own auth: forgot password — generate reset token
+    // Own auth: forgot password — generate reset token + send email
     forgotPassword: publicProcedure
       .input(z.object({ email: z.string().email() }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
         const user = await getUserByEmail(input.email);
         // Always return success to avoid email enumeration
         if (!user) return { success: true };
         const token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
         const expiry = new Date(Date.now() + 1000 * 60 * 60); // 1 hour
         await setResetToken(user.id, token, expiry);
-        // In production: send email with reset link. For now, return token in dev.
-        console.log(`[Auth] Reset token for ${input.email}: ${token}`);
+
+        // Build reset link from the request host so it works in both prod
+        // (editorpdf.net) and any preview/local environment.
+        const proto = (ctx.req.headers["x-forwarded-proto"] as string)?.split(",")[0] ?? ctx.req.protocol ?? "https";
+        const host = (ctx.req.headers["x-forwarded-host"] as string) ?? ctx.req.headers.host ?? "editorpdf.net";
+        const resetUrl = `${proto}://${host}/reset-password?token=${encodeURIComponent(token)}`;
+
+        const { sendPasswordResetEmail } = await import("./email");
+        sendPasswordResetEmail({
+          to: input.email,
+          name: user.name ?? null,
+          resetUrl,
+        }).catch((err) => console.error("[Auth] Reset email send error:", err));
+
+        // Dev-only: also log the token so you can test without checking inbox.
+        if (process.env.NODE_ENV !== "production") {
+          console.log(`[Auth] Reset token for ${input.email}: ${token} → ${resetUrl}`);
+        }
         return { success: true };
       }),
 
@@ -718,7 +736,21 @@ export const appRouter = router({
     get: publicProcedure
       .input(z.object({ slug: z.string() }))
       .query(async ({ input }) => {
-        return getLegalPage(input.slug);
+        const page = await getLegalPage(input.slug);
+        if (!page) return page;
+        // Interpolate {price} placeholder so legal pages reflect the live
+        // subscription price. Existing seeded pages with hardcoded "19,99 EUR"
+        // are unaffected (no placeholder = no replacement); when admin edits
+        // them via the panel they can switch to {price} to make them dynamic.
+        const { getActiveMonthlyPrice } = await import("./db");
+        const { formatted } = await getActiveMonthlyPrice();
+        const interpolate = (s: string | null | undefined) =>
+          s ? s.replace(/\{price\}/g, formatted) : s ?? "";
+        return {
+          ...page,
+          title: interpolate(page.title) ?? page.title,
+          content: interpolate(page.content),
+        };
       }),
 
     list: publicProcedure.query(async () => {
@@ -778,6 +810,45 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         await markContactMessageRead(input.id);
+        return { success: true };
+      }),
+
+    /**
+     * Send a reply to a contact-form message and stamp `repliedAt` so the
+     * UI can show it was answered. Body is mandatory; we trim it to keep
+     * empty replies out of the audit log.
+     */
+    replyToMessage: adminProcedure
+      .input(z.object({ id: z.number(), body: z.string().min(1).max(5000) }))
+      .mutation(async ({ ctx, input }) => {
+        const msg = await getContactMessageById(input.id);
+        if (!msg) throw new TRPCError({ code: "NOT_FOUND", message: "Mensaje no encontrado" });
+        const trimmed = input.body.trim();
+        if (!trimmed) throw new TRPCError({ code: "BAD_REQUEST", message: "Respuesta vacía" });
+
+        const { sendContactReplyEmail } = await import("./email");
+        const sent = await sendContactReplyEmail({
+          to: msg.email,
+          toName: msg.name,
+          originalSubject: msg.subject,
+          originalMessage: msg.message,
+          replyBody: trimmed,
+        });
+        if (!sent) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "No se pudo enviar el email. Revisa que RESEND_API_KEY esté configurada.",
+          });
+        }
+        await markContactMessageReplied(input.id, trimmed);
+        await recordAuditEntry({
+          adminId: ctx.user.id,
+          adminEmail: ctx.user.email ?? null,
+          action: "reply_contact_message",
+          targetType: "contact_message",
+          targetId: String(input.id),
+          metadata: { to: msg.email, length: trimmed.length },
+        });
         return { success: true };
       }),
 

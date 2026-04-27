@@ -30,7 +30,7 @@ The service includes a **48-hour trial period** at an initial cost of **0.50 EUR
 
 ### 3.2 Recurring Charges
 
-**IMPORTANT NOTICE:** By completing the initial payment of 0.50 EUR, the user **expressly authorizes** EditorPDF to charge **19.99 EUR/month** (taxes included) to the registered payment method once the 48-hour trial period has concluded. This charge will recur monthly until the user cancels their subscription.
+**IMPORTANT NOTICE:** By completing the initial payment of 0.50 EUR, the user **expressly authorizes** EditorPDF to charge **{price}/month** (taxes included) to the registered payment method once the 48-hour trial period has concluded. This charge will recur monthly until the user cancels their subscription.
 
 ### 3.3 Cancellation
 
@@ -175,7 +175,7 @@ At EditorPDF we want our users to be satisfied with the service. We offer a **7 
 
 ## 1. Eligibility
 
-This right applies to both the trial period charge (0.50 EUR) and the first monthly subscription charge (19.99 EUR) if it occurs within 7 days of starting the service.
+This right applies to both the trial period charge (0.50 EUR) and the first monthly subscription charge ({price}) if it occurs within 7 days of starting the service.
 
 ## 2. How to Request a Refund
 
