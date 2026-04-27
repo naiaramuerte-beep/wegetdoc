@@ -1978,6 +1978,51 @@ export default function Admin() {
             <div className="space-y-6">
               <h2 className="text-lg font-semibold text-white">Ajustes del sitio</h2>
 
+              {/* Subscription pricing — A/B test */}
+              <div
+                className="rounded-xl border p-5 space-y-4"
+                style={{ backgroundColor: "#131720", borderColor: "#E63946" }}
+              >
+                <div>
+                  <p className="text-sm font-semibold text-white flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#E63946" }} />
+                    Precio de suscripción
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Cambia el precio mensual mostrado en toda la web y el Stripe Price ID que se usa al crear nuevas suscripciones.
+                    <strong className="text-amber-300"> Solo afecta a NUEVOS checkouts.</strong> Los suscriptores existentes mantienen su precio actual.
+                  </p>
+                </div>
+                {settingsQ.isLoading ? (
+                  <p className="text-gray-400 text-sm">Cargando...</p>
+                ) : (
+                  <div className="space-y-3">
+                    {[
+                      { key: "subscription_price_eur", label: "Precio mensual (€)", placeholder: "19.99 (deja vacío para 19,99)" },
+                      { key: "active_stripe_price_id", label: "Stripe Price ID", placeholder: "price_xxx (deja vacío para usar STRIPE_PRICE_ID env)" },
+                    ].map((setting) => {
+                      const current =
+                        settingsQ.data?.find((s) => s.key === setting.key)?.value ?? "";
+                      return (
+                        <SettingRow
+                          key={setting.key}
+                          label={setting.label}
+                          defaultValue={current}
+                          placeholder={setting.placeholder}
+                          onSave={(value) =>
+                            saveSettingMut.mutate({ key: setting.key, value })
+                          }
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+                <p className="text-[10px] text-gray-500 pt-2 border-t" style={{ borderColor: "#1e2433" }}>
+                  💡 El cambio se aplica inmediatamente. Si dejas ambos vacíos, se usa el precio por defecto (19,99€) y el <code className="font-mono">STRIPE_PRICE_ID</code> del env.
+                  Para crear un nuevo Price en Stripe: <code className="font-mono">railway run node scripts/create-test-price.mjs</code>.
+                </p>
+              </div>
+
               {/* Site settings */}
               <div
                 className="rounded-xl border p-5 space-y-4"
@@ -1992,7 +2037,6 @@ export default function Admin() {
                       { key: "site_name", label: "Nombre del sitio", placeholder: brandName },
                       { key: "support_email", label: "Email de soporte", placeholder: "soporte@editorpdf.net" },
                       { key: "trial_price_eur", label: "Precio prueba 48h (€)", placeholder: "0.50" },
-                      { key: "monthly_price_eur", label: "Precio mensual (€)", placeholder: "19.99" },
                       { key: "promo_banner_text", label: "Texto del banner promocional", placeholder: "¡Oferta especial! 20% de descuento…" },
                       { key: "promo_banner_level", label: "Nivel del banner (info / warning / success)", placeholder: "info" },
                     ].map((setting) => {

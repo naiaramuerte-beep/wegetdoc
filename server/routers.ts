@@ -108,6 +108,30 @@ export const appRouter = router({
     }),
 
     /**
+     * Active subscription pricing — read from `site_settings.subscription_price_eur`
+     * with fallback to a default. Returns numeric eur + a few preformatted
+     * strings so consumers don't reimplement locale formatting. The Stripe
+     * Price ID used at checkout lives in `active_stripe_price_id` and is
+     * NOT exposed here (server-only — see `confirmSetup`).
+     */
+    pricing: publicProcedure.query(async () => {
+      const raw = await getSiteSetting("subscription_price_eur");
+      const priceEur = (() => {
+        const n = Number((raw ?? "").replace(",", "."));
+        return Number.isFinite(n) && n > 0 ? n : 19.99;
+      })();
+      // "39.90" → "39,90" for de/es/fr/it/pl/pt/ro/ru/uk; "39.90" stays for en/zh/nl
+      const decimals = priceEur.toFixed(2);
+      const comma = decimals.replace(".", ",");
+      return {
+        priceEur,
+        priceComma: comma,           // "39,90"
+        priceDot: decimals,          // "39.90"
+        priceFormattedEs: `${comma}€`, // "39,90€" — used everywhere in es-style copy
+      };
+    }),
+
+    /**
      * Feature flags consumed by the client. Default = ON when the
      * site_settings row is missing. Admin must explicitly set "false"
      * to disable a feature. That way the app behaves normally out of
@@ -351,7 +375,11 @@ export const appRouter = router({
       const { upsertSubscription, markDocumentsPaid, getActiveSubscription } = await import("./db");
       const stripe = getStripe();
 
-      if (!ENV.stripePriceId) {
+      // Active price ID: site_settings override (admin-toggleable A/B test)
+      // takes precedence over env. Falls back to env when unset/empty.
+      const overridePriceId = (await getSiteSetting("active_stripe_price_id"))?.trim() ?? "";
+      const activePriceId = overridePriceId || ENV.stripePriceId;
+      if (!activePriceId) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stripe monthly price not configured" });
       }
 
@@ -417,7 +445,7 @@ export const appRouter = router({
       const trialEnd = Math.floor(Date.now() / 1000) + 48 * 60 * 60; // 48 hours from now
       const subscription = await stripe.subscriptions.create({
         customer: customer.id,
-        items: [{ price: ENV.stripePriceId }],
+        items: [{ price: activePriceId }],
         trial_end: trialEnd,
         metadata: { userId: ctx.user.id.toString(), phase: "monthly" },
       }, {
@@ -460,9 +488,10 @@ export const appRouter = router({
     // Stripe config — returns publishable key to frontend
     stripeConfig: publicProcedure.query(async () => {
       const { ENV } = await import("./_core/env");
+      const overridePriceId = (await getSiteSetting("active_stripe_price_id"))?.trim() ?? "";
       return {
         publishableKey: ENV.stripePublishableKey,
-        priceId: ENV.stripePriceId,
+        priceId: overridePriceId || ENV.stripePriceId,
       };
     }),
 
@@ -775,8 +804,20 @@ export const appRouter = router({
 
     saveSetting: adminProcedure
       .input(z.object({ key: z.string(), value: z.string() }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
         await setSiteSetting(input.key, input.value);
+        // Audit-log price-impacting changes — they affect what new customers
+        // pay, so we want a record of who flipped them and when.
+        if (input.key === "subscription_price_eur" || input.key === "active_stripe_price_id") {
+          await recordAuditEntry({
+            adminId: ctx.user.id,
+            adminEmail: ctx.user.email ?? null,
+            action: "update_pricing",
+            targetType: "site_setting",
+            targetId: input.key,
+            metadata: { value: input.value },
+          });
+        }
         return { success: true };
       }),
 

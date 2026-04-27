@@ -12,6 +12,7 @@ import Footer from "@/components/Footer";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePricing } from "@/lib/usePricing";
 import { brandName } from "@/lib/brand";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
@@ -21,6 +22,7 @@ export default function Pricing() {
   const [showCheckout, setShowCheckout] = useState(false);
   const { isAuthenticated, user } = useAuth();
   const { t } = useLanguage();
+  const { withPrice } = usePricing();
 
   const features = [
     { name: t.pricing_feature_convert ?? "Unlimited conversions", trial: false, monthly: true },
@@ -208,7 +210,7 @@ export default function Pricing() {
                   className="text-4xl font-extrabold"
                   style={{ color: "#0f172a" }}
                 >
-                  {t.pricing_monthly_price}
+                  {withPrice(t.pricing_monthly_price)}
                 </span>
                 <span
                   className="text-sm ml-1"
@@ -248,7 +250,7 @@ export default function Pricing() {
                 }}
                 onClick={handleSubscribe}
               >
-                {t.pricing_cta_monthly}
+                {withPrice(t.pricing_cta_monthly)}
               </button>
             </div>
           </div>

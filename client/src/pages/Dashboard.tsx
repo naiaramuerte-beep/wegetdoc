@@ -24,6 +24,7 @@ import { useLocation } from "wouter";
 import { usePdfFile } from "@/contexts/PdfFileContext";
 import { brandName } from "@/lib/brand";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePricing } from "@/lib/usePricing";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
@@ -801,6 +802,7 @@ function DashboardStripeInline({ onComplete }: { onComplete: () => void }) {
 // ─── Billing Tab ──────────────────────────────────────────────
 function BillingTab() {
   const { t } = useLanguage();
+  const { price } = usePricing();
   const { user } = useAuth();
   const { data: subData, isLoading } = trpc.subscription.status.useQuery();
   const utils = trpc.useUtils();
@@ -903,7 +905,7 @@ function BillingTab() {
           <div className="text-right flex-shrink-0">
             {isPremium && sub?.plan !== "trial" ? (
               <div>
-                <p className="text-3xl font-bold text-white">19,99€</p>
+                <p className="text-3xl font-bold text-white">{price}</p>
                 <p className={`text-xs ${sub?.cancelAtPeriodEnd ? "text-amber-200" : "text-white/60"}`}>{t.dash_per_month}</p>
               </div>
             ) : !isPremium ? (
