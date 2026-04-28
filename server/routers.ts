@@ -43,6 +43,7 @@ import {
   markContactMessageRead,
   markContactMessageReplied,
   getContactMessageById,
+  deleteContactMessage,
   getEmailTemplates,
   createEmailTemplate,
   updateEmailTemplate,
@@ -814,6 +815,20 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         await markContactMessageRead(input.id);
+        return { success: true };
+      }),
+
+    deleteMessage: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteContactMessage(input.id);
+        await recordAuditEntry({
+          adminId: ctx.user.id,
+          adminEmail: ctx.user.email ?? null,
+          action: "delete_contact_message",
+          targetType: "contact_message",
+          targetId: String(input.id),
+        });
         return { success: true };
       }),
 
