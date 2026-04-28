@@ -7,6 +7,7 @@ import {
   blogPosts,
   contactMessages,
   documents,
+  emailTemplates,
   folders,
   legalPages,
   siteSettings,
@@ -448,6 +449,31 @@ export async function markContactMessageReplied(id: number, replyBody: string) {
   await db.update(contactMessages)
     .set({ repliedAt: new Date(), replyBody, read: true })
     .where(eq(contactMessages.id, id));
+}
+
+// ─── Email Templates (canned admin replies) ──────────────────────
+export async function getEmailTemplates() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(emailTemplates).orderBy(desc(emailTemplates.updatedAt));
+}
+
+export async function createEmailTemplate(data: { name: string; body: string }) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(emailTemplates).values(data);
+}
+
+export async function updateEmailTemplate(id: number, data: { name: string; body: string }) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(emailTemplates).set(data).where(eq(emailTemplates.id, id));
+}
+
+export async function deleteEmailTemplate(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(emailTemplates).where(eq(emailTemplates.id, id));
 }
 
 // ─── Admin stats ──────────────────────────────────────────────
