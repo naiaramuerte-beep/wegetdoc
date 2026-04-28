@@ -451,6 +451,12 @@ export async function markContactMessageReplied(id: number, replyBody: string) {
     .where(eq(contactMessages.id, id));
 }
 
+export async function deleteContactMessage(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(contactMessages).where(eq(contactMessages.id, id));
+}
+
 // ─── Email Templates (canned admin replies) ──────────────────────
 export async function getEmailTemplates() {
   const db = await getDb();

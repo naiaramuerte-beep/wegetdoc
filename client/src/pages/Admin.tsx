@@ -188,6 +188,15 @@ export default function Admin() {
     onSuccess: () => utils.admin.contactMessages.invalidate(),
   });
 
+  const deleteMessageMut = trpc.admin.deleteMessage.useMutation({
+    onSuccess: () => {
+      toast.success("Mensaje eliminado");
+      utils.admin.contactMessages.invalidate();
+      setExpandedMsg(null);
+    },
+    onError: (err) => toast.error(err.message || "Error al eliminar"),
+  });
+
   const replyMessageMut = trpc.admin.replyToMessage.useMutation({
     onSuccess: () => {
       toast.success("Respuesta enviada por email");
@@ -1732,22 +1741,39 @@ export default function Admin() {
                       }}
                     >
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
                           {!msg.read && (
                             <div className="w-2 h-2 rounded-full bg-blue-600 flex-shrink-0" />
                           )}
-                          <div>
-                            <p className="text-sm font-medium text-white">
-                              {msg.name}{" "}
-                              <span className="text-gray-400 font-normal">— {msg.email}</span>
-                            </p>
-                            <p className="text-xs text-gray-400">{msg.subject}</p>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-sm font-medium text-white truncate">
+                                {msg.name}{" "}
+                                <span className="text-gray-400 font-normal">— {msg.email}</span>
+                              </p>
+                              {msg.reason && <ReasonBadge reason={msg.reason} />}
+                            </div>
+                            <p className="text-xs text-gray-400 truncate">{msg.subject}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-shrink-0">
                           <span className="text-xs text-gray-500">
                             {new Date(msg.createdAt).toLocaleDateString("es-ES")}
                           </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm(`¿Borrar el mensaje de ${msg.name}?\nEsta acción no se puede deshacer.`)) {
+                                deleteMessageMut.mutate({ id: msg.id });
+                              }
+                            }}
+                            disabled={deleteMessageMut.isPending}
+                            className="p-1 rounded hover:bg-red-900/30 text-gray-500 hover:text-red-400 transition-colors disabled:opacity-50"
+                            title="Borrar mensaje"
+                          >
+                            <Trash2 size={13} />
+                          </button>
                           {expandedMsg === msg.id ? (
                             <ChevronUp size={14} className="text-gray-400" />
                           ) : (
@@ -2486,6 +2512,41 @@ export default function Admin() {
         </div>
       )}
     </div>
+  );
+}
+
+// ─── Contact-form reason badge ────────────────────────────────
+// Maps the i18n reason values from the public contact form to a
+// short label + color so the admin can triage at a glance which
+// queue (billing / tech / feature / etc.) the message belongs to.
+function ReasonBadge({ reason }: { reason: string }) {
+  const r = reason.toLowerCase();
+  // Match common reason values in any language (es/en/fr/de/pt/it/nl/pl/ru/uk/ro/zh).
+  // Falls back to a neutral grey badge if we don't recognize the string.
+  let label = reason;
+  let bg = "#374151";
+  let fg = "#e5e7eb";
+  if (/(factur|billing|cobr|abono|paiement|abrechn|cobranza|fatur|rechnung|оплат|оплата|білі|账单|账户)/i.test(r)) {
+    label = "Facturación"; bg = "#7c2d12"; fg = "#fed7aa"; // orange-ish — high priority
+  } else if (/(soporte|tech|support|tecn|hilfe|aiut|hulp|pomoc|подд|допом|asisten)/i.test(r)) {
+    label = "Soporte técnico"; bg = "#1e3a8a"; fg = "#bfdbfe"; // blue
+  } else if (/(funci|feature|fonction|funktion|funzion|funcj|функц|функц|caract|功能)/i.test(r)) {
+    label = "Solicitud de función"; bg = "#14532d"; fg = "#bbf7d0"; // green
+  } else if (/(bug|error|fehl|erreur|errore|fout|błąd|ошиб|помилк|eroare|错误)/i.test(r)) {
+    label = "Informe de error"; bg = "#7f1d1d"; fg = "#fecaca"; // red
+  } else if (/(colabor|partner|parten|collab|współ|сотр|співп|parteneri|合作)/i.test(r)) {
+    label = "Colaboración"; bg = "#581c87"; fg = "#e9d5ff"; // purple
+  } else if (/(otro|other|autre|sonst|outro|altro|inn|др)/i.test(r)) {
+    label = "Otro"; bg = "#374151"; fg = "#e5e7eb";
+  }
+  return (
+    <span
+      className="text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap"
+      style={{ backgroundColor: bg, color: fg }}
+      title={reason}
+    >
+      {label}
+    </span>
   );
 }
 
