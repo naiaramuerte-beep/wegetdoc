@@ -168,6 +168,7 @@ export default function Admin() {
     onError: (err) => toast.error(err.message || "Error"),
   });
   const messagesQ = trpc.admin.contactMessages.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "messages" });
+  const emailTemplatesQ = trpc.admin.emailTemplates.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "messages" });
   const legalQ = trpc.admin.legalPages.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "legal" });
   const settingsQ = trpc.admin.settings.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "settings" });
 
@@ -195,6 +196,28 @@ export default function Admin() {
     onError: (err) => toast.error(err.message || "No se pudo enviar la respuesta"),
   });
   const [replyDraft, setReplyDraft] = useState<Record<number, string>>({});
+  const [showTemplateManager, setShowTemplateManager] = useState(false);
+
+  const createTemplateMut = trpc.admin.createEmailTemplate.useMutation({
+    onSuccess: () => { toast.success("Plantilla creada"); utils.admin.emailTemplates.invalidate(); },
+    onError: (err) => toast.error(err.message || "Error"),
+  });
+  const updateTemplateMut = trpc.admin.updateEmailTemplate.useMutation({
+    onSuccess: () => { toast.success("Plantilla actualizada"); utils.admin.emailTemplates.invalidate(); },
+    onError: (err) => toast.error(err.message || "Error"),
+  });
+  const deleteTemplateMut = trpc.admin.deleteEmailTemplate.useMutation({
+    onSuccess: () => { toast.success("Plantilla borrada"); utils.admin.emailTemplates.invalidate(); },
+    onError: (err) => toast.error(err.message || "Error"),
+  });
+
+  /** Replace {{name}}/{{email}}/{{subject}} with the message's data. */
+  function applyTemplate(body: string, msg: { name: string; email: string; subject: string }) {
+    return body
+      .replace(/\{\{name\}\}/g, msg.name)
+      .replace(/\{\{email\}\}/g, msg.email)
+      .replace(/\{\{subject\}\}/g, msg.subject);
+  }
 
   const saveLegalMut = trpc.admin.saveLegalPage.useMutation({
     onSuccess: () => {
@@ -1746,16 +1769,39 @@ export default function Admin() {
                             </div>
                           ) : (
                             <div className="mt-4 space-y-2" onClick={(e) => e.stopPropagation()}>
+                              {(emailTemplatesQ.data ?? []).length > 0 && (
+                                <div className="flex items-center gap-2">
+                                  <select
+                                    value=""
+                                    onChange={(e) => {
+                                      const id = Number(e.target.value);
+                                      if (!id) return;
+                                      const tpl = (emailTemplatesQ.data ?? []).find((t) => t.id === id);
+                                      if (tpl) {
+                                        setReplyDraft((prev) => ({ ...prev, [msg.id]: applyTemplate(tpl.body, msg) }));
+                                      }
+                                      e.target.value = "";
+                                    }}
+                                    className="text-xs px-2 py-1.5 rounded-lg border bg-transparent focus:outline-none flex-1"
+                                    style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
+                                  >
+                                    <option value="">📋 Insertar plantilla…</option>
+                                    {(emailTemplatesQ.data ?? []).map((tpl) => (
+                                      <option key={tpl.id} value={tpl.id}>{tpl.name}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              )}
                               <textarea
                                 value={replyDraft[msg.id] ?? ""}
                                 onChange={(e) => setReplyDraft((prev) => ({ ...prev, [msg.id]: e.target.value }))}
                                 placeholder={`Hola ${msg.name}, gracias por escribir…`}
-                                rows={4}
+                                rows={6}
                                 className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-[#E63946]"
                                 style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
                               />
                               <div className="flex items-center justify-between gap-2">
-                                <p className="text-[10px] text-gray-500">Se enviará desde noreply@editorpdf.net con Reply-To a {msg.email}.</p>
+                                <p className="text-[10px] text-gray-500">Se enviará desde support@editorpdf.net con Reply-To a {msg.email}.</p>
                                 <button
                                   onClick={() => {
                                     const body = (replyDraft[msg.id] ?? "").trim();
@@ -1781,6 +1827,53 @@ export default function Admin() {
                   ))}
                 </div>
               )}
+
+              {/* ── Manage email templates ── */}
+              <div className="rounded-xl border" style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowTemplateManager((v) => !v)}
+                  className="w-full px-5 py-3 flex items-center justify-between text-left"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-white">Plantillas de email</p>
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      Respuestas pre-hechas con variables <code className="font-mono">{"{{name}}"}</code>, <code className="font-mono">{"{{email}}"}</code>, <code className="font-mono">{"{{subject}}"}</code>.
+                    </p>
+                  </div>
+                  {showTemplateManager ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+                </button>
+
+                {showTemplateManager && (
+                  <div className="px-5 pb-5 space-y-3 border-t" style={{ borderColor: "#1e2433" }}>
+                    <TemplateForm
+                      onSubmit={(data) => createTemplateMut.mutate(data)}
+                      submitting={createTemplateMut.isPending}
+                    />
+
+                    <div className="space-y-2 pt-3">
+                      {emailTemplatesQ.isLoading ? (
+                        <p className="text-xs text-gray-500">Cargando…</p>
+                      ) : (emailTemplatesQ.data ?? []).length === 0 ? (
+                        <p className="text-xs text-gray-500">No hay plantillas todavía. Crea la primera arriba ↑.</p>
+                      ) : (
+                        (emailTemplatesQ.data ?? []).map((tpl) => (
+                          <TemplateRow
+                            key={tpl.id}
+                            template={tpl}
+                            onUpdate={(data) => updateTemplateMut.mutate({ id: tpl.id, ...data })}
+                            onDelete={() => {
+                              if (confirm(`¿Borrar la plantilla "${tpl.name}"?`)) {
+                                deleteTemplateMut.mutate({ id: tpl.id });
+                              }
+                            }}
+                          />
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -2392,6 +2485,108 @@ export default function Admin() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Email template helpers ──────────────────────────────────
+function TemplateForm({ initial, onSubmit, submitting, submitLabel = "Crear plantilla", onCancel }: {
+  initial?: { name: string; body: string };
+  onSubmit: (data: { name: string; body: string }) => void;
+  submitting: boolean;
+  submitLabel?: string;
+  onCancel?: () => void;
+}) {
+  const [name, setName] = useState(initial?.name ?? "");
+  const [body, setBody] = useState(initial?.body ?? "");
+
+  return (
+    <div className="space-y-2 rounded-lg p-3 border" style={{ backgroundColor: "#0f1117", borderColor: "#1e2433" }}>
+      <input
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Nombre (ej. ES — Aviso de cobro legítimo)"
+        className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-[#E63946]"
+        style={{ borderColor: "#1e2433", color: "#e2e8f0" }}
+      />
+      <textarea
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        placeholder="Cuerpo de la plantilla. Variables: {{name}}, {{email}}, {{subject}}"
+        rows={5}
+        className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-[#E63946]"
+        style={{ borderColor: "#1e2433", color: "#e2e8f0" }}
+      />
+      <div className="flex items-center gap-2 justify-end">
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300"
+            style={{ backgroundColor: "#1e2433" }}
+          >
+            Cancelar
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            const n = name.trim(); const b = body.trim();
+            if (!n || !b) { toast.error("Nombre y cuerpo son obligatorios"); return; }
+            onSubmit({ name: n, body: b });
+            if (!initial) { setName(""); setBody(""); }
+          }}
+          disabled={submitting}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-colors disabled:opacity-60"
+          style={{ backgroundColor: "#E63946" }}
+        >
+          {submitting ? <><Loader2 size={12} className="animate-spin" /> Guardando…</> : submitLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TemplateRow({ template, onUpdate, onDelete }: {
+  template: { id: number; name: string; body: string };
+  onUpdate: (data: { name: string; body: string }) => void;
+  onDelete: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  if (editing) {
+    return (
+      <TemplateForm
+        initial={{ name: template.name, body: template.body }}
+        submitLabel="Guardar cambios"
+        submitting={false}
+        onSubmit={(data) => { onUpdate(data); setEditing(false); }}
+        onCancel={() => setEditing(false)}
+      />
+    );
+  }
+  return (
+    <div className="rounded-lg p-3 border flex items-start gap-3" style={{ backgroundColor: "#0f1117", borderColor: "#1e2433" }}>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-white truncate">{template.name}</p>
+        <p className="text-xs text-gray-400 mt-1 whitespace-pre-wrap line-clamp-3">{template.body}</p>
+      </div>
+      <div className="flex flex-col gap-1.5 flex-shrink-0">
+        <button
+          onClick={() => setEditing(true)}
+          className="px-2 py-1 rounded text-[11px] font-medium text-gray-300 hover:bg-gray-700"
+          style={{ backgroundColor: "#1e2433" }}
+        >
+          Editar
+        </button>
+        <button
+          onClick={onDelete}
+          className="px-2 py-1 rounded text-[11px] font-medium text-red-300 hover:bg-red-900/30"
+          style={{ backgroundColor: "#1e2433" }}
+        >
+          Borrar
+        </button>
+      </div>
     </div>
   );
 }

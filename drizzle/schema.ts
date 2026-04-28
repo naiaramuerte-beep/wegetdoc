@@ -165,6 +165,22 @@ export type SiteSetting = typeof siteSettings.$inferSelect;
 export type InsertSiteSetting = typeof siteSettings.$inferInsert;
 
 /**
+ * Email templates — admin-managed canned replies for contact_messages.
+ * `body` may contain {{name}} / {{subject}} placeholders that are
+ * substituted client-side at insert time.
+ */
+export const emailTemplates = mysqlTable("email_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  body: text("body").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
+export type InsertEmailTemplate = typeof emailTemplates.$inferInsert;
+
+/**
  * Blog posts — SEO/GEO-optimized articles for the blog section.
  */
 export const blogPosts = mysqlTable("blog_posts", {

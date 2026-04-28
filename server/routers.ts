@@ -43,6 +43,10 @@ import {
   markContactMessageRead,
   markContactMessageReplied,
   getContactMessageById,
+  getEmailTemplates,
+  createEmailTemplate,
+  updateEmailTemplate,
+  deleteEmailTemplate,
   getAdminStats,
   getAllSubscribedUsers,
   createCoupon,
@@ -848,6 +852,53 @@ export const appRouter = router({
           targetType: "contact_message",
           targetId: String(input.id),
           metadata: { to: msg.email, length: trimmed.length },
+        });
+        return { success: true };
+      }),
+
+    // ── Email templates (canned replies for contact_messages) ──
+    emailTemplates: adminProcedure.query(async () => {
+      return getEmailTemplates();
+    }),
+
+    createEmailTemplate: adminProcedure
+      .input(z.object({ name: z.string().min(1).max(128), body: z.string().min(1).max(5000) }))
+      .mutation(async ({ ctx, input }) => {
+        await createEmailTemplate(input);
+        await recordAuditEntry({
+          adminId: ctx.user.id,
+          adminEmail: ctx.user.email ?? null,
+          action: "create_email_template",
+          targetType: "email_template",
+          targetId: input.name,
+        });
+        return { success: true };
+      }),
+
+    updateEmailTemplate: adminProcedure
+      .input(z.object({ id: z.number(), name: z.string().min(1).max(128), body: z.string().min(1).max(5000) }))
+      .mutation(async ({ ctx, input }) => {
+        await updateEmailTemplate(input.id, { name: input.name, body: input.body });
+        await recordAuditEntry({
+          adminId: ctx.user.id,
+          adminEmail: ctx.user.email ?? null,
+          action: "update_email_template",
+          targetType: "email_template",
+          targetId: String(input.id),
+        });
+        return { success: true };
+      }),
+
+    deleteEmailTemplate: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteEmailTemplate(input.id);
+        await recordAuditEntry({
+          adminId: ctx.user.id,
+          adminEmail: ctx.user.email ?? null,
+          action: "delete_email_template",
+          targetType: "email_template",
+          targetId: String(input.id),
         });
         return { success: true };
       }),
