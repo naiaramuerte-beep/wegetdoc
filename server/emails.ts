@@ -26,7 +26,8 @@ export async function sendSubscriptionConfirmationEmail(params: {
 
   try {
     await resend.emails.send({
-      from: "EditorPDF <noreply@editorpdf.net>",
+      from: "EditorPDF <support@editorpdf.net>",
+      replyTo: "support@editorpdf.net",
       to,
       subject: "Tu suscripción a EditorPDF está activa",
       html: `
