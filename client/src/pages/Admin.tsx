@@ -1730,10 +1730,11 @@ export default function Admin() {
                   {(messagesQ.data ?? []).map((msg) => (
                     <div
                       key={msg.id}
-                      className="rounded-xl border p-4 cursor-pointer transition-colors"
+                      className="rounded-xl border-l-4 border-y border-r p-4 cursor-pointer transition-colors"
                       style={{
-                        backgroundColor: msg.read ? "#131720" : "#1a1f2e",
-                        borderColor: msg.read ? "#1e2433" : "#1565C040",
+                        backgroundColor: !msg.read ? "#172037" : (msg as any).repliedAt ? "#0f1c14" : "#131720",
+                        borderColor: "#1e2433",
+                        borderLeftColor: !msg.read ? "#3b82f6" : (msg as any).repliedAt ? "#10b981" : "#475569",
                       }}
                       onClick={() => {
                         setExpandedMsg(expandedMsg === msg.id ? null : msg.id);
@@ -1742,15 +1743,13 @@ export default function Admin() {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 min-w-0 flex-1">
-                          {!msg.read && (
-                            <div className="w-2 h-2 rounded-full bg-blue-600 flex-shrink-0" />
-                          )}
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <p className="text-sm font-medium text-white truncate">
                                 {msg.name}{" "}
                                 <span className="text-gray-400 font-normal">— {msg.email}</span>
                               </p>
+                              <StatusBadge read={msg.read} repliedAt={(msg as any).repliedAt ?? null} />
                               {msg.reason && <ReasonBadge reason={msg.reason} />}
                             </div>
                             <p className="text-xs text-gray-400 truncate">{msg.subject}</p>
@@ -2512,6 +2511,27 @@ export default function Admin() {
         </div>
       )}
     </div>
+  );
+}
+
+// ─── Contact message status badge ─────────────────────────────
+// Three states: unread → pending (read but not replied) → replied.
+function StatusBadge({ read, repliedAt }: { read: boolean; repliedAt: string | Date | null }) {
+  let label = "Sin leer";
+  let bg = "#1e3a8a"; // blue
+  let fg = "#bfdbfe";
+  if (repliedAt) {
+    label = "Respondido"; bg = "#14532d"; fg = "#bbf7d0"; // green
+  } else if (read) {
+    label = "Pendiente"; bg = "#7c2d12"; fg = "#fed7aa"; // orange — needs attention
+  }
+  return (
+    <span
+      className="text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap"
+      style={{ backgroundColor: bg, color: fg }}
+    >
+      {label}
+    </span>
   );
 }
 
