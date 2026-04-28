@@ -10,12 +10,12 @@ const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
-// Sender address — use onboarding@resend.dev for testing,
-// change to a verified domain address in production
-const FROM_ADDRESS = `${brandName} <onboarding@resend.dev>`;
-// Customer-facing transactional address (verified domain). Used for
-// password resets and contact-form replies so the From: matches the brand.
-const FROM_ADDRESS_VERIFIED = `${brandName} <noreply@editorpdf.net>`;
+// All transactional mail goes from support@editorpdf.net so users can
+// just reply and the message lands in the support inbox (Cloudflare
+// Email Routing forwards support@ → the gmail behind it). One unified
+// From keeps deliverability + reputation under a single address.
+const FROM_ADDRESS = `${brandName} <support@editorpdf.net>`;
+const FROM_ADDRESS_VERIFIED = FROM_ADDRESS;
 const REPLY_TO_ADDRESS = "support@editorpdf.net";
 
 /**
