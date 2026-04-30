@@ -197,6 +197,28 @@ export default function Admin() {
     onError: (err) => toast.error(err.message || "Error al eliminar"),
   });
 
+  const bulkDeleteMut = trpc.admin.bulkDeleteMessages.useMutation({
+    onSuccess: (r) => {
+      toast.success(`${r.count} mensaje${r.count !== 1 ? "s" : ""} eliminado${r.count !== 1 ? "s" : ""}`);
+      utils.admin.contactMessages.invalidate();
+      setSelectedMessages(new Set());
+    },
+    onError: (err) => toast.error(err.message || "Error al eliminar"),
+  });
+
+  const bulkArchiveMut = trpc.admin.bulkArchiveMessages.useMutation({
+    onSuccess: (r, vars) => {
+      toast.success(`${r.count} mensaje${r.count !== 1 ? "s" : ""} ${vars.archived ? "archivado" : "desarchivado"}${r.count !== 1 ? "s" : ""}`);
+      utils.admin.contactMessages.invalidate();
+      setSelectedMessages(new Set());
+    },
+    onError: (err) => toast.error(err.message || "Error al archivar"),
+  });
+
+  // Multi-select state for bulk actions on the Mensajes tab.
+  const [selectedMessages, setSelectedMessages] = useState<Set<number>>(new Set());
+  const [showArchived, setShowArchived] = useState(false);
+
   // Group messages by email so we can flag recurring senders. Same email
   // = same person, even if they typed a different "name" each time.
   // Sorted ascending so prior-thread display reads chronologically.
@@ -1734,16 +1756,117 @@ export default function Admin() {
           )}
 
           {/* ── MESSAGES ── */}
-          {tab === "messages" && (
+          {tab === "messages" && (() => {
+            const allMessages = messagesQ.data ?? [];
+            const visibleMessages = showArchived
+              ? allMessages
+              : allMessages.filter((m) => !(m as any).archivedAt);
+            const archivedCount = allMessages.filter((m) => (m as any).archivedAt).length;
+            const allSelected = visibleMessages.length > 0 && visibleMessages.every((m) => selectedMessages.has(m.id));
+            const toggleSelectAll = () => {
+              if (allSelected) {
+                setSelectedMessages(new Set());
+              } else {
+                setSelectedMessages(new Set(visibleMessages.map((m) => m.id)));
+              }
+            };
+            const toggleOne = (id: number) => {
+              setSelectedMessages((prev) => {
+                const next = new Set(prev);
+                if (next.has(id)) next.delete(id);
+                else next.add(id);
+                return next;
+              });
+            };
+            const selectedIds = Array.from(selectedMessages);
+            const selectedAreAllArchived = selectedIds.length > 0 && selectedIds.every((id) => {
+              const m = allMessages.find((mm) => mm.id === id);
+              return m && (m as any).archivedAt;
+            });
+            return (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-white">Mensajes de contacto</h2>
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <h2 className="text-lg font-semibold text-white">
+                  Mensajes de contacto
+                  <span className="text-xs text-gray-500 font-normal ml-2">
+                    {visibleMessages.length} {showArchived ? "totales" : "activos"}
+                    {!showArchived && archivedCount > 0 && ` · ${archivedCount} archivados ocultos`}
+                  </span>
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setShowArchived((v) => !v)}
+                  className="text-xs px-3 py-1.5 rounded-lg border transition-colors"
+                  style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: showArchived ? "#1e2433" : "transparent" }}
+                >
+                  {showArchived ? "Ocultar archivados" : "Mostrar archivados"}
+                </button>
+              </div>
+
+              {/* Bulk action bar — only visible when something is selected */}
+              {selectedMessages.size > 0 && (
+                <div
+                  className="rounded-xl border p-3 flex items-center justify-between gap-3 flex-wrap sticky top-0 z-10"
+                  style={{ backgroundColor: "#1a1f2e", borderColor: "#E63946" }}
+                >
+                  <p className="text-sm text-white font-medium">
+                    {selectedMessages.size} seleccionado{selectedMessages.size !== 1 ? "s" : ""}
+                  </p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMessages(new Set())}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300"
+                      style={{ backgroundColor: "#1e2433" }}
+                    >
+                      Limpiar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => bulkArchiveMut.mutate({ ids: selectedIds, archived: !selectedAreAllArchived })}
+                      disabled={bulkArchiveMut.isPending}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-50"
+                      style={{ backgroundColor: "#0f766e" }}
+                    >
+                      {selectedAreAllArchived ? "Desarchivar" : "Archivar"} ({selectedIds.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm(`¿Borrar ${selectedIds.length} mensaje(s)?\nEsta acción no se puede deshacer.`)) {
+                          bulkDeleteMut.mutate({ ids: selectedIds });
+                        }
+                      }}
+                      disabled={bulkDeleteMut.isPending}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-50"
+                      style={{ backgroundColor: "#dc2626" }}
+                    >
+                      Borrar ({selectedIds.length})
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Select-all checkbox row */}
+              {visibleMessages.length > 0 && (
+                <label className="flex items-center gap-2 px-2 py-1 cursor-pointer text-xs text-gray-400 hover:text-gray-200">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleSelectAll}
+                    className="w-3.5 h-3.5 accent-[#E63946]"
+                  />
+                  Seleccionar todos los {showArchived ? "" : "activos "}({visibleMessages.length})
+                </label>
+              )}
+
               {messagesQ.isLoading ? (
                 <p className="text-gray-400">Cargando...</p>
-              ) : (messagesQ.data ?? []).length === 0 ? (
-                <p className="text-gray-400">No hay mensajes</p>
+              ) : visibleMessages.length === 0 ? (
+                <p className="text-gray-400">{showArchived && archivedCount === 0 ? "No hay mensajes" : "No hay mensajes activos"}</p>
               ) : (
                 <div className="space-y-2">
-                  {(messagesQ.data ?? []).map((msg) => (
+                  {visibleMessages.map((msg) => (
                     <div
                       key={msg.id}
                       className="rounded-xl border-l-4 border-y border-r p-4 cursor-pointer transition-colors"
@@ -1759,6 +1882,13 @@ export default function Admin() {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <input
+                            type="checkbox"
+                            checked={selectedMessages.has(msg.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={() => toggleOne(msg.id)}
+                            className="w-3.5 h-3.5 accent-[#E63946] flex-shrink-0"
+                          />
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <p className="text-sm font-medium text-white truncate">
@@ -1769,6 +1899,11 @@ export default function Admin() {
                               {msg.reason && <ReasonBadge reason={msg.reason} />}
                               {(messagesByEmail[msg.email.toLowerCase()]?.length ?? 0) > 1 && (
                                 <RecurrentBadge count={messagesByEmail[msg.email.toLowerCase()].length} />
+                              )}
+                              {(msg as any).archivedAt && (
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ backgroundColor: "#374151", color: "#9ca3af" }}>
+                                  📁 Archivado
+                                </span>
                               )}
                             </div>
                             <p className="text-xs text-gray-400 truncate">{msg.subject}</p>
@@ -1956,7 +2091,8 @@ export default function Admin() {
                 )}
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {/* ── WEBHOOKS (F2) ── */}
           {tab === "webhooks" && (

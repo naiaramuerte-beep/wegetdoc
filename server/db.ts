@@ -457,6 +457,22 @@ export async function deleteContactMessage(id: number) {
   await db.delete(contactMessages).where(eq(contactMessages.id, id));
 }
 
+export async function deleteContactMessages(ids: number[]) {
+  const db = await getDb();
+  if (!db || ids.length === 0) return 0;
+  await db.delete(contactMessages).where(sql`${contactMessages.id} IN (${sql.join(ids.map((id) => sql`${id}`), sql`, `)})`);
+  return ids.length;
+}
+
+export async function setContactMessagesArchived(ids: number[], archived: boolean) {
+  const db = await getDb();
+  if (!db || ids.length === 0) return 0;
+  await db.update(contactMessages)
+    .set({ archivedAt: archived ? new Date() : null })
+    .where(sql`${contactMessages.id} IN (${sql.join(ids.map((id) => sql`${id}`), sql`, `)})`);
+  return ids.length;
+}
+
 // ─── Email Templates (canned admin replies) ──────────────────────
 export async function getEmailTemplates() {
   const db = await getDb();

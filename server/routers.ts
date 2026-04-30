@@ -44,6 +44,8 @@ import {
   markContactMessageReplied,
   getContactMessageById,
   deleteContactMessage,
+  deleteContactMessages,
+  setContactMessagesArchived,
   getEmailTemplates,
   createEmailTemplate,
   updateEmailTemplate,
@@ -830,6 +832,36 @@ export const appRouter = router({
           targetId: String(input.id),
         });
         return { success: true };
+      }),
+
+    bulkDeleteMessages: adminProcedure
+      .input(z.object({ ids: z.array(z.number()).min(1).max(500) }))
+      .mutation(async ({ ctx, input }) => {
+        const n = await deleteContactMessages(input.ids);
+        await recordAuditEntry({
+          adminId: ctx.user.id,
+          adminEmail: ctx.user.email ?? null,
+          action: "bulk_delete_contact_messages",
+          targetType: "contact_message",
+          targetId: input.ids.join(","),
+          metadata: { count: n },
+        });
+        return { success: true, count: n };
+      }),
+
+    bulkArchiveMessages: adminProcedure
+      .input(z.object({ ids: z.array(z.number()).min(1).max(500), archived: z.boolean() }))
+      .mutation(async ({ ctx, input }) => {
+        const n = await setContactMessagesArchived(input.ids, input.archived);
+        await recordAuditEntry({
+          adminId: ctx.user.id,
+          adminEmail: ctx.user.email ?? null,
+          action: input.archived ? "bulk_archive_contact_messages" : "bulk_unarchive_contact_messages",
+          targetType: "contact_message",
+          targetId: input.ids.join(","),
+          metadata: { count: n },
+        });
+        return { success: true, count: n };
       }),
 
     /**
