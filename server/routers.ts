@@ -494,17 +494,21 @@ export const appRouter = router({
       });
       await markDocumentsPaid(ctx.user.id);
 
-      // Send confirmation email
+      // Send welcome email (product onboarding + small trial disclaimer
+      // at the bottom). Replaces the old terse confirmation email.
+      // Detect lang from Accept-Language header so the email matches
+      // the language the user signed up in.
       if (ctx.user.email) {
-        const { sendSubscriptionConfirmationEmail } = await import("./emails");
-        sendSubscriptionConfirmationEmail({
+        const acceptLang = (ctx.req.headers["accept-language"] as string | undefined) ?? "";
+        const langMatch = acceptLang.toLowerCase().match(/^(es|en|fr|de|pt|it|nl|pl|ru|uk|ro|zh)/);
+        const lang = langMatch?.[1] ?? "es";
+        const { sendTrialWelcomeEmail } = await import("./email");
+        sendTrialWelcomeEmail({
           to: ctx.user.email,
-          userName: ctx.user.name ?? ctx.user.email.split("@")[0],
-          plan: "EditorPDF (0,50€ primer mes)",
-          amount: "0,50€",
-          nextBillingDate: phase1End.toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" }),
-          cancelUrl: "https://editorpdf.net/es/dashboard?tab=billing",
-        }).catch(() => {});
+          name: ctx.user.name ?? ctx.user.email.split("@")[0],
+          trialEndDate: phase1End,
+          lang,
+        }).catch((err) => console.error("[confirmSetup] welcome email error:", err));
       }
 
       return { success: true };
