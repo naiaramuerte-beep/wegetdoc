@@ -197,6 +197,22 @@ export default function Admin() {
     onError: (err) => toast.error(err.message || "Error al eliminar"),
   });
 
+  // Group messages by email so we can flag recurring senders. Same email
+  // = same person, even if they typed a different "name" each time.
+  // Sorted ascending so prior-thread display reads chronologically.
+  const messagesByEmail = useMemo(() => {
+    const map: Record<string, typeof messagesQ.data extends (infer T)[] | undefined ? T[] : never> = {};
+    for (const m of messagesQ.data ?? []) {
+      const key = m.email.toLowerCase();
+      if (!map[key]) map[key] = [];
+      map[key].push(m);
+    }
+    for (const k of Object.keys(map)) {
+      map[k].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    }
+    return map;
+  }, [messagesQ.data]);
+
   const replyMessageMut = trpc.admin.replyToMessage.useMutation({
     onSuccess: () => {
       toast.success("Respuesta enviada por email");
@@ -1751,6 +1767,9 @@ export default function Admin() {
                               </p>
                               <StatusBadge read={msg.read} repliedAt={(msg as any).repliedAt ?? null} />
                               {msg.reason && <ReasonBadge reason={msg.reason} />}
+                              {(messagesByEmail[msg.email.toLowerCase()]?.length ?? 0) > 1 && (
+                                <RecurrentBadge count={messagesByEmail[msg.email.toLowerCase()].length} />
+                              )}
                             </div>
                             <p className="text-xs text-gray-400 truncate">{msg.subject}</p>
                           </div>
@@ -1783,6 +1802,43 @@ export default function Admin() {
                       {expandedMsg === msg.id && (
                         <div className="mt-3 pt-3 border-t" style={{ borderColor: "#1e2433" }}>
                           <p className="text-sm text-gray-300 whitespace-pre-wrap">{msg.message}</p>
+
+                          {/* Prior messages from the same email (oldest first, excluding current). */}
+                          {(() => {
+                            const thread = messagesByEmail[msg.email.toLowerCase()] ?? [];
+                            const prior = thread.filter((m) => m.id !== msg.id);
+                            if (prior.length === 0) return null;
+                            return (
+                              <div className="mt-4 rounded-lg p-3 border" style={{ backgroundColor: "#1a1f2e", borderColor: "#1e2433" }}>
+                                <p className="text-[11px] font-semibold text-purple-300 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                                  <MessageSquare size={12} />
+                                  Historial: {prior.length} mensaje{prior.length !== 1 ? "s" : ""} previo{prior.length !== 1 ? "s" : ""} de este email
+                                </p>
+                                <div className="space-y-2">
+                                  {prior.map((p) => (
+                                    <div key={p.id} className="rounded p-2 text-xs" style={{ backgroundColor: "#0f1117" }} onClick={(e) => e.stopPropagation()}>
+                                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                        <span className="text-gray-500">{new Date(p.createdAt).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+                                        <span className="text-gray-300 font-medium">· {p.subject}</span>
+                                        {(p as any).repliedAt && (
+                                          <span className="text-emerald-400 text-[10px] flex items-center gap-1">
+                                            <Check size={10} /> Respondido
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="text-gray-400 whitespace-pre-wrap line-clamp-2">{p.message}</p>
+                                      {(p as any).replyBody && (
+                                        <div className="mt-1.5 pl-2 border-l-2" style={{ borderColor: "#15532e" }}>
+                                          <p className="text-[10px] font-semibold text-emerald-400 uppercase mb-0.5">Tu respuesta</p>
+                                          <p className="text-gray-400 whitespace-pre-wrap line-clamp-2 text-[11px]">{(p as any).replyBody}</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
 
                           {(msg as any).repliedAt ? (
                             <div className="mt-4 rounded-lg p-3 border" style={{ backgroundColor: "#0f2a1a", borderColor: "#15532e" }}>
@@ -2531,6 +2587,22 @@ function StatusBadge({ read, repliedAt }: { read: boolean; repliedAt: string | D
       style={{ backgroundColor: bg, color: fg }}
     >
       {label}
+    </span>
+  );
+}
+
+// ─── Recurrent-sender badge ───────────────────────────────────
+// Flags messages whose email already appears in other rows. Lets the
+// admin see at a glance "this person has written before" — the typical
+// case where a customer is following up on something we already replied to.
+function RecurrentBadge({ count }: { count: number }) {
+  return (
+    <span
+      className="text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap inline-flex items-center gap-1"
+      style={{ backgroundColor: "#581c87", color: "#e9d5ff" }}
+      title={`Este email ha enviado ${count} mensajes en total`}
+    >
+      🔁 {count}× cliente
     </span>
   );
 }
