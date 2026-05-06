@@ -50,6 +50,10 @@ interface Strings {
   successTitle: string;
   successBody: string;
   spamNotice: string;
+  spamHeader: string;
+  spamStep1: string;
+  spamStep2: string;
+  spamStep3: string;
   successToast: string;
   errorToast: string;
   reasons: ReasonLabels;
@@ -66,7 +70,11 @@ const STRINGS: Record<LangCode, Strings> = {
     submit: "Enviar mensaje", submitting: "Enviando…", cancel: "Cancelar", close: "Cerrar",
     requiredFields: "Por favor, completa todos los campos obligatorios",
     successTitle: "¡Mensaje enviado!", successBody: "Hemos recibido tu mensaje y te responderemos lo antes posible en",
-    spamNotice: "Importante: revisa tu carpeta de Spam si nuestra respuesta tarda en aparecer en tu bandeja de entrada.",
+    spamNotice: "Es muy probable que nuestra respuesta llegue a tu carpeta de SPAM o Correo no deseado.",
+    spamHeader: "🚨 IMPORTANTE — Revisa tu carpeta de SPAM",
+    spamStep1: "Abre tu Spam / Correo no deseado dentro de 24 horas",
+    spamStep2: "Marca el email como \"No es spam\" o \"Mover a Recibidos\"",
+    spamStep3: "Añade support@editorpdf.net a tus contactos",
     successToast: "Mensaje enviado correctamente", errorToast: "Error al enviar el mensaje. Inténtalo de nuevo.",
     reasons: { tech_support: "Soporte técnico", billing: "Facturación", feature: "Solicitud de función", bug: "Informe de error", collab: "Colaboración", other: "Otro" },
   },
@@ -80,7 +88,11 @@ const STRINGS: Record<LangCode, Strings> = {
     submit: "Send message", submitting: "Sending…", cancel: "Cancel", close: "Close",
     requiredFields: "Please fill in all required fields",
     successTitle: "Message sent!", successBody: "We've received your message and will reply as soon as possible at",
-    spamNotice: "Important: please check your Spam folder if our reply doesn't appear in your inbox.",
+    spamNotice: "Our reply is very likely to land in your SPAM or Junk folder.",
+    spamHeader: "🚨 IMPORTANT — Check your SPAM folder",
+    spamStep1: "Open your Spam / Junk folder within 24 hours",
+    spamStep2: "Mark the email as \"Not spam\" or \"Move to Inbox\"",
+    spamStep3: "Add support@editorpdf.net to your contacts",
     successToast: "Message sent successfully", errorToast: "Failed to send. Please try again.",
     reasons: { tech_support: "Technical support", billing: "Billing", feature: "Feature request", bug: "Bug report", collab: "Partnership", other: "Other" },
   },
@@ -94,7 +106,11 @@ const STRINGS: Record<LangCode, Strings> = {
     submit: "Envoyer le message", submitting: "Envoi en cours…", cancel: "Annuler", close: "Fermer",
     requiredFields: "Veuillez remplir tous les champs obligatoires",
     successTitle: "Message envoyé !", successBody: "Nous avons bien reçu votre message et vous répondrons dès que possible à",
-    spamNotice: "Important : veuillez consulter votre dossier Spam si notre réponse n'apparaît pas dans votre boîte de réception.",
+    spamNotice: "Notre réponse risque fortement d'arriver dans votre dossier SPAM / Indésirables.",
+    spamHeader: "🚨 IMPORTANT — Vérifiez votre dossier SPAM",
+    spamStep1: "Ouvrez votre dossier Spam / Indésirables dans les 24 heures",
+    spamStep2: "Marquez l'e-mail comme \"Non spam\" ou \"Déplacer vers Boîte de réception\"",
+    spamStep3: "Ajoutez support@editorpdf.net à vos contacts",
     successToast: "Message envoyé avec succès", errorToast: "Échec de l'envoi. Veuillez réessayer.",
     reasons: { tech_support: "Support technique", billing: "Facturation", feature: "Demande de fonctionnalité", bug: "Signalement de bug", collab: "Partenariat", other: "Autre" },
   },
@@ -108,7 +124,11 @@ const STRINGS: Record<LangCode, Strings> = {
     submit: "Nachricht senden", submitting: "Wird gesendet…", cancel: "Abbrechen", close: "Schließen",
     requiredFields: "Bitte füllen Sie alle Pflichtfelder aus",
     successTitle: "Nachricht gesendet!", successBody: "Wir haben Ihre Nachricht erhalten und antworten so bald wie möglich an",
-    spamNotice: "Wichtig: Bitte prüfen Sie Ihren Spam-Ordner, falls unsere Antwort nicht in Ihrem Posteingang erscheint.",
+    spamNotice: "Unsere Antwort landet sehr wahrscheinlich in Ihrem SPAM- bzw. Junk-Ordner.",
+    spamHeader: "🚨 WICHTIG — Prüfen Sie Ihren SPAM-Ordner",
+    spamStep1: "Öffnen Sie innerhalb von 24 Stunden Ihren Spam-/Junk-Ordner",
+    spamStep2: "Markieren Sie die E-Mail als \"Kein Spam\" oder \"In Posteingang verschieben\"",
+    spamStep3: "Fügen Sie support@editorpdf.net zu Ihren Kontakten hinzu",
     successToast: "Nachricht erfolgreich gesendet", errorToast: "Senden fehlgeschlagen. Bitte versuchen Sie es erneut.",
     reasons: { tech_support: "Technischer Support", billing: "Abrechnung", feature: "Funktionswunsch", bug: "Fehlermeldung", collab: "Partnerschaft", other: "Sonstiges" },
   },
@@ -122,7 +142,11 @@ const STRINGS: Record<LangCode, Strings> = {
     submit: "Enviar mensagem", submitting: "A enviar…", cancel: "Cancelar", close: "Fechar",
     requiredFields: "Por favor, preencha todos os campos obrigatórios",
     successTitle: "Mensagem enviada!", successBody: "Recebemos a sua mensagem e responderemos o mais rapidamente possível para",
-    spamNotice: "Importante: verifique a sua pasta de Spam caso a nossa resposta não apareça na caixa de entrada.",
+    spamNotice: "É muito provável que a nossa resposta vá para a sua pasta de SPAM / Lixo eletrónico.",
+    spamHeader: "🚨 IMPORTANTE — Verifique a pasta de SPAM",
+    spamStep1: "Abra a pasta de Spam / Lixo eletrónico nas próximas 24 horas",
+    spamStep2: "Marque o email como \"Não é spam\" ou \"Mover para a Caixa de entrada\"",
+    spamStep3: "Adicione support@editorpdf.net aos seus contactos",
     successToast: "Mensagem enviada com sucesso", errorToast: "Falha ao enviar. Tente novamente.",
     reasons: { tech_support: "Suporte técnico", billing: "Faturação", feature: "Pedido de funcionalidade", bug: "Reportar erro", collab: "Parceria", other: "Outro" },
   },
@@ -136,7 +160,11 @@ const STRINGS: Record<LangCode, Strings> = {
     submit: "Invia messaggio", submitting: "Invio in corso…", cancel: "Annulla", close: "Chiudi",
     requiredFields: "Compila tutti i campi obbligatori",
     successTitle: "Messaggio inviato!", successBody: "Abbiamo ricevuto il tuo messaggio e risponderemo al più presto a",
-    spamNotice: "Importante: controlla la cartella Spam se la nostra risposta non arriva nella posta in arrivo.",
+    spamNotice: "È molto probabile che la nostra risposta finisca nella tua cartella SPAM / Posta indesiderata.",
+    spamHeader: "🚨 IMPORTANTE — Controlla la cartella SPAM",
+    spamStep1: "Apri la cartella Spam / Posta indesiderata entro 24 ore",
+    spamStep2: "Segna l'email come \"Non spam\" o \"Sposta nella Posta in arrivo\"",
+    spamStep3: "Aggiungi support@editorpdf.net ai tuoi contatti",
     successToast: "Messaggio inviato con successo", errorToast: "Errore nell'invio. Riprova.",
     reasons: { tech_support: "Supporto tecnico", billing: "Fatturazione", feature: "Richiesta funzionalità", bug: "Segnalazione bug", collab: "Collaborazione", other: "Altro" },
   },
@@ -150,7 +178,11 @@ const STRINGS: Record<LangCode, Strings> = {
     submit: "Bericht verzenden", submitting: "Bezig met verzenden…", cancel: "Annuleren", close: "Sluiten",
     requiredFields: "Vul alle verplichte velden in",
     successTitle: "Bericht verzonden!", successBody: "We hebben uw bericht ontvangen en zullen zo snel mogelijk reageren op",
-    spamNotice: "Belangrijk: controleer uw Spam-map als ons antwoord niet in uw inbox verschijnt.",
+    spamNotice: "Onze reactie komt zeer waarschijnlijk in uw SPAM- of Ongewenste post-map terecht.",
+    spamHeader: "🚨 BELANGRIJK — Controleer uw SPAM-map",
+    spamStep1: "Open binnen 24 uur uw Spam- of Ongewenste post-map",
+    spamStep2: "Markeer het e-mailbericht als \"Geen spam\" of \"Verplaatsen naar Inbox\"",
+    spamStep3: "Voeg support@editorpdf.net toe aan uw contacten",
     successToast: "Bericht succesvol verzonden", errorToast: "Verzenden mislukt. Probeer het opnieuw.",
     reasons: { tech_support: "Technische ondersteuning", billing: "Facturering", feature: "Functieverzoek", bug: "Bugmelding", collab: "Samenwerking", other: "Anders" },
   },
@@ -164,7 +196,11 @@ const STRINGS: Record<LangCode, Strings> = {
     submit: "Wyślij wiadomość", submitting: "Wysyłanie…", cancel: "Anuluj", close: "Zamknij",
     requiredFields: "Wypełnij wszystkie wymagane pola",
     successTitle: "Wiadomość wysłana!", successBody: "Otrzymaliśmy Twoją wiadomość i odpowiemy najszybciej jak to możliwe na",
-    spamNotice: "Ważne: sprawdź folder Spam, jeśli nasza odpowiedź nie pojawi się w skrzynce odbiorczej.",
+    spamNotice: "Nasza odpowiedź najprawdopodobniej trafi do folderu SPAM lub Wiadomości-śmieci.",
+    spamHeader: "🚨 WAŻNE — Sprawdź folder SPAM",
+    spamStep1: "Otwórz folder Spam / Wiadomości-śmieci w ciągu 24 godzin",
+    spamStep2: "Oznacz wiadomość jako \"To nie spam\" lub \"Przenieś do Odebranych\"",
+    spamStep3: "Dodaj support@editorpdf.net do kontaktów",
     successToast: "Wiadomość wysłana pomyślnie", errorToast: "Wysyłanie nie powiodło się. Spróbuj ponownie.",
     reasons: { tech_support: "Pomoc techniczna", billing: "Płatności", feature: "Prośba o funkcję", bug: "Zgłoszenie błędu", collab: "Współpraca", other: "Inne" },
   },
@@ -178,7 +214,11 @@ const STRINGS: Record<LangCode, Strings> = {
     submit: "Отправить сообщение", submitting: "Отправка…", cancel: "Отмена", close: "Закрыть",
     requiredFields: "Пожалуйста, заполните все обязательные поля",
     successTitle: "Сообщение отправлено!", successBody: "Мы получили ваше сообщение и ответим как можно скорее на",
-    spamNotice: "Важно: проверьте папку Спам, если наш ответ не появится во входящих.",
+    spamNotice: "Наш ответ с большой вероятностью попадёт в папку СПАМ.",
+    spamHeader: "🚨 ВАЖНО — Проверьте папку СПАМ",
+    spamStep1: "Откройте папку Спам в течение 24 часов",
+    spamStep2: "Отметьте письмо как «Не спам» или «Переместить во Входящие»",
+    spamStep3: "Добавьте support@editorpdf.net в ваши контакты",
     successToast: "Сообщение успешно отправлено", errorToast: "Не удалось отправить. Попробуйте ещё раз.",
     reasons: { tech_support: "Техническая поддержка", billing: "Оплата", feature: "Запрос функции", bug: "Сообщение об ошибке", collab: "Сотрудничество", other: "Другое" },
   },
@@ -192,7 +232,11 @@ const STRINGS: Record<LangCode, Strings> = {
     submit: "Надіслати повідомлення", submitting: "Надсилання…", cancel: "Скасувати", close: "Закрити",
     requiredFields: "Будь ласка, заповніть усі обов'язкові поля",
     successTitle: "Повідомлення надіслано!", successBody: "Ми отримали ваше повідомлення та відповімо якнайшвидше на",
-    spamNotice: "Важливо: перевірте теку Спам, якщо наша відповідь не з'явиться у вхідних.",
+    spamNotice: "Наша відповідь з великою ймовірністю потрапить до теки СПАМ.",
+    spamHeader: "🚨 ВАЖЛИВО — Перевірте теку СПАМ",
+    spamStep1: "Відкрийте теку Спам протягом 24 годин",
+    spamStep2: "Позначте лист як «Не спам» або «Перемістити до Вхідних»",
+    spamStep3: "Додайте support@editorpdf.net до своїх контактів",
     successToast: "Повідомлення надіслано успішно", errorToast: "Не вдалося надіслати. Спробуйте ще раз.",
     reasons: { tech_support: "Технічна підтримка", billing: "Оплата", feature: "Запит функції", bug: "Звіт про помилку", collab: "Співпраця", other: "Інше" },
   },
@@ -206,7 +250,11 @@ const STRINGS: Record<LangCode, Strings> = {
     submit: "Trimite mesajul", submitting: "Se trimite…", cancel: "Anulează", close: "Închide",
     requiredFields: "Vă rugăm să completați toate câmpurile obligatorii",
     successTitle: "Mesaj trimis!", successBody: "Am primit mesajul tău și îți vom răspunde cât mai curând la",
-    spamNotice: "Important: verifică folderul Spam dacă răspunsul nostru nu apare în Inbox.",
+    spamNotice: "Răspunsul nostru va ajunge cel mai probabil în folderul SPAM.",
+    spamHeader: "🚨 IMPORTANT — Verifică folderul SPAM",
+    spamStep1: "Deschide folderul Spam în următoarele 24 de ore",
+    spamStep2: "Marchează e-mailul ca \"Nu este spam\" sau \"Mută în Inbox\"",
+    spamStep3: "Adaugă support@editorpdf.net la contactele tale",
     successToast: "Mesaj trimis cu succes", errorToast: "Trimiterea a eșuat. Încearcă din nou.",
     reasons: { tech_support: "Asistență tehnică", billing: "Facturare", feature: "Cerere de funcționalitate", bug: "Raport de eroare", collab: "Parteneriat", other: "Altul" },
   },
@@ -220,7 +268,11 @@ const STRINGS: Record<LangCode, Strings> = {
     submit: "发送留言", submitting: "发送中…", cancel: "取消", close: "关闭",
     requiredFields: "请填写所有必填字段",
     successTitle: "留言已发送！", successBody: "我们已收到您的留言，将尽快回复至",
-    spamNotice: "重要：如果我们的回复未出现在收件箱中，请查看您的垃圾邮件文件夹。",
+    spamNotice: "我们的回复很可能会进入您的垃圾邮件文件夹。",
+    spamHeader: "🚨 重要 — 请查看您的垃圾邮件文件夹",
+    spamStep1: "在 24 小时内打开您的垃圾邮件文件夹",
+    spamStep2: "将邮件标记为\"非垃圾邮件\"或\"移至收件箱\"",
+    spamStep3: "将 support@editorpdf.net 添加到您的联系人",
     successToast: "留言发送成功", errorToast: "发送失败，请重试。",
     reasons: { tech_support: "技术支持", billing: "账单", feature: "功能请求", bug: "错误报告", collab: "合作", other: "其他" },
   },
@@ -303,13 +355,29 @@ export default function ContactModal({ open, onClose }: ContactModalProps) {
               {s.successBody} <strong>{form.email}</strong>.
             </p>
             <div
-              className="rounded-xl p-3 mb-6 text-left flex items-start gap-2.5 border"
-              style={{ backgroundColor: "#FFFBEB", borderColor: "#FCD34D" }}
+              className="rounded-xl p-4 mb-6 text-left border-2"
+              style={{ backgroundColor: "#FEF2F2", borderColor: "#E63946" }}
             >
-              <span className="text-base flex-shrink-0" aria-hidden="true">⚠️</span>
-              <p className="text-xs leading-relaxed" style={{ color: "#92400E" }}>
+              <p className="text-sm font-bold mb-2" style={{ color: "#B91C1C" }}>
+                {s.spamHeader}
+              </p>
+              <p className="text-sm leading-relaxed mb-3" style={{ color: "#991B1B" }}>
                 {s.spamNotice}
               </p>
+              <ol className="space-y-1.5 text-sm leading-snug" style={{ color: "#7F1D1D" }}>
+                <li className="flex items-start gap-2">
+                  <span className="font-bold flex-shrink-0" style={{ color: "#E63946" }}>1.</span>
+                  <span>{s.spamStep1}</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="font-bold flex-shrink-0" style={{ color: "#E63946" }}>2.</span>
+                  <span>{s.spamStep2}</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="font-bold flex-shrink-0" style={{ color: "#E63946" }}>3.</span>
+                  <span>{s.spamStep3}</span>
+                </li>
+              </ol>
             </div>
             <Button onClick={handleClose} className="text-white px-8" style={{ backgroundColor: ink }}>
               {s.close}

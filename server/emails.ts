@@ -87,6 +87,22 @@ export async function sendSubscriptionConfirmationEmail(params: {
 </body>
 </html>
       `.trim(),
+      // Plain-text alternative + transactional headers help the message
+      // pass Gmail/Outlook spam filters (HTML-only mail is penalised).
+      text:
+        `Hola ${userName},\n\n` +
+        `Tu suscripción a EditorPDF se ha activado correctamente.\n\n` +
+        `Plan: ${plan}\n` +
+        `Cobrado hoy: ${amount}\n` +
+        `Próximo cobro: ${nextBillingDate}\n` +
+        `Precio mensual: ${monthlyPrice}/mes\n\n` +
+        `Gestiona tu suscripción aquí: ${cancelUrl}\n\n` +
+        `EditorPDF · support@editorpdf.net`,
+      headers: {
+        "Auto-Submitted": "auto-generated",
+        "Precedence": "bulk",
+        "X-Auto-Response-Suppress": "All",
+      },
     });
     console.log(`[Email] Subscription confirmation sent to ${to}`);
   } catch (err) {
