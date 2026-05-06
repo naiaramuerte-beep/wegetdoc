@@ -424,6 +424,29 @@ export async function createContactMessage(data: {
   await db.insert(contactMessages).values(data);
 }
 
+/**
+ * Create a contact_messages row from an inbound email reply (received via
+ * the Cloudflare Email Worker). Same shape as a form submission so the
+ * admin panel renders it identically — the only signal that it came from
+ * email instead of the form is `reason: "email_reply"`.
+ */
+export async function createInboundEmailMessage(data: {
+  fromName: string;
+  fromEmail: string;
+  subject: string;
+  body: string;
+}) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(contactMessages).values({
+    name: data.fromName || data.fromEmail.split("@")[0],
+    email: data.fromEmail,
+    reason: "email_reply",
+    subject: data.subject || "(sin asunto)",
+    message: data.body,
+  });
+}
+
 export async function getAllContactMessages() {
   const db = await getDb();
   if (!db) return [];
