@@ -18,6 +18,39 @@ const FROM_ADDRESS = `${brandName} <support@editorpdf.net>`;
 const FROM_ADDRESS_VERIFIED = FROM_ADDRESS;
 const REPLY_TO_ADDRESS = "support@editorpdf.net";
 
+// Common headers added to every transactional email. They tell Gmail/Outlook
+// "this is a legitimate automated message, not spam":
+//   - Auto-Submitted: auto-generated  → RFC 3834 transactional signal
+//   - Precedence: bulk               → some filters ignore but harmless
+//   - X-Entity-Ref-ID: <id>          → opt for spam-classifier reset on bounces
+// Resend doesn't expose every standard header, but these three pass through.
+const TRANSACTIONAL_HEADERS = {
+  "Auto-Submitted": "auto-generated",
+  "Precedence": "bulk",
+  "X-Auto-Response-Suppress": "All",
+};
+
+/** Strip HTML to a passable plain-text alternative. Helps deliverability —
+ * mail servers penalise HTML-only messages. Keeps line breaks for `<br>`,
+ * `<p>`, `<tr>` and lists; everything else is collapsed to a single space. */
+function htmlToText(html: string): string {
+  return html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<\/(p|div|tr|li|h\d|br)\s*>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 /**
  * Welcome email sent right after the user pays the €0.50 trial. Mostly
  * product onboarding — what EditorPDF can do, where to start. The trial
@@ -653,6 +686,8 @@ export async function sendTrialWelcomeEmail({
       replyTo: REPLY_TO_ADDRESS,
       subject: s.subject,
       html,
+      text: htmlToText(html),
+      headers: TRANSACTIONAL_HEADERS,
     });
     if (result.error) {
       console.error("[Email] Failed to send welcome email:", result.error);
@@ -739,6 +774,8 @@ export async function sendPasswordResetEmail({
       replyTo: REPLY_TO_ADDRESS,
       subject: `Restablecer tu contraseña en ${brandName}`,
       html,
+      text: htmlToText(html),
+      headers: TRANSACTIONAL_HEADERS,
     });
     if (result.error) {
       console.error("[Email] Failed to send password reset email:", result.error);
@@ -827,6 +864,13 @@ export async function sendContactReplyEmail({
       replyTo: REPLY_TO_ADDRESS,
       subject: `Re: ${originalSubject}`,
       html,
+      text: htmlToText(html),
+      headers: {
+        // Contact reply is a real conversation — don't tag as auto-generated
+        // (gmail trusts human-replied threads more). Keep just the
+        // suppression header to avoid auto-vacation responses bouncing back.
+        "X-Auto-Response-Suppress": "All",
+      },
     });
     if (result.error) {
       console.error("[Email] Failed to send contact reply:", result.error);
@@ -988,8 +1032,11 @@ export async function sendPaymentConfirmationEmail({
     const result = await resend.emails.send({
       from: FROM_ADDRESS,
       to,
+      replyTo: REPLY_TO_ADDRESS,
       subject: `✅ Confirmación de pago — ${brandName} (prueba 7 días)`,
       html,
+      text: htmlToText(html),
+      headers: TRANSACTIONAL_HEADERS,
     });
 
     if (result.error) {
@@ -1118,8 +1165,11 @@ export async function sendCancellationEmail({
     const result = await resend.emails.send({
       from: FROM_ADDRESS,
       to,
+      replyTo: REPLY_TO_ADDRESS,
       subject: `Tu suscripción a ${brandName} ha sido cancelada`,
       html,
+      text: htmlToText(html),
+      headers: TRANSACTIONAL_HEADERS,
     });
 
     if (result.error) {
