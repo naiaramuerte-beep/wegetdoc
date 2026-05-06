@@ -894,6 +894,36 @@ ${allUrls.map(u => `  <url>
     }
   });
 
+  // Inbound email webhook — Cloudflare Email Worker POSTs here when a
+  // user replies to an admin email. Body is JSON with the parsed
+  // sender/subject/body. Auth is a shared secret in the X-Inbound-Secret
+  // header so randoms can't forge fake contact messages.
+  app.post("/api/inbound-email", express.json({ limit: "5mb" }), async (req, res) => {
+    try {
+      const expected = process.env.INBOUND_EMAIL_SECRET ?? "";
+      const got = req.header("x-inbound-secret") ?? "";
+      if (!expected || got !== expected) {
+        return res.status(401).json({ error: "unauthorized" });
+      }
+      const { fromName, fromEmail, subject, body } = req.body ?? {};
+      if (!fromEmail || !body) {
+        return res.status(400).json({ error: "missing fields" });
+      }
+      const { createInboundEmailMessage } = await import("../db");
+      await createInboundEmailMessage({
+        fromName: String(fromName ?? "").slice(0, 128),
+        fromEmail: String(fromEmail).slice(0, 320).toLowerCase(),
+        subject: String(subject ?? "").slice(0, 256),
+        body: String(body).slice(0, 50000),
+      });
+      console.log("[Inbound] email saved as contact message:", fromEmail, "subject:", subject);
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("[Inbound] error:", err?.message ?? err);
+      res.status(500).json({ error: "internal" });
+    }
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",

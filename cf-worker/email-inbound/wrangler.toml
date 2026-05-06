@@ -1,0 +1,13 @@
+name = "editorpdf-email-inbound"
+main = "src/index.ts"
+compatibility_date = "2024-09-01"
+# nodejs_compat lets us use Buffer + standard Node APIs in the worker.
+compatibility_flags = ["nodejs_compat"]
+
+# Secrets are NOT defined here — set them with:
+#   wrangler secret put INBOUND_EMAIL_SECRET
+#   wrangler secret put BACKEND_URL
+# (the values must match what the Express server expects)
+
+[observability]
+enabled = true
