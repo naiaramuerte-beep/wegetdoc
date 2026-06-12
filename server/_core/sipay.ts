@@ -120,6 +120,10 @@ export function createPaymentWithTokenization(opts: {
   custom_01?: string;
   custom_02?: string;
 }) {
+  // Field order matters because Sipay signs the JSON byte representation.
+  // Order confirmed by Sipay support: amount → currency → pan → month → year
+  // → cvv → token → operation → url_ok → order. url_ko ends up at the tail
+  // (Sipay didn't include it in the canonical list).
   return sipayPost("/mdwr/v1/all-in-one", {
     amount: String(opts.amountCents),
     currency: opts.currency ?? "EUR",
@@ -130,8 +134,8 @@ export function createPaymentWithTokenization(opts: {
     token: opts.token,
     operation: "all-in-one",
     url_ok: opts.url_ok,
-    url_ko: opts.url_ko,
     order: opts.order,
+    url_ko: opts.url_ko,
     ...(opts.custom_01 ? { custom_01: opts.custom_01 } : {}),
     ...(opts.custom_02 ? { custom_02: opts.custom_02 } : {}),
   });
@@ -162,14 +166,16 @@ export function createCheckoutFastpay(opts: {
   custom_01?: string;
   custom_02?: string;
 }) {
+  // Same canonical field order Sipay uses for the PAN flow, with `fastpay`
+  // taking the slot where pan/month/year/cvv would go.
   return sipayPost("/mdwr/v1/all-in-one", {
     amount: String(opts.amountCents),
     currency: opts.currency ?? "EUR",
-    operation: "all-in-one",
     fastpay: { request_id: opts.fastpayRequestId },
     token: opts.token,
-    order: opts.order,
+    operation: "all-in-one",
     url_ok: opts.url_ok,
+    order: opts.order,
     url_ko: opts.url_ko,
     ...(opts.custom_01 ? { custom_01: opts.custom_01 } : {}),
     ...(opts.custom_02 ? { custom_02: opts.custom_02 } : {}),
