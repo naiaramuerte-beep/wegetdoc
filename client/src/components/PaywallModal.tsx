@@ -130,11 +130,28 @@ function SipayCheckoutForm({
   //    so FastPay decorates it (auto-init missed the DOMContentLoaded event).
   //    Then auto-click the (hidden) button so the iframe opens without an
   //    extra user click — same UX as Stripe Elements rendering inline.
+  //
+  //    The customize() call passes brand colors speculatively (the FastPay
+  //    JS exposes window.Fastpay.customize but doesn't document the schema).
+  //    Worst case the iframe ignores unknown keys.
   useEffect(() => {
     if (!scriptReady) return;
     const fp = (window as any).Fastpay;
-    if (fp && typeof fp.loadAll === "function") {
-      try { fp.loadAll(); } catch (err) { console.error("[Sipay] loadAll failed:", err); }
+    if (fp) {
+      try {
+        if (typeof fp.customize === "function") {
+          fp.customize({
+            color: "#E63946",
+            primaryColor: "#E63946",
+            buttonColor: "#E63946",
+            accentColor: "#E63946",
+            theme: "red",
+          });
+        }
+      } catch (err) { console.error("[Sipay] customize failed:", err); }
+      if (typeof fp.loadAll === "function") {
+        try { fp.loadAll(); } catch (err) { console.error("[Sipay] loadAll failed:", err); }
+      }
     }
     const timer = setTimeout(() => {
       const btn = document.querySelector(".fastpay-btn") as HTMLButtonElement | null;
@@ -238,8 +255,11 @@ function SipayCheckoutForm({
                 data-template="v4"
                 data-callback="__editorpdfFastpayResult"
                 data-lang="es"
-                data-paymentbutton="Pagar 0,50 €"
+                data-paymentbutton="Descargar"
                 data-hiddenprice="true"
+                data-color="#E63946"
+                data-buttoncolor="#E63946"
+                data-primary="#E63946"
                 className="fastpay-btn"
                 aria-hidden="true"
                 tabIndex={-1}
@@ -256,7 +276,7 @@ function SipayCheckoutForm({
                   pointerEvents: "none",
                 }}
               >
-                Pagar
+                Descargar
               </button>
               <style>{`
                 .fastpay-btn + iframe {
@@ -456,7 +476,7 @@ export default function PaywallModal({
     >
       <div
         className="relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden"
-        style={{ maxWidth: currentStep === "plans" ? 760 : 480, maxHeight: "92vh", overflowY: "auto" }}
+        style={{ maxWidth: currentStep === "plans" ? 880 : 480, maxHeight: "92vh", overflowY: "auto" }}
       >
         {/* Close */}
         <button
