@@ -3086,23 +3086,40 @@ function SipayCheckoutCard() {
         </p>
       )}
 
-      <div ref={buttonHostRef}>
+      <div
+        ref={buttonHostRef}
+        className="flex flex-col gap-3"
+        style={{ minHeight: 720 }}
+      >
         {configQ.data?.key ? (
-          <button
-            type="button"
-            data-key={configQ.data.key}
-            data-amount="50"
-            data-currency="EUR"
-            data-template="v4"
-            data-callback="__editorpdfFastpayResult"
-            data-lang="es"
-            data-paymentbutton="Capturar tarjeta (Sipay sandbox)"
-            data-hiddenprice="true"
-            className="fastpay-btn px-4 py-2 rounded-lg text-sm font-medium text-white"
-            style={{ backgroundColor: "#0A0A0B", border: "1px solid #E63946" }}
-          >
-            {scriptReady ? "Capturar tarjeta (Sipay sandbox)" : "Cargando FastPay…"}
-          </button>
+          <>
+            <button
+              type="button"
+              data-key={configQ.data.key}
+              data-amount="50"
+              data-currency="EUR"
+              data-template="v4"
+              data-callback="__editorpdfFastpayResult"
+              data-lang="es"
+              data-paymentbutton="Capturar tarjeta (Sipay sandbox)"
+              data-hiddenprice="true"
+              className="fastpay-btn self-start px-4 py-2 rounded-lg text-sm font-medium text-white"
+              style={{ backgroundColor: "#0A0A0B", border: "1px solid #E63946" }}
+            >
+              {scriptReady ? "Capturar tarjeta (Sipay sandbox)" : "Cargando FastPay…"}
+            </button>
+            <style>{`
+              /* FastPay inserts its iframe right after the button via e.after().
+                 Force the iframe to take full width + enough height so the pay
+                 submit is visible without scrolling inside it. */
+              .fastpay-btn + iframe {
+                width: 100% !important;
+                min-height: 640px !important;
+                border: 0 !important;
+                background: transparent !important;
+              }
+            `}</style>
+          </>
         ) : (
           <p className="text-xs text-gray-500">Esperando config Sipay…</p>
         )}
