@@ -524,6 +524,55 @@ export const appRouter = router({
       };
     }),
 
+    // Sipay config — returns FastPay merchant key + bundle URL to frontend.
+    // Key is public (it's the merchant identifier used in data-key); the
+    // secret stays server-side and signs all-in-one calls.
+    sipayConfig: publicProcedure.query(async () => {
+      const { ENV } = await import("./_core/env");
+      const sandbox = ENV.sipayEndpoint.includes("sandbox");
+      return {
+        key: ENV.sipayKey,
+        endpoint: ENV.sipayEndpoint,
+        bundleUrl: `${ENV.sipayEndpoint}/fpay/v1/static/bundle/fastpay.js`,
+        sandbox,
+      };
+    }),
+
+    // Phase 1 — wire FastPay token into all-in-one and return the 3DS URL
+    // the frontend must navigate to. No DB writes; the customer comes back
+    // through /api/sipay/callback/ok where we confirm and create the sub.
+    sipayCheckoutInit: protectedProcedure
+      .input(z.object({
+        fastpayRequestId: z.string().min(8),
+        amountCents: z.number().int().positive(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { createCheckoutFastpay } = await import("./_core/sipay");
+        const order = `sipay-${ctx.user.id}-${Date.now()}`;
+        const token = `usr-${ctx.user.id}`;
+        const result = await createCheckoutFastpay({
+          amountCents: input.amountCents,
+          fastpayRequestId: input.fastpayRequestId,
+          token,
+          order,
+          url_ok: "https://editorpdf.net/api/sipay/callback/ok",
+          url_ko: "https://editorpdf.net/api/sipay/callback/ko",
+          custom_01: String(ctx.user.id),
+        });
+        const data = result.data as any;
+        if (!result.ok || data?.code !== "0") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Sipay rechazó la petición: ${JSON.stringify(data ?? result.raw)}`,
+          });
+        }
+        return {
+          requestId: data?.payload?.request_id ?? "",
+          redirectUrl: data?.payload?.url ?? "",
+          order,
+        };
+      }),
+
     // Create a Subscription with the intro price (0,50€) — charges immediately
     createCheckoutSession: protectedProcedure.mutation(async ({ ctx }) => {
       const { getStripe } = await import("./_core/stripe");

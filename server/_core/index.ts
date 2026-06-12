@@ -214,14 +214,14 @@ async function startServer() {
     // Content Security Policy
     res.setHeader("Content-Security-Policy", [
       "frame-ancestors 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://www.gstatic.com https://translate.googleapis.com https://static.hotjar.com https://script.hotjar.com",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com https://translate.googleapis.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://www.gstatic.com https://translate.googleapis.com https://static.hotjar.com https://script.hotjar.com https://sandbox.sipay.es https://live.sipay.es",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com https://translate.googleapis.com https://sandbox.sipay.es https://live.sipay.es",
       "font-src 'self' https://fonts.gstatic.com https://script.hotjar.com",
       "object-src 'none'",
       "base-uri 'self'",
-      "frame-src 'self' https://*.stripe.com https://www.googletagmanager.com https://vars.hotjar.com",
-      "img-src 'self' data: https://www.googletagmanager.com https://www.google.com https://script.hotjar.com",
-      "connect-src 'self' data: https://api.stripe.com https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com",
+      "frame-src 'self' https://*.stripe.com https://www.googletagmanager.com https://vars.hotjar.com https://sandbox.sipay.es https://live.sipay.es",
+      "img-src 'self' data: https://www.googletagmanager.com https://www.google.com https://script.hotjar.com https://sandbox.sipay.es https://live.sipay.es",
+      "connect-src 'self' data: https://api.stripe.com https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com https://sandbox.sipay.es https://live.sipay.es",
     ].join("; "));
     next();
   });
@@ -922,6 +922,38 @@ ${allUrls.map(u => `  <url>
       console.error("[Inbound] error:", err?.message ?? err);
       res.status(500).json({ error: "internal" });
     }
+  });
+
+  // Sipay 3DS callbacks. After the customer authenticates in Redsys MPI,
+  // Sipay redirects them back here with ?request_id=… (plus ?error=… on KO).
+  // We confirm the auth server-side and bounce the user to /payment/success
+  // or to the homepage with a banner on failure. No DB writes yet — that
+  // comes in Fase 2 when we wire the cron + subscription row.
+  app.get("/api/sipay/callback/ok", async (req, res) => {
+    const requestId = String(req.query.request_id ?? "");
+    if (!requestId) return res.redirect("/?sipay=missing_request_id");
+    try {
+      const { confirmPayment } = await import("./sipay");
+      const result = await confirmPayment(requestId);
+      const data = result.data as any;
+      if (!result.ok || data?.code !== "0") {
+        console.error("[Sipay] confirm failed:", data ?? result.raw);
+        return res.redirect(`/?sipay=confirm_failed&detail=${encodeURIComponent(data?.detail ?? "unknown")}`);
+      }
+      const txn = data?.payload?.transaction_id ?? "";
+      const masked = data?.payload?.masked_card ?? "";
+      console.log(`[Sipay] auth OK: txn=${txn} card=${masked} order=${data?.payload?.order}`);
+      return res.redirect(`/payment/success?txn=${encodeURIComponent(txn)}&provider=sipay`);
+    } catch (err: any) {
+      console.error("[Sipay] callback/ok exception:", err?.message ?? err);
+      return res.redirect("/?sipay=server_error");
+    }
+  });
+
+  app.get("/api/sipay/callback/ko", (req, res) => {
+    const error = String(req.query.error ?? "unknown");
+    console.warn("[Sipay] callback ko:", req.query);
+    return res.redirect(`/?sipay_error=${encodeURIComponent(error)}`);
   });
 
   // tRPC API

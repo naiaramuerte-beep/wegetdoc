@@ -146,6 +146,37 @@ export function confirmPayment(requestId: string) {
 }
 
 /**
+ * Initial payment + tokenization using a FastPay-captured card. The PAN never
+ * touches our backend — the customer enters it in the FastPay iframe and we
+ * receive a 5-min token (`fastpayRequestId`). This is the path that works
+ * without PCI-DSS, so it is the one wired into the production paywall.
+ */
+export function createCheckoutFastpay(opts: {
+  amountCents: number;
+  fastpayRequestId: string;
+  token: string;
+  order: string;
+  url_ok: string;
+  url_ko: string;
+  currency?: string;
+  custom_01?: string;
+  custom_02?: string;
+}) {
+  return sipayPost("/mdwr/v1/all-in-one", {
+    amount: String(opts.amountCents),
+    currency: opts.currency ?? "EUR",
+    operation: "all-in-one",
+    fastpay: { request_id: opts.fastpayRequestId },
+    token: opts.token,
+    order: opts.order,
+    url_ok: opts.url_ok,
+    url_ko: opts.url_ko,
+    ...(opts.custom_01 ? { custom_01: opts.custom_01 } : {}),
+    ...(opts.custom_02 ? { custom_02: opts.custom_02 } : {}),
+  });
+}
+
+/**
  * Recurring charge against a previously tokenized card. MIT (no customer
  * present), reason "R" = recurring. Used by the monthly cron.
  */

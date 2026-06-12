@@ -2,7 +2,7 @@
    EditorPDF Admin Panel — Dashboard completo
    MRR, ARR, estadísticas de facturación, usuarios, pagos, legal
    ============================================================= */
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -2374,6 +2374,7 @@ export default function Admin() {
               </div>
 
               <SipayProbeCard />
+              <SipayCheckoutCard />
 
               {/* Site settings */}
               <div
@@ -2980,6 +2981,156 @@ function SipayProbeCard() {
               {result.requestBody}
             </pre>
           </details>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── SipayCheckoutCard (Fase 1: FastPay → all-in-one → 3DS redirect) ──────────
+// End-to-end checkout test from the admin. Loads FastPay JS dynamically, mounts
+// the Sipay-styled button, and on its callback fires our backend to obtain the
+// 3DS redirect URL. Clicking "Ir a 3DS" navigates the parent window so Redsys
+// MPI loads top-level (banks block iframe embedding via X-Frame-Options).
+function SipayCheckoutCard() {
+  const configQ = trpc.subscription.sipayConfig.useQuery();
+  const initMut = trpc.subscription.sipayCheckoutInit.useMutation();
+  const [scriptReady, setScriptReady] = useState(false);
+  const [fastpayResult, setFastpayResult] = useState<any>(null);
+  const [redirectInfo, setRedirectInfo] = useState<{ redirectUrl: string; requestId: string; order: string } | null>(null);
+  const buttonHostRef = useRef<HTMLDivElement | null>(null);
+
+  // Load FastPay bundle once we know the URL. Idempotent — checks for an
+  // existing tag before injecting.
+  useEffect(() => {
+    if (!configQ.data?.bundleUrl) return;
+    const existing = document.querySelector(`script[data-sipay-fastpay="1"]`) as HTMLScriptElement | null;
+    if (existing) {
+      setScriptReady(true);
+      return;
+    }
+    const s = document.createElement("script");
+    s.src = configQ.data.bundleUrl;
+    s.async = true;
+    s.dataset.sipayFastpay = "1";
+    s.onload = () => setScriptReady(true);
+    s.onerror = () => console.error("[Sipay] failed to load FastPay bundle");
+    document.head.appendChild(s);
+  }, [configQ.data?.bundleUrl]);
+
+  // FastPay JS scans the DOM for <button data-key=…> and decorates it. We expose
+  // a global callback name so its bundle can call us when the customer finishes
+  // entering the card.
+  useEffect(() => {
+    (window as any).__editorpdfFastpayResult = (resp: any) => {
+      console.log("[Sipay] FastPay result:", resp);
+      setFastpayResult(resp);
+    };
+    return () => {
+      delete (window as any).__editorpdfFastpayResult;
+    };
+  }, []);
+
+  const launchInit = async () => {
+    if (!fastpayResult?.payload?.request_id && !fastpayResult?.request_id) return;
+    const fpRequestId = fastpayResult.payload?.request_id ?? fastpayResult.request_id;
+    setRedirectInfo(null);
+    try {
+      const res = await initMut.mutateAsync({ fastpayRequestId: fpRequestId, amountCents: 50 });
+      setRedirectInfo(res);
+    } catch (err) {
+      console.error("[Sipay] init failed", err);
+    }
+  };
+
+  return (
+    <div
+      className="rounded-xl border p-5 space-y-4"
+      style={{ backgroundColor: "#131720", borderColor: "#E63946" }}
+    >
+      <div>
+        <p className="text-sm font-semibold text-white flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#E63946" }} />
+          Sipay checkout end-to-end (Fase 1)
+        </p>
+        <p className="text-xs text-gray-500 mt-1">
+          Carga FastPay JS, captura la tarjeta de prueba VISA en su iframe, manda el token al backend
+          para autorizar 0,50 €, y devuelve la URL de 3DS. Tarjeta sandbox:{" "}
+          <code className="font-mono">4548 8194 0777 7774 — 12/25 — CVV 123</code>.
+        </p>
+      </div>
+
+      {configQ.isLoading && <p className="text-xs text-gray-400">Cargando config Sipay…</p>}
+      {configQ.data && (
+        <p className="text-[11px] text-gray-500">
+          Entorno: <span className="text-emerald-400">{configQ.data.sandbox ? "SANDBOX" : "LIVE"}</span> · key:{" "}
+          <code className="font-mono">{configQ.data.key || "(no configurada)"}</code>
+        </p>
+      )}
+
+      <div ref={buttonHostRef}>
+        {configQ.data?.key && scriptReady ? (
+          <button
+            type="button"
+            data-key={configQ.data.key}
+            data-amount="50"
+            data-currency="EUR"
+            data-template="v4"
+            data-callback="__editorpdfFastpayResult"
+            data-lang="es"
+            data-paymentbutton="Capturar tarjeta (Sipay sandbox)"
+            data-hiddenprice="true"
+            className="px-4 py-2 rounded-lg text-sm font-medium text-white"
+            style={{ backgroundColor: "#0A0A0B", border: "1px solid #E63946" }}
+          >
+            Capturar tarjeta (Sipay sandbox)
+          </button>
+        ) : (
+          <p className="text-xs text-gray-500">Esperando a que cargue el bundle de FastPay…</p>
+        )}
+      </div>
+
+      {fastpayResult && (
+        <div className="space-y-2">
+          <p className="text-xs text-emerald-300">
+            ✓ FastPay devolvió un request_id (tarjeta capturada).
+          </p>
+          <details className="bg-black/30 rounded p-2 text-xs font-mono">
+            <summary className="cursor-pointer text-gray-400">Resultado FastPay</summary>
+            <pre className="mt-2 overflow-x-auto text-[10px] text-emerald-200 whitespace-pre-wrap">
+              {JSON.stringify(fastpayResult, null, 2)}
+            </pre>
+          </details>
+          <button
+            onClick={launchInit}
+            disabled={initMut.isPending}
+            className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50"
+            style={{ backgroundColor: "#E63946" }}
+          >
+            {initMut.isPending ? "Autorizando…" : "Autorizar 0,50 € + obtener URL 3DS"}
+          </button>
+        </div>
+      )}
+
+      {initMut.error && (
+        <p className="text-xs text-red-400">Error backend: {initMut.error.message}</p>
+      )}
+
+      {redirectInfo && (
+        <div className="space-y-2">
+          <p className="text-xs text-emerald-300">
+            ✓ Autorización lanzada. request_id: <code className="font-mono">{redirectInfo.requestId}</code>
+          </p>
+          <p className="text-xs text-gray-400">
+            order: <code className="font-mono">{redirectInfo.order}</code>
+          </p>
+          <a
+            href={redirectInfo.redirectUrl}
+            className="inline-block px-4 py-2 rounded-lg text-sm font-medium text-white"
+            style={{ backgroundColor: "#10b981" }}
+          >
+            Ir a 3DS Redsys →
+          </a>
         </div>
       )}
     </div>
