@@ -71,13 +71,13 @@ async function sipayPost<T = Record<string, unknown>>(
     payload,
   };
   const requestBody = JSON.stringify(wrapper);
-  // Sipay support confirmed they sign with HMAC-SHA256 but didn't share the
-  // exact input. Most PSPs in this envelope-payload shape sign the payload
-  // string only (the envelope is just routing metadata). If signature_fail
-  // persists with this scheme, the next candidates are: nonce + payload,
-  // and full body — driven from the probe UI without redeploying.
+  // Tried: HMAC(secret, JSON(body)) → signature_fail
+  // Tried: HMAC(secret, JSON(payload)) → signature_fail
+  // Now trying: HMAC(secret, nonce + JSON(payload)) — anti-replay pattern.
+  // If this fails we still have: key+resource+nonce+payload, base64 instead
+  // of hex, and signature carried in the body as a "signature" field.
   const payloadStr = JSON.stringify(payload);
-  const signature = sign(payloadStr);
+  const signature = sign(wrapper.nonce + payloadStr);
   const endpoint = `${ENV.sipayEndpoint}${path}`;
 
   const res = await fetch(endpoint, {
