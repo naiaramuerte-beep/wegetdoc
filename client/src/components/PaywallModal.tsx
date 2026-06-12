@@ -3,7 +3,7 @@
  * Two-column layout: PDF preview (left) + payment form (right).
  * Stripe was retired from the public paywall.
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { colors } from "@/lib/brand";
 import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield, FileText } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -93,6 +93,11 @@ function SipayCheckoutForm({
   const [scriptReady, setScriptReady] = useState(false);
   const [fastpayResult, setFastpayResult] = useState<{ payload?: { request_id?: string }; request_id?: string } | null>(null);
   const [redirecting, setRedirecting] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  // Tracks which fastpay request_ids we've already attempted so we don't
+  // retry the same token (one-shot). Without this, the effect re-fired on
+  // every setRedirecting(false) → infinite loop spamming Sipay.
+  const triedFastpayIdRef = useRef<string | null>(null);
 
   // 1) Inject FastPay bundle dynamically.
   useEffect(() => {
@@ -142,28 +147,31 @@ function SipayCheckoutForm({
   }, [scriptReady, sipayConfigQ.data?.key]);
 
   // 4) When FastPay returns a token, auto-fire the all-in-one authorization
-  //    and navigate to the 3DS URL Sipay gives us back.
+  //    and navigate to the 3DS URL Sipay gives us back. We track the last
+  //    attempted token in a ref so re-renders don't fire duplicate requests.
   useEffect(() => {
     const fpId = fastpayResult?.payload?.request_id ?? fastpayResult?.request_id;
-    if (!fpId || initMut.isPending || redirecting) return;
+    if (!fpId) return;
+    if (triedFastpayIdRef.current === fpId) return;
+    triedFastpayIdRef.current = fpId;
     setRedirecting(true);
+    setAuthError(null);
     initMut
       .mutateAsync({ fastpayRequestId: fpId, amountCents: 50 })
       .then((res) => {
         if (res.redirectUrl) {
-          // TODO Fase 2: claim/upload the PDF here too so it survives the 3DS
-          // redirect. For now the user lands on /payment/success without doc.
           window.location.href = res.redirectUrl;
         } else {
-          toast.error("Sipay no devolvió URL de 3DS.");
+          setAuthError("Sipay no devolvió URL de 3DS.");
           setRedirecting(false);
         }
       })
       .catch((err) => {
-        toast.error(`Error autorizando el pago: ${err?.message ?? "desconocido"}`);
+        setAuthError(err?.message ?? "Error autorizando el pago.");
         setRedirecting(false);
       });
-  }, [fastpayResult, initMut, redirecting]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fastpayResult]);
 
   return (
     <div className="flex flex-col md:flex-row min-h-0">
@@ -266,6 +274,12 @@ function SipayCheckoutForm({
                 <div className="flex items-center justify-center gap-2 py-3 text-sm text-gray-600">
                   <Loader2 className="w-4 h-4 animate-spin text-[#E63946]" />
                   Autorizando y redirigiendo a 3DS…
+                </div>
+              )}
+              {authError && !redirecting && (
+                <div className="rounded-lg p-3 text-xs text-amber-900 bg-amber-50 border border-amber-200">
+                  <p className="font-semibold mb-1">No pudimos autorizar el pago</p>
+                  <p>Vuelve a intentarlo en unos minutos o contacta con soporte si el problema persiste.</p>
                 </div>
               )}
             </div>
