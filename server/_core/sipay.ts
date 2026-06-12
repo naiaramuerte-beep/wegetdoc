@@ -197,7 +197,7 @@ export function probeSandbox(opts: { url_ok: string; url_ko: string }) {
     currency: "EUR",
     pan: "4548819407777774",
     month: "12",
-    year: "25",
+    year: "2025",
     cvv: "123",
     token: `probe-${Date.now()}`,
     order,
