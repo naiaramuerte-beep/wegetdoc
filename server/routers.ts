@@ -775,6 +775,23 @@ export const appRouter = router({
       return getAdminStats();
     }),
 
+    sipayProbe: adminProcedure.mutation(async () => {
+      const { probeSandbox } = await import("./_core/sipay");
+      const result = await probeSandbox({
+        url_ok: "https://editorpdf.net/sipay/callback/ok",
+        url_ko: "https://editorpdf.net/sipay/callback/ko",
+      });
+      return {
+        ok: result.ok,
+        httpStatus: result.httpStatus,
+        endpoint: result.endpoint,
+        data: result.data,
+        raw: result.raw,
+        signature: result.signature,
+        requestBody: result.requestBody,
+      };
+    }),
+
     users: adminProcedure
       .input(z.object({ search: z.string().optional() }))
       .query(async ({ input }) => {

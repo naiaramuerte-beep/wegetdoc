@@ -2373,6 +2373,8 @@ export default function Admin() {
                 </p>
               </div>
 
+              <SipayProbeCard />
+
               {/* Site settings */}
               <div
                 className="rounded-xl border p-5 space-y-4"
@@ -2922,6 +2924,64 @@ function SettingRow({
       >
         {saved ? "✓ Guardado" : "Guardar"}
       </button>
+    </div>
+  );
+}
+
+// ─── SipayProbeCard (Phase 0 migration: validates HMAC + sandbox connectivity) ──
+function SipayProbeCard() {
+  const probeMut = trpc.admin.sipayProbe.useMutation();
+  const result = probeMut.data;
+  return (
+    <div
+      className="rounded-xl border p-5 space-y-4"
+      style={{ backgroundColor: "#131720", borderColor: "#E63946" }}
+    >
+      <div>
+        <p className="text-sm font-semibold text-white flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#E63946" }} />
+          Sipay sandbox probe (migración Fase 0)
+        </p>
+        <p className="text-xs text-gray-500 mt-1">
+          Lanza una petición <code className="font-mono">/mdwr/v1/all-in-one</code> contra{" "}
+          <code className="font-mono">sandbox.sipay.es</code> con la tarjeta de prueba VISA y devuelve la respuesta cruda.
+          Sirve para verificar que la firma HMAC y las credenciales están bien antes de migrar el modal de pago.
+        </p>
+      </div>
+      <button
+        onClick={() => probeMut.mutate()}
+        disabled={probeMut.isPending}
+        className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50"
+        style={{ backgroundColor: "#E63946" }}
+      >
+        {probeMut.isPending ? "Probando…" : "Lanzar probe sandbox"}
+      </button>
+      {probeMut.error && (
+        <p className="text-xs text-red-400">Error backend: {probeMut.error.message}</p>
+      )}
+      {result && (
+        <div className="space-y-2 text-xs font-mono">
+          <p className="text-gray-400">
+            HTTP <span className={result.ok ? "text-emerald-400" : "text-red-400"}>{result.httpStatus}</span> ·{" "}
+            <span className="text-gray-500">{result.endpoint}</span>
+          </p>
+          <details className="bg-black/30 rounded p-2">
+            <summary className="cursor-pointer text-gray-400">Respuesta Sipay (parsed)</summary>
+            <pre className="mt-2 overflow-x-auto text-[10px] text-emerald-200 whitespace-pre-wrap">
+              {JSON.stringify(result.data ?? result.raw, null, 2)}
+            </pre>
+          </details>
+          <details className="bg-black/30 rounded p-2">
+            <summary className="cursor-pointer text-gray-400">Cuerpo enviado + firma</summary>
+            <pre className="mt-2 overflow-x-auto text-[10px] text-gray-300 whitespace-pre-wrap">
+              signature (sha256 hex): {result.signature}
+              {"\n\n"}
+              body:{"\n"}
+              {result.requestBody}
+            </pre>
+          </details>
+        </div>
+      )}
     </div>
   );
 }
