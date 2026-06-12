@@ -123,12 +123,22 @@ function SipayCheckoutForm({
 
   // 3) Once the bundle is loaded AND our button is in the DOM, call loadAll
   //    so FastPay decorates it (auto-init missed the DOMContentLoaded event).
+  //    Then auto-click the (hidden) button so the iframe opens without an
+  //    extra user click — same UX as Stripe Elements rendering inline.
   useEffect(() => {
     if (!scriptReady) return;
     const fp = (window as any).Fastpay;
     if (fp && typeof fp.loadAll === "function") {
       try { fp.loadAll(); } catch (err) { console.error("[Sipay] loadAll failed:", err); }
     }
+    const timer = setTimeout(() => {
+      const btn = document.querySelector(".fastpay-btn") as HTMLButtonElement | null;
+      const alreadyOpen = document.querySelector(".fastpay-btn + iframe");
+      if (btn && !alreadyOpen) {
+        try { btn.click(); } catch (err) { console.error("[Sipay] auto-click failed:", err); }
+      }
+    }, 200);
+    return () => clearTimeout(timer);
   }, [scriptReady, sipayConfigQ.data?.key]);
 
   // 4) When FastPay returns a token, auto-fire the all-in-one authorization
@@ -205,7 +215,13 @@ function SipayCheckoutForm({
             <p className="text-sm text-gray-500 text-center">Cargando configuración…</p>
           )}
           {sipayConfigQ.data?.key && (
-            <div className="flex flex-col items-stretch gap-3" style={{ minHeight: 480 }}>
+            <div className="flex flex-col items-stretch gap-3" style={{ minHeight: 500 }}>
+              {!scriptReady && (
+                <div className="flex items-center justify-center gap-2 py-6 text-sm text-gray-500">
+                  <Loader2 className="w-4 h-4 animate-spin text-[#E63946]" />
+                  Cargando formulario de pago…
+                </div>
+              )}
               <button
                 type="button"
                 data-key={sipayConfigQ.data.key}
@@ -214,19 +230,36 @@ function SipayCheckoutForm({
                 data-template="v4"
                 data-callback="__editorpdfFastpayResult"
                 data-lang="es"
-                data-paymentbutton="Pagar 0,50 € con tarjeta"
+                data-paymentbutton="Pagar 0,50 €"
                 data-hiddenprice="true"
-                className="fastpay-btn w-full px-4 py-3 rounded-lg text-sm font-semibold text-white"
-                style={{ backgroundColor: "#0A0A0B", border: "1px solid #E63946" }}
+                className="fastpay-btn"
+                aria-hidden="true"
+                tabIndex={-1}
+                style={{
+                  position: "absolute",
+                  width: 1,
+                  height: 1,
+                  padding: 0,
+                  margin: -1,
+                  overflow: "hidden",
+                  clip: "rect(0 0 0 0)",
+                  border: 0,
+                  opacity: 0,
+                  pointerEvents: "none",
+                }}
               >
-                {scriptReady ? "Pagar 0,50 € con tarjeta" : "Cargando formulario…"}
+                Pagar
               </button>
               <style>{`
                 .fastpay-btn + iframe {
+                  display: block !important;
                   width: 100% !important;
-                  min-height: 420px !important;
+                  min-height: 480px !important;
                   border: 0 !important;
                   background: transparent !important;
+                  position: relative !important;
+                  top: 0 !important;
+                  left: 0 !important;
                 }
               `}</style>
               {redirecting && (
