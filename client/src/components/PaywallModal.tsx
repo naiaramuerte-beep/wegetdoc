@@ -606,7 +606,8 @@ export default function PaywallModal({
   const { price, withPrice } = usePricing();
   const { isAuthenticated } = useAuth();
   const flagsQ = trpc.site.flags.useQuery();
-  const paymentProvider = flagsQ.data?.paymentProvider ?? "stripe";
+  const paymentProvider: "stripe" | "sipay" | "loading" =
+    flagsQ.isLoading || !flagsQ.data ? "loading" : flagsQ.data.paymentProvider;
   const { savePdfToSession, setPendingPaywall, pendingFile, pendingEditedPdf, clearPendingEditedPdf, saveEditedPdfToSession } = usePdfFile();
   const [step, setStep] = useState<Step>(isAuthenticated ? "plans" : "auth-choice");
   const [emailInput, setEmailInput] = useState("");
@@ -883,7 +884,11 @@ export default function PaywallModal({
 
         {/* ── Payment step ── */}
         {(reason !== "trial-limit" || upgradeFallbackToCheckout) && currentStep === "plans" && (
-          paymentProvider === "sipay" ? (
+          paymentProvider === "loading" ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="w-7 h-7 animate-spin text-[#E63946]" />
+            </div>
+          ) : paymentProvider === "sipay" ? (
             <SipayCheckoutForm
               onSuccess={handlePaymentSuccess}
               onClose={onClose}
