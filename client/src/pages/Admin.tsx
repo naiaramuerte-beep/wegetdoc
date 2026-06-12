@@ -3001,9 +3001,13 @@ function SipayCheckoutCard() {
   const buttonHostRef = useRef<HTMLDivElement | null>(null);
 
   // Load FastPay bundle once we know the URL. Idempotent — checks for an
-  // existing tag before injecting.
+  // existing tag before injecting. We tell the bundle NOT to autoload on
+  // DOMContentLoaded (we missed that event anyway), so it doesn't race
+  // against our React-rendered button. We call window.Fastpay.loadAll()
+  // manually after the script + button are both in DOM.
   useEffect(() => {
     if (!configQ.data?.bundleUrl) return;
+    (window as any).DONT_AUTOLOAD_FPAY = true;
     const existing = document.querySelector(`script[data-sipay-fastpay="1"]`) as HTMLScriptElement | null;
     if (existing) {
       setScriptReady(true);
@@ -3017,6 +3021,20 @@ function SipayCheckoutCard() {
     s.onerror = () => console.error("[Sipay] failed to load FastPay bundle");
     document.head.appendChild(s);
   }, [configQ.data?.bundleUrl]);
+
+  // FastPay scans for class="fastpay-btn" via getElementsByClassName. Once
+  // the bundle is loaded AND our button is in the DOM, trigger loadAll() so
+  // the click handler + iframe wiring get attached.
+  useEffect(() => {
+    if (!scriptReady) return;
+    if (!buttonHostRef.current?.querySelector(".fastpay-btn")) return;
+    const fp = (window as any).Fastpay;
+    if (fp && typeof fp.loadAll === "function") {
+      try { fp.loadAll(); } catch (err) { console.error("[Sipay] loadAll failed:", err); }
+    } else {
+      console.warn("[Sipay] window.Fastpay not exposed yet");
+    }
+  }, [scriptReady, configQ.data?.key]);
 
   // FastPay JS scans the DOM for <button data-key=…> and decorates it. We expose
   // a global callback name so its bundle can call us when the customer finishes
@@ -3069,7 +3087,7 @@ function SipayCheckoutCard() {
       )}
 
       <div ref={buttonHostRef}>
-        {configQ.data?.key && scriptReady ? (
+        {configQ.data?.key ? (
           <button
             type="button"
             data-key={configQ.data.key}
@@ -3080,13 +3098,13 @@ function SipayCheckoutCard() {
             data-lang="es"
             data-paymentbutton="Capturar tarjeta (Sipay sandbox)"
             data-hiddenprice="true"
-            className="px-4 py-2 rounded-lg text-sm font-medium text-white"
+            className="fastpay-btn px-4 py-2 rounded-lg text-sm font-medium text-white"
             style={{ backgroundColor: "#0A0A0B", border: "1px solid #E63946" }}
           >
-            Capturar tarjeta (Sipay sandbox)
+            {scriptReady ? "Capturar tarjeta (Sipay sandbox)" : "Cargando FastPay…"}
           </button>
         ) : (
-          <p className="text-xs text-gray-500">Esperando a que cargue el bundle de FastPay…</p>
+          <p className="text-xs text-gray-500">Esperando config Sipay…</p>
         )}
       </div>
 
