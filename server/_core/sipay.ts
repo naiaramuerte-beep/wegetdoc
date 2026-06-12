@@ -73,11 +73,13 @@ async function sipayPost<T = Record<string, unknown>>(
   const requestBody = JSON.stringify(wrapper);
   // Tried: HMAC(secret, JSON(body)) → signature_fail
   // Tried: HMAC(secret, JSON(payload)) → signature_fail
-  // Now trying: HMAC(secret, nonce + JSON(payload)) — anti-replay pattern.
-  // If this fails we still have: key+resource+nonce+payload, base64 instead
-  // of hex, and signature carried in the body as a "signature" field.
+  // Tried: HMAC(secret, nonce + JSON(payload)) → signature_fail
+  // Now trying: HMAC(secret, key + resource + nonce + JSON(payload))
+  // (envelope-then-payload, in the order Sipay listed in their support reply).
   const payloadStr = JSON.stringify(payload);
-  const signature = sign(wrapper.nonce + payloadStr);
+  const signatureInput =
+    wrapper.key + wrapper.resource + wrapper.nonce + payloadStr;
+  const signature = sign(signatureInput);
   const endpoint = `${ENV.sipayEndpoint}${path}`;
 
   const res = await fetch(endpoint, {
