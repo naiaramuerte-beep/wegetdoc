@@ -147,19 +147,23 @@ export const appRouter = router({
      * the box but the admin can kill-switch a feature without deploy.
      */
     flags: publicProcedure.query(async () => {
-      const [converter, tour, blog, ads] = await Promise.all([
+      const [converter, tour, blog, ads, provider] = await Promise.all([
         getSiteSetting("flag_converter_enabled"),
         getSiteSetting("flag_product_tour_enabled"),
         getSiteSetting("flag_blog_enabled"),
         getSiteSetting("flag_ads_tracking"),
+        getSiteSetting("flag_payment_provider"),
       ]);
       // Default to enabled unless explicitly "false"
       const on = (v: string | null | undefined) => v !== "false";
+      // Default = stripe (existing prod). Admin can flip to "sipay" from Ajustes.
+      const paymentProvider: "stripe" | "sipay" = provider === "sipay" ? "sipay" : "stripe";
       return {
         converterEnabled: on(converter),
         productTourEnabled: on(tour),
         blogEnabled: on(blog),
         adsTrackingEnabled: on(ads),
+        paymentProvider,
       };
     }),
   }),

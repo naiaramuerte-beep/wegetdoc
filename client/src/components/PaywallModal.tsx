@@ -401,6 +401,194 @@ function StripeCheckoutForm({
   );
 }
 
+// ── Sipay checkout (Fase 1.5) ──────────────────────────────────────────────────
+// Replaces Stripe Elements with FastPay JS + 3DS redirect when the admin flips
+// flag_payment_provider to "sipay". Same two-column layout (PDF preview left,
+// payment right) so the user-facing modal feels identical. The actual capture
+// happens in Sipay's iframe; we forward the request_id to our backend to fire
+// /mdwr/v1/all-in-one and then navigate the parent window to the 3DS URL.
+function SipayCheckoutForm({
+  onSuccess: _onSuccess,
+  onClose,
+  pdfData,
+  thumbnailUrl,
+  buildPdfForUpload: _buildPdfForUpload,
+  converter,
+}: {
+  onSuccess: (transactionId?: string) => void;
+  onClose: () => void;
+  pdfData?: PdfPayload;
+  thumbnailUrl?: string;
+  buildPdfForUpload?: () => Promise<{ base64: string; name: string; size: number } | null>;
+  converter?: { label: string; price: string };
+}) {
+  const { t } = useLanguage();
+  const sipayConfigQ = trpc.subscription.sipayConfig.useQuery();
+  const initMut = trpc.subscription.sipayCheckoutInit.useMutation();
+  const [scriptReady, setScriptReady] = useState(false);
+  const [fastpayResult, setFastpayResult] = useState<{ payload?: { request_id?: string }; request_id?: string } | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
+
+  // 1) Inject FastPay bundle dynamically.
+  useEffect(() => {
+    if (!sipayConfigQ.data?.bundleUrl) return;
+    (window as any).DONT_AUTOLOAD_FPAY = true;
+    const existing = document.querySelector(`script[data-sipay-fastpay="1"]`) as HTMLScriptElement | null;
+    if (existing) {
+      setScriptReady(true);
+      return;
+    }
+    const s = document.createElement("script");
+    s.src = sipayConfigQ.data.bundleUrl;
+    s.async = true;
+    s.dataset.sipayFastpay = "1";
+    s.onload = () => setScriptReady(true);
+    s.onerror = () => toast.error("No se pudo cargar el formulario de pago. Recarga la página.");
+    document.head.appendChild(s);
+  }, [sipayConfigQ.data?.bundleUrl]);
+
+  // 2) Expose a global callback for FastPay to invoke when the card is captured.
+  useEffect(() => {
+    (window as any).__editorpdfFastpayResult = (resp: any) => {
+      console.log("[Sipay] FastPay result:", resp);
+      setFastpayResult(resp);
+    };
+    return () => { delete (window as any).__editorpdfFastpayResult; };
+  }, []);
+
+  // 3) Once the bundle is loaded AND our button is in the DOM, call loadAll
+  //    so FastPay decorates it (auto-init missed the DOMContentLoaded event).
+  useEffect(() => {
+    if (!scriptReady) return;
+    const fp = (window as any).Fastpay;
+    if (fp && typeof fp.loadAll === "function") {
+      try { fp.loadAll(); } catch (err) { console.error("[Sipay] loadAll failed:", err); }
+    }
+  }, [scriptReady, sipayConfigQ.data?.key]);
+
+  // 4) When FastPay returns a token, auto-fire the all-in-one authorization
+  //    and navigate to the 3DS URL Sipay gives us back.
+  useEffect(() => {
+    const fpId = fastpayResult?.payload?.request_id ?? fastpayResult?.request_id;
+    if (!fpId || initMut.isPending || redirecting) return;
+    setRedirecting(true);
+    initMut
+      .mutateAsync({ fastpayRequestId: fpId, amountCents: 50 })
+      .then((res) => {
+        if (res.redirectUrl) {
+          // TODO Fase 2: claim/upload the PDF here too so it survives the 3DS
+          // redirect. For now the user lands on /payment/success without doc.
+          window.location.href = res.redirectUrl;
+        } else {
+          toast.error("Sipay no devolvió URL de 3DS.");
+          setRedirecting(false);
+        }
+      })
+      .catch((err) => {
+        toast.error(`Error autorizando el pago: ${err?.message ?? "desconocido"}`);
+        setRedirecting(false);
+      });
+  }, [fastpayResult, initMut, redirecting]);
+
+  return (
+    <div className="flex flex-col md:flex-row min-h-0">
+      {/* ── PDF preview column (same as Stripe) ── */}
+      <div className="flex items-center gap-3 bg-[#f4f5f7] p-3 md:hidden">
+        <div className="w-14 h-20 rounded border border-slate-200 bg-white shadow-sm overflow-hidden flex items-center justify-center flex-shrink-0">
+          {thumbnailUrl ? (
+            <img src={thumbnailUrl} alt="Preview" className="w-full h-full object-contain" />
+          ) : (
+            <span className="text-red-400 text-[8px] font-bold">PDF</span>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 mb-1">
+            <div className="w-4 h-4 rounded-full bg-[#1E9E63] flex items-center justify-center"><Check className="w-2.5 h-2.5 text-white" /></div>
+            <p className="text-xs font-semibold text-slate-800">{(t as any).paywall_doc_ready ?? "Your document is ready!"}</p>
+          </div>
+          <p className="text-[11px] text-slate-500 truncate">{pdfData?.name ?? "document.pdf"}</p>
+        </div>
+      </div>
+      <div className="hidden md:flex flex-col items-center justify-center bg-[#f4f5f7] p-8" style={{ minWidth: 260, maxWidth: 280 }}>
+        <div className="flex items-center gap-2 mb-5 w-full">
+          <div className="w-6 h-6 rounded-full bg-[#1E9E63] flex items-center justify-center flex-shrink-0"><Check className="w-3.5 h-3.5 text-white" /></div>
+          <p className="text-sm font-semibold text-slate-800">{(t as any).paywall_doc_ready ?? "Your document is ready!"}</p>
+        </div>
+        <div className="w-full rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden flex items-center justify-center mb-3" style={{ aspectRatio: "0.707", maxHeight: 220 }}>
+          {thumbnailUrl ? (
+            <img src={thumbnailUrl} alt="Document preview" className="w-full h-full object-contain" />
+          ) : (
+            <div className="flex items-center justify-center w-full h-full"><span className="text-red-400 text-xs font-bold">PDF</span></div>
+          )}
+        </div>
+        <p className="text-xs text-slate-500 text-center truncate w-full font-medium">{pdfData?.name ?? "document.pdf"}</p>
+      </div>
+
+      {/* ── Payment column ── */}
+      <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+        <div className="px-6 py-5 space-y-5">
+          {/* Pricing breakdown */}
+          <div className="rounded-xl p-5 text-center" style={{ background: "linear-gradient(135deg, #0A0A0B, #1A1A1C)" }}>
+            <p className="text-sm text-white/70 mb-1">{converter ? `Your ${converter.label} file` : t.paywall_your_pdf}</p>
+            <p className="text-3xl font-extrabold text-white tracking-tight">
+              {converter ? <>only <span style={{ color: "#E63946" }}>{converter.price}</span></> : t.paywall_only_for}
+            </p>
+          </div>
+
+          {/* FastPay button + loading + redirect overlay */}
+          {!sipayConfigQ.data?.key && (
+            <p className="text-sm text-gray-500 text-center">Cargando configuración…</p>
+          )}
+          {sipayConfigQ.data?.key && (
+            <div className="flex flex-col items-stretch gap-3" style={{ minHeight: 480 }}>
+              <button
+                type="button"
+                data-key={sipayConfigQ.data.key}
+                data-amount="50"
+                data-currency="EUR"
+                data-template="v4"
+                data-callback="__editorpdfFastpayResult"
+                data-lang="es"
+                data-paymentbutton="Pagar 0,50 € con tarjeta"
+                data-hiddenprice="true"
+                className="fastpay-btn w-full px-4 py-3 rounded-lg text-sm font-semibold text-white"
+                style={{ backgroundColor: "#0A0A0B", border: "1px solid #E63946" }}
+              >
+                {scriptReady ? "Pagar 0,50 € con tarjeta" : "Cargando formulario…"}
+              </button>
+              <style>{`
+                .fastpay-btn + iframe {
+                  width: 100% !important;
+                  min-height: 420px !important;
+                  border: 0 !important;
+                  background: transparent !important;
+                }
+              `}</style>
+              {redirecting && (
+                <div className="flex items-center justify-center gap-2 py-3 text-sm text-gray-600">
+                  <Loader2 className="w-4 h-4 animate-spin text-[#E63946]" />
+                  Autorizando y redirigiendo a 3DS…
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Trust badges row (compact) */}
+          <div className="flex items-center justify-between text-[11px] text-gray-500 pt-2 border-t" style={{ borderColor: "#e5e7eb" }}>
+            <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> 3DS Redsys</span>
+            <span className="flex items-center gap-1"><Lock className="w-3 h-3" /> PCI Sipay</span>
+            <CardBrands />
+          </div>
+
+          <button onClick={onClose} className="text-xs text-gray-500 hover:text-gray-700 underline text-center w-full">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main modal ────────────────────────────────────────────────────────────────
 export default function PaywallModal({
   isOpen,
@@ -417,6 +605,8 @@ export default function PaywallModal({
   const s = getAuthStrings(lang);
   const { price, withPrice } = usePricing();
   const { isAuthenticated } = useAuth();
+  const flagsQ = trpc.site.flags.useQuery();
+  const paymentProvider = flagsQ.data?.paymentProvider ?? "stripe";
   const { savePdfToSession, setPendingPaywall, pendingFile, pendingEditedPdf, clearPendingEditedPdf, saveEditedPdfToSession } = usePdfFile();
   const [step, setStep] = useState<Step>(isAuthenticated ? "plans" : "auth-choice");
   const [emailInput, setEmailInput] = useState("");
@@ -693,14 +883,25 @@ export default function PaywallModal({
 
         {/* ── Payment step ── */}
         {(reason !== "trial-limit" || upgradeFallbackToCheckout) && currentStep === "plans" && (
-          <StripeCheckoutForm
-            onSuccess={handlePaymentSuccess}
-            onClose={onClose}
-            pdfData={effectivePdfData}
-            thumbnailUrl={thumbnailUrl}
-            buildPdfForUpload={buildPdfForUpload}
-            converter={converter}
-          />
+          paymentProvider === "sipay" ? (
+            <SipayCheckoutForm
+              onSuccess={handlePaymentSuccess}
+              onClose={onClose}
+              pdfData={effectivePdfData}
+              thumbnailUrl={thumbnailUrl}
+              buildPdfForUpload={buildPdfForUpload}
+              converter={converter}
+            />
+          ) : (
+            <StripeCheckoutForm
+              onSuccess={handlePaymentSuccess}
+              onClose={onClose}
+              pdfData={effectivePdfData}
+              thumbnailUrl={thumbnailUrl}
+              buildPdfForUpload={buildPdfForUpload}
+              converter={converter}
+            />
+          )
         )}
       </div>
     </div>
