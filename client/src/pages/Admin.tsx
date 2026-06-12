@@ -3074,7 +3074,7 @@ function SipayCheckoutCard() {
         <p className="text-xs text-gray-500 mt-1">
           Carga FastPay JS, captura la tarjeta de prueba VISA en su iframe, manda el token al backend
           para autorizar 0,50 €, y devuelve la URL de 3DS. Tarjeta sandbox:{" "}
-          <code className="font-mono">4548 8194 0777 7774 — 12/25 — CVV 123</code>.
+          <code className="font-mono">4548 8194 0777 7774 — 12/26 — CVV 123</code>.
         </p>
       </div>
 
