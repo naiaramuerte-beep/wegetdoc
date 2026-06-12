@@ -1,6 +1,7 @@
 /*
- * PaywallModal — Stripe Payment with PDF preview
- * Two-column layout: PDF preview (left) + payment form (right)
+ * PaywallModal — Sipay (FastPay + 3DS Redsys) payment with PDF preview.
+ * Two-column layout: PDF preview (left) + payment form (right).
+ * Stripe was retired from the public paywall.
  */
 import { useState, useEffect, useCallback } from "react";
 import { colors } from "@/lib/brand";
@@ -12,8 +13,6 @@ import { usePdfFile } from "@/contexts/PdfFileContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePricing } from "@/lib/usePricing";
 import { getAuthStrings } from "@/lib/authModalStrings";
-import { loadStripe } from "@stripe/stripe-js";
-import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
 type PdfPayload =
   | { base64: string; name: string; size: number }
@@ -69,344 +68,10 @@ function CardBrands() {
   );
 }
 
-// ── Inner payment form (must be inside <Elements>) ──────────────────────
-function PaymentForm({ onSuccess, userCountry, userPostalCode }: { onSuccess: (paymentIntentId?: string) => void; userCountry: string; userPostalCode: string }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [submitting, setSubmitting] = useState(false);
-  const { t, lang } = useLanguage();
-  const { withPrice } = usePricing();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-    setSubmitting(true);
-    try {
-      const { error, paymentIntent } = await stripe.confirmPayment({
-        elements,
-        redirect: "if_required",
-        confirmParams: {
-          payment_method_data: {
-            billing_details: {
-              address: {
-                country: userCountry,
-                postal_code: userPostalCode,
-              },
-            },
-          },
-        },
-      });
-      if (error) {
-        toast.error(error.message ?? "Payment failed");
-      } else {
-        onSuccess(paymentIntent?.id);
-      }
-    } catch (err: any) {
-      toast.error(err.message ?? "Payment failed");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Card fields */}
-      <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" }, fields: { billingDetails: { address: { country: "never", postalCode: "never" } } }, terms: { card: "never", auBecsDebit: "never", bancontact: "never", ideal: "never", sepaDebit: "never", sofort: "never", usBankAccount: "never", cashapp: "never" } } as any} />
-
-      {/* Submit button */}
-      <button
-        type="submit"
-        disabled={!stripe || submitting}
-        className="w-full py-3.5 rounded-xl text-white font-bold text-sm transition-all duration-200 disabled:opacity-40 hover:bg-[#C72738]"
-        style={{ backgroundColor: "#E63946" }}
-      >
-        {submitting ? (
-          <span className="flex items-center justify-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            {t.paywall_processing}
-          </span>
-        ) : (
-          <span className="flex items-center justify-center gap-2">
-            <Lock className="w-4 h-4" />
-            {t.editor_download}
-          </span>
-        )}
-      </button>
-
-      {/* Legal disclaimer — sourced from i18n so it follows the active locale */}
-      <p className="text-[9px] text-slate-300 leading-relaxed text-center">
-        {withPrice(t.paywall_legal_text)}{" "}
-        <a href={`/${lang}/terms`} target="_blank" className="underline hover:text-slate-400">{t.paywall_terms}</a>
-        {" · "}
-        <a href={`/${lang}/privacy`} target="_blank" className="underline hover:text-slate-400">{t.paywall_privacy}</a>
-      </p>
-    </form>
-  );
-}
-
-// ── Stripe checkout form with PDF preview ──────────────────────────────
-function StripeCheckoutForm({
-  onSuccess,
-  onClose,
-  pdfData,
-  thumbnailUrl,
-  buildPdfForUpload,
-  converter,
-}: {
-  onSuccess: (transactionId?: string) => void;
-  onClose: () => void;
-  pdfData?: PdfPayload;
-  thumbnailUrl?: string;
-  buildPdfForUpload?: () => Promise<{ base64: string; name: string; size: number } | null>;
-  converter?: { label: string; price: string };
-}) {
-  const { t, lang } = useLanguage();
-  const { price } = usePricing();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progressStep, setProgressStep] = useState<"idle" | "checkout" | "saving" | "done">("idle");
-  const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  // Set to true if the server told us the user already has an active sub —
-  // guard against the double-pay bug. The UI renders a notice instead of
-  // the checkout form in that case.
-  const [alreadySubscribed, setAlreadySubscribed] = useState(false);
-
-  const [userCountry, setUserCountry] = useState("ES");
-  const [userPostalCode, setUserPostalCode] = useState("");
-  const stripeConfigQ = trpc.subscription.stripeConfig.useQuery();
-  const createCheckoutSession = trpc.subscription.createCheckoutSession.useMutation();
-  const confirmSetup = trpc.subscription.confirmSetup.useMutation();
-  const utils = trpc.useUtils();
-
-  useEffect(() => {
-    fetch("/api/geo").then(r => r.json()).then(data => {
-      if (data.country) setUserCountry(data.country.toUpperCase());
-      if (data.postalCode) setUserPostalCode(data.postalCode);
-    }).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (stripeConfigQ.data?.publishableKey) {
-      setStripePromise(loadStripe(stripeConfigQ.data.publishableKey));
-    }
-  }, [stripeConfigQ.data?.publishableKey]);
-
-  useEffect(() => {
-    if (!stripeConfigQ.data?.publishableKey || clientSecret || alreadySubscribed) return;
-    createCheckoutSession.mutateAsync().then((res) => {
-      if (res.clientSecret) setClientSecret(res.clientSecret);
-    }).catch((err) => {
-      // Backend blocks creating a second intro PaymentIntent when the user
-      // already has an active/trialing sub. Surface a clear message instead
-      // of a generic error toast.
-      if (err?.message === "ALREADY_SUBSCRIBED" || err?.data?.code === "PRECONDITION_FAILED") {
-        setAlreadySubscribed(true);
-        return;
-      }
-      console.error("[Stripe] Failed to create checkout session:", err);
-      toast.error("Error loading payment form. Please try again.");
-    });
-  }, [stripeConfigQ.data?.publishableKey, alreadySubscribed]);
-
-  const uploadPdfViaRest = async (data: { base64: string; name: string; size: number }): Promise<void> => {
-    const binary = atob(data.base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    const blob = new Blob([bytes], { type: "application/pdf" });
-    const formData = new FormData();
-    formData.append("file", blob, data.name);
-    formData.append("name", data.name);
-    const resp = await fetch("/api/documents/upload", { method: "POST", credentials: "include", body: formData });
-    if (!resp.ok) throw new Error(`Upload failed: ${resp.status}`);
-  };
-
-  const claimTempPdf = async (tempKey: string, name: string): Promise<void> => {
-    const resp = await fetch("/api/documents/claim-temp", {
-      method: "POST", credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tempKey, name }),
-    });
-    if (!resp.ok) throw new Error(`Claim failed: ${resp.status}`);
-  };
-
-  const handleComplete = useCallback(async (paymentIntentId?: string) => {
-    setIsProcessing(true);
-    setProgressStep("checkout");
-    try {
-      await confirmSetup.mutateAsync();
-      await utils.subscription.status.invalidate();
-      setProgressStep("saving");
-
-      if (pdfData && "tempKey" in pdfData) {
-        try { await claimTempPdf(pdfData.tempKey, pdfData.name); await utils.documents.list.invalidate(); } catch {}
-      } else {
-        let resolvedPdfData = pdfData as { base64: string; name: string; size: number } | undefined;
-        if (!resolvedPdfData && buildPdfForUpload) {
-          try { resolvedPdfData = (await buildPdfForUpload()) ?? undefined; } catch {}
-        }
-        if (resolvedPdfData) {
-          try { await uploadPdfViaRest(resolvedPdfData); await utils.documents.list.invalidate(); } catch {}
-        }
-      }
-
-      setProgressStep("done");
-      onSuccess(paymentIntentId);
-    } catch (err: unknown) {
-      setProgressStep("idle");
-      toast.error(err instanceof Error ? err.message : "Error processing payment");
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [pdfData, buildPdfForUpload, onSuccess, utils]);
-
-  return (
-    <div className="flex flex-col md:flex-row min-h-0">
-      {/* ── Left / Top: PDF Preview ── */}
-      {/* Mobile: horizontal compact bar | Desktop: vertical sidebar */}
-      <div className="flex items-center gap-3 bg-[#f4f5f7] p-3 md:hidden">
-        <div
-          className="w-14 h-20 rounded border border-slate-200 bg-white shadow-sm overflow-hidden flex items-center justify-center flex-shrink-0"
-        >
-          {thumbnailUrl ? (
-            <img src={thumbnailUrl} alt="Preview" className="w-full h-full object-contain" />
-          ) : (
-            <div className="flex items-center justify-center w-full h-full">
-              <span className="text-red-400 text-[8px] font-bold">PDF</span>
-            </div>
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 mb-1">
-            <div className="w-4 h-4 rounded-full bg-[#1E9E63] flex items-center justify-center flex-shrink-0">
-              <Check className="w-2.5 h-2.5 text-white" />
-            </div>
-            <p className="text-xs font-semibold text-slate-800">
-              {converter ? `Your ${converter.label} file is ready!` : ((t as any).paywall_doc_ready ?? "Your document is ready!")}
-            </p>
-          </div>
-          <p className="text-[11px] text-slate-500 truncate">{pdfData?.name ?? "document.pdf"}</p>
-        </div>
-      </div>
-      <div className="hidden md:flex flex-col items-center justify-center bg-[#f4f5f7] p-8" style={{ minWidth: 260, maxWidth: 280 }}>
-        {/* Header */}
-        <div className="flex items-center gap-2 mb-5 w-full">
-          <div className="w-6 h-6 rounded-full bg-[#1E9E63] flex items-center justify-center flex-shrink-0">
-            <Check className="w-3.5 h-3.5 text-white" />
-          </div>
-          <p className="text-sm font-semibold text-slate-800">
-            {converter ? `Your ${converter.label} file is ready!` : ((t as any).paywall_doc_ready ?? "Your document is ready!")}
-          </p>
-        </div>
-        {/* PDF thumbnail */}
-        <div
-          className="w-full rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden flex items-center justify-center mb-3"
-          style={{ aspectRatio: "0.707", maxHeight: 220 }}
-        >
-          {thumbnailUrl ? (
-            <img src={thumbnailUrl} alt="Document preview" className="w-full h-full object-contain" />
-          ) : (
-            <div className="w-full h-full p-4 flex flex-col gap-2">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-7 h-8 bg-red-50 rounded flex items-center justify-center flex-shrink-0">
-                  <span className="text-red-500 text-[9px] font-bold">PDF</span>
-                </div>
-                <div className="flex-1 space-y-1.5">
-                  <div className="h-1.5 bg-slate-100 rounded w-full" />
-                  <div className="h-1.5 bg-slate-100 rounded w-3/4" />
-                </div>
-              </div>
-              {Array.from({ length: 7 }).map((_, i) => (
-                <div key={i} className="h-1.5 bg-slate-50 rounded" style={{ width: `${65 + (i % 3) * 12}%` }} />
-              ))}
-            </div>
-          )}
-        </div>
-        <p className="text-xs text-slate-500 text-center leading-tight truncate w-full font-medium">
-          {pdfData?.name ?? "document.pdf"}
-        </p>
-
-        {/* Processing steps */}
-        {isProcessing && (
-          <div className="mt-5 w-full space-y-2">
-            {([
-              { key: "checkout", label: "Processing payment..." },
-              { key: "saving",   label: "Saving document..." },
-              { key: "done",     label: "All done!" },
-            ] as const).map((step) => {
-              const order = ["checkout", "saving", "done"] as const;
-              const curr = order.indexOf(progressStep as typeof order[number]);
-              const idx = order.indexOf(step.key);
-              return (
-                <div key={step.key} className="flex items-center gap-2">
-                  {idx < curr ? (
-                    <div className="w-4 h-4 rounded-full bg-[#1E9E63] flex items-center justify-center"><Check className="w-2.5 h-2.5 text-white" /></div>
-                  ) : idx === curr ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-[#E63946]" />
-                  ) : (
-                    <div className="w-4 h-4 rounded-full border-2 border-slate-200" />
-                  )}
-                  <span className={`text-xs font-medium ${idx < curr ? "text-[#1E9E63]" : idx === curr ? "text-[#E63946]" : "text-slate-300"}`}>
-                    {step.label}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* ── Right: Payment form ── */}
-      <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
-        <div className="px-6 py-5 space-y-5">
-          {/* Pricing breakdown */}
-          <div className="rounded-xl p-5 text-center" style={{ background: "linear-gradient(135deg, #0A0A0B, #1A1A1C)" }}>
-            <p className="text-sm text-white/70 mb-1">
-              {converter ? `Your ${converter.label} file` : t.paywall_your_pdf}
-            </p>
-            <p className="text-3xl font-extrabold text-white tracking-tight">
-              {converter ? <>only <span style={{ color: "#E63946" }}>{converter.price}</span></> : t.paywall_only_for}
-            </p>
-          </div>
-
-          {/* Stripe form OR "already subscribed" notice */}
-          {alreadySubscribed ? (
-            <div className="rounded-xl p-5 border bg-amber-50" style={{ borderColor: "#fcd34d" }}>
-              <p className="text-sm font-semibold text-amber-900 mb-1">Ya tienes una suscripción activa</p>
-              <p className="text-xs text-amber-800 leading-relaxed">
-                Detectamos que ya pagaste tu trial de 0,50€ desde esta cuenta.
-                No permitimos cobrar dos veces el mismo trial. Si has usado tus 2
-                descargas, espera al cargo automático de los {price} o cancela tu
-                cuenta antes. Si crees que esto es un error, escribe a soporte.
-              </p>
-              <button
-                onClick={onClose}
-                className="mt-3 px-3 py-2 rounded-lg text-xs font-medium text-white"
-                style={{ backgroundColor: "#0A0A0B" }}
-              >
-                Cerrar
-              </button>
-            </div>
-          ) : stripePromise && clientSecret ? (
-            <Elements stripe={stripePromise} options={{ clientSecret, locale: (lang as any) || "auto", appearance: { theme: "stripe", variables: { colorPrimary: "#E63946", borderRadius: "10px" } } }}>
-              <PaymentForm onSuccess={handleComplete} userCountry={userCountry} userPostalCode={userPostalCode} />
-            </Elements>
-          ) : (
-            <div className="flex items-center justify-center py-10">
-              <Loader2 className="w-7 h-7 animate-spin text-[#E63946]" />
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Sipay checkout (Fase 1.5) ──────────────────────────────────────────────────
-// Replaces Stripe Elements with FastPay JS + 3DS redirect when the admin flips
-// flag_payment_provider to "sipay". Same two-column layout (PDF preview left,
-// payment right) so the user-facing modal feels identical. The actual capture
-// happens in Sipay's iframe; we forward the request_id to our backend to fire
-// /mdwr/v1/all-in-one and then navigate the parent window to the 3DS URL.
+// ── Sipay checkout ─────────────────────────────────────────────────────────────
+// FastPay JS captures the card in Sipay's iframe; we forward the resulting
+// request_id to our backend to fire /mdwr/v1/all-in-one and then navigate the
+// parent window to the 3DS URL Sipay returns.
 function SipayCheckoutForm({
   onSuccess: _onSuccess,
   onClose,
@@ -605,9 +270,11 @@ export default function PaywallModal({
   const s = getAuthStrings(lang);
   const { price, withPrice } = usePricing();
   const { isAuthenticated } = useAuth();
-  const flagsQ = trpc.site.flags.useQuery();
-  const paymentProvider: "stripe" | "sipay" | "loading" =
-    flagsQ.isLoading || !flagsQ.data ? "loading" : flagsQ.data.paymentProvider;
+  // Stripe was retired from the public paywall. Sipay is now the only provider
+  // shown to customers; the backend Stripe code stays around so the admin
+  // panel keeps reading historical data + the cron still services subscribers
+  // that paid through Stripe before the migration.
+  const paymentProvider: "sipay" = "sipay";
   const { savePdfToSession, setPendingPaywall, pendingFile, pendingEditedPdf, clearPendingEditedPdf, saveEditedPdfToSession } = usePdfFile();
   const [step, setStep] = useState<Step>(isAuthenticated ? "plans" : "auth-choice");
   const [emailInput, setEmailInput] = useState("");
@@ -882,31 +549,16 @@ export default function PaywallModal({
           </div>
         )}
 
-        {/* ── Payment step ── */}
+        {/* ── Payment step ── Sipay only (Stripe retired) ── */}
         {(reason !== "trial-limit" || upgradeFallbackToCheckout) && currentStep === "plans" && (
-          paymentProvider === "loading" ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-7 h-7 animate-spin text-[#E63946]" />
-            </div>
-          ) : paymentProvider === "sipay" ? (
-            <SipayCheckoutForm
-              onSuccess={handlePaymentSuccess}
-              onClose={onClose}
-              pdfData={effectivePdfData}
-              thumbnailUrl={thumbnailUrl}
-              buildPdfForUpload={buildPdfForUpload}
-              converter={converter}
-            />
-          ) : (
-            <StripeCheckoutForm
-              onSuccess={handlePaymentSuccess}
-              onClose={onClose}
-              pdfData={effectivePdfData}
-              thumbnailUrl={thumbnailUrl}
-              buildPdfForUpload={buildPdfForUpload}
-              converter={converter}
-            />
-          )
+          <SipayCheckoutForm
+            onSuccess={handlePaymentSuccess}
+            onClose={onClose}
+            pdfData={effectivePdfData}
+            thumbnailUrl={thumbnailUrl}
+            buildPdfForUpload={buildPdfForUpload}
+            converter={converter}
+          />
         )}
       </div>
     </div>

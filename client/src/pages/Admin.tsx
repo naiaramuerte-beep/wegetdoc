@@ -2411,56 +2411,6 @@ export default function Admin() {
                 )}
               </div>
 
-              {/* Payment provider selector (Fase 1.5 migration) */}
-              <div
-                className="rounded-xl border p-5 space-y-4"
-                style={{ backgroundColor: "#131720", borderColor: "#E63946" }}
-              >
-                <div>
-                  <p className="text-sm font-semibold text-white flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#E63946" }} />
-                    Pasarela de pago activa
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Determina qué proveedor se muestra en el modal de pago para nuevos checkouts.{" "}
-                    <strong className="text-amber-300">No afecta a suscripciones existentes</strong> — solo nuevos pagos.
-                  </p>
-                </div>
-                {(() => {
-                  const current = (settingsQ.data?.find((s) => s.key === "flag_payment_provider")?.value ?? "stripe");
-                  const setProv = (val: "stripe" | "sipay") =>
-                    saveSettingMut.mutate({ key: "flag_payment_provider", value: val });
-                  return (
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setProv("stripe")}
-                        className="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors"
-                        style={{
-                          backgroundColor: current === "stripe" ? "#1565C0" : "#0f1117",
-                          color: current === "stripe" ? "white" : "#94a3b8",
-                          border: `1px solid ${current === "stripe" ? "#1565C0" : "#1e2433"}`,
-                        }}
-                      >
-                        Stripe <span className="text-[10px] opacity-70">(actual)</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setProv("sipay")}
-                        className="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors"
-                        style={{
-                          backgroundColor: current === "sipay" ? "#E63946" : "#0f1117",
-                          color: current === "sipay" ? "white" : "#94a3b8",
-                          border: `1px solid ${current === "sipay" ? "#E63946" : "#1e2433"}`,
-                        }}
-                      >
-                        Sipay <span className="text-[10px] opacity-70">(migración)</span>
-                      </button>
-                    </div>
-                  );
-                })()}
-              </div>
-
               {/* Feature flags (O4) — boolean toggles stored in site_settings */}
               <div
                 className="rounded-xl border p-5 space-y-4"
