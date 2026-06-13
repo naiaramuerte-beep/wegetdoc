@@ -38,38 +38,14 @@ async function startServer() {
   const server = createServer(app);
 
   // ── Apple Pay domain verification ──────────────────────────────────────────
-  // Sipay (the PSP that fronts our Apple Pay merchant ID) provided this file
-  // for editorpdf.net. Apple's verification fetches it with either path
-  // depending on the test, so we serve both URLs from the same .txt asset.
-  // We read it once into memory and try both dev and prod locations so the
-  // handler works regardless of where Express compiles to.
-  let applePayDomainCache: string | null = null;
-  const getApplePayDomain = (): string => {
-    if (applePayDomainCache !== null) return applePayDomainCache;
-    const fs = require("fs");
-    const path = require("path");
-    const cwd = process.cwd();
-    const candidates = [
-      path.resolve(cwd, "dist/public/.well-known/apple-developer-merchantid-domain-association.txt"),
-      path.resolve(cwd, "client/public/.well-known/apple-developer-merchantid-domain-association.txt"),
-    ];
-    for (const p of candidates) {
-      if (fs.existsSync(p)) {
-        applePayDomainCache = fs.readFileSync(p, "utf-8");
-        return applePayDomainCache!;
-      }
-    }
-    throw new Error(`apple-pay-domain file not found. Tried: ${candidates.join(", ")}`);
-  };
+  // Sipay (the PSP that fronts our Apple Pay merchant ID) provided the
+  // editorpdf.net domain-association file. We embed the content as a TS
+  // constant rather than reading from disk because Vite was not copying the
+  // .well-known/ dotfile path into the production build output.
+  const { APPLE_PAY_DOMAIN_FILE } = await import("./applePayDomain");
   const sendApplePayDomain = (_req: any, res: any) => {
-    try {
-      const content = getApplePayDomain();
-      res.setHeader("Content-Type", "text/plain; charset=utf-8");
-      res.send(content);
-    } catch (err: any) {
-      console.error("[Apple Pay] domain file error:", err?.message ?? err);
-      res.status(500).send("apple-pay-cert-missing");
-    }
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.send(APPLE_PAY_DOMAIN_FILE);
   };
   app.get("/.well-known/apple-developer-merchantid-domain-association", sendApplePayDomain);
   app.get("/.well-known/apple-developer-merchantid-domain-association.txt", sendApplePayDomain);
