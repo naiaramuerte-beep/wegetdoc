@@ -226,6 +226,61 @@ export function refundPayment(opts: {
 }
 
 /**
+ * Apple Pay merchant session.
+ *
+ * Apple's flow requires a server-to-server validation step BEFORE the buyer
+ * can interact with the sheet: the browser calls our backend with a
+ * `validationURL` (one of Apple's gateway URLs), we forward it to Sipay,
+ * Sipay validates with Apple using the merchant identity certificate it
+ * holds on its side, and returns the opaque `merchantSession` blob that
+ * we hand back to the browser via `session.completeMerchantValidation()`.
+ *
+ * Docs: https://developer.sipay.es/docs/documentation/online/selling/wallets/apay
+ */
+export function validateApplePaySession(opts: {
+  validationURL: string;
+  domain: string; // window.location.host, e.g. "editorpdf.net"
+  title: string; // shown inside the Apple Pay sheet
+}) {
+  return sipayPost("/apay/api/v1/session", {
+    url: opts.validationURL,
+    domain: opts.domain,
+    title: opts.title,
+  });
+}
+
+/**
+ * Apple Pay one-shot charge. Same endpoint as Google Pay
+ * (/mdwr/v1/authorization) but `catcher.type` switches to "apay" and the
+ * token is the structured `ApplePayPayment.token` (paymentData +
+ * paymentMethod + transactionIdentifier), not a JSON string.
+ */
+export function chargeApplePay(opts: {
+  amountCents: number;
+  currency?: string;
+  tokenApay: {
+    paymentData: unknown;
+    paymentMethod: unknown;
+    transactionIdentifier: string;
+  };
+  order: string;
+  custom_01?: string;
+  custom_02?: string;
+}) {
+  return sipayPost("/mdwr/v1/authorization", {
+    amount: opts.amountCents,
+    currency: opts.currency ?? "EUR",
+    catcher: {
+      type: "apay",
+      token_apay: opts.tokenApay,
+    },
+    order: opts.order,
+    ...(opts.custom_01 ? { custom_01: opts.custom_01 } : {}),
+    ...(opts.custom_02 ? { custom_02: opts.custom_02 } : {}),
+  });
+}
+
+/**
  * Google Pay one-shot charge. Different endpoint (/authorization, not
  * /all-in-one) because the buyer is already authenticated by Google — no
  * 3DS redirect needed. We pass the Google Pay token JSON inside `catcher`

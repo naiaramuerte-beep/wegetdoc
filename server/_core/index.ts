@@ -228,7 +228,7 @@ async function startServer() {
       "base-uri 'self'",
       "frame-src 'self' https://*.stripe.com https://www.googletagmanager.com https://vars.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com",
       "img-src 'self' data: https://www.googletagmanager.com https://www.google.com https://script.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com https://www.gstatic.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.doubleclick.net",
-      "connect-src 'self' data: https://api.stripe.com https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://google.com https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.doubleclick.net",
+      "connect-src 'self' data: https://api.stripe.com https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://google.com https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.doubleclick.net https://apple-pay-gateway.apple.com https://apple-pay-gateway-cert.apple.com",
     ].join("; "));
     next();
   });
@@ -965,6 +965,40 @@ ${allUrls.map(u => `  <url>
     const error = String(req.query.error ?? "unknown");
     console.warn("[Sipay] callback ko:", req.query);
     return res.redirect(`/?sipay_error=${encodeURIComponent(error)}`);
+  });
+
+  // Apple Pay merchant validation. Apple's JS API calls our backend with the
+  // validationURL it expects us to authenticate against. We forward it to
+  // Sipay (who holds the merchant identity cert) and return the opaque
+  // session payload to the browser. Can't be a tRPC procedure because the
+  // browser calls this via fetch from inside session.onvalidatemerchant
+  // and we want the raw response — no tRPC envelope.
+  app.post("/api/sipay/applepay/validate-merchant", express.json(), async (req, res) => {
+    const validationURL = String(req.body?.validationURL ?? "");
+    const domain = String(req.body?.domain ?? "");
+    if (!validationURL || !domain) {
+      return res.status(400).json({ error: "missing_validation_url_or_domain" });
+    }
+    try {
+      const { validateApplePaySession } = await import("./sipay");
+      const result = await validateApplePaySession({
+        validationURL,
+        domain,
+        title: "EditorPDF",
+      });
+      const data = result.data as any;
+      if (!result.ok || data?.code !== "0") {
+        console.error("[Sipay] Apple Pay validate-merchant failed:", data ?? result.raw);
+        return res.status(502).json({ error: "sipay_rejected", detail: data ?? result.raw });
+      }
+      // Sipay returns the merchant session inside payload; Apple expects
+      // the merchantSession object verbatim (the whole `payload` is what
+      // session.completeMerchantValidation(...) wants).
+      return res.json(data?.payload ?? data);
+    } catch (err: any) {
+      console.error("[Sipay] Apple Pay validate-merchant exception:", err?.message ?? err);
+      return res.status(500).json({ error: "server_error" });
+    }
   });
 
   // tRPC API

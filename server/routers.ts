@@ -542,6 +542,46 @@ export const appRouter = router({
       };
     }),
 
+    // Apple Pay one-shot authorization. Front-end gets the structured
+    // payment token from Apple's PassKit (paymentData + paymentMethod +
+    // transactionIdentifier) AFTER our /api/sipay/applepay/validate-merchant
+    // endpoint has answered onvalidatemerchant. We forward to Sipay
+    // /mdwr/v1/authorization with catcher.type="apay". No 3DS redirect
+    // because Apple already authenticated the buyer via Face/Touch ID.
+    sipayApplePayCharge: protectedProcedure
+      .input(z.object({
+        tokenApay: z.object({
+          paymentData: z.any(),
+          paymentMethod: z.any(),
+          transactionIdentifier: z.string().min(1),
+        }),
+        amountCents: z.number().int().positive(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { chargeApplePay } = await import("./_core/sipay");
+        const order = `apay-${ctx.user.id}-${Date.now()}`;
+        const result = await chargeApplePay({
+          amountCents: input.amountCents,
+          tokenApay: input.tokenApay,
+          order,
+          custom_01: String(ctx.user.id),
+        });
+        const data = result.data as any;
+        const payloadCode = data?.payload?.code ?? data?.code;
+        if (!result.ok || payloadCode !== "0") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Sipay rechazó Apple Pay: ${JSON.stringify(data ?? result.raw)}`,
+          });
+        }
+        return {
+          transactionId: data?.payload?.transaction_id ?? "",
+          maskedCard: data?.payload?.masked_card ?? "",
+          cardBrand: data?.payload?.card_brand ?? "",
+          order,
+        };
+      }),
+
     // Google Pay one-shot authorization. Front-end gets the encrypted token
     // from Google's PaymentDataRequest, sends it here, and we forward it to
     // Sipay /mdwr/v1/authorization with catcher.type="gpay". No 3DS redirect

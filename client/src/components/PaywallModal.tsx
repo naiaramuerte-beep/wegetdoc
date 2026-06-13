@@ -388,6 +388,16 @@ function SipayCheckoutForm({
           )}
           {sipayConfigQ.data?.key && (
             <div className="flex flex-col items-stretch gap-3">
+              {/* Apple Pay button — only shown on Safari iOS/macOS where the
+                  PassKit JS API exists AND the buyer has at least one Apple
+                  Pay-enabled card linked to the device. */}
+              <ApplePayButton
+                amountCents={50}
+                onSuccess={(txn) => {
+                  window.location.href = `/payment/success?txn=${encodeURIComponent(txn)}&provider=sipay-apay`;
+                }}
+              />
+
               {/* Google Pay button — only shown when Sipay account has a Google
                   Pay merchant configured. Auto-detects user readiness. */}
               <GooglePayButton
@@ -510,6 +520,173 @@ function SipayCheckoutForm({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Apple Pay button ──────────────────────────────────────────────────────────
+// Apple Pay JS API is exclusive to Safari (iOS + macOS) and iOS WebKit-based
+// browsers. On any other browser window.ApplePaySession is undefined; we
+// render nothing.
+//
+// Flow:
+//  1. Mount: check `ApplePaySession.canMakePayments()` (cheap, sync).
+//  2. Click: spin up `new ApplePaySession(version=3, request)`.
+//  3. `onvalidatemerchant`: POST the validationURL Apple gives us to our
+//     `/api/sipay/applepay/validate-merchant` proxy; hand the result back
+//     via `session.completeMerchantValidation()`.
+//  4. `onpaymentauthorized`: send the token to our tRPC mutation, which
+//     forwards to Sipay /mdwr/v1/authorization with catcher.type="apay".
+//  5. On Sipay OK: `session.completePayment(STATUS_SUCCESS)` then redirect
+//     to /payment/success.
+function ApplePayButton({
+  amountCents,
+  onSuccess,
+}: {
+  amountCents: number;
+  onSuccess: (transactionId: string) => void;
+}) {
+  const [ready, setReady] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const chargeMut = trpc.subscription.sipayApplePayCharge.useMutation();
+
+  useEffect(() => {
+    try {
+      const AP = (window as any).ApplePaySession;
+      if (!AP) {
+        console.log("[ApplePay] ApplePaySession not available (non-Safari browser)");
+        return;
+      }
+      if (typeof AP.canMakePayments !== "function" || !AP.canMakePayments()) {
+        console.log("[ApplePay] canMakePayments() returned false");
+        return;
+      }
+      console.log("[ApplePay] available — rendering button");
+      setReady(true);
+    } catch (err: any) {
+      console.warn("[ApplePay] availability check failed:", err?.message ?? err);
+    }
+  }, []);
+
+  if (!ready) return null;
+
+  const handleClick = () => {
+    setError(null);
+    setSubmitting(true);
+    try {
+      const AP = (window as any).ApplePaySession;
+      const request = {
+        countryCode: "ES",
+        currencyCode: "EUR",
+        supportedNetworks: ["visa", "masterCard", "amex", "maestro"],
+        merchantCapabilities: ["supports3DS"],
+        total: {
+          label: "EditorPDF",
+          amount: (amountCents / 100).toFixed(2),
+          type: "final",
+        },
+      };
+      const session = new AP(3, request);
+
+      session.onvalidatemerchant = async (event: any) => {
+        try {
+          console.log("[ApplePay] validating merchant…");
+          const resp = await fetch("/api/sipay/applepay/validate-merchant", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              validationURL: event.validationURL,
+              domain: window.location.host,
+            }),
+          });
+          if (!resp.ok) throw new Error(`validate-merchant ${resp.status}`);
+          const merchantSession = await resp.json();
+          console.log("[ApplePay] merchant validated");
+          session.completeMerchantValidation(merchantSession);
+        } catch (err: any) {
+          console.warn("[ApplePay] validate-merchant failed:", err?.message ?? err);
+          setError("No pudimos validar Apple Pay. Inténtalo con tarjeta.");
+          session.abort();
+          setSubmitting(false);
+        }
+      };
+
+      session.onpaymentauthorized = async (event: any) => {
+        try {
+          const tokenApay = event.payment?.token;
+          if (!tokenApay) throw new Error("Apple Pay no devolvió token");
+          console.log("[ApplePay] payment authorized — charging via Sipay…");
+          const res = await chargeMut.mutateAsync({
+            tokenApay: {
+              paymentData: tokenApay.paymentData,
+              paymentMethod: tokenApay.paymentMethod,
+              transactionIdentifier: tokenApay.transactionIdentifier,
+            },
+            amountCents,
+          });
+          // Sandbox occasionally returns an empty transaction_id; fall back
+          // to our own order so /payment/success always has a unique key.
+          const txnId = res.transactionId || res.order || `apay-${Date.now()}`;
+          session.completePayment(AP.STATUS_SUCCESS);
+          onSuccess(txnId);
+        } catch (err: any) {
+          console.warn("[ApplePay] charge failed:", err?.message ?? err);
+          session.completePayment(AP.STATUS_FAILURE);
+          setError(err?.message ?? "Error con Apple Pay");
+          setSubmitting(false);
+        }
+      };
+
+      session.oncancel = () => {
+        console.log("[ApplePay] session canceled by buyer");
+        setSubmitting(false);
+      };
+
+      session.begin();
+    } catch (err: any) {
+      console.warn("[ApplePay] failed to start session:", err?.message ?? err);
+      setError(err?.message ?? "Error al abrir Apple Pay");
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      {/* Apple's standardized Apple Pay button. The vendor-prefixed CSS
+          properties (-apple-pay-button-type / -apple-pay-button-style) can't
+          be set via React's inline style API, so they live in a <style> tag
+          here. Safari is the only browser that actually paints this button;
+          on any other engine the appearance value silently does nothing. */}
+      <style>{`
+        .editorpdf-apple-pay-btn {
+          -webkit-appearance: -apple-pay-button;
+          -apple-pay-button-type: plain;
+          -apple-pay-button-style: black;
+          height: 44px;
+          width: 100%;
+          border: 0;
+          border-radius: 10px;
+        }
+        .editorpdf-apple-pay-btn[disabled] {
+          opacity: 0.6;
+          cursor: default;
+        }
+      `}</style>
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={submitting}
+        aria-label="Pagar con Apple Pay"
+        className="editorpdf-apple-pay-btn"
+      />
+      {submitting && (
+        <div className="flex items-center justify-center gap-2 py-1 text-xs text-gray-500">
+          <Loader2 className="w-3 h-3 animate-spin text-[#E63946]" />
+          Procesando…
+        </div>
+      )}
+      {error && <p className="text-xs text-red-600">{error}</p>}
     </div>
   );
 }
