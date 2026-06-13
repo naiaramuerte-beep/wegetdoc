@@ -228,7 +228,7 @@ async function startServer() {
       "base-uri 'self'",
       "frame-src 'self' https://*.stripe.com https://www.googletagmanager.com https://vars.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com",
       "img-src 'self' data: https://www.googletagmanager.com https://www.google.com https://script.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com https://www.gstatic.com",
-      "connect-src 'self' data: https://api.stripe.com https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com",
+      "connect-src 'self' data: https://api.stripe.com https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://google.com https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com",
     ].join("; "));
     next();
   });
