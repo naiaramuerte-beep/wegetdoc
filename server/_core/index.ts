@@ -38,10 +38,16 @@ async function startServer() {
   const server = createServer(app);
 
   // ── Apple Pay domain verification ──────────────────────────────────────────
-  app.get("/.well-known/apple-developer-merchantid-domain-association", (_req, res) => {
+  // Sipay (the PSP that fronts our Apple Pay merchant ID) provided this file
+  // for editorpdf.net. Apple's verification fetches it with either path
+  // depending on the test, so we serve both URLs from the same .txt asset.
+  const sendApplePayDomain = (_req: any, res: any) => {
     const path = require("path");
-    res.sendFile(path.resolve(__dirname, "../../client/public/.well-known/apple-developer-merchantid-domain-association"));
-  });
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.sendFile(path.resolve(__dirname, "../../client/public/.well-known/apple-developer-merchantid-domain-association.txt"));
+  };
+  app.get("/.well-known/apple-developer-merchantid-domain-association", sendApplePayDomain);
+  app.get("/.well-known/apple-developer-merchantid-domain-association.txt", sendApplePayDomain);
 
   // ── Stripe Webhook (MUST be before express.json — needs raw body) ──────────
   app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
