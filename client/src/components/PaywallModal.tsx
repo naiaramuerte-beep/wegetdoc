@@ -591,13 +591,18 @@ function GooglePayButton({
         },
       },
     };
+    console.log("[GPay] checking isReadyToPay…", { environment: isProd ? "PRODUCTION" : "TEST", gateway: "sipay", gatewayMerchantId: sipayMerchantKey });
     client
       .isReadyToPay({
         ...baseRequest,
         allowedPaymentMethods: [cardPaymentMethod],
       })
-      .then((res: { result: boolean }) => {
-        if (!res.result) return;
+      .then((res: { result: boolean; paymentMethodPresent?: boolean }) => {
+        console.log("[GPay] isReadyToPay response:", res);
+        if (!res.result) {
+          console.warn("[GPay] not ready — buyer needs a card linked to Google Pay or browser/device unsupported");
+          return;
+        }
         setReady(true);
         const host = hostRef.current;
         if (!host) return;
