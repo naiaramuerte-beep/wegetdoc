@@ -670,9 +670,12 @@ function GooglePayButton({
       .catch((err: any) => console.warn("[GPay] isReadyToPay failed:", err?.message ?? err));
   }, [scriptReady, sipayMerchantKey, amountCents, chargeMut, onSuccess]);
 
-  if (!ready && scriptReady) return null;
+  // Host stays mounted always so the ref is available when the isReadyToPay
+  // effect runs. We hide it (display:none) until Google confirms the buyer can
+  // pay — that's when ready flips to true and createButton has appended the
+  // official Google Pay button into the host.
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2" style={ready ? {} : { display: "none" }}>
       <div ref={hostRef} style={{ minHeight: 44 }} />
       {submitting && (
         <div className="flex items-center justify-center gap-2 py-1 text-xs text-gray-500">
