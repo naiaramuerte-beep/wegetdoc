@@ -655,8 +655,10 @@ function GooglePayButton({
               const token = paymentData?.paymentMethodData?.tokenizationData?.token;
               if (!token) throw new Error("Google Pay no devolvió token");
               const res = await chargeMut.mutateAsync({ token, amountCents });
-              if (res.transactionId) onSuccess(res.transactionId);
-              else throw new Error("Sipay no devolvió transaction_id");
+              // Sandbox doesn't always echo transaction_id; fall back to our
+              // own order so Google Ads still has a unique dedup key.
+              const txnId = res.transactionId || res.order || `gpay-${Date.now()}`;
+              onSuccess(txnId);
             } catch (err: any) {
               const msg = err?.message ?? "Error con Google Pay";
               if (!String(msg).includes("CANCELED")) setError(msg);

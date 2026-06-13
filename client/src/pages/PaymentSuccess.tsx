@@ -3,14 +3,18 @@ import { CheckCircle, ArrowRight, Upload, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
-import { usePricing } from "@/lib/usePricing";
+
+// The user has only paid the intro 0,50 € at this point; the 39,90 €
+// recurring isn't billed until trial_end fires 7 days later. Show the
+// real charged amount on this page so it matches the bank statement,
+// not the future monthly price.
+const INTRO_CHARGE_EUR = 0.50;
 
 export default function PaymentSuccess() {
   const utils = trpc.useUtils();
   const [, navigate] = useLocation();
   const [countdown, setCountdown] = useState(5);
   const { adsTrackingEnabled } = useFeatureFlags();
-  const { priceEur } = usePricing();
 
   // Read txn id from URL once on mount so we can render it into the DOM
   // (Google Ads's review process scrapes the page and verifies the
@@ -36,15 +40,14 @@ export default function PaymentSuccess() {
       (window as any).gtag('event', 'conversion', {
         'send_to': 'AW-18071860641/pjCqCJ3srZkcEKHrqqlD',
         'transaction_id': getId,
-        'value': Number.isFinite(getValue) && getValue > 0 ? getValue : priceEur,
+        'value': Number.isFinite(getValue) && getValue > 0 ? getValue : INTRO_CHARGE_EUR,
         'currency': 'EUR',
       });
     }
-  }, [adsTrackingEnabled, priceEur, txn]);
+  }, [adsTrackingEnabled, txn]);
 
-  // EUR display in es-ES style: "39,90€" (matches the value we strip back out
-  // for gtag — no thousand separators expected at our price ranges).
-  const valueDisplay = `${priceEur.toFixed(2).replace(".", ",")}€`;
+  // EUR display in es-ES style: "0,50€".
+  const valueDisplay = `${INTRO_CHARGE_EUR.toFixed(2).replace(".", ",")}€`;
 
   useEffect(() => {
     // Invalidate subscription status so it refreshes
@@ -83,9 +86,9 @@ export default function PaymentSuccess() {
       {/* Success icon */}
       <div
         className="w-20 h-20 rounded-full flex items-center justify-center mb-6"
-        style={{ backgroundColor: "rgba(27, 94, 32, 0.12)" }}
+        style={{ backgroundColor: "rgba(34, 197, 94, 0.12)" }}
       >
-        <CheckCircle className="w-10 h-10" style={{ color: "#1565C0" }} />
+        <CheckCircle className="w-10 h-10" style={{ color: "#16a34a" }} />
       </div>
 
       <h1
@@ -105,12 +108,12 @@ export default function PaymentSuccess() {
       <div
         className="flex items-center gap-2 mb-6 px-4 py-3 rounded-xl"
         style={{
-          backgroundColor: "rgba(27, 94, 32, 0.08)",
-          border: "1px solid rgba(27, 94, 32, 0.20)",
+          backgroundColor: "rgba(10, 10, 11, 0.04)",
+          border: "1px solid rgba(10, 10, 11, 0.12)",
         }}
       >
-        <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" style={{ color: "#1565C0" }} />
-        <span className="text-sm font-medium" style={{ color: "#1A3A5C" }}>
+        <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" style={{ color: "#E63946" }} />
+        <span className="text-sm font-medium" style={{ color: "#0A0A0B" }}>
           Redirigiendo en <strong>{countdown}</strong>s...
         </span>
       </div>
@@ -140,9 +143,9 @@ export default function PaymentSuccess() {
       <div className="flex flex-col sm:flex-row gap-3 mb-10">
         <button
           onClick={handleGoNow}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-white font-semibold text-sm transition-all duration-200"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-white font-semibold text-sm transition-all duration-200 hover:opacity-90"
           style={{
-            backgroundColor: "#1565C0",
+            backgroundColor: "#E63946",
           }}
         >
           <Upload className="w-4 h-4" />
@@ -174,7 +177,7 @@ export default function PaymentSuccess() {
             "Acceder a tus documentos en cualquier momento",
           ].map((item, i) => (
             <li key={i} className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: "#1565C0" }} />
+              <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: "#16a34a" }} />
               {item}
             </li>
           ))}

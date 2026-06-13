@@ -227,8 +227,8 @@ async function startServer() {
       "object-src 'none'",
       "base-uri 'self'",
       "frame-src 'self' https://*.stripe.com https://www.googletagmanager.com https://vars.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com",
-      "img-src 'self' data: https://www.googletagmanager.com https://www.google.com https://script.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com https://www.gstatic.com",
-      "connect-src 'self' data: https://api.stripe.com https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://google.com https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com",
+      "img-src 'self' data: https://www.googletagmanager.com https://www.google.com https://script.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com https://www.gstatic.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.doubleclick.net",
+      "connect-src 'self' data: https://api.stripe.com https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://google.com https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.doubleclick.net",
     ].join("; "));
     next();
   });
@@ -947,9 +947,13 @@ ${allUrls.map(u => `  <url>
         console.error("[Sipay] confirm failed:", data ?? result.raw);
         return res.redirect(`/?sipay=confirm_failed&detail=${encodeURIComponent(data?.detail ?? "unknown")}`);
       }
-      const txn = data?.payload?.transaction_id ?? "";
+      const sipayTxn = data?.payload?.transaction_id ?? "";
+      const order = data?.payload?.order ?? requestId;
+      // Sandbox occasionally omits transaction_id; the order we generated
+      // upstream is unique enough to dedup Google Ads conversions.
+      const txn = sipayTxn || order;
       const masked = data?.payload?.masked_card ?? "";
-      console.log(`[Sipay] auth OK: txn=${txn} card=${masked} order=${data?.payload?.order}`);
+      console.log(`[Sipay] auth OK: txn=${sipayTxn || "(empty)"} order=${order} card=${masked}`);
       return res.redirect(`/payment/success?txn=${encodeURIComponent(txn)}&provider=sipay`);
     } catch (err: any) {
       console.error("[Sipay] callback/ok exception:", err?.message ?? err);
