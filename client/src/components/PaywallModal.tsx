@@ -357,7 +357,7 @@ function SipayCheckoutForm({
 
       {/* ── Payment column ── */}
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
-        <div className="px-6 py-5 space-y-5">
+        <div className="px-3 py-4 md:px-6 md:py-5 space-y-4 md:space-y-5">
           {/* Pricing breakdown */}
           <div className="rounded-xl p-5 text-center" style={{ background: "linear-gradient(135deg, #0A0A0B, #1A1A1C)" }}>
             <p className="text-sm text-white/70 mb-1">{converter ? `Your ${converter.label} file` : t.paywall_your_pdf}</p>
@@ -613,13 +613,13 @@ export default function PaywallModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4"
       style={{ backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden"
-        style={{ maxWidth: currentStep === "plans" ? 880 : 480, maxHeight: "92vh", overflowY: "auto" }}
+        className="relative w-full bg-white shadow-2xl overflow-hidden md:rounded-2xl"
+        style={{ maxWidth: currentStep === "plans" ? 880 : 480, maxHeight: "100vh", overflowY: "auto" }}
       >
         {/* Close */}
         <button
