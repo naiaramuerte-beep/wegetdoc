@@ -539,22 +539,42 @@ function GooglePayButton({
 
   // 1) Load Google's pay.js once.
   useEffect(() => {
+    console.log("[GPay] mount — loading pay.js…");
     if ((window as any).google?.payments?.api?.PaymentsClient) {
+      console.log("[GPay] pay.js already in window — skipping load");
       setScriptReady(true);
       return;
     }
+    // Poll for the global instead of relying on the existing-tag's `load`
+    // event (which doesn't refire on remount). Resolves a real bug: if the
+    // user closes and reopens the modal, the second mount would never set
+    // scriptReady=true because the script tag was already in the DOM and
+    // its load event had already fired.
     const existing = document.querySelector(`script[data-gpay="1"]`);
-    if (existing) {
-      existing.addEventListener("load", () => setScriptReady(true), { once: true });
-      return;
+    if (!existing) {
+      const s = document.createElement("script");
+      s.src = "https://pay.google.com/gp/p/js/pay.js";
+      s.async = true;
+      s.dataset.gpay = "1";
+      s.onload = () => console.log("[GPay] pay.js script load event fired");
+      s.onerror = () => console.warn("[GPay] script failed to load (CSP/adblock/network)");
+      document.head.appendChild(s);
+    } else {
+      console.log("[GPay] pay.js script tag already in DOM, polling for window.google…");
     }
-    const s = document.createElement("script");
-    s.src = "https://pay.google.com/gp/p/js/pay.js";
-    s.async = true;
-    s.dataset.gpay = "1";
-    s.onload = () => setScriptReady(true);
-    s.onerror = () => console.warn("[GPay] script failed to load");
-    document.head.appendChild(s);
+    // Poll until the global appears or we give up after 8s.
+    const start = Date.now();
+    const iv = window.setInterval(() => {
+      if ((window as any).google?.payments?.api?.PaymentsClient) {
+        console.log("[GPay] window.google.payments.api.PaymentsClient available");
+        setScriptReady(true);
+        window.clearInterval(iv);
+      } else if (Date.now() - start > 8000) {
+        console.warn("[GPay] timed out waiting for pay.js (probably blocked)");
+        window.clearInterval(iv);
+      }
+    }, 200);
+    return () => window.clearInterval(iv);
   }, []);
 
   // 2) Once pay.js is loaded, check whether the user is ready to pay with
