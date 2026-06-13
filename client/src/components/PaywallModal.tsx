@@ -99,15 +99,18 @@ function SipayCheckoutForm({
   // every setRedirecting(false) → infinite loop spamming Sipay.
   const triedFastpayIdRef = useRef<string | null>(null);
 
-  // 1) Inject FastPay bundle dynamically.
+  // 1) Inject FastPay bundle on every mount. We force a fresh script + reset
+  //    window.Fastpay because the bundle keeps internal "iframe already
+  //    created" state across modal close/reopen and refuses to recreate the
+  //    iframe on the second open, leaving the form empty.
   useEffect(() => {
     if (!sipayConfigQ.data?.bundleUrl) return;
     (window as any).DONT_AUTOLOAD_FPAY = true;
-    const existing = document.querySelector(`script[data-sipay-fastpay="1"]`) as HTMLScriptElement | null;
-    if (existing) {
-      setScriptReady(true);
-      return;
-    }
+
+    document.querySelectorAll(`script[data-sipay-fastpay="1"]`).forEach((s) => s.remove());
+    try { delete (window as any).Fastpay; } catch {}
+    setScriptReady(false);
+
     const s = document.createElement("script");
     s.src = sipayConfigQ.data.bundleUrl;
     s.async = true;
@@ -115,6 +118,11 @@ function SipayCheckoutForm({
     s.onload = () => setScriptReady(true);
     s.onerror = () => toast.error("No se pudo cargar el formulario de pago. Recarga la página.");
     document.head.appendChild(s);
+
+    return () => {
+      document.querySelectorAll(`script[data-sipay-fastpay="1"]`).forEach((sc) => sc.remove());
+      try { delete (window as any).Fastpay; } catch {}
+    };
   }, [sipayConfigQ.data?.bundleUrl]);
 
   // 2) Expose a global callback for FastPay to invoke when the card is captured.
