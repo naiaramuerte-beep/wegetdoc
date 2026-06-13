@@ -84,6 +84,7 @@ const SIPAY_STRINGS: Record<string, {
   cancel: string;
   trust3ds: string;
   trustPci: string;
+  payButton: string; // shown inside the FastPay iframe via data-paymentbutton
 }> = {
   es: {
     loading: "Cargando formulario de pago…",
@@ -93,6 +94,7 @@ const SIPAY_STRINGS: Record<string, {
     cancel: "Cancelar",
     trust3ds: "3DS Redsys",
     trustPci: "PCI Sipay",
+    payButton: "Descargar",
   },
   en: {
     loading: "Loading payment form…",
@@ -102,6 +104,7 @@ const SIPAY_STRINGS: Record<string, {
     cancel: "Cancel",
     trust3ds: "3DS Redsys",
     trustPci: "PCI Sipay",
+    payButton: "Download",
   },
   fr: {
     loading: "Chargement du formulaire de paiement…",
@@ -111,6 +114,7 @@ const SIPAY_STRINGS: Record<string, {
     cancel: "Annuler",
     trust3ds: "3DS Redsys",
     trustPci: "PCI Sipay",
+    payButton: "Télécharger",
   },
   de: {
     loading: "Zahlungsformular wird geladen…",
@@ -120,6 +124,7 @@ const SIPAY_STRINGS: Record<string, {
     cancel: "Abbrechen",
     trust3ds: "3DS Redsys",
     trustPci: "PCI Sipay",
+    payButton: "Herunterladen",
   },
   it: {
     loading: "Caricamento del modulo di pagamento…",
@@ -129,6 +134,7 @@ const SIPAY_STRINGS: Record<string, {
     cancel: "Annulla",
     trust3ds: "3DS Redsys",
     trustPci: "PCI Sipay",
+    payButton: "Scarica",
   },
   pt: {
     loading: "Carregando formulário de pagamento…",
@@ -138,6 +144,7 @@ const SIPAY_STRINGS: Record<string, {
     cancel: "Cancelar",
     trust3ds: "3DS Redsys",
     trustPci: "PCI Sipay",
+    payButton: "Baixar",
   },
   nl: {
     loading: "Betaalformulier laden…",
@@ -147,6 +154,7 @@ const SIPAY_STRINGS: Record<string, {
     cancel: "Annuleren",
     trust3ds: "3DS Redsys",
     trustPci: "PCI Sipay",
+    payButton: "Downloaden",
   },
   pl: {
     loading: "Ładowanie formularza płatności…",
@@ -156,6 +164,7 @@ const SIPAY_STRINGS: Record<string, {
     cancel: "Anuluj",
     trust3ds: "3DS Redsys",
     trustPci: "PCI Sipay",
+    payButton: "Pobierz",
   },
   ru: {
     loading: "Загрузка формы оплаты…",
@@ -165,6 +174,7 @@ const SIPAY_STRINGS: Record<string, {
     cancel: "Отмена",
     trust3ds: "3DS Redsys",
     trustPci: "PCI Sipay",
+    payButton: "Скачать",
   },
   zh: {
     loading: "正在加载支付表单…",
@@ -174,6 +184,7 @@ const SIPAY_STRINGS: Record<string, {
     cancel: "取消",
     trust3ds: "3DS Redsys",
     trustPci: "PCI Sipay",
+    payButton: "下载",
   },
 };
 
@@ -401,7 +412,7 @@ function SipayCheckoutForm({
                 data-template="v4"
                 data-callback="__editorpdfFastpayResult"
                 data-lang={fpLang}
-                data-paymentbutton="Descargar"
+                data-paymentbutton={s.payButton}
                 data-hiddenprice="true"
                 data-color="#E63946"
                 data-buttoncolor="#E63946"
