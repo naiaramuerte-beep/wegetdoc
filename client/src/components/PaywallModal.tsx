@@ -563,7 +563,13 @@ function GooglePayButton({
     if (!scriptReady || !hostRef.current) return;
     const g = (window as any).google;
     if (!g?.payments?.api?.PaymentsClient) return;
-    const isProd = window.location.hostname === "editorpdf.net";
+    // Stay in TEST until Google approves our domain at pay.google.com and
+    // gives us the merchantId. PRODUCTION without merchantId hides the
+    // button entirely (silent failure), which would block the screenshot
+    // approval flow we need to send Google.
+    const GOOGLE_PAY_MERCHANT_ID = ""; // TODO: paste here after approval
+    const isProd =
+      window.location.hostname === "editorpdf.net" && !!GOOGLE_PAY_MERCHANT_ID;
     const client = new g.payments.api.PaymentsClient({
       environment: isProd ? "PRODUCTION" : "TEST",
     });
@@ -618,7 +624,7 @@ function GooglePayButton({
                 },
                 merchantInfo: {
                   merchantName: "EditorPDF",
-                  // merchantId set after approval at pay.google.com/business/console
+                  ...(GOOGLE_PAY_MERCHANT_ID ? { merchantId: GOOGLE_PAY_MERCHANT_ID } : {}),
                 },
               });
               const token = paymentData?.paymentMethodData?.tokenizationData?.token;
