@@ -305,11 +305,10 @@ function SipayCheckoutForm({
             </div>
           )}
 
-          {/* Trust badges row (compact) */}
-          <div className="flex items-center justify-between text-[11px] text-gray-500 pt-2 border-t" style={{ borderColor: "#e5e7eb" }}>
+          {/* Trust strip — sin iconos de marca duplicados (el iframe Sipay ya los muestra) */}
+          <div className="flex items-center justify-center gap-5 text-[11px] text-gray-500 pt-2 border-t" style={{ borderColor: "#e5e7eb" }}>
             <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> 3DS Redsys</span>
             <span className="flex items-center gap-1"><Lock className="w-3 h-3" /> PCI Sipay</span>
-            <CardBrands />
           </div>
 
           <button onClick={onClose} className="text-xs text-gray-500 hover:text-gray-700 underline text-center w-full">
