@@ -71,23 +71,19 @@ async function sipayPost<T = Record<string, unknown>>(
     payload,
   };
   const requestBody = JSON.stringify(wrapper);
-  // Tried: HMAC(secret, JSON(body)) → signature_fail
-  // Tried: HMAC(secret, JSON(payload)) → signature_fail
-  // Tried: HMAC(secret, nonce + JSON(payload)) → signature_fail
-  // Now trying: HMAC(secret, key + resource + nonce + JSON(payload))
-  // (envelope-then-payload, in the order Sipay listed in their support reply).
-  const payloadStr = JSON.stringify(payload);
-  const signatureInput =
-    wrapper.key + wrapper.resource + wrapper.nonce + payloadStr;
-  const signature = sign(signatureInput);
+  // Sipay's signing recipe (per their tech support):
+  //   sig = HMAC-SHA256(secret, body)  with body = raw bytes, no trailing \n
+  //   header: Content-Signature: <hex>
+  // We were already hashing the right input with the right algorithm — the
+  // missing piece was the header name. Authorization/X-Signature were ignored.
+  const signature = sign(requestBody);
   const endpoint = `${ENV.sipayEndpoint}${path}`;
 
   const res = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `HMAC-SHA256 ${signature}`,
-      "X-Signature": signature,
+      "Content-Signature": signature,
     },
     body: requestBody,
   });
