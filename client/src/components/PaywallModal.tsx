@@ -371,7 +371,7 @@ function SipayCheckoutForm({
             <p className="text-sm text-gray-500 text-center">Cargando configuración…</p>
           )}
           {sipayConfigQ.data?.key && (
-            <div className="flex flex-col items-stretch gap-3" style={{ minHeight: 500 }}>
+            <div className="flex flex-col items-stretch gap-3" style={{ minHeight: 740 }}>
               {!scriptReady && (
                 <div className="flex items-center justify-center gap-2 py-6 text-sm text-gray-500">
                   <Loader2 className="w-4 h-4 animate-spin text-[#E63946]" />
@@ -426,12 +426,13 @@ function SipayCheckoutForm({
                 .fastpay-btn + iframe {
                   display: block !important;
                   width: 100% !important;
-                  min-height: 480px !important;
+                  min-height: 720px !important;
                   border: 0 !important;
                   background: transparent !important;
                   position: relative !important;
                   top: 0 !important;
                   left: 0 !important;
+                  overflow: hidden !important;
                 }
               `}</style>
               {redirecting && (
