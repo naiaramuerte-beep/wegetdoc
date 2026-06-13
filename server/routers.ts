@@ -542,6 +542,40 @@ export const appRouter = router({
       };
     }),
 
+    // Google Pay one-shot authorization. Front-end gets the encrypted token
+    // from Google's PaymentDataRequest, sends it here, and we forward it to
+    // Sipay /mdwr/v1/authorization with catcher.type="gpay". No 3DS redirect
+    // because Google already authenticated the buyer.
+    sipayGpayCharge: protectedProcedure
+      .input(z.object({
+        token: z.string().min(50),
+        amountCents: z.number().int().positive(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { chargeGpay } = await import("./_core/sipay");
+        const order = `gpay-${ctx.user.id}-${Date.now()}`;
+        const result = await chargeGpay({
+          amountCents: input.amountCents,
+          tokenGpay: input.token,
+          order,
+          custom_01: String(ctx.user.id),
+        });
+        const data = result.data as any;
+        const payloadCode = data?.payload?.code ?? data?.code;
+        if (!result.ok || payloadCode !== "0") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Sipay rechazó Google Pay: ${JSON.stringify(data ?? result.raw)}`,
+          });
+        }
+        return {
+          transactionId: data?.payload?.transaction_id ?? "",
+          maskedCard: data?.payload?.masked_card ?? "",
+          cardBrand: data?.payload?.card_brand ?? "",
+          order,
+        };
+      }),
+
     // Phase 1 — wire FastPay token into all-in-one and return the 3DS URL
     // the frontend must navigate to. No DB writes; the customer comes back
     // through /api/sipay/callback/ok where we confirm and create the sub.

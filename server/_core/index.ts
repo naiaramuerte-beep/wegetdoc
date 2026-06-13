@@ -221,14 +221,14 @@ async function startServer() {
     // Content Security Policy
     res.setHeader("Content-Security-Policy", [
       "frame-ancestors 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://www.gstatic.com https://translate.googleapis.com https://static.hotjar.com https://script.hotjar.com https://sandbox.sipay.es https://live.sipay.es",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://www.gstatic.com https://translate.googleapis.com https://static.hotjar.com https://script.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com https://translate.googleapis.com https://sandbox.sipay.es https://live.sipay.es",
       "font-src 'self' https://fonts.gstatic.com https://script.hotjar.com",
       "object-src 'none'",
       "base-uri 'self'",
-      "frame-src 'self' https://*.stripe.com https://www.googletagmanager.com https://vars.hotjar.com https://sandbox.sipay.es https://live.sipay.es",
-      "img-src 'self' data: https://www.googletagmanager.com https://www.google.com https://script.hotjar.com https://sandbox.sipay.es https://live.sipay.es",
-      "connect-src 'self' data: https://api.stripe.com https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com https://sandbox.sipay.es https://live.sipay.es",
+      "frame-src 'self' https://*.stripe.com https://www.googletagmanager.com https://vars.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com",
+      "img-src 'self' data: https://www.googletagmanager.com https://www.google.com https://script.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com https://www.gstatic.com",
+      "connect-src 'self' data: https://api.stripe.com https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com",
     ].join("; "));
     next();
   });

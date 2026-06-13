@@ -226,6 +226,33 @@ export function refundPayment(opts: {
 }
 
 /**
+ * Google Pay one-shot charge. Different endpoint (/authorization, not
+ * /all-in-one) because the buyer is already authenticated by Google — no
+ * 3DS redirect needed. We pass the Google Pay token JSON inside `catcher`
+ * exactly as Sipay documents it.
+ */
+export function chargeGpay(opts: {
+  amountCents: number;
+  currency?: string;
+  tokenGpay: string; // raw JSON string from Google Pay PaymentData
+  order: string;
+  custom_01?: string;
+  custom_02?: string;
+}) {
+  return sipayPost("/mdwr/v1/authorization", {
+    amount: opts.amountCents,
+    currency: opts.currency ?? "EUR",
+    catcher: {
+      type: "gpay",
+      token_gpay: opts.tokenGpay,
+    },
+    order: opts.order,
+    ...(opts.custom_01 ? { custom_01: opts.custom_01 } : {}),
+    ...(opts.custom_02 ? { custom_02: opts.custom_02 } : {}),
+  });
+}
+
+/**
  * Sandbox probe: fires an all-in-one with the documented VISA test card
  * (4548819407777774 12/25 CVV 123) for 0,50 € and returns the full Sipay
  * response so we can verify HMAC + endpoint connectivity without running

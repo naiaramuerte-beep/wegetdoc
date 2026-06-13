@@ -388,6 +388,16 @@ function SipayCheckoutForm({
           )}
           {sipayConfigQ.data?.key && (
             <div className="flex flex-col items-stretch gap-3">
+              {/* Google Pay button — only shown when Sipay account has a Google
+                  Pay merchant configured. Auto-detects user readiness. */}
+              <GooglePayButton
+                sipayMerchantKey={sipayConfigQ.data.key}
+                amountCents={50}
+                onSuccess={(txn) => {
+                  window.location.href = `/payment/success?txn=${encodeURIComponent(txn)}&provider=sipay-gpay`;
+                }}
+              />
+
               {/* Card / debit collapsible row — clicking it expands the FastPay
                   iframe inline. Keeping it collapsed by default avoids the mobile
                   new-tab fallback and matches the UX on mindmetric.io. */}
@@ -500,6 +510,148 @@ function SipayCheckoutForm({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Google Pay button ──────────────────────────────────────────────────────────
+// Renders Google's standardized Pay button when the device + browser supports
+// Google Pay (Chrome Android, Chrome desktop with a saved card, etc.). On
+// click we open Google's payment sheet, get a tokenized PaymentData, and
+// forward it to our backend → Sipay /mdwr/v1/authorization. Sandbox = TEST
+// environment in google.pay; production switches to PRODUCTION + the numeric
+// merchantId once Google approves us at pay.google.com/business/console.
+function GooglePayButton({
+  sipayMerchantKey,
+  amountCents,
+  onSuccess,
+}: {
+  sipayMerchantKey: string;
+  amountCents: number;
+  onSuccess: (transactionId: string) => void;
+}) {
+  const [scriptReady, setScriptReady] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const chargeMut = trpc.subscription.sipayGpayCharge.useMutation();
+
+  // 1) Load Google's pay.js once.
+  useEffect(() => {
+    if ((window as any).google?.payments?.api?.PaymentsClient) {
+      setScriptReady(true);
+      return;
+    }
+    const existing = document.querySelector(`script[data-gpay="1"]`);
+    if (existing) {
+      existing.addEventListener("load", () => setScriptReady(true), { once: true });
+      return;
+    }
+    const s = document.createElement("script");
+    s.src = "https://pay.google.com/gp/p/js/pay.js";
+    s.async = true;
+    s.dataset.gpay = "1";
+    s.onload = () => setScriptReady(true);
+    s.onerror = () => console.warn("[GPay] script failed to load");
+    document.head.appendChild(s);
+  }, []);
+
+  // 2) Once pay.js is loaded, check whether the user is ready to pay with
+  //    Google Pay; if yes, render the official button via gpay.createButton.
+  useEffect(() => {
+    if (!scriptReady || !hostRef.current) return;
+    const g = (window as any).google;
+    if (!g?.payments?.api?.PaymentsClient) return;
+    const isProd = window.location.hostname === "editorpdf.net";
+    const client = new g.payments.api.PaymentsClient({
+      environment: isProd ? "PRODUCTION" : "TEST",
+    });
+    const baseRequest = {
+      apiVersion: 2,
+      apiVersionMinor: 0,
+    };
+    const cardPaymentMethod = {
+      type: "CARD",
+      parameters: {
+        allowedAuthMethods: ["PAN_ONLY", "CRYPTOGRAM_3DS"],
+        allowedCardNetworks: ["AMEX", "DISCOVER", "JCB", "MASTERCARD", "VISA"],
+      },
+      tokenizationSpecification: {
+        type: "PAYMENT_GATEWAY",
+        parameters: {
+          gateway: "sipay",
+          gatewayMerchantId: sipayMerchantKey,
+        },
+      },
+    };
+    client
+      .isReadyToPay({
+        ...baseRequest,
+        allowedPaymentMethods: [cardPaymentMethod],
+      })
+      .then((res: { result: boolean }) => {
+        if (!res.result) return;
+        setReady(true);
+        const host = hostRef.current;
+        if (!host) return;
+        // Clear previous button if remounting
+        host.innerHTML = "";
+        const button = client.createButton({
+          buttonColor: "black",
+          buttonType: "pay",
+          buttonRadius: 10,
+          buttonSizeMode: "fill",
+          onClick: async () => {
+            setError(null);
+            setSubmitting(true);
+            try {
+              const paymentData = await client.loadPaymentData({
+                ...baseRequest,
+                allowedPaymentMethods: [cardPaymentMethod],
+                transactionInfo: {
+                  totalPriceStatus: "FINAL",
+                  totalPriceLabel: "Total",
+                  totalPrice: (amountCents / 100).toFixed(2),
+                  currencyCode: "EUR",
+                  countryCode: "ES",
+                },
+                merchantInfo: {
+                  merchantName: "EditorPDF",
+                  // merchantId set after approval at pay.google.com/business/console
+                },
+              });
+              const token = paymentData?.paymentMethodData?.tokenizationData?.token;
+              if (!token) throw new Error("Google Pay no devolvió token");
+              const res = await chargeMut.mutateAsync({ token, amountCents });
+              if (res.transactionId) onSuccess(res.transactionId);
+              else throw new Error("Sipay no devolvió transaction_id");
+            } catch (err: any) {
+              const msg = err?.message ?? "Error con Google Pay";
+              if (!String(msg).includes("CANCELED")) setError(msg);
+            } finally {
+              setSubmitting(false);
+            }
+          },
+        });
+        host.appendChild(button);
+      })
+      .catch((err: any) => console.warn("[GPay] isReadyToPay failed:", err?.message ?? err));
+  }, [scriptReady, sipayMerchantKey, amountCents, chargeMut, onSuccess]);
+
+  if (!ready && scriptReady) return null;
+  return (
+    <div className="flex flex-col gap-2">
+      <div ref={hostRef} style={{ minHeight: 44 }} />
+      {submitting && (
+        <div className="flex items-center justify-center gap-2 py-1 text-xs text-gray-500">
+          <Loader2 className="w-3 h-3 animate-spin text-[#E63946]" />
+          Procesando…
+        </div>
+      )}
+      {error && (
+        <p className="text-xs text-red-600">{error}</p>
+      )}
     </div>
   );
 }
