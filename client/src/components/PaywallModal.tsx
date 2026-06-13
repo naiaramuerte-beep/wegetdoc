@@ -417,6 +417,12 @@ function SipayCheckoutForm({
                 data-color="#E63946"
                 data-buttoncolor="#E63946"
                 data-primary="#E63946"
+                /* Keep the iframe inline on mobile (default FastPay opens a
+                   new tab on small screens). Confirmed working on mindmetric.io
+                   which uses the same Sipay merchant. */
+                data-notab="true"
+                /* Hide cardholder name field — not needed for our flow. */
+                data-cardholdername="false"
                 /* Try to omit the "Recordar datos" toggle. The FastPay JS
                    reads several data-* keys for this; none are documented,
                    so we set the most likely candidates at once. */
