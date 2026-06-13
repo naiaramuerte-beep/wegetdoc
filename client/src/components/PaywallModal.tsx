@@ -5,7 +5,7 @@
  */
 import { useState, useEffect, useCallback, useRef } from "react";
 import { colors } from "@/lib/brand";
-import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield, FileText } from "lucide-react";
+import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield, FileText, ChevronDown } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -85,6 +85,7 @@ const SIPAY_STRINGS: Record<string, {
   trust3ds: string;
   trustPci: string;
   payButton: string; // shown inside the FastPay iframe via data-paymentbutton
+  cardOption: string; // collapsed row label "Credit / debit card"
 }> = {
   es: {
     loading: "Cargando formulario de pago…",
@@ -95,6 +96,7 @@ const SIPAY_STRINGS: Record<string, {
     trust3ds: "3DS Redsys",
     trustPci: "PCI Sipay",
     payButton: "Descargar",
+    cardOption: "Tarjeta de crédito o débito",
   },
   en: {
     loading: "Loading payment form…",
@@ -105,6 +107,7 @@ const SIPAY_STRINGS: Record<string, {
     trust3ds: "3DS Redsys",
     trustPci: "PCI Sipay",
     payButton: "Download",
+    cardOption: "Credit or debit card",
   },
   fr: {
     loading: "Chargement du formulaire de paiement…",
@@ -115,6 +118,7 @@ const SIPAY_STRINGS: Record<string, {
     trust3ds: "3DS Redsys",
     trustPci: "PCI Sipay",
     payButton: "Télécharger",
+    cardOption: "Carte de crédit ou de débit",
   },
   de: {
     loading: "Zahlungsformular wird geladen…",
@@ -125,6 +129,7 @@ const SIPAY_STRINGS: Record<string, {
     trust3ds: "3DS Redsys",
     trustPci: "PCI Sipay",
     payButton: "Herunterladen",
+    cardOption: "Kredit- oder Debitkarte",
   },
   it: {
     loading: "Caricamento del modulo di pagamento…",
@@ -135,6 +140,7 @@ const SIPAY_STRINGS: Record<string, {
     trust3ds: "3DS Redsys",
     trustPci: "PCI Sipay",
     payButton: "Scarica",
+    cardOption: "Carta di credito o di debito",
   },
   pt: {
     loading: "Carregando formulário de pagamento…",
@@ -145,6 +151,7 @@ const SIPAY_STRINGS: Record<string, {
     trust3ds: "3DS Redsys",
     trustPci: "PCI Sipay",
     payButton: "Baixar",
+    cardOption: "Cartão de crédito ou débito",
   },
   nl: {
     loading: "Betaalformulier laden…",
@@ -155,6 +162,7 @@ const SIPAY_STRINGS: Record<string, {
     trust3ds: "3DS Redsys",
     trustPci: "PCI Sipay",
     payButton: "Downloaden",
+    cardOption: "Krediet- of debetkaart",
   },
   pl: {
     loading: "Ładowanie formularza płatności…",
@@ -165,6 +173,7 @@ const SIPAY_STRINGS: Record<string, {
     trust3ds: "3DS Redsys",
     trustPci: "PCI Sipay",
     payButton: "Pobierz",
+    cardOption: "Karta kredytowa lub debetowa",
   },
   ru: {
     loading: "Загрузка формы оплаты…",
@@ -175,6 +184,7 @@ const SIPAY_STRINGS: Record<string, {
     trust3ds: "3DS Redsys",
     trustPci: "PCI Sipay",
     payButton: "Скачать",
+    cardOption: "Кредитная или дебетовая карта",
   },
   zh: {
     loading: "正在加载支付表单…",
@@ -185,6 +195,7 @@ const SIPAY_STRINGS: Record<string, {
     trust3ds: "3DS Redsys",
     trustPci: "PCI Sipay",
     payButton: "下载",
+    cardOption: "信用卡或借记卡",
   },
 };
 
@@ -219,6 +230,11 @@ function SipayCheckoutForm({
   const [fastpayResult, setFastpayResult] = useState<{ payload?: { request_id?: string }; request_id?: string } | null>(null);
   const [redirecting, setRedirecting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  // Collapsed by default. The user picks "Tarjeta de crédito o débito" to
+  // expand the FastPay iframe. Auto-opening on mount triggers FastPay's
+  // mobile new-tab fallback in some scenarios; making the user opt-in keeps
+  // the iframe inline and matches the UX on mindmetric.io.
+  const [cardExpanded, setCardExpanded] = useState(false);
   // Tracks which fastpay request_ids we've already attempted so we don't
   // retry the same token (one-shot). Without this, the effect re-fired on
   // every setRedirecting(false) → infinite loop spamming Sipay.
@@ -265,7 +281,7 @@ function SipayCheckoutForm({
   //    another merchant on the same Sipay account — multiple rapid clicks
   //    appear to trigger FastPay's mobile new-tab fallback).
   useEffect(() => {
-    if (!scriptReady || !sipayConfigQ.data?.key) return;
+    if (!scriptReady || !sipayConfigQ.data?.key || !cardExpanded) return;
     const fp = (window as any).Fastpay;
     if (!fp) return;
 
@@ -292,7 +308,7 @@ function SipayCheckoutForm({
     }, 600);
 
     return () => clearTimeout(timer);
-  }, [scriptReady, sipayConfigQ.data?.key]);
+  }, [scriptReady, sipayConfigQ.data?.key, cardExpanded]);
 
   // 4) When FastPay returns a token, auto-fire the all-in-one authorization
   //    and navigate to the 3DS URL Sipay gives us back. We track the last
@@ -371,13 +387,34 @@ function SipayCheckoutForm({
             <p className="text-sm text-gray-500 text-center">Cargando configuración…</p>
           )}
           {sipayConfigQ.data?.key && (
-            <div className="flex flex-col items-stretch gap-3" style={{ minHeight: 740 }}>
-              {!scriptReady && (
+            <div className="flex flex-col items-stretch gap-3">
+              {/* Card / debit collapsible row — clicking it expands the FastPay
+                  iframe inline. Keeping it collapsed by default avoids the mobile
+                  new-tab fallback and matches the UX on mindmetric.io. */}
+              <button
+                type="button"
+                onClick={() => setCardExpanded((v) => !v)}
+                className="flex items-center justify-between w-full px-4 py-3 rounded-lg border bg-white hover:bg-gray-50 transition-colors"
+                style={{ borderColor: "#e5e7eb" }}
+              >
+                <span className="flex items-center gap-2 text-sm text-gray-800">
+                  <CreditCard className="w-4 h-4 text-gray-500" />
+                  {s.cardOption}
+                </span>
+                <ChevronDown
+                  className="w-4 h-4 text-gray-500 transition-transform"
+                  style={{ transform: cardExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
+                />
+              </button>
+
+              {cardExpanded && !scriptReady && (
                 <div className="flex items-center justify-center gap-2 py-6 text-sm text-gray-500">
                   <Loader2 className="w-4 h-4 animate-spin text-[#E63946]" />
                   {s.loading}
                 </div>
               )}
+              {cardExpanded && (
+              <>
               <button
                 type="button"
                 data-key={sipayConfigQ.data.key}
@@ -435,6 +472,8 @@ function SipayCheckoutForm({
                   overflow: hidden !important;
                 }
               `}</style>
+              </>
+              )}
               {redirecting && (
                 <div className="flex items-center justify-center gap-2 py-3 text-sm text-gray-600">
                   <Loader2 className="w-4 h-4 animate-spin text-[#E63946]" />
