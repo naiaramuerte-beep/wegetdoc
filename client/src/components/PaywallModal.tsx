@@ -260,18 +260,10 @@ function SipayCheckoutForm({
   }, []);
 
   // 3) Once the bundle is loaded AND our button is in the DOM, call loadAll
-  //    so FastPay decorates it (auto-init missed the DOMContentLoaded event).
-  //    Then auto-click the (hidden) button so the iframe opens without an
-  //    extra user click — same UX as Stripe Elements rendering inline.
-  //
-  //    The retry loop handles the re-open case: when the user closes the
-  //    modal and reopens it, the FastPay script is already cached but the
-  //    new button needs to be decorated again, and timing between loadAll()
-  //    finishing and the click handler being attached is flaky on remount.
-  //
-  //    The customize() call passes brand colors speculatively (the FastPay
-  //    JS exposes window.Fastpay.customize but doesn't document the schema).
-  //    Worst case the iframe ignores unknown keys.
+  //    so FastPay decorates it, then auto-click the hidden button. Single
+  //    600ms timeout (matches the integration on mindmetric.io which is
+  //    another merchant on the same Sipay account — multiple rapid clicks
+  //    appear to trigger FastPay's mobile new-tab fallback).
   useEffect(() => {
     if (!scriptReady || !sipayConfigQ.data?.key) return;
     const fp = (window as any).Fastpay;
@@ -289,35 +281,17 @@ function SipayCheckoutForm({
       }
     } catch (err) { console.error("[Sipay] customize failed:", err); }
 
-    let cancelled = false;
-    let attempt = 0;
-    let timer: ReturnType<typeof setTimeout> | null = null;
+    try { if (typeof fp.loadAll === "function") fp.loadAll(); } catch {}
 
-    const tryOpen = () => {
-      if (cancelled) return;
-      attempt += 1;
-      try { if (typeof fp.loadAll === "function") fp.loadAll(); } catch {}
+    const timer = setTimeout(() => {
       const btn = document.querySelector(".fastpay-btn") as HTMLButtonElement | null;
       const iframe = document.querySelector(".fastpay-btn + iframe");
-      if (iframe) return;
-      if (btn) {
-        try { btn.click(); } catch {}
+      if (btn && !iframe) {
+        try { btn.click(); } catch (err) { console.error("[Sipay] auto-click failed:", err); }
       }
-      // Re-check shortly; FastPay decorates the button asynchronously after
-      // loadAll(), so the first click can no-op. Give it up to ~3s.
-      if (attempt < 15) {
-        timer = setTimeout(tryOpen, 200);
-      } else {
-        console.warn("[Sipay] iframe failed to appear after", attempt, "attempts");
-      }
-    };
+    }, 600);
 
-    timer = setTimeout(tryOpen, 50);
-
-    return () => {
-      cancelled = true;
-      if (timer) clearTimeout(timer);
-    };
+    return () => clearTimeout(timer);
   }, [scriptReady, sipayConfigQ.data?.key]);
 
   // 4) When FastPay returns a token, auto-fire the all-in-one authorization
