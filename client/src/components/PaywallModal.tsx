@@ -260,6 +260,13 @@ function SipayCheckoutForm({
                 data-color="#E63946"
                 data-buttoncolor="#E63946"
                 data-primary="#E63946"
+                /* Try to omit the "Recordar datos" toggle. The FastPay JS
+                   reads several data-* keys for this; none are documented,
+                   so we set the most likely candidates at once. */
+                data-remember=""
+                data-autosave="false"
+                data-hideremember="true"
+                data-noremember="true"
                 className="fastpay-btn"
                 aria-hidden="true"
                 tabIndex={-1}
