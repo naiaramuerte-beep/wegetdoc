@@ -72,6 +72,118 @@ function CardBrands() {
 // FastPay JS captures the card in Sipay's iframe; we forward the resulting
 // request_id to our backend to fire /mdwr/v1/all-in-one and then navigate the
 // parent window to the 3DS URL Sipay returns.
+// Strings of our own chrome inside the Sipay payment step. The FastPay iframe
+// strings (card number, expiry, "Recordar datos", DESCARGAR, "Powered by sipay"…)
+// are rendered by Sipay's bundle and only respect their data-lang attribute
+// (es/en/ca only).
+const SIPAY_STRINGS: Record<string, {
+  loading: string;
+  authorizing: string;
+  authFailedTitle: string;
+  authFailedBody: string;
+  cancel: string;
+  trust3ds: string;
+  trustPci: string;
+}> = {
+  es: {
+    loading: "Cargando formulario de pago…",
+    authorizing: "Autorizando y redirigiendo a 3DS…",
+    authFailedTitle: "No pudimos autorizar el pago",
+    authFailedBody: "Vuelve a intentarlo en unos minutos o contacta con soporte si el problema persiste.",
+    cancel: "Cancelar",
+    trust3ds: "3DS Redsys",
+    trustPci: "PCI Sipay",
+  },
+  en: {
+    loading: "Loading payment form…",
+    authorizing: "Authorizing and redirecting to 3DS…",
+    authFailedTitle: "We couldn't authorize the payment",
+    authFailedBody: "Please try again in a few minutes or contact support if the problem persists.",
+    cancel: "Cancel",
+    trust3ds: "3DS Redsys",
+    trustPci: "PCI Sipay",
+  },
+  fr: {
+    loading: "Chargement du formulaire de paiement…",
+    authorizing: "Autorisation et redirection vers 3DS…",
+    authFailedTitle: "Nous n'avons pas pu autoriser le paiement",
+    authFailedBody: "Veuillez réessayer dans quelques minutes ou contacter le support si le problème persiste.",
+    cancel: "Annuler",
+    trust3ds: "3DS Redsys",
+    trustPci: "PCI Sipay",
+  },
+  de: {
+    loading: "Zahlungsformular wird geladen…",
+    authorizing: "Autorisierung und Weiterleitung zu 3DS…",
+    authFailedTitle: "Die Zahlung konnte nicht autorisiert werden",
+    authFailedBody: "Bitte versuchen Sie es in einigen Minuten erneut oder kontaktieren Sie den Support, wenn das Problem weiterhin besteht.",
+    cancel: "Abbrechen",
+    trust3ds: "3DS Redsys",
+    trustPci: "PCI Sipay",
+  },
+  it: {
+    loading: "Caricamento del modulo di pagamento…",
+    authorizing: "Autorizzazione e reindirizzamento a 3DS…",
+    authFailedTitle: "Non siamo riusciti ad autorizzare il pagamento",
+    authFailedBody: "Riprova tra qualche minuto o contatta l'assistenza se il problema persiste.",
+    cancel: "Annulla",
+    trust3ds: "3DS Redsys",
+    trustPci: "PCI Sipay",
+  },
+  pt: {
+    loading: "Carregando formulário de pagamento…",
+    authorizing: "Autorizando e redirecionando para 3DS…",
+    authFailedTitle: "Não foi possível autorizar o pagamento",
+    authFailedBody: "Tente novamente em alguns minutos ou contate o suporte se o problema persistir.",
+    cancel: "Cancelar",
+    trust3ds: "3DS Redsys",
+    trustPci: "PCI Sipay",
+  },
+  nl: {
+    loading: "Betaalformulier laden…",
+    authorizing: "Autoriseren en doorverwijzen naar 3DS…",
+    authFailedTitle: "We konden de betaling niet autoriseren",
+    authFailedBody: "Probeer het over een paar minuten opnieuw of neem contact op met support als het probleem aanhoudt.",
+    cancel: "Annuleren",
+    trust3ds: "3DS Redsys",
+    trustPci: "PCI Sipay",
+  },
+  pl: {
+    loading: "Ładowanie formularza płatności…",
+    authorizing: "Autoryzowanie i przekierowywanie do 3DS…",
+    authFailedTitle: "Nie udało nam się autoryzować płatności",
+    authFailedBody: "Spróbuj ponownie za kilka minut lub skontaktuj się z pomocą techniczną, jeśli problem nie ustępuje.",
+    cancel: "Anuluj",
+    trust3ds: "3DS Redsys",
+    trustPci: "PCI Sipay",
+  },
+  ru: {
+    loading: "Загрузка формы оплаты…",
+    authorizing: "Авторизация и перенаправление на 3DS…",
+    authFailedTitle: "Не удалось авторизовать платёж",
+    authFailedBody: "Попробуйте снова через несколько минут или обратитесь в поддержку, если проблема не исчезнет.",
+    cancel: "Отмена",
+    trust3ds: "3DS Redsys",
+    trustPci: "PCI Sipay",
+  },
+  zh: {
+    loading: "正在加载支付表单…",
+    authorizing: "正在授权并跳转到 3DS…",
+    authFailedTitle: "无法授权付款",
+    authFailedBody: "请几分钟后重试，如果问题持续，请联系客服。",
+    cancel: "取消",
+    trust3ds: "3DS Redsys",
+    trustPci: "PCI Sipay",
+  },
+};
+
+// FastPay only supports es / en / ca. Map any other code down to en.
+function fastpayLang(lang: string): "es" | "en" | "ca" {
+  if (lang === "es") return "es";
+  if (lang === "ca") return "ca";
+  return "en";
+}
+
 function SipayCheckoutForm({
   onSuccess: _onSuccess,
   onClose,
@@ -87,7 +199,9 @@ function SipayCheckoutForm({
   buildPdfForUpload?: () => Promise<{ base64: string; name: string; size: number } | null>;
   converter?: { label: string; price: string };
 }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const s = SIPAY_STRINGS[lang] ?? SIPAY_STRINGS.en;
+  const fpLang = fastpayLang(lang);
   const sipayConfigQ = trpc.subscription.sipayConfig.useQuery();
   const initMut = trpc.subscription.sipayCheckoutInit.useMutation();
   const [scriptReady, setScriptReady] = useState(false);
@@ -276,7 +390,7 @@ function SipayCheckoutForm({
               {!scriptReady && (
                 <div className="flex items-center justify-center gap-2 py-6 text-sm text-gray-500">
                   <Loader2 className="w-4 h-4 animate-spin text-[#E63946]" />
-                  Cargando formulario de pago…
+                  {s.loading}
                 </div>
               )}
               <button
@@ -286,7 +400,7 @@ function SipayCheckoutForm({
                 data-currency="EUR"
                 data-template="v4"
                 data-callback="__editorpdfFastpayResult"
-                data-lang="es"
+                data-lang={fpLang}
                 data-paymentbutton="Descargar"
                 data-hiddenprice="true"
                 data-color="#E63946"
@@ -332,13 +446,13 @@ function SipayCheckoutForm({
               {redirecting && (
                 <div className="flex items-center justify-center gap-2 py-3 text-sm text-gray-600">
                   <Loader2 className="w-4 h-4 animate-spin text-[#E63946]" />
-                  Autorizando y redirigiendo a 3DS…
+                  {s.authorizing}
                 </div>
               )}
               {authError && !redirecting && (
                 <div className="rounded-lg p-3 text-xs text-amber-900 bg-amber-50 border border-amber-200">
-                  <p className="font-semibold mb-1">No pudimos autorizar el pago</p>
-                  <p>Vuelve a intentarlo en unos minutos o contacta con soporte si el problema persiste.</p>
+                  <p className="font-semibold mb-1">{s.authFailedTitle}</p>
+                  <p>{s.authFailedBody}</p>
                 </div>
               )}
             </div>
@@ -346,12 +460,12 @@ function SipayCheckoutForm({
 
           {/* Trust strip — sin iconos de marca duplicados (el iframe Sipay ya los muestra) */}
           <div className="flex items-center justify-center gap-5 text-[11px] text-gray-500 pt-2 border-t" style={{ borderColor: "#e5e7eb" }}>
-            <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> 3DS Redsys</span>
-            <span className="flex items-center gap-1"><Lock className="w-3 h-3" /> PCI Sipay</span>
+            <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> {s.trust3ds}</span>
+            <span className="flex items-center gap-1"><Lock className="w-3 h-3" /> {s.trustPci}</span>
           </div>
 
           <button onClick={onClose} className="text-xs text-gray-500 hover:text-gray-700 underline text-center w-full">
-            Cancelar
+            {s.cancel}
           </button>
         </div>
       </div>
