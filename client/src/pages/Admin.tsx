@@ -283,7 +283,7 @@ export default function Admin() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#0f1117" }}>
-        <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -295,7 +295,7 @@ export default function Admin() {
         <button
           onClick={() => navigate("/")}
           className="px-4 py-2 rounded-lg text-sm font-medium text-white"
-          style={{ backgroundColor: "#1565C0" }}
+          style={{ backgroundColor: "#E63946" }}
         >
           Volver al inicio
         </button>
@@ -396,7 +396,7 @@ export default function Admin() {
                   onClick={() => setTab(t.id)}
                   className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-left transition-colors w-full"
                   style={{
-                    backgroundColor: tab === t.id ? "#0D47A1" : "transparent",
+                    backgroundColor: tab === t.id ? "#C82F3B" : "transparent",
                     color: tab === t.id ? "white" : "#94a3b8",
                   }}
                   onMouseEnter={(e) => { if (tab !== t.id) e.currentTarget.style.backgroundColor = "#1e2433"; }}
@@ -427,7 +427,7 @@ export default function Admin() {
               <h2 className="text-lg font-semibold text-white">Resumen general</h2>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                  { label: "Total usuarios", value: stats?.totalUsers ?? "—", icon: <Users size={20} />, color: "#1565C0" },
+                  { label: "Total usuarios", value: stats?.totalUsers ?? "—", icon: <Users size={20} />, color: "#E63946" },
                   { label: "Suscripciones activas", value: stats?.activeSubscriptions ?? "—", icon: <CreditCard size={20} />, color: "#10b981" },
                   { label: "Documentos", value: stats?.totalDocuments ?? "—", icon: <FileText size={20} />, color: "#8b5cf6" },
                   { label: "Mensajes sin leer", value: stats?.unreadMessages ?? "—", icon: <MessageSquare size={20} />, color: "#f59e0b" },
@@ -462,7 +462,7 @@ export default function Admin() {
                 <button
                   onClick={() => setTab("billing")}
                   className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors"
-                  style={{ backgroundColor: "#1565C0" }}
+                  style={{ backgroundColor: "#E63946" }}
                 >
                   Ver estadísticas de facturación →
                 </button>
@@ -538,9 +538,9 @@ export default function Admin() {
                     onClick={() => setRangePreset(id)}
                     className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
                     style={{
-                      backgroundColor: rangePreset === id ? "#1565C0" : "transparent",
+                      backgroundColor: rangePreset === id ? "#E63946" : "transparent",
                       color: rangePreset === id ? "white" : "#94a3b8",
-                      border: rangePreset === id ? "1px solid #1565C0" : "1px solid #1e2433",
+                      border: rangePreset === id ? "1px solid #E63946" : "1px solid #1e2433",
                     }}
                   >
                     {label}
@@ -569,7 +569,7 @@ export default function Admin() {
 
               {billingQ.isLoading ? (
                 <div className="flex flex-col items-center justify-center h-40 gap-3">
-                  <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
                   <p className="text-xs text-gray-500">Cargando datos…</p>
                 </div>
               ) : billingQ.error ? (
@@ -665,7 +665,7 @@ export default function Admin() {
                           value: formatEur(billing.mrrCommitted),
                           sub: `Incluye ${billing.trialingSubscriptions} en trial`,
                           icon: <TrendingUp size={18} />,
-                          color: "#1565C0",
+                          color: "#E63946",
                         },
                         {
                           label: "ARR comprometido",
@@ -709,7 +709,7 @@ export default function Admin() {
                     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
                       {[
                         { label: "Pagando recurrente",  value: (billing as any).payingSubscriptions ?? 0,  color: "#10b981", icon: <CreditCard size={18} />, sub: "Plan monthly/annual" },
-                        { label: "En trial (48h)",      value: billing.trialingSubscriptions,  color: "#1565C0", icon: <Zap size={18} />, sub: "Convertirán en 48h" },
+                        { label: "En trial (48h)",      value: billing.trialingSubscriptions,  color: "#E63946", icon: <Zap size={18} />, sub: "Convertirán en 48h" },
                         { label: "Cobro fallido",       value: (billing as any).pastDueSubscriptions ?? 0, color: "#ef4444", icon: <RotateCcw size={18} />, sub: "Stripe reintentando" },
                         { label: "Por cancelar",        value: billing.subsAboutToCancel,      color: "#f59e0b", icon: <AlertTriangle size={18} />, sub: "Cancel at period end" },
                         { label: "Canceladas total",    value: billing.canceledSubscriptions,  color: "#ef4444", icon: <UserX size={18} /> },
@@ -741,7 +741,7 @@ export default function Admin() {
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                       {[
                         { label: `Suscripciones (${range.label.toLowerCase()})`, value: billing.newSubsInRange, color: "#10b981" },
-                        { label: `Usuarios (${range.label.toLowerCase()})`,      value: billing.newUsersInRange, color: "#1565C0" },
+                        { label: `Usuarios (${range.label.toLowerCase()})`,      value: billing.newUsersInRange, color: "#E63946" },
                         { label: "Suscripciones hoy",                            value: billing.newSubsToday,  color: "#8b5cf6" },
                         { label: "Usuarios hoy",                                 value: billing.newUsersToday, color: "#8b5cf6" },
                         { label: "Suscripciones esta semana",                    value: billing.newSubsWeek,   color: "#94a3b8" },
@@ -791,7 +791,7 @@ export default function Admin() {
                                 <td className="px-4 py-2 text-gray-300">{s.plan}</td>
                                 <td className="px-4 py-2">
                                   <span className="inline-flex px-2 py-0.5 rounded text-[10px] font-semibold"
-                                    style={{ backgroundColor: s.status === "trialing" ? "#1565C020" : "#10b98120", color: s.status === "trialing" ? "#60a5fa" : "#10b981" }}>
+                                    style={{ backgroundColor: s.status === "trialing" ? "#E6394620" : "#10b98120", color: s.status === "trialing" ? "#60a5fa" : "#10b981" }}>
                                     {s.status}
                                   </span>
                                 </td>
@@ -1010,7 +1010,7 @@ export default function Admin() {
                     </div>
                     {chargesQ.isLoading ? (
                       <div className="flex items-center justify-center h-24">
-                        <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                        <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
                       </div>
                     ) : chargesQ.data && chargesQ.data.length > 0 ? (
                       <div className="overflow-x-auto">
@@ -1104,7 +1104,7 @@ export default function Admin() {
                                     className="h-full rounded transition-all"
                                     style={{
                                       width: `${pct}%`,
-                                      background: "linear-gradient(90deg, #E63946, #1565C0)",
+                                      background: "linear-gradient(90deg, #E63946, #E63946)",
                                     }}
                                   />
                                 </div>
@@ -1164,8 +1164,8 @@ export default function Admin() {
                       <AreaChart data={billing.monthlyRevenue}>
                         <defs>
                           <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#1565C0" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#1565C0" stopOpacity={0} />
+                            <stop offset="5%" stopColor="#E63946" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#E63946" stopOpacity={0} />
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#1e2433" />
@@ -1186,7 +1186,7 @@ export default function Admin() {
                         <Area
                           type="monotone"
                           dataKey="revenue"
-                          stroke="#1565C0"
+                          stroke="#E63946"
                           fill="url(#revGrad)"
                           strokeWidth={2}
                         />
@@ -1257,7 +1257,7 @@ export default function Admin() {
               </div>
               {subscribersQ.isLoading ? (
                 <div className="flex items-center justify-center h-32">
-                  <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : (
                 <div className="rounded-xl border overflow-x-auto" style={{ borderColor: "#1e2433" }}>
@@ -1285,7 +1285,7 @@ export default function Admin() {
                               style={{
                                 backgroundColor:
                                   s.subStatus === "active" ? "#10b98120" :
-                                  s.subStatus === "trialing" ? "#1565C020" :
+                                  s.subStatus === "trialing" ? "#E6394620" :
                                   s.subStatus === "past_due" ? "#ef444420" :
                                   s.subStatus === "canceled" ? "#6b728020" : "#6b728020",
                                 color:
@@ -1345,7 +1345,7 @@ export default function Admin() {
                       placeholder="Buscar por nombre o email..."
                       value={docSearch}
                       onChange={(e) => setDocSearch(e.target.value)}
-                      className="pl-8 pr-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600"
+                      className="pl-8 pr-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-red-600"
                       style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#131720" }}
                     />
                   </div>
@@ -1483,7 +1483,7 @@ export default function Admin() {
                       placeholder="Buscar por email..."
                       value={userSearch}
                       onChange={(e) => setUserSearch(e.target.value)}
-                      className="pl-8 pr-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600"
+                      className="pl-8 pr-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-red-600"
                       style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#131720" }}
                     />
                   </div>
@@ -1615,7 +1615,7 @@ export default function Admin() {
                             {u.email && (
                               <a
                                 href={`mailto:${u.email}`}
-                                className="p-1.5 rounded transition-colors hover:bg-gray-700 text-gray-400 hover:text-blue-400"
+                                className="p-1.5 rounded transition-colors hover:bg-gray-700 text-gray-400 hover:text-red-400"
                               >
                                 <Mail size={14} />
                               </a>
@@ -1637,7 +1637,7 @@ export default function Admin() {
                             <button
                               onClick={() => setTimelineUserId(u.id)}
                               title="Ver timeline del usuario"
-                              className="p-1.5 rounded transition-colors hover:bg-gray-700 text-gray-400 hover:text-blue-400"
+                              className="p-1.5 rounded transition-colors hover:bg-gray-700 text-gray-400 hover:text-red-400"
                             >
                               <ClipboardList size={14} />
                             </button>
@@ -2117,7 +2117,7 @@ export default function Admin() {
                   { label: "Total (100)", value: webhookEventsQ.data?.length ?? 0, color: "#94a3b8" },
                   { label: "OK", value: webhookEventsQ.data?.filter((e: any) => e.status === "ok").length ?? 0, color: "#10b981" },
                   { label: "Error", value: webhookEventsQ.data?.filter((e: any) => e.status === "error").length ?? 0, color: "#ef4444" },
-                  { label: "Tipos únicos", value: new Set((webhookEventsQ.data ?? []).map((e: any) => e.eventType)).size, color: "#1565C0" },
+                  { label: "Tipos únicos", value: new Set((webhookEventsQ.data ?? []).map((e: any) => e.eventType)).size, color: "#E63946" },
                 ].map((s) => (
                   <div key={s.label} className="rounded-xl p-4 border" style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}>
                     <p className="text-xs text-gray-400 mb-1">{s.label}</p>
@@ -2234,7 +2234,7 @@ export default function Admin() {
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-white">
                       Editando:{" "}
-                      <span className="text-blue-400">{editingLegal}</span>
+                      <span className="text-red-400">{editingLegal}</span>
                     </h3>
                     <button
                       onClick={() => setEditingLegal(null)}
@@ -2249,7 +2249,7 @@ export default function Admin() {
                       type="text"
                       value={legalTitle}
                       onChange={(e) => setLegalTitle(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600"
+                      className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-red-600"
                       style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
                     />
                   </div>
@@ -2261,7 +2261,7 @@ export default function Admin() {
                       value={legalContent}
                       onChange={(e) => setLegalContent(e.target.value)}
                       rows={16}
-                      className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600 font-mono resize-y"
+                      className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-red-600 font-mono resize-y"
                       style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
                     />
                   </div>
@@ -2275,7 +2275,7 @@ export default function Admin() {
                     }
                     disabled={saveLegalMut.isPending}
                     className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors"
-                    style={{ backgroundColor: "#1565C0" }}
+                    style={{ backgroundColor: "#E63946" }}
                   >
                     {saveLegalMut.isPending ? "Guardando..." : "Guardar cambios"}
                   </button>
@@ -2311,7 +2311,7 @@ export default function Admin() {
                             setLegalContent(existing?.content ?? "");
                           }}
                           className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors"
-                          style={{ backgroundColor: "#1565C0" }}
+                          style={{ backgroundColor: "#E63946" }}
                         >
                           Editar
                         </button>
@@ -2487,7 +2487,7 @@ export default function Admin() {
                   <button
                     onClick={() => setPreviewPaywallReason("trial-limit")}
                     className="px-4 py-3 rounded-lg text-sm font-semibold text-white transition-colors"
-                    style={{ backgroundColor: "#1565C0" }}
+                    style={{ backgroundColor: "#E63946" }}
                   >
                     Previsualizar paywall upgrade
                   </button>
@@ -2614,7 +2614,7 @@ export default function Admin() {
                               style={{
                                 backgroundColor:
                                   s.status === "active" ? "#10b98120" :
-                                  s.status === "trialing" ? "#1565C020" :
+                                  s.status === "trialing" ? "#E6394620" :
                                   s.status === "past_due" ? "#ef444420" :
                                   s.status === "canceled" ? "#6b728020" : "#6b728020",
                                 color:
@@ -2915,13 +2915,13 @@ function SettingRow({
           setSaved(false);
         }}
         placeholder={placeholder}
-        className="flex-1 px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600"
+        className="flex-1 px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-red-600"
         style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
       />
       <button
         onClick={handleSave}
         className="px-3 py-2 rounded-lg text-xs font-medium text-white transition-colors flex-shrink-0"
-        style={{ backgroundColor: saved ? "#10b981" : "#1565C0" }}
+        style={{ backgroundColor: saved ? "#10b981" : "#E63946" }}
       >
         {saved ? "✓ Guardado" : "Guardar"}
       </button>
@@ -3211,7 +3211,7 @@ function CouponsTab({ couponsQ, createCouponMut, deleteCouponMut }: { couponsQ: 
               type="text" placeholder="BLACKFRIDAY50"
               value={form.code}
               onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
-              className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600"
+              className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-red-600"
               style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
             />
           </div>
@@ -3221,7 +3221,7 @@ function CouponsTab({ couponsQ, createCouponMut, deleteCouponMut }: { couponsQ: 
               type="number" min="1" max="100"
               value={form.percentOff}
               onChange={(e) => setForm({ ...form, percentOff: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600"
+              className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-red-600"
               style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
             />
           </div>
@@ -3230,7 +3230,7 @@ function CouponsTab({ couponsQ, createCouponMut, deleteCouponMut }: { couponsQ: 
             <select
               value={form.duration}
               onChange={(e) => setForm({ ...form, duration: e.target.value as any })}
-              className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600"
+              className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-red-600"
               style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
             >
               <option value="once">Una vez</option>
@@ -3245,7 +3245,7 @@ function CouponsTab({ couponsQ, createCouponMut, deleteCouponMut }: { couponsQ: 
                 type="number" min="1" max="24" placeholder="3"
                 value={form.durationInMonths}
                 onChange={(e) => setForm({ ...form, durationInMonths: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600"
+                className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-red-600"
                 style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
               />
             </div>
@@ -3256,7 +3256,7 @@ function CouponsTab({ couponsQ, createCouponMut, deleteCouponMut }: { couponsQ: 
               type="number" min="1" placeholder="100"
               value={form.maxRedemptions}
               onChange={(e) => setForm({ ...form, maxRedemptions: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600"
+              className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-red-600"
               style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
             />
           </div>
@@ -3266,7 +3266,7 @@ function CouponsTab({ couponsQ, createCouponMut, deleteCouponMut }: { couponsQ: 
               type="date"
               value={form.expiresAt}
               onChange={(e) => setForm({ ...form, expiresAt: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-600"
+              className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-red-600"
               style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
             />
           </div>

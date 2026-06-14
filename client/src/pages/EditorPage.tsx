@@ -63,9 +63,9 @@ function EditorUploadZone({ lang }: { lang: string }) {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const navy = "#0D47A1";
-  const blue = "#1565C0";
-  const blueLight = "#42A5F5";
+  const navy = "#C82F3B";
+  const blue = "#E63946";
+  const blueLight = "#FF6B7A";
 
   const openEditor = useCallback((file: File) => {
     const ext = '.' + file.name.split('.').pop()?.toLowerCase();

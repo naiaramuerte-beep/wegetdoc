@@ -177,14 +177,14 @@ function ToolBtn({
       onClick={onClick}
       className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded transition-all text-xs select-none"
       style={{
-        color: active ? "#1565C0" : "#1A3A5C",
-        backgroundColor: active ? "rgba(27, 94, 32, 0.10)" : "transparent",
+        color: active ? "#E63946" : "#0A0A0B",
+        backgroundColor: active ? "rgba(10, 10, 11, 0.10)" : "transparent",
         opacity: disabled ? 0.4 : 1,
         minWidth: 48,
       }}
       onMouseEnter={(e) => {
         if (!active && !disabled)
-          e.currentTarget.style.backgroundColor = "rgba(27, 94, 32, 0.06)";
+          e.currentTarget.style.backgroundColor = "rgba(10, 10, 11, 0.06)";
       }}
       onMouseLeave={(e) => {
         if (!active)
@@ -3300,14 +3300,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
       >
-        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ backgroundColor: "rgba(27, 94, 32, 0.10)" }}>
-          <FileText className="w-8 h-8" style={{ color: "#1565C0" }} />
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ backgroundColor: "rgba(10, 10, 11, 0.10)" }}>
+          <FileText className="w-8 h-8" style={{ color: "#E63946" }} />
         </div>
-        <p className="text-lg font-semibold mb-1" style={{ color: "#1565C0" }}>{t.hero_drag_here}</p>
+        <p className="text-lg font-semibold mb-1" style={{ color: "#E63946" }}>{t.hero_drag_here}</p>
         <p className="text-sm mb-4" style={{ color: "#64748b" }}>{t.editor_or}</p>
         <button
           className="px-6 py-2.5 rounded-lg text-white font-semibold text-sm"
-          style={{ backgroundColor: "#0D47A1" }}
+          style={{ backgroundColor: "#C82F3B" }}
           onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
         >
           <Upload className="w-4 h-4 inline mr-2" />{t.hero_upload_btn}
@@ -3330,7 +3330,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           disabled={historyIndex <= 0}
           title={t.editor_undo_tooltip}
           className="flex-1 min-w-0 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-medium border transition-all disabled:opacity-40"
-          style={{ borderColor: "#cbd5e1", color: "#1A3A5C", backgroundColor: "#fff" }}
+          style={{ borderColor: "#cbd5e1", color: "#0A0A0B", backgroundColor: "#fff" }}
         >
           <Undo2 className="w-3 h-3 shrink-0" />
           <span className="truncate">{t.editor_undo}</span>
@@ -3340,7 +3340,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           disabled={pageAnnCount === 0}
           title={t.editor_delete_last}
           className="flex-1 min-w-0 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-medium border transition-all disabled:opacity-40"
-          style={{ borderColor: "#cbd5e1", color: "#1A3A5C", backgroundColor: "#fff" }}
+          style={{ borderColor: "#cbd5e1", color: "#0A0A0B", backgroundColor: "#fff" }}
         >
           <Trash2 className="w-3 h-3 shrink-0" />
           <span className="truncate">{t.editor_delete_last}</span>
@@ -3350,7 +3350,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           disabled={pageAnnCount === 0}
           title={t.editor_delete_all}
           className="flex-1 min-w-0 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-medium border transition-all disabled:opacity-40"
-          style={{ borderColor: "#cbd5e1", color: "#1565C0", backgroundColor: "#fff" }}
+          style={{ borderColor: "#cbd5e1", color: "#E63946", backgroundColor: "#fff" }}
         >
           <Trash2 className="w-3 h-3 shrink-0" />
           <span className="truncate">{t.editor_delete_all}</span>
@@ -3433,8 +3433,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       onClick={() => setSignFont(f.value)}
                       className="px-3 py-2 rounded border text-left transition-all"
                       style={{
-                        borderColor: signFont === f.value ? "#1565C0" : "#f1f5f9",
-                        backgroundColor: signFont === f.value ? "rgba(27, 94, 32, 0.08)" : "#fff",
+                        borderColor: signFont === f.value ? "#E63946" : "#f1f5f9",
+                        backgroundColor: signFont === f.value ? "rgba(10, 10, 11, 0.08)" : "#fff",
                         fontFamily: f.value,
                         fontSize: 20,
                         color: signColor,
@@ -3450,7 +3450,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 <button
                   onClick={placeNameSignature}
                   className="py-2 rounded text-white text-sm font-semibold"
-                  style={{ backgroundColor: "#1565C0" }}
+                  style={{ backgroundColor: "#E63946" }}
                 >{t.editor_sign_insert_btn}</button>
               </>
             )}
@@ -3463,8 +3463,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   className="flex flex-col items-center justify-center gap-2 py-8 rounded-lg border-2 border-dashed cursor-pointer transition-all"
                   style={{ borderColor: "#cbd5e1", backgroundColor: "#f8fafc" }}
                 >
-                  <Upload className="w-8 h-8" style={{ color: "#1565C0" }} />
-                  <span className="text-sm font-medium" style={{ color: "#1A3A5C" }}>{t.editor_sign_image_upload ?? "Haz clic para subir imagen"}</span>
+                  <Upload className="w-8 h-8" style={{ color: "#E63946" }} />
+                  <span className="text-sm font-medium" style={{ color: "#0A0A0B" }}>{t.editor_sign_image_upload ?? "Haz clic para subir imagen"}</span>
                   <span className="text-xs" style={{ color: "#94a3b8" }}>{t.editor_sign_image_formats ?? "PNG, JPG, GIF"}</span>
                   <input
                     type="file"
@@ -3516,7 +3516,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
             {/* Instruction when no text is selected */}
             {!isEditingExisting && (
-              <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "rgba(27, 94, 32, 0.06)", color: "#1A3A5C" }}>
+              <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "rgba(10, 10, 11, 0.06)", color: "#0A0A0B" }}>
                 <strong>{t.editor_panel_how_to_use}</strong> {t.editor_panel_text_hint}
               </div>
             )}
@@ -3560,9 +3560,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 if (prop._size) { setTextSize(prop._size); if (isEditingExisting) updateSelectedTextProp({ fontSize: prop._size, height: Math.max(prop._size + 16, (selectedTextAnn?.text ?? "").split("\n").length * (prop._size * 1.3) + 16) }); }
               };
               const abtn = (active: boolean) => ({
-                borderColor: active ? "#1565C0" : "#cbd5e1",
-                backgroundColor: active ? "rgba(21,101,192,0.1)" : "#fff",
-                color: active ? "#1565C0" : "#333",
+                borderColor: active ? "#E63946" : "#cbd5e1",
+                backgroundColor: active ? "rgba(230,57,70,0.1)" : "#fff",
+                color: active ? "#E63946" : "#333",
               });
               return (
                 <div className="flex flex-col gap-3">
@@ -3647,7 +3647,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     <div className="flex gap-1 flex-wrap">
                       {["#000000","#c62828","#1565C0","#2e7d32","#e65100","#6a1b9a","#00838f","#4e342e","#546e7a","#ff6f00"].map(c => (
                         <button key={c} onClick={() => setVal({ _color: c })} className="w-6 h-6 rounded-full border-2 transition-all"
-                          style={{ backgroundColor: c, borderColor: curColor === c ? "#1565C0" : "transparent" }} />
+                          style={{ backgroundColor: c, borderColor: curColor === c ? "#E63946" : "transparent" }} />
                       ))}
                     </div>
                   </div>
@@ -3661,7 +3661,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 <button
                   onClick={() => { setEditingTextId(selectedTextAnn.id); }}
                   className="flex-1 py-2 rounded text-white text-xs font-semibold"
-                  style={{ backgroundColor: "#1565C0" }}
+                  style={{ backgroundColor: "#E63946" }}
                 >
                   Editar en el PDF
                 </button>
@@ -3674,7 +3674,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 </button>
               </div>
             ) : (
-              <div className="p-2 rounded text-center text-xs" style={{ backgroundColor: "rgba(27, 94, 32, 0.08)", color: "#1565C0" }}>
+              <div className="p-2 rounded text-center text-xs" style={{ backgroundColor: "rgba(10, 10, 11, 0.08)", color: "#E63946" }}>
                 Haz clic en el PDF para colocar texto
               </div>
             )}
@@ -3691,7 +3691,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             <p className="text-xs" style={{ color: "#64748b" }}>{t.editor_highlight_hint}</p>
             <div className="flex gap-2 flex-wrap">
               {["#FFFF00", "#00FF00", "#FF69B4", "#87CEEB", "#FFA500"].map(c => (
-                <button key={c} onClick={() => setHighlightColor(c)} className="w-8 h-8 rounded-full border-2 transition-all" style={{ backgroundColor: c, borderColor: highlightColor === c ? "#0D47A1" : "transparent" }} />
+                <button key={c} onClick={() => setHighlightColor(c)} className="w-8 h-8 rounded-full border-2 transition-all" style={{ backgroundColor: c, borderColor: highlightColor === c ? "#C82F3B" : "transparent" }} />
               ))}
             </div>
             <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: highlightColor + "33", color: "#0f172a" }}>
@@ -3713,7 +3713,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               className="w-full rounded border p-2 text-sm resize-none"
               style={{ borderColor: "#cbd5e1" }}
             />
-            <button onClick={placeNote} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "#1565C0" }}>{t.editor_panel_insert_note}</button>
+            <button onClick={placeNote} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "#E63946" }}>{t.editor_panel_insert_note}</button>
             </div>
           </div>
         );
@@ -3725,12 +3725,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             <h3 className="font-semibold text-sm" style={{ color: "#0f172a" }}>{t.editor_panel_insert_image}</h3>
             <p className="text-xs" style={{ color: "#64748b" }}>{t.editor_panel_upload_image_hint}</p>
             <label className="flex flex-col items-center gap-2 py-4 border-2 border-dashed rounded-lg cursor-pointer" style={{ borderColor: "#94a3b8" }}>
-              <ImageIcon className="w-8 h-8" style={{ color: "#1565C0" }} />
-              <span className="text-xs font-medium" style={{ color: "#1565C0" }}>{t.editor_panel_select_image_label}</span>
+              <ImageIcon className="w-8 h-8" style={{ color: "#E63946" }} />
+              <span className="text-xs font-medium" style={{ color: "#E63946" }}>{t.editor_panel_select_image_label}</span>
               <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
             </label>
             <div className="border-t pt-3 mt-1" style={{ borderColor: "#f1f5f9" }}>
-              <p className="text-xs font-medium mb-2" style={{ color: "#1A3A5C" }}>{t.editor_panel_convert_image_to_pdf}</p>
+              <p className="text-xs font-medium mb-2" style={{ color: "#0A0A0B" }}>{t.editor_panel_convert_image_to_pdf}</p>
               <label className="flex items-center gap-2 py-2 px-3 rounded border cursor-pointer text-xs" style={{ borderColor: "#cbd5e1", color: "#64748b" }}>
                 <Upload className="w-3 h-3" />{t.editor_panel_select_image_label} → PDF
                 <input type="file" accept="image/*" className="hidden" onChange={convertImageToPdf} />
@@ -3747,7 +3747,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             <h3 className="font-semibold text-sm" style={{ color: "#0f172a" }}>{t.editor_panel_shapes}</h3>
             <div className="flex gap-2">
               {(["rect", "circle", "line"] as const).map(s => (
-                <button key={s} onClick={() => setShapeType(s)} className="flex-1 py-1.5 rounded text-xs border" style={{ borderColor: shapeType === s ? "#1565C0" : "#cbd5e1", backgroundColor: shapeType === s ? "rgba(27, 94, 32, 0.10)" : "transparent", color: "#1A3A5C" }}>
+                <button key={s} onClick={() => setShapeType(s)} className="flex-1 py-1.5 rounded text-xs border" style={{ borderColor: shapeType === s ? "#E63946" : "#cbd5e1", backgroundColor: shapeType === s ? "rgba(10, 10, 11, 0.10)" : "transparent", color: "#0A0A0B" }}>
                   {s === "rect" ? t.editor_shape_rect : s === "circle" ? t.editor_shape_circle : t.editor_shape_line}
                 </button>
               ))}
@@ -3773,7 +3773,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               {/* Preview */}
               <div style={{ width: 40, height: 28, border: `2px solid ${shapeColor}`, borderRadius: shapeType === "circle" ? "50%" : 3, backgroundColor: shapeFilled ? shapeColor : "transparent", flexShrink: 0 }} />
             </div>
-            <button onClick={placeShape} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "#1565C0" }}>{t.editor_panel_insert_shape}</button>
+            <button onClick={placeShape} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "#E63946" }}>{t.editor_panel_insert_shape}</button>
             </div>
           </div>
         );
@@ -3785,7 +3785,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               <>
                 <div className="flex items-center gap-2 mb-1">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "#90CAF9" }}>
-                    <svg className="w-5 h-5" style={{ color: "#1E88E5" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    <svg className="w-5 h-5" style={{ color: "#E63946" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                   </div>
                   <h3 className="font-semibold text-sm" style={{ color: "#0f172a" }}>{t.editor_protect_result_title}</h3>
                 </div>
@@ -3805,7 +3805,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 <h3 className="font-semibold text-sm" style={{ color: "#0f172a" }}>{t.editor_protect_title}</h3>
                 <div className="border rounded-lg overflow-hidden" style={{ borderColor: "#e2e8f0" }}>
                   <div className="px-3 py-2" style={{ backgroundColor: "#f8fafc" }}>
-                    <p className="text-xs font-medium" style={{ color: "#1A3A5C" }}>{t.editor_protect_desc}</p>
+                    <p className="text-xs font-medium" style={{ color: "#0A0A0B" }}>{t.editor_protect_desc}</p>
                   </div>
                   <div className="p-3 flex flex-col gap-2">
                     <div className="relative">
@@ -3839,12 +3839,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 </div>
                 <div className="border rounded-lg overflow-hidden" style={{ borderColor: "#e2e8f0" }}>
                   <div className="px-3 py-2" style={{ backgroundColor: "#f8fafc" }}>
-                    <p className="text-xs font-medium" style={{ color: "#1A3A5C" }}>{t.editor_protect_algo_label}</p>
+                    <p className="text-xs font-medium" style={{ color: "#0A0A0B" }}>{t.editor_protect_algo_label}</p>
                   </div>
                   <div className="p-3 flex flex-col gap-1.5">
                     <div className="flex items-center gap-2">
                       <Lock className="w-3.5 h-3.5" style={{ color: "#64748b" }} />
-                      <span className="text-xs" style={{ color: "#1A3A5C" }}>128-bit RC4</span>
+                      <span className="text-xs" style={{ color: "#0A0A0B" }}>128-bit RC4</span>
                     </div>
                   </div>
                 </div>
@@ -3858,7 +3858,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     <div className="w-full rounded-full overflow-hidden" style={{ height: 6, backgroundColor: "#f1f5f9" }}>
                       <div
                         className="h-full rounded-full transition-all duration-200"
-                        style={{ width: `${protectProgress}%`, backgroundColor: protectProgress === 100 ? "#42A5F5" : "#1565C0" }}
+                        style={{ width: `${protectProgress}%`, backgroundColor: protectProgress === 100 ? "#FF6B7A" : "#E63946" }}
                       />
                     </div>
                   </div>
@@ -3893,7 +3893,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               <>
                 <div className="flex items-center gap-2 mb-1">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "#90CAF9" }}>
-                    <svg className="w-5 h-5" style={{ color: "#1E88E5" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    <svg className="w-5 h-5" style={{ color: "#E63946" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                   </div>
                   <h3 className="font-semibold text-sm" style={{ color: "#0f172a" }}>{t.editor_compress_result_title}</h3>
                 </div>
@@ -3908,8 +3908,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     <span className="font-medium" style={{ color: "#0f172a" }}>{compressResult.compressedSize < 1024 * 1024 ? (compressResult.compressedSize / 1024).toFixed(1) + " KB" : (compressResult.compressedSize / 1024 / 1024).toFixed(1) + " MB"}</span>
                   </div>
                   <div className="border-t pt-2 flex justify-between text-xs" style={{ borderColor: "#f1f5f9" }}>
-                    <span style={{ color: "#1E88E5" }}>{t.editor_compress_saved}</span>
-                    <span className="font-semibold" style={{ color: "#1E88E5" }}>{Math.max(0, Math.round((1 - compressResult.compressedSize / compressResult.originalSize) * 100))}%</span>
+                    <span style={{ color: "#E63946" }}>{t.editor_compress_saved}</span>
+                    <span className="font-semibold" style={{ color: "#E63946" }}>{Math.max(0, Math.round((1 - compressResult.compressedSize / compressResult.originalSize) * 100))}%</span>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -3932,7 +3932,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   </div>
                   <input type="range" min={20} max={100} value={compressQuality} onChange={e => setCompressQuality(Number(e.target.value))} className="w-full" />
                 </div>
-                <button onClick={compressPdf} disabled={isCompressing} className="py-2 rounded text-white text-sm font-semibold disabled:opacity-50" style={{ backgroundColor: "#1565C0" }}>
+                <button onClick={compressPdf} disabled={isCompressing} className="py-2 rounded text-white text-sm font-semibold disabled:opacity-50" style={{ backgroundColor: "#E63946" }}>
                   {isCompressing ? (
                     <><svg className="w-4 h-4 inline mr-1 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>{t.editor_toast_compressing}</>
                   ) : (
@@ -3942,7 +3942,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               </>  
             )}
             <div className="border-t pt-3" style={{ borderColor: "#f1f5f9" }}>
-              <p className="text-xs font-medium mb-2" style={{ color: "#1A3A5C" }}>{t.editor_panel_convert_to_image}</p>
+              <p className="text-xs font-medium mb-2" style={{ color: "#0A0A0B" }}>{t.editor_panel_convert_to_image}</p>
               <div className="flex gap-2">
                 <button onClick={() => convertToImage("jpg")} className="flex-1 py-1.5 rounded text-xs border" style={{ borderColor: "#cbd5e1", color: "#64748b" }}>JPG</button>
                 <button onClick={() => convertToImage("png")} className="flex-1 py-1.5 rounded text-xs border" style={{ borderColor: "#cbd5e1", color: "#64748b" }}>PNG</button>
@@ -3971,7 +3971,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 <button onClick={() => {
                   const v = Number((document.getElementById("splitAt") as HTMLInputElement).value);
                   splitPdf(v);
-                }} className="flex-1 py-1.5 rounded text-xs text-white" style={{ backgroundColor: "#1565C0" }}>
+                }} className="flex-1 py-1.5 rounded text-xs text-white" style={{ backgroundColor: "#E63946" }}>
                   <Scissors className="w-3 h-3 inline mr-1" />{t.editor_panel_split_btn}
                 </button>
               </div>
@@ -3996,7 +3996,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               onClick={searchInPdf}
               disabled={isSearching || !searchQuery.trim()}
               className="py-2 rounded text-white text-sm font-semibold disabled:opacity-50"
-              style={{ backgroundColor: "#1565C0" }}
+              style={{ backgroundColor: "#E63946" }}
             >
               <Search className="w-4 h-4 inline mr-1" />
               {isSearching ? t.editor_searching : t.editor_search_btn}
@@ -4011,10 +4011,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     <button
                       key={i}
                       onClick={() => setCurrentPage(r.page)}
-                      className="text-left p-2 rounded text-xs hover:bg-blue-50 transition-colors"
-                      style={{ backgroundColor: "#f8fafc", color: "#1A3A5C" }}
+                      className="text-left p-2 rounded text-xs hover:bg-red-50 transition-colors"
+                      style={{ backgroundColor: "#f8fafc", color: "#0A0A0B" }}
                     >
-                      <span className="font-semibold" style={{ color: "#1565C0" }}>{t.editor_panel_page_short} {r.page}</span>
+                      <span className="font-semibold" style={{ color: "#E63946" }}>{t.editor_panel_page_short} {r.page}</span>
                       {" "}—{" "}
                       <span>{r.text}</span>
                     </button>
@@ -4071,7 +4071,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           <div className="flex flex-col">
             <div className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "#0f172a" }}>{t.editor_panel_edit_native_text}</h3>
-            <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "rgba(27, 94, 32, 0.08)", color: "#0f172a" }}>
+            <div className="p-3 rounded-lg text-xs" style={{ backgroundColor: "rgba(10, 10, 11, 0.08)", color: "#0f172a" }}>
               {t.editor_edittext_hint}
             </div>
             {/* Block count */}
@@ -4079,7 +4079,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               <div className="text-xs p-2 rounded" style={{ backgroundColor: "#ffffff", color: "#64748b" }}>
                 {nativeTextBlocks.length} {t.editor_text_blocks_detected}
                 {nativeTextBlocks.filter(b => b.editedStr !== undefined).length > 0 && (
-                  <span className="ml-1 font-semibold" style={{ color: "#1E88E5" }}>
+                  <span className="ml-1 font-semibold" style={{ color: "#E63946" }}>
                     ({nativeTextBlocks.filter(b => b.editedStr !== undefined).length} {t.editor_edited_label})
                   </span>
                 )}
@@ -4124,9 +4124,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 "Times-Roman", "Trebuchet MS", "Verdana", "Courier",
               ];
               const btn = (active: boolean) => ({
-                borderColor: active ? "#1565C0" : "#cbd5e1",
-                backgroundColor: active ? "rgba(21,101,192,0.1)" : "#fff",
-                color: active ? "#1565C0" : "#333",
+                borderColor: active ? "#E63946" : "#cbd5e1",
+                backgroundColor: active ? "rgba(230,57,70,0.1)" : "#fff",
+                color: active ? "#E63946" : "#333",
               });
               // SVG alignment icons
               const AlignLeft = <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2h14v1.5H1zm0 3.5h10v1.5H1zm0 3.5h14v1.5H1zm0 3.5h10v1.5H1z"/></svg>;
@@ -4134,7 +4134,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               const AlignRight = <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2h14v1.5H1zm4 3.5h10v1.5H5zM1 9h14v1.5H1zm4 3.5h10v1.5H5z"/></svg>;
               return (
                 <div className="p-3 rounded-lg border text-xs flex flex-col gap-3" style={{ borderColor: "#e2e8f0" }}>
-                  <div className="font-medium" style={{ color: "#1565C0" }}>Text formatting</div>
+                  <div className="font-medium" style={{ color: "#E63946" }}>Text formatting</div>
                   {/* Font family */}
                   <div className="flex flex-col gap-1">
                     <span style={{ color: "#64748b" }}>Font</span>
@@ -4251,7 +4251,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                           else { updateBlock({ fontColor: c }); setEditTextColor(c); }
                         }}
                           className="w-6 h-6 rounded-full border-2 transition-all"
-                          style={{ backgroundColor: c, borderColor: (block.fontColor || "#000") === c ? "#1565C0" : "transparent" }}
+                          style={{ backgroundColor: c, borderColor: (block.fontColor || "#000") === c ? "#E63946" : "transparent" }}
                         />
                       ))}
                     </div>
@@ -4285,7 +4285,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             {ActionBar}
             <div className="p-4 flex flex-col gap-3">
               <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#64748b" }}>{t.editor_panel_move_elements}</p>
-              <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "rgba(27, 94, 32, 0.06)", color: "#1A3A5C" }}>
+              <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "rgba(10, 10, 11, 0.06)", color: "#0A0A0B" }}>
                 <p className="font-medium mb-1" style={{ color: "#1e293b" }}>{t.editor_panel_move_how_to}</p>
                 <p>{t.editor_move_hint}</p>
               </div>
@@ -4295,8 +4295,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
               {/* Selected annotation info */}
               {selectedAnn && (
-                <div className="rounded-lg p-3 text-xs border" style={{ borderColor: "rgba(27, 94, 32, 0.4)", backgroundColor: "rgba(27, 94, 32, 0.04)" }}>
-                  <p className="font-semibold mb-1" style={{ color: "#1565C0" }}>
+                <div className="rounded-lg p-3 text-xs border" style={{ borderColor: "rgba(10, 10, 11, 0.4)", backgroundColor: "rgba(10, 10, 11, 0.04)" }}>
+                  <p className="font-semibold mb-1" style={{ color: "#E63946" }}>
                     ✔ {annTypeLabel(selectedAnn.type)}
                   </p>
                   <p style={{ color: "#64748b" }}>
@@ -4312,7 +4312,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
               {/* Annotation list for current page */}
               <div className="mt-1">
-                <p className="text-xs font-medium mb-2" style={{ color: "#1A3A5C" }}>
+                <p className="text-xs font-medium mb-2" style={{ color: "#0A0A0B" }}>
                   {movePageAnns.length > 0
                     ? `${movePageAnns.length} ${movePageAnns.length === 1 ? "elemento" : "elementos"} (pág. ${currentPage})`
                     : "Sin elementos en esta página"}
@@ -4324,12 +4324,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       onClick={() => setSelectedId(ann.id)}
                       className="flex items-center gap-2 px-2 py-1.5 rounded text-xs text-left transition-colors"
                       style={{
-                        backgroundColor: selectedId === ann.id ? "rgba(27, 94, 32, 0.12)" : "transparent",
-                        color: selectedId === ann.id ? "#1565C0" : "#64748b",
-                        border: selectedId === ann.id ? "1px solid rgba(27, 94, 32, 0.3)" : "1px solid transparent",
+                        backgroundColor: selectedId === ann.id ? "rgba(10, 10, 11, 0.12)" : "transparent",
+                        color: selectedId === ann.id ? "#E63946" : "#64748b",
+                        border: selectedId === ann.id ? "1px solid rgba(10, 10, 11, 0.3)" : "1px solid transparent",
                       }}
                     >
-                      <span className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: "rgba(27, 94, 32, 0.1)", color: "#1565C0" }}>{idx + 1}</span>
+                      <span className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: "rgba(10, 10, 11, 0.1)", color: "#E63946" }}>{idx + 1}</span>
                       <span className="font-medium">{annTypeLabel(ann.type)}</span>
                       {ann.type === "text" && ann.text && (
                         <span className="truncate opacity-60" style={{ maxWidth: 80 }}>— {ann.text.slice(0, 20)}</span>
@@ -4349,10 +4349,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           <div className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "#0f172a" }}>{t.editor_panel_pdf_to} {fmt}</h3>
             <p className="text-xs" style={{ color: "#64748b" }}>{t.editor_panel_convert_pages} {fmt}:</p>
-            <button onClick={() => convertToImage(fmt.toLowerCase() as "jpg" | "png")} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "#1565C0" }}>
+            <button onClick={() => convertToImage(fmt.toLowerCase() as "jpg" | "png")} className="py-2 rounded text-white text-sm font-semibold" style={{ backgroundColor: "#E63946" }}>
               <FileText className="w-4 h-4 inline mr-1" />{t.editor_panel_export_page} {currentPage} ({fmt})
             </button>
-            <button onClick={() => convertAllToImages(fmt.toLowerCase() as "jpg" | "png")} className="py-2 rounded text-sm font-medium border" style={{ borderColor: "#cbd5e1", color: "#1A3A5C" }}>
+            <button onClick={() => convertAllToImages(fmt.toLowerCase() as "jpg" | "png")} className="py-2 rounded text-sm font-medium border" style={{ borderColor: "#cbd5e1", color: "#0A0A0B" }}>
               {t.editor_panel_export_all} ({totalPages})
             </button>
             <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: "#ffffff", color: "#64748b" }}>
@@ -4366,7 +4366,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           <div className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "#0f172a" }}>{t.editor_panel_merge_with_pdf}</h3>
             <p className="text-xs" style={{ color: "#64748b" }}>{t.editor_panel_select_merge}</p>
-            <label className="flex items-center gap-2 py-2.5 px-4 rounded text-white text-sm font-semibold cursor-pointer" style={{ backgroundColor: "#1565C0" }}>
+            <label className="flex items-center gap-2 py-2.5 px-4 rounded text-white text-sm font-semibold cursor-pointer" style={{ backgroundColor: "#E63946" }}>
               <Layers className="w-4 h-4" />{t.editor_panel_select_merge}
               <input type="file" accept=".pdf" multiple className="hidden" onChange={mergePdfs} />
             </label>
@@ -4389,7 +4389,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             {isImg ? (
               <>
                 <p className="text-xs" style={{ color: "#64748b" }}>{t.editor_panel_insert_image} ({srcFmt}):</p>
-                <label className="flex items-center gap-2 py-2.5 px-4 rounded text-white text-sm font-semibold cursor-pointer" style={{ backgroundColor: "#1565C0" }}>
+                <label className="flex items-center gap-2 py-2.5 px-4 rounded text-white text-sm font-semibold cursor-pointer" style={{ backgroundColor: "#E63946" }}>
                   <Upload className="w-4 h-4" />{t.editor_panel_insert_image} {srcFmt}
                   <input type="file" accept={accept} className="hidden" onChange={convertImageToPdf} />
                 </label>
@@ -4397,7 +4397,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             ) : (
               <>
                 <p className="text-xs" style={{ color: "#64748b" }}>{t.editor_panel_convert_files_to_pdf}</p>
-                <div className="rounded-xl p-4 border text-center" style={{ borderColor: "rgba(76, 175, 80, 0.4)", backgroundColor: "rgba(27, 94, 32, 0.04)" }}>
+                <div className="rounded-xl p-4 border text-center" style={{ borderColor: "rgba(76, 175, 80, 0.4)", backgroundColor: "rgba(10, 10, 11, 0.04)" }}>
                   <p className="text-sm font-semibold mb-1" style={{ color: "#1e293b" }}>{t.editor_panel_coming_soon}</p>
                   <p className="text-xs" style={{ color: "#94a3b8" }}>{t.editor_panel_conversion_coming}</p>
                 </div>
@@ -4417,7 +4417,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           <div className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "#0f172a" }}>{t.editor_panel_pdf_to} {targetFmt}</h3>
             {isHtml ? (
-              <div className="rounded-xl p-4 border text-center" style={{ borderColor: "rgba(76, 175, 80, 0.4)", backgroundColor: "rgba(27, 94, 32, 0.04)" }}>
+              <div className="rounded-xl p-4 border text-center" style={{ borderColor: "rgba(76, 175, 80, 0.4)", backgroundColor: "rgba(10, 10, 11, 0.04)" }}>
                 <p className="text-sm font-semibold mb-1" style={{ color: "#1e293b" }}>{t.editor_panel_coming_soon}</p>
                 <p className="text-xs" style={{ color: "#94a3b8" }}>{t.editor_panel_conversion_coming}</p>
               </div>
@@ -4436,7 +4436,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     <div className="w-full rounded-full overflow-hidden" style={{ height: 6, backgroundColor: "#f1f5f9" }}>
                       <div
                         className="h-full rounded-full transition-all duration-200"
-                        style={{ width: `${exportProgress}%`, backgroundColor: exportProgress === 100 ? "#42A5F5" : "#1565C0" }}
+                        style={{ width: `${exportProgress}%`, backgroundColor: exportProgress === 100 ? "#FF6B7A" : "#E63946" }}
                       />
                     </div>
                   </div>
@@ -4445,7 +4445,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   onClick={() => exportPdf(exportFmt as "docx" | "xlsx" | "pptx")}
                   disabled={!pdfBytes || isExporting}
                   className="py-2.5 px-4 rounded text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
-                  style={{ backgroundColor: "#1565C0" }}
+                  style={{ backgroundColor: "#E63946" }}
                 >
                   <Download className="w-4 h-4" />
                   {isExporting ? `${t.editor_panel_exporting} ${Math.round(exportProgress)}%` : `${t.editor_panel_convert_to_btn} ${targetFmt}`}
@@ -4461,8 +4461,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       default:
         return (
           <div className="flex flex-col items-center justify-center h-full gap-3 p-6 text-center">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: "rgba(27, 94, 32, 0.08)" }}>
-              <MousePointer className="w-6 h-6" style={{ color: "#1565C0" }} />
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: "rgba(10, 10, 11, 0.08)" }}>
+              <MousePointer className="w-6 h-6" style={{ color: "#E63946" }} />
             </div>
             <p className="text-sm font-medium" style={{ color: "#64748b" }}>{t.editor_select_tool}</p>
             <p className="text-xs" style={{ color: "#94a3b8" }}>{t.editor_toolbar_hint}</p>
@@ -4540,10 +4540,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         {/* Undo / Redo */}
         <div data-tour="history" className="flex items-center gap-0 shrink-0">
           <button title={t.editor_undo + " (Ctrl+Z)"} onClick={undo} disabled={historyIndex <= 0} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
-            <Undo2 className="w-4 h-4" style={{ color: "#1A3A5C" }} />
+            <Undo2 className="w-4 h-4" style={{ color: "#0A0A0B" }} />
           </button>
           <button title={t.editor_redo + " (Ctrl+Y)"} onClick={redo} disabled={historyIndex >= history.length - 1} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
-            <Redo2 className="w-4 h-4" style={{ color: "#1A3A5C" }} />
+            <Redo2 className="w-4 h-4" style={{ color: "#0A0A0B" }} />
           </button>
         </div>
         <div className="w-px h-5 mx-1 shrink-0" style={{ backgroundColor: "#f1f5f9" }} />
@@ -4575,11 +4575,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           <RotateCw className="w-4 h-4" style={{ color: "#64748b" }} />
         </button>
         <button title={t.editor_delete_page} onClick={deletePage} className="p-1.5 rounded hover:bg-gray-100 transition-colors shrink-0">
-          <Trash2 className="w-4 h-4" style={{ color: "#1565C0" }} />
+          <Trash2 className="w-4 h-4" style={{ color: "#E63946" }} />
         </button>
         {selectedId && (
           <button title="Delete selection" onClick={deleteSelected} className="p-1.5 rounded transition-colors shrink-0" style={{ backgroundColor: "#FFF8E1" }}>
-            <X className="w-4 h-4" style={{ color: "#1565C0" }} />
+            <X className="w-4 h-4" style={{ color: "#E63946" }} />
           </button>
         )}
         <div className="w-px h-5 mx-1 shrink-0" style={{ backgroundColor: "#f1f5f9" }} />
@@ -4589,7 +4589,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           onClick={savePdf}
           disabled={isSaving || !pdfBytes}
           className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all shrink-0 border"
-          style={{ borderColor: "#94a3b8", color: "#1A3A5C", backgroundColor: "white" }}
+          style={{ borderColor: "#94a3b8", color: "#0A0A0B", backgroundColor: "white" }}
           onMouseEnter={e => { e.currentTarget.style.backgroundColor = "#ffffff"; }}
           onMouseLeave={e => { e.currentTarget.style.backgroundColor = "white"; }}
         >
@@ -4652,7 +4652,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     style={{ backgroundColor: "rgba(255, 255, 255, 0.85)", boxShadow: "0 1px 3px rgba(0, 0, 0, 0.2)" }}
                     title={(t as any).editor_toast_page_added ??"Add page"}
                   >
-                    <Plus className="w-3 h-3" style={{ color: "#1A3A5C" }} />
+                    <Plus className="w-3 h-3" style={{ color: "#0A0A0B" }} />
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); rotatePage(); }}
@@ -4660,7 +4660,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     style={{ backgroundColor: "rgba(255, 255, 255, 0.85)", boxShadow: "0 1px 3px rgba(0, 0, 0, 0.2)" }}
                     title={t.editor_rotate ?? "Rotate"}
                   >
-                    <RotateCw className="w-3 h-3" style={{ color: "#1A3A5C" }} />
+                    <RotateCw className="w-3 h-3" style={{ color: "#0A0A0B" }} />
                   </button>
                   {totalPages > 1 && (
                     <button
@@ -4669,7 +4669,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       style={{ backgroundColor: "rgba(255, 255, 255, 0.85)", boxShadow: "0 1px 3px rgba(0, 0, 0, 0.2)" }}
                       title={t.editor_delete_page ?? "Delete page"}
                     >
-                      <Trash2 className="w-3 h-3" style={{ color: "#1565C0" }} />
+                      <Trash2 className="w-3 h-3" style={{ color: "#E63946" }} />
                     </button>
                   )}
                 </div>
@@ -4807,7 +4807,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       height: ann.type === "text" && editingTextId === ann.id ? "auto" : ann.height,
                       minHeight: ann.height,
                       cursor: activeTool === "move" ? (isDragging && selectedId === ann.id ? "grabbing" : "grab") : "move",
-                      outline: selectedId === ann.id ? "2px solid #1565C0" : "none",
+                      outline: selectedId === ann.id ? "2px solid #E63946" : "none",
                       outlineOffset: 2,
                       userSelect: "none",
                       touchAction: "none",
@@ -4816,7 +4816,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     }}
                     onMouseEnter={(e) => {
                       if (activeTool === "move" && !isDragging) {
-                        (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 3px rgba(27, 94, 32, 0.3)";
+                        (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 3px rgba(10, 10, 11, 0.3)";
                       }
                     }}
                     onMouseLeave={(e) => {
@@ -4980,7 +4980,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     {selectedId === ann.id && (ann.type === "image" || ann.type === "signature") && (
                       <button
                         title="Rotate 90°"
-                        style={{ position: "absolute", left: -10, top: -10, width: 22, height: 22, backgroundColor: "#1565C0", borderRadius: "50%", cursor: "pointer", zIndex: 31, border: "2px solid white", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
+                        style={{ position: "absolute", left: -10, top: -10, width: 22, height: 22, backgroundColor: "#E63946", borderRadius: "50%", cursor: "pointer", zIndex: 31, border: "2px solid white", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
                         onMouseDown={(e) => e.stopPropagation()}
                         onTouchStart={(e) => e.stopPropagation()}
                         onClick={(e) => {
@@ -4996,7 +4996,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     {selectedId === ann.id && (
                       <div
                         title={t.editor_resize_handle}
-                        style={{ position: "absolute", right: -8, bottom: -8, width: 20, height: 20, backgroundColor: "#1565C0", borderRadius: 4, cursor: "se-resize", zIndex: 30, border: "2.5px solid white", touchAction: "none" }}
+                        style={{ position: "absolute", right: -8, bottom: -8, width: 20, height: 20, backgroundColor: "#E63946", borderRadius: 4, cursor: "se-resize", zIndex: 30, border: "2.5px solid white", touchAction: "none" }}
                         onMouseDown={(e) => {
                           e.stopPropagation();
                           e.preventDefault();
@@ -5233,7 +5233,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         backgroundColor: "transparent",
                         // Use outline (not border) so the indicator doesn't shrink the text area — keeps wrap aligned with export
                         border: "none",
-                        outline: "2px solid #1565C0", outlineOffset: "0px",
+                        outline: "2px solid #E63946", outlineOffset: "0px",
                         padding: 0, margin: 0,
                         boxSizing: "border-box",
                         whiteSpace: "normal", wordWrap: "break-word",
@@ -5275,7 +5275,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         backgroundColor: "transparent",
                         // Use outline (not border) so the indicator doesn't shrink the text area — keeps wrap aligned with export
                         border: "none",
-                        outline: (editingBlockId === block.id || block.editedStr !== undefined || block.origX !== undefined) ? "1.5px dashed #1565C0" : "1.5px dashed rgba(21, 101, 192, 0.3)",
+                        outline: (editingBlockId === block.id || block.editedStr !== undefined || block.origX !== undefined) ? "1.5px dashed #E63946" : "1.5px dashed rgba(230, 57, 70, 0.3)",
                         outlineOffset: "0px",
                         padding: 0, margin: 0,
                         boxSizing: "border-box",
@@ -5293,7 +5293,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   {editingBlockId === block.id && (<>
                     {/* Left dot — resize width from left */}
                     <div
-                      style={{ position: "absolute", left: -5, top: "50%", transform: "translateY(-50%)", width: 10, height: 10, backgroundColor: "#1565C0", borderRadius: "50%", cursor: "ew-resize", zIndex: 35, border: "2px solid white" }}
+                      style={{ position: "absolute", left: -5, top: "50%", transform: "translateY(-50%)", width: 10, height: 10, backgroundColor: "#E63946", borderRadius: "50%", cursor: "ew-resize", zIndex: 35, border: "2px solid white" }}
                       onMouseDown={e => {
                         e.stopPropagation(); e.preventDefault();
                         const startX = e.clientX, startW = block.width, startLeft = block.x;
@@ -5313,7 +5313,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     />
                     {/* Right dot — resize width */}
                     <div
-                      style={{ position: "absolute", right: -5, top: "50%", transform: "translateY(-50%)", width: 10, height: 10, backgroundColor: "#1565C0", borderRadius: "50%", cursor: "ew-resize", zIndex: 35, border: "2px solid white" }}
+                      style={{ position: "absolute", right: -5, top: "50%", transform: "translateY(-50%)", width: 10, height: 10, backgroundColor: "#E63946", borderRadius: "50%", cursor: "ew-resize", zIndex: 35, border: "2px solid white" }}
                       onMouseDown={e => {
                         e.stopPropagation(); e.preventDefault();
                         const startX = e.clientX, startW = block.width;
@@ -5331,7 +5331,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     />
                     {/* Top dot — resize height from top + move */}
                     <div
-                      style={{ position: "absolute", top: -5, left: "50%", transform: "translateX(-50%)", width: 10, height: 10, backgroundColor: "#1565C0", borderRadius: "50%", cursor: "ns-resize", zIndex: 35, border: "2px solid white" }}
+                      style={{ position: "absolute", top: -5, left: "50%", transform: "translateX(-50%)", width: 10, height: 10, backgroundColor: "#E63946", borderRadius: "50%", cursor: "ns-resize", zIndex: 35, border: "2px solid white" }}
                       onMouseDown={e => {
                         e.stopPropagation(); e.preventDefault();
                         const startY = e.clientY, startH = block.height, startTop = block.y;
@@ -5351,7 +5351,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     />
                     {/* Bottom dot — resize height */}
                     <div
-                      style={{ position: "absolute", bottom: -5, left: "50%", transform: "translateX(-50%)", width: 10, height: 10, backgroundColor: "#1565C0", borderRadius: "50%", cursor: "ns-resize", zIndex: 35, border: "2px solid white" }}
+                      style={{ position: "absolute", bottom: -5, left: "50%", transform: "translateX(-50%)", width: 10, height: 10, backgroundColor: "#E63946", borderRadius: "50%", cursor: "ns-resize", zIndex: 35, border: "2px solid white" }}
                       onMouseDown={e => {
                         e.stopPropagation(); e.preventDefault();
                         const startY = e.clientY, startH = block.height;
@@ -5431,9 +5431,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             className="w-10 h-10 flex items-center justify-center rounded-l-full disabled:opacity-30 transition-colors"
             aria-label="Página anterior"
           >
-            <ChevronLeft className="w-5 h-5" style={{ color: "#1565C0" }} />
+            <ChevronLeft className="w-5 h-5" style={{ color: "#E63946" }} />
           </button>
-          <span className="text-sm font-semibold px-2 tabular-nums" style={{ color: "#0D47A1", minWidth: 52, textAlign: "center" }}>
+          <span className="text-sm font-semibold px-2 tabular-nums" style={{ color: "#C82F3B", minWidth: 52, textAlign: "center" }}>
             {currentPage} / {totalPages}
           </span>
           <button
@@ -5442,7 +5442,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             className="w-10 h-10 flex items-center justify-center rounded-r-full disabled:opacity-30 transition-colors"
             aria-label="Página siguiente"
           >
-            <ChevronRight className="w-5 h-5" style={{ color: "#1565C0" }} />
+            <ChevronRight className="w-5 h-5" style={{ color: "#E63946" }} />
           </button>
         </div>
       )}
@@ -5483,7 +5483,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           <button
             onClick={rotatePage}
             className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg shrink-0 transition-all"
-            style={{ color: "#1A3A5C", minWidth: 56 }}
+            style={{ color: "#0A0A0B", minWidth: 56 }}
           >
             <RotateCw className="w-5 h-5" />
             <span style={{ fontSize: 10, whiteSpace: "nowrap" }}>{t.editor_rotate}</span>
@@ -5540,8 +5540,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               }}
               className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg shrink-0 transition-all"
               style={{
-                color: activeTool === id ? "#1565C0" : "#1A3A5C",
-                backgroundColor: activeTool === id ? "rgba(27, 94, 32, 0.10)" : "transparent",
+                color: activeTool === id ? "#E63946" : "#0A0A0B",
+                backgroundColor: activeTool === id ? "rgba(10, 10, 11, 0.10)" : "transparent",
                 minWidth: 56,
               }}
             >
@@ -5579,7 +5579,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             onClick={savePdf}
             disabled={isSaving || !pdfBytes}
             className="flex items-center justify-center gap-1.5 w-14 h-12 rounded-xl border shrink-0 transition-all text-xs font-semibold"
-            style={{ borderColor: "#94a3b8", color: "#1A3A5C", backgroundColor: "white" }}
+            style={{ borderColor: "#94a3b8", color: "#0A0A0B", backgroundColor: "white" }}
           >
             <Save className="w-4 h-4" />
             {isSaving ? "..." : t.editor_save_btn}

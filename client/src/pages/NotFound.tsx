@@ -5,26 +5,26 @@ export default function NotFound() {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-4 text-center"
-      style={{ backgroundColor: "#0D47A1" }}
+      style={{ backgroundColor: "#C82F3B" }}
     >
       <div className="flex items-center gap-2 mb-12">
         <div
           className="w-8 h-8 rounded-lg flex items-center justify-center"
-          style={{ backgroundColor: "#1565C0" }}
+          style={{ backgroundColor: "#E63946" }}
         >
           <FileText className="w-4 h-4 text-white" />
         </div>
         <span
           className="text-xl font-bold tracking-tight text-white"
         >
-          PDF<span style={{ color: "#1565C0" }}>Pro</span>
+          PDF<span style={{ color: "#E63946" }}>Pro</span>
         </span>
       </div>
 
       <h1
         className="text-8xl md:text-9xl font-extrabold mb-6"
         style={{
-          background: "linear-gradient(135deg, #1565C0, #1565C0)",
+          background: "linear-gradient(135deg, #E63946, #E63946)",
           WebkitBackgroundClip: "text",
           WebkitTextFillColor: "transparent",
           backgroundClip: "text",
@@ -69,13 +69,13 @@ export default function NotFound() {
           <button
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-all duration-200"
             style={{
-              backgroundColor: "#1565C0",
+              backgroundColor: "#E63946",
             }}
             onMouseEnter={(e) =>
-              ((e.currentTarget as HTMLButtonElement).style.backgroundColor = "#0D47A1")
+              ((e.currentTarget as HTMLButtonElement).style.backgroundColor = "#C82F3B")
             }
             onMouseLeave={(e) =>
-              ((e.currentTarget as HTMLButtonElement).style.backgroundColor = "#1565C0")
+              ((e.currentTarget as HTMLButtonElement).style.backgroundColor = "#E63946")
             }
           >
             <Home className="w-4 h-4" />

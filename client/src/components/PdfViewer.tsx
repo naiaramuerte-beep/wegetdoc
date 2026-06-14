@@ -95,7 +95,7 @@ export default function PdfViewer({
           <div className="flex flex-col items-center gap-2">
             <div
               className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
-              style={{ borderColor: "#1565C0", borderTopColor: "transparent" }}
+              style={{ borderColor: "#E63946", borderTopColor: "transparent" }}
             />
             <span
               className="text-xs"
@@ -111,7 +111,7 @@ export default function PdfViewer({
           className="flex items-center justify-center p-8 rounded-lg text-sm"
           style={{
             backgroundColor: "#FFF8E1",
-            color: "#1565C0",
+            color: "#E63946",
           }}
         >
           {error}

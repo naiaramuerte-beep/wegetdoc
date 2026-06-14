@@ -62,10 +62,10 @@ export default function CancelSubscription() {
         <Navbar />
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-center max-w-sm">
-            <AlertTriangle className="w-12 h-12 mx-auto mb-4" style={{ color: "#1565C0" }} />
+            <AlertTriangle className="w-12 h-12 mx-auto mb-4" style={{ color: "#E63946" }} />
             <h2 className="text-xl font-bold mb-2" style={{ color: "#0f172a" }}>Inicia sesión primero</h2>
             <p className="text-sm mb-4" style={{ color: "#64748b" }}>Necesitas estar autenticado para gestionar tu suscripción.</p>
-            <Button onClick={() => navigate("/")} style={{ backgroundColor: "#1565C0", color: "white" }}>
+            <Button onClick={() => navigate("/")} style={{ backgroundColor: "#E63946", color: "white" }}>
               Ir al inicio
             </Button>
           </div>
@@ -87,7 +87,7 @@ export default function CancelSubscription() {
             <button
               onClick={() => step === "confirm" ? setStep("reason") : navigate("/dashboard")}
               className="flex items-center gap-1.5 text-sm mb-6 hover:opacity-70 transition-opacity"
-              style={{ color: "#1565C0" }}
+              style={{ color: "#E63946" }}
             >
               <ArrowLeft className="w-4 h-4" />
               {step === "confirm" ? "Volver" : "Volver al panel"}
@@ -99,7 +99,7 @@ export default function CancelSubscription() {
             <div className="bg-white rounded-2xl shadow-sm border p-8" style={{ borderColor: "#e2e8f0" }}>
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: "rgba(212, 160, 23, 0.12)" }}>
-                  <Frown className="w-5 h-5" style={{ color: "#1565C0" }} />
+                  <Frown className="w-5 h-5" style={{ color: "#E63946" }} />
                 </div>
                 <div>
                   <h1 className="text-xl font-bold" style={{ color: "#0f172a" }}>Cancelar suscripción</h1>
@@ -109,7 +109,7 @@ export default function CancelSubscription() {
 
               {/* Subscription info */}
               {subData?.isPremium && (
-                <div className="rounded-lg p-3 mb-6 text-sm" style={{ backgroundColor: "rgba(27, 94, 32, 0.06)", color: "#1A3A5C" }}>
+                <div className="rounded-lg p-3 mb-6 text-sm" style={{ backgroundColor: "rgba(10, 10, 11, 0.06)", color: "#0A0A0B" }}>
                   <p className="font-medium">Tu suscripción activa seguirá funcionando hasta el final del período actual.</p>
                   <p className="text-xs mt-1" style={{ color: "#64748b" }}>No se realizarán más cobros tras la cancelación.</p>
                 </div>
@@ -124,18 +124,18 @@ export default function CancelSubscription() {
                     onClick={() => setSelectedReason(id)}
                     className="flex items-center gap-3 p-3 rounded-xl border text-left transition-all"
                     style={{
-                      borderColor: selectedReason === id ? "#1565C0" : "#e2e8f0",
-                      backgroundColor: selectedReason === id ? "rgba(27, 94, 32, 0.06)" : "transparent",
+                      borderColor: selectedReason === id ? "#E63946" : "#e2e8f0",
+                      backgroundColor: selectedReason === id ? "rgba(10, 10, 11, 0.06)" : "transparent",
                       color: "#0f172a",
                     }}
                   >
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{
-                      backgroundColor: selectedReason === id ? "rgba(27, 94, 32, 0.12)" : "#f8fafc",
+                      backgroundColor: selectedReason === id ? "rgba(10, 10, 11, 0.12)" : "#f8fafc",
                     }}>
-                      <Icon className="w-4 h-4" style={{ color: selectedReason === id ? "#1565C0" : "#64748b" }} />
+                      <Icon className="w-4 h-4" style={{ color: selectedReason === id ? "#E63946" : "#64748b" }} />
                     </div>
                     <span className="text-sm">{label}</span>
-                    {selectedReason === id && <CheckCircle2 className="w-4 h-4 ml-auto shrink-0" style={{ color: "#1565C0" }} />}
+                    {selectedReason === id && <CheckCircle2 className="w-4 h-4 ml-auto shrink-0" style={{ color: "#E63946" }} />}
                   </button>
                 ))}
               </div>
@@ -157,12 +157,12 @@ export default function CancelSubscription() {
 
               {/* Retention offer */}
               <div className="rounded-xl p-4 mb-6 border" style={{ backgroundColor: "rgba(232, 245, 233, 0.5)", borderColor: "rgba(76, 175, 80, 0.3)" }}>
-                <p className="text-sm font-semibold mb-1" style={{ color: "#1565C0" }}>¿Sabías que puedes pausar tu suscripción?</p>
+                <p className="text-sm font-semibold mb-1" style={{ color: "#E63946" }}>¿Sabías que puedes pausar tu suscripción?</p>
                 <p className="text-xs" style={{ color: "#64748b" }}>Contacta con soporte y pausamos tu cuenta hasta 3 meses sin perder tus documentos.</p>
                 <button
                   onClick={() => setContactOpen(true)}
                   className="text-xs font-semibold mt-2 hover:underline"
-                  style={{ color: "#1E88E5" }}
+                  style={{ color: "#E63946" }}
                 >
                   Contactar soporte →
                 </button>
@@ -171,7 +171,7 @@ export default function CancelSubscription() {
               <Button
                 onClick={handleContinue}
                 className="w-full flex items-center justify-center gap-2"
-                style={{ backgroundColor: "#1565C0", color: "white" }}
+                style={{ backgroundColor: "#E63946", color: "white" }}
               >
                 Continuar <ChevronRight className="w-4 h-4" />
               </Button>
@@ -224,7 +224,7 @@ export default function CancelSubscription() {
                 <Button
                   onClick={() => setStep("reason")}
                   className="w-full"
-                  style={{ backgroundColor: "#1565C0", color: "white" }}
+                  style={{ backgroundColor: "#E63946", color: "white" }}
                 >
                   No, mantener mi suscripción
                 </Button>
@@ -236,7 +236,7 @@ export default function CancelSubscription() {
           {step === "done" && (
             <div className="bg-white rounded-2xl shadow-sm border p-8 text-center" style={{ borderColor: "#e2e8f0" }}>
               <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: "rgba(76, 175, 80, 0.15)" }}>
-                <CheckCircle2 className="w-8 h-8" style={{ color: "#42A5F5" }} />
+                <CheckCircle2 className="w-8 h-8" style={{ color: "#FF6B7A" }} />
               </div>
               <h1 className="text-2xl font-bold mb-2" style={{ color: "#0f172a" }}>Suscripción cancelada</h1>
               <p className="text-sm mb-6" style={{ color: "#64748b" }}>
@@ -244,7 +244,7 @@ export default function CancelSubscription() {
               </p>
 
               <div className="rounded-xl p-4 mb-6 text-left" style={{ backgroundColor: "#f8fafc" }}>
-                <p className="text-xs font-semibold mb-2" style={{ color: "#1A3A5C" }}>¿Cambias de opinión?</p>
+                <p className="text-xs font-semibold mb-2" style={{ color: "#0A0A0B" }}>¿Cambias de opinión?</p>
                 <p className="text-xs" style={{ color: "#64748b" }}>Puedes reactivar tu suscripción en cualquier momento desde tu panel de usuario.</p>
               </div>
 
@@ -252,7 +252,7 @@ export default function CancelSubscription() {
                 <Button
                   onClick={() => navigate("/dashboard")}
                   className="w-full"
-                  style={{ backgroundColor: "#1565C0", color: "white" }}
+                  style={{ backgroundColor: "#E63946", color: "white" }}
                 >
                   Ir a mi panel
                 </Button>

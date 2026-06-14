@@ -183,12 +183,12 @@ export default function UploadZone({ onFileSelect, compact = false }: UploadZone
         compact ? "p-6" : "p-10 md:p-16"
       }`}
       style={{
-        border: `2px dashed ${isDragging ? "#1565C0" : "rgba(27, 94, 32, 0.4)"}`,
+        border: `2px dashed ${isDragging ? "#E63946" : "rgba(10, 10, 11, 0.4)"}`,
         backgroundColor: isDragging
-          ? "rgba(27, 94, 32, 0.06)"
+          ? "rgba(10, 10, 11, 0.06)"
           : "#FFFFFF",
         boxShadow: isDragging
-          ? "0 0 0 4px rgba(27, 94, 32, 0.08)"
+          ? "0 0 0 4px rgba(10, 10, 11, 0.08)"
           : "none",
       }}
       onDragEnter={handleDragEnter}
@@ -198,13 +198,13 @@ export default function UploadZone({ onFileSelect, compact = false }: UploadZone
       onClick={handleClick}
       onMouseEnter={(e) => {
         if (!isDragging) {
-          e.currentTarget.style.borderColor = "rgba(27, 94, 32, 0.7)";
-          e.currentTarget.style.backgroundColor = "rgba(27, 94, 32, 0.03)";
+          e.currentTarget.style.borderColor = "rgba(10, 10, 11, 0.7)";
+          e.currentTarget.style.backgroundColor = "rgba(10, 10, 11, 0.03)";
         }
       }}
       onMouseLeave={(e) => {
         if (!isDragging) {
-          e.currentTarget.style.borderColor = "rgba(27, 94, 32, 0.4)";
+          e.currentTarget.style.borderColor = "rgba(10, 10, 11, 0.4)";
           e.currentTarget.style.backgroundColor = "#FFFFFF";
         }
       }}
@@ -228,13 +228,13 @@ export default function UploadZone({ onFileSelect, compact = false }: UploadZone
         >
           <div
             className="w-full h-full rounded-xl flex items-center justify-center"
-            style={{ backgroundColor: "rgba(27, 94, 32, 0.1)" }}
+            style={{ backgroundColor: "rgba(10, 10, 11, 0.1)" }}
           >
             <FileText
               style={{
                 width: compact ? "1.5rem" : "2.25rem",
                 height: compact ? "1.5rem" : "2.25rem",
-                color: "#1565C0",
+                color: "#E63946",
               }}
             />
           </div>
@@ -245,7 +245,7 @@ export default function UploadZone({ onFileSelect, compact = false }: UploadZone
           <p
             className={`font-semibold ${compact ? "text-base" : "text-xl"}`}
             style={{
-              color: "#1565C0",
+              color: "#E63946",
             }}
           >
             {isDragging ? txt.drop : txt.drag}
@@ -264,13 +264,13 @@ export default function UploadZone({ onFileSelect, compact = false }: UploadZone
             compact ? "px-4 py-2 text-sm" : "px-6 py-3 text-sm"
           }`}
           style={{
-            backgroundColor: "#0D47A1",
+            backgroundColor: "#C82F3B",
           }}
           onMouseEnter={(e) =>
-            (e.currentTarget.style.backgroundColor = "#1565C0")
+            (e.currentTarget.style.backgroundColor = "#E63946")
           }
           onMouseLeave={(e) =>
-            (e.currentTarget.style.backgroundColor = "#0D47A1")
+            (e.currentTarget.style.backgroundColor = "#C82F3B")
           }
           onClick={(e) => {
             e.stopPropagation();

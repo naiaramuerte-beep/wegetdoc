@@ -8,12 +8,12 @@ interface BrandColors {
 }
 
 const COLORS_EDITORPDF: BrandColors = {
-  primary: "#1565C0",
-  secondary: "#1565C0",
-  primaryHover: "#0D47A1",
-  gradient: "linear-gradient(135deg, #1565C0, #1976D2)",
-  light: "#42A5F5",
-  lightBg: "rgba(21, 101, 192, 0.06)",
+  primary: "#E63946",
+  secondary: "#0A0A0B",
+  primaryHover: "#C82F3B",
+  gradient: "linear-gradient(135deg, #E63946, #C82F3B)",
+  light: "#FF6B7A",
+  lightBg: "rgba(230, 57, 70, 0.06)",
 };
 
 const BRANDS: Record<string, { name: string; domain: string; logoParts: [string, string]; brandKey: string; colors: BrandColors }> = {
