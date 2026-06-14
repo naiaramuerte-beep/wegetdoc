@@ -3,6 +3,7 @@ import { CheckCircle, ArrowRight, Upload, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // The user has only paid the intro 0,50 € at this point; the 39,90 €
 // recurring isn't billed until trial_end fires 7 days later. Show the
@@ -15,6 +16,7 @@ export default function PaymentSuccess() {
   const [, navigate] = useLocation();
   const [countdown, setCountdown] = useState(5);
   const { adsTrackingEnabled } = useFeatureFlags();
+  const { t } = useLanguage();
 
   // Read txn id from URL once on mount so we can render it into the DOM
   // (Google Ads's review process scrapes the page and verifies the
@@ -95,13 +97,13 @@ export default function PaymentSuccess() {
         className="text-3xl font-extrabold mb-3"
         style={{ color: "#0f172a" }}
       >
-        ¡Pago completado!
+        {t.payment_success_title || "¡Pago completado!"}
       </h1>
       <p
         className="text-base mb-4 max-w-md"
         style={{ color: "#64748b" }}
       >
-        Tu suscripción está activa. Tu documento está guardado en tu panel y listo para descargar.
+        {t.payment_success_subtitle || "Tu suscripción está activa. Tu documento está guardado en tu panel y listo para descargar."}
       </p>
 
       {/* Countdown redirect notice */}
@@ -114,7 +116,9 @@ export default function PaymentSuccess() {
       >
         <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" style={{ color: "#E63946" }} />
         <span className="text-sm font-medium" style={{ color: "#0A0A0B" }}>
-          Redirigiendo en <strong>{countdown}</strong>s...
+          {t.payment_success_redirecting_pre || "Redirigiendo en "}
+          <strong>{countdown}</strong>
+          {t.payment_success_redirecting_post || "s..."}
         </span>
       </div>
 
@@ -127,14 +131,14 @@ export default function PaymentSuccess() {
         style={{ backgroundColor: "#FFFFFF", border: "1px solid #e2e8f0", minWidth: 280 }}
       >
         <p className="text-[11px] uppercase font-semibold tracking-wider mb-1.5" style={{ color: "#94a3b8" }}>
-          Resumen del pedido
+          {t.payment_success_order_summary || "Resumen del pedido"}
         </p>
         <div className="flex items-center justify-between gap-3 text-sm">
-          <span style={{ color: "#64748b" }}>ID de transacción:</span>
+          <span style={{ color: "#64748b" }}>{t.payment_success_txn_id || "ID de transacción:"}</span>
           <span className="transaction font-mono text-xs" style={{ color: "#0f172a" }}>{txn || "—"}</span>
         </div>
         <div className="flex items-center justify-between gap-3 text-sm mt-1">
-          <span style={{ color: "#64748b" }}>Importe:</span>
+          <span style={{ color: "#64748b" }}>{t.payment_success_amount || "Importe:"}</span>
           <span className="value font-semibold" style={{ color: "#0f172a" }}>{valueDisplay}</span>
         </div>
       </div>
@@ -149,7 +153,7 @@ export default function PaymentSuccess() {
           }}
         >
           <Upload className="w-4 h-4" />
-          Editar otro PDF
+          {t.payment_success_cta_edit_another || "Editar otro PDF"}
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>
@@ -166,15 +170,15 @@ export default function PaymentSuccess() {
           className="font-bold mb-3 text-sm"
           style={{ color: "#0f172a" }}
         >
-          ¿Qué puedes hacer ahora?
+          {t.payment_success_what_now || "¿Qué puedes hacer ahora?"}
         </h3>
         <ul className="space-y-2 text-sm" style={{ color: "#475569" }}>
           {[
-            "Descargar tus PDFs editados sin marca de agua",
-            "Editar cualquier documento desde tu panel",
-            "Añadir texto, firmas y anotaciones",
-            "Comprimir, fusionar y dividir PDFs",
-            "Acceder a tus documentos en cualquier momento",
+            t.payment_success_b1 || "Descargar tus PDFs editados sin marca de agua",
+            t.payment_success_b2 || "Editar cualquier documento desde tu panel",
+            t.payment_success_b3 || "Añadir texto, firmas y anotaciones",
+            t.payment_success_b4 || "Comprimir, fusionar y dividir PDFs",
+            t.payment_success_b5 || "Acceder a tus documentos en cualquier momento",
           ].map((item, i) => (
             <li key={i} className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: "#16a34a" }} />
