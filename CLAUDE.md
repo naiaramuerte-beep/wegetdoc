@@ -150,6 +150,16 @@ Online PDF editor SaaS — edit, convert, sign, and protect PDFs in the browser.
     - **`admin.sipayProbe`** mutation en `server/routers.ts`: dispara `probeSandbox` y devuelve la respuesta completa de Sipay + el body firmado + la firma para depurar el formato HMAC.
     - **`SipayProbeCard`** en Ajustes (`client/src/pages/Admin.tsx`): botón rojo "Lanzar probe sandbox" + dos `<details>` (respuesta parseada + body+firma enviados). Sirve para iterar el formato exacto de firma cuando Sipay responda con error de signature.
     - **Pendiente Fase 1**: integrar FastPay JS en `PaywallModal.tsx` (script `sandbox.sipay.es/fpay/v1/static/bundle/fastpay.js`), capturar `request_id` por callback JS, mandar a backend `POST /api/sipay/confirm`. Endpoint `/sipay/callback/ok` para volver tras 3DS y disparar `confirmPayment`.
+36. **Merge: bug del editor + landing dedicada `/merge-pdf` con multi-upload.**
+    - **Bug en `PdfEditor.tsx > mergePdfs`**: el merge llamaba a `guardedDownload` inmediatamente tras `merged.save()`, así que cualquier usuario (logueado o no, premium o no) recibía paywall en cuanto seleccionaba PDFs para unir, ANTES de poder ver el resultado. Mal orden de operaciones — el usuario solo había pedido unir, no descargar. Fix: tras `merged.save()`, ahora `setPdfBytes(new Uint8Array(out))` + `setAnnotations([])` para que el PDF unido se renderice inline en el editor, y solo el botón Descargar mantiene su flujo de paywall.
+    - **Landing nueva `MergeLandingPage.tsx`** registrada en `App.tsx` antes del catch-all genérico de `ToolLanding` (rutas `/{lang}/merge-pdf` × 12 idiomas + redirect `/merge-pdf` → `/en/merge-pdf`). Mismo modelo de paywall que el editor (modelo B confirmado por el user: usuario logueado paga igual). UI:
+      - Multi-file PDF upload (drag + click + add-more).
+      - Lista de archivos con reordenado por flechas ↑/↓ + borrar por archivo.
+      - Botón "Merge N PDFs" → corre pdf-lib en el navegador (sin servidor).
+      - Estado "ready" con miniatura de tarjeta roja "N PDFs · merged" + tamaño total.
+      - Botón "Download merged PDF" → abre `PaywallModal` reutilizado del editor (FastPay + Apple Pay + Google Pay + 0,50 €). Tras `onPaymentSuccess` → `triggerBlobDownload` + navigate a `/payment/success?txn=...`.
+    - **i18n**: el componente usa los keys existentes `landing_merge_h1/subtitle/cta/drag/meta_title` con fallbacks en inglés codeados in-line. Si el key no está en algún idioma, no se ven huecos — el fallback en inglés se muestra.
+    - **PaywallModal compatibility**: el `buildPdfForUpload` callback re-escribe los bytes del PDF unido en base64 para que la modal pueda mostrar el preview, igual que `ConverterPage`.
 35. **PaymentSuccess: i18n completo (12 idiomas) + extracción de strings hardcoded.**
     - **14 claves nuevas** en `client/src/lib/i18n.ts` bajo prefijo `payment_success_*`: title, subtitle, redirecting_pre, redirecting_post, order_summary, txn_id, amount, cta_edit_another, what_now, b1-b5.
     - **Traducidas en los 12 idiomas** que soporta el resto del archivo (es, en, fr, de, pt, it, nl, pl, ru, uk, ro, zh). Tradúcciones hechas a mano respetando matices: "Redirecting in **5**s..." se parte en `_pre` + `_post` para insertar `<strong>{countdown}</strong>` en el medio sin romper la traducción.

@@ -36,6 +36,7 @@ const BlogPost = lazy(() => import("./pages/BlogPost"));
 const ToolLanding = lazy(() => import("./pages/ToolLanding"));
 const ConverterPage = lazy(() => import("./pages/ConverterPage"));
 const PdfConverterHub = lazy(() => import("./pages/PdfConverterHub"));
+const MergeLandingPage = lazy(() => import("./pages/MergeLandingPage"));
 const AdLandingPage = lazy(() => import("./pages/AdLanding"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
@@ -167,15 +168,22 @@ function Router() {
         <Route key={`conv-redirect-${slug}`} path={`/${slug}`} component={() => <Redirect to={`/en/${slug}`} />} />
       ))}
 
-      {/* Tool landing pages — language-prefixed (skips slugs handled by ConverterPage / hub above) */}
+      {/* Dedicated merge landing — overrides the generic ToolLanding for
+          merge-pdf because it needs a multi-file picker + reorder list. */}
+      {LANGUAGES.map(({ code }) => (
+        <Route key={`${code}-merge-pdf`} path={`/${code}/merge-pdf`} component={MergeLandingPage} />
+      ))}
+      <Route path="/merge-pdf" component={() => <Redirect to="/en/merge-pdf" />} />
+
+      {/* Tool landing pages — language-prefixed (skips slugs handled by ConverterPage / hub / MergeLandingPage above) */}
       {LANGUAGES.map(({ code }) =>
-        TOOL_LANDINGS.filter(tool => !(tool.slug in CONVERTER_ROUTES) && tool.slug !== HUB_SLUG).map(tool => (
+        TOOL_LANDINGS.filter(tool => !(tool.slug in CONVERTER_ROUTES) && tool.slug !== HUB_SLUG && tool.slug !== "merge-pdf").map(tool => (
           <Route key={`${code}-${tool.slug}`} path={`/${code}/${tool.slug}`} component={() => <ToolLanding tool={tool} />} />
         ))
       )}
 
       {/* Tool landing redirects without lang prefix */}
-      {TOOL_LANDINGS.filter(tool => !(tool.slug in CONVERTER_ROUTES) && tool.slug !== HUB_SLUG).map(tool => (
+      {TOOL_LANDINGS.filter(tool => !(tool.slug in CONVERTER_ROUTES) && tool.slug !== HUB_SLUG && tool.slug !== "merge-pdf").map(tool => (
         <Route key={`redirect-${tool.slug}`} path={`/${tool.slug}`} component={() => <Redirect to={`/en/${tool.slug}`} />} />
       ))}
 
