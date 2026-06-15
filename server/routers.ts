@@ -555,6 +555,7 @@ export const appRouter = router({
           paymentMethod: z.any(),
           transactionIdentifier: z.string().min(1),
         }),
+        requestId: z.string().min(1),
         amountCents: z.number().int().positive(),
       }))
       .mutation(async ({ ctx, input }) => {
@@ -563,6 +564,7 @@ export const appRouter = router({
         const result = await chargeApplePay({
           amountCents: input.amountCents,
           tokenApay: input.tokenApay,
+          requestId: input.requestId,
           order,
           custom_01: String(ctx.user.id),
         });

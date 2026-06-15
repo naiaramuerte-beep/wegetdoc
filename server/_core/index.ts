@@ -991,10 +991,19 @@ ${allUrls.map(u => `  <url>
         console.error("[Sipay] Apple Pay validate-merchant failed:", data ?? result.raw);
         return res.status(502).json({ error: "sipay_rejected", detail: data ?? result.raw });
       }
-      // Sipay returns the merchant session inside payload; Apple expects
-      // the merchantSession object verbatim (the whole `payload` is what
-      // session.completeMerchantValidation(...) wants).
-      return res.json(data?.payload ?? data);
+      // Sipay's response carries TWO things we need to keep:
+      //   data.payload     → the merchant session Apple expects
+      //                       (session.completeMerchantValidation needs this)
+      //   data.request_id  → Sipay's session token. We MUST echo it back in
+      //                       the catcher of /mdwr/v1/authorization or Sipay
+      //                       rejects with no_card_data (it can't correlate
+      //                       our charge to the validated Apple session).
+      const requestId = data?.request_id ?? data?.payload?.request_id ?? "";
+      console.log(`[Sipay] Apple Pay merchant validated, sipay request_id=${requestId || "(missing)"}`);
+      return res.json({
+        merchantSession: data.payload,
+        requestId,
+      });
     } catch (err: any) {
       console.error("[Sipay] Apple Pay validate-merchant exception:", err?.message ?? err);
       return res.status(500).json({ error: "server_error" });

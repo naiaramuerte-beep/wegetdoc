@@ -254,6 +254,10 @@ export function validateApplePaySession(opts: {
  * (/mdwr/v1/authorization) but `catcher.type` switches to "apay" and the
  * token is the structured `ApplePayPayment.token` (paymentData +
  * paymentMethod + transactionIdentifier), not a JSON string.
+ *
+ * The `requestId` is the session token Sipay returned from
+ * /apay/api/v1/session — without it Sipay returns `no_card_data` because
+ * it can't tie the charge to the Apple session we validated earlier.
  */
 export function chargeApplePay(opts: {
   amountCents: number;
@@ -263,6 +267,7 @@ export function chargeApplePay(opts: {
     paymentMethod: unknown;
     transactionIdentifier: string;
   };
+  requestId: string;
   order: string;
   custom_01?: string;
   custom_02?: string;
@@ -273,6 +278,7 @@ export function chargeApplePay(opts: {
     catcher: {
       type: "apay",
       token_apay: opts.tokenApay,
+      request_id: opts.requestId,
     },
     order: opts.order,
     ...(opts.custom_01 ? { custom_01: opts.custom_01 } : {}),

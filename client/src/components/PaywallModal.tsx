@@ -574,6 +574,11 @@ function ApplePayButton({
   const handleClick = () => {
     setError(null);
     setSubmitting(true);
+    // Captured in onvalidatemerchant, used in onpaymentauthorized.
+    // Sipay needs the same request_id in both steps so it can correlate
+    // the validated Apple session to the charge — otherwise it returns
+    // `no_card_data`.
+    let sipayRequestId = "";
     try {
       const AP = (window as any).ApplePaySession;
       const request = {
@@ -601,8 +606,9 @@ function ApplePayButton({
             }),
           });
           if (!resp.ok) throw new Error(`validate-merchant ${resp.status}`);
-          const merchantSession = await resp.json();
-          console.log("[ApplePay] merchant validated");
+          const { merchantSession, requestId } = await resp.json();
+          sipayRequestId = requestId || "";
+          console.log(`[ApplePay] merchant validated, requestId=${sipayRequestId || "(missing)"}`);
           session.completeMerchantValidation(merchantSession);
         } catch (err: any) {
           console.warn("[ApplePay] validate-merchant failed:", err?.message ?? err);
@@ -616,6 +622,7 @@ function ApplePayButton({
         try {
           const tokenApay = event.payment?.token;
           if (!tokenApay) throw new Error("Apple Pay no devolvió token");
+          if (!sipayRequestId) throw new Error("Sipay no devolvió request_id en validación de merchant");
           console.log("[ApplePay] payment authorized — charging via Sipay…");
           const res = await chargeMut.mutateAsync({
             tokenApay: {
@@ -623,6 +630,7 @@ function ApplePayButton({
               paymentMethod: tokenApay.paymentMethod,
               transactionIdentifier: tokenApay.transactionIdentifier,
             },
+            requestId: sipayRequestId,
             amountCents,
           });
           // Sandbox occasionally returns an empty transaction_id; fall back
