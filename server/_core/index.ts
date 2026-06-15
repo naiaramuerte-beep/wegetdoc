@@ -939,24 +939,94 @@ ${allUrls.map(u => `  <url>
   app.get("/api/sipay/callback/ok", async (req, res) => {
     const requestId = String(req.query.request_id ?? "");
     if (!requestId) return res.redirect("/?sipay=missing_request_id");
+    const startedAt = Date.now();
     try {
       const { confirmPayment } = await import("./sipay");
       const result = await confirmPayment(requestId);
       const data = result.data as any;
       if (!result.ok || data?.code !== "0") {
         console.error("[Sipay] confirm failed:", data ?? result.raw);
+        const { recordWebhookEvent } = await import("../db");
+        await recordWebhookEvent({
+          provider: "sipay",
+          eventType: "fastpay_confirm_failed",
+          eventId: requestId,
+          status: "error",
+          errorMessage: data?.detail ?? "unknown",
+          durationMs: Date.now() - startedAt,
+          payload: data ?? result.raw,
+        });
         return res.redirect(`/?sipay=confirm_failed&detail=${encodeURIComponent(data?.detail ?? "unknown")}`);
       }
       const sipayTxn = data?.payload?.transaction_id ?? "";
       const order = data?.payload?.order ?? requestId;
-      // Sandbox occasionally omits transaction_id; the order we generated
-      // upstream is unique enough to dedup Google Ads conversions.
       const txn = sipayTxn || order;
       const masked = data?.payload?.masked_card ?? "";
-      console.log(`[Sipay] auth OK: txn=${sipayTxn || "(empty)"} order=${order} card=${masked}`);
+      // custom_01 is what sipayCheckoutInit passes through with the user id
+      // so we can correlate the 3DS callback back to a user without a session
+      // (the Redsys MPI redirect drops cookies on the floor in some browsers).
+      const customUserId = Number(data?.payload?.custom_01 ?? 0);
+      const sipayToken = data?.payload?.token ?? "";
+      console.log(`[Sipay] auth OK: userId=${customUserId} txn=${sipayTxn || "(empty)"} order=${order} card=${masked}`);
+
+      if (customUserId > 0) {
+        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent } = await import("../db");
+        const now = new Date();
+        // Initial 0,50 € intro charge keeps the user in "trialing" for 30 days;
+        // the MIT-R cron picks up at currentPeriodEnd and bills monthly.
+        const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        await upsertSubscription({
+          userId: customUserId,
+          sipayToken,
+          sipayOrder: order,
+          sipayTransactionId: sipayTxn,
+          sipayMaskedCard: masked,
+          sipayProvider: "fastpay",
+          plan: "trial",
+          status: "trialing",
+          currentPeriodStart: now,
+          currentPeriodEnd: periodEnd,
+          cancelAtPeriodEnd: false,
+        });
+        await markDocumentsPaid(customUserId);
+        await recordWebhookEvent({
+          provider: "sipay",
+          eventType: "fastpay_intro_charge",
+          eventId: sipayTxn || order,
+          status: "ok",
+          durationMs: Date.now() - startedAt,
+          payload: data,
+        });
+
+        // Welcome email — non-blocking, lang detected from Accept-Language.
+        try {
+          const acceptLang = String(req.headers["accept-language"] ?? "").split(",")[0]?.split("-")[0] ?? "es";
+          const { sendTrialWelcomeEmail } = await import("../email");
+          const { getUserById } = await import("../db");
+          const u = await getUserById(customUserId);
+          if (u?.email) {
+            sendTrialWelcomeEmail({ to: u.email, name: u.name ?? u.email, lang: acceptLang, trialEndDate: periodEnd })
+              .catch((err: any) => console.warn("[Sipay] welcome email failed:", err?.message ?? err));
+          }
+        } catch (err: any) {
+          console.warn("[Sipay] welcome email setup failed:", err?.message ?? err);
+        }
+      }
+
       return res.redirect(`/payment/success?txn=${encodeURIComponent(txn)}&provider=sipay`);
     } catch (err: any) {
       console.error("[Sipay] callback/ok exception:", err?.message ?? err);
+      try {
+        const { recordWebhookEvent } = await import("../db");
+        await recordWebhookEvent({
+          provider: "sipay",
+          eventType: "fastpay_callback_exception",
+          eventId: requestId,
+          status: "error",
+          errorMessage: err?.message ?? String(err),
+          durationMs: Date.now() - startedAt,
+        });
+      } catch {}
       return res.redirect("/?sipay=server_error");
     }
   });

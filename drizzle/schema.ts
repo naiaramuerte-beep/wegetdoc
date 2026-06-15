@@ -34,7 +34,12 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 /**
- * Subscriptions table — tracks Stripe subscriptions per user.
+ * Subscriptions table — tracks subscriptions per user.
+ *
+ * Stripe columns are kept for backward compatibility (legacy active subs
+ * pre-Sipay migration still reference them). New subs created through
+ * the Sipay flow populate the sipay* columns instead. Phase 5 cleanup
+ * drops the stripe* columns once all legacy subs have rolled off.
  */
 export const subscriptions = mysqlTable("subscriptions", {
   id: int("id").autoincrement().primaryKey(),
@@ -42,6 +47,14 @@ export const subscriptions = mysqlTable("subscriptions", {
   stripeCustomerId: varchar("stripeCustomerId", { length: 128 }),
   stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 128 }),
   stripeSessionId: varchar("stripeSessionId", { length: 128 }),
+  // Sipay (FastPay / Apple Pay / Google Pay) — tokenized recurring billing.
+  // sipayToken is what we re-use in MIT-R charges every month.
+  // sipayOrder + sipayTransactionId give us idempotency + audit links.
+  sipayToken: varchar("sipayToken", { length: 256 }),
+  sipayOrder: varchar("sipayOrder", { length: 128 }),
+  sipayTransactionId: varchar("sipayTransactionId", { length: 128 }),
+  sipayMaskedCard: varchar("sipayMaskedCard", { length: 32 }),
+  sipayProvider: mysqlEnum("sipayProvider", ["fastpay", "gpay", "apay"]),
   plan: mysqlEnum("plan", ["trial", "monthly", "annual"]).default("trial").notNull(),
   status: mysqlEnum("status", ["active", "canceled", "past_due", "trialing", "incomplete"]).default("incomplete").notNull(),
   currentPeriodStart: timestamp("currentPeriodStart"),

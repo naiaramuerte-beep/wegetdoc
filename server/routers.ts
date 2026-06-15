@@ -561,6 +561,7 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const { chargeApplePay } = await import("./_core/sipay");
         const order = `apay-${ctx.user.id}-${Date.now()}`;
+        const startedAt = Date.now();
         const result = await chargeApplePay({
           amountCents: input.amountCents,
           tokenApay: input.tokenApay,
@@ -571,14 +572,62 @@ export const appRouter = router({
         const data = result.data as any;
         const payloadCode = data?.payload?.code ?? data?.code;
         if (!result.ok || payloadCode !== "0") {
+          const { recordWebhookEvent } = await import("./db");
+          await recordWebhookEvent({
+            provider: "sipay",
+            eventType: "apay_charge_failed",
+            eventId: order,
+            status: "error",
+            errorMessage: data?.payload?.detail ?? data?.detail ?? "unknown",
+            durationMs: Date.now() - startedAt,
+            payload: data ?? result.raw,
+          });
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: `Sipay rechazó Apple Pay: ${JSON.stringify(data ?? result.raw)}`,
           });
         }
+        const txn = data?.payload?.transaction_id ?? "";
+        const masked = data?.payload?.masked_card ?? "";
+        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent } = await import("./db");
+        const now = new Date();
+        const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        await upsertSubscription({
+          userId: ctx.user.id,
+          sipayToken: data?.payload?.token ?? "",
+          sipayOrder: order,
+          sipayTransactionId: txn,
+          sipayMaskedCard: masked,
+          sipayProvider: "apay",
+          plan: "trial",
+          status: "trialing",
+          currentPeriodStart: now,
+          currentPeriodEnd: periodEnd,
+          cancelAtPeriodEnd: false,
+        });
+        await markDocumentsPaid(ctx.user.id);
+        await recordWebhookEvent({
+          provider: "sipay",
+          eventType: "apay_intro_charge",
+          eventId: txn || order,
+          status: "ok",
+          durationMs: Date.now() - startedAt,
+          payload: data,
+        });
+        try {
+          const acceptLang = String(ctx.req?.headers?.["accept-language"] ?? "").split(",")[0]?.split("-")[0] ?? "es";
+          const { sendTrialWelcomeEmail } = await import("./email");
+          const u = await getUserById(ctx.user.id);
+          if (u?.email) {
+            sendTrialWelcomeEmail({ to: u.email, name: u.name ?? u.email, lang: acceptLang, trialEndDate: periodEnd })
+              .catch((err: any) => console.warn("[Sipay ApPay] welcome email failed:", err?.message ?? err));
+          }
+        } catch (err: any) {
+          console.warn("[Sipay ApPay] welcome email setup failed:", err?.message ?? err);
+        }
         return {
-          transactionId: data?.payload?.transaction_id ?? "",
-          maskedCard: data?.payload?.masked_card ?? "",
+          transactionId: txn,
+          maskedCard: masked,
           cardBrand: data?.payload?.card_brand ?? "",
           order,
         };
@@ -587,7 +636,9 @@ export const appRouter = router({
     // Google Pay one-shot authorization. Front-end gets the encrypted token
     // from Google's PaymentDataRequest, sends it here, and we forward it to
     // Sipay /mdwr/v1/authorization with catcher.type="gpay". No 3DS redirect
-    // because Google already authenticated the buyer.
+    // because Google already authenticated the buyer. After the charge clears
+    // we mirror the FastPay-callback DB writes so the user gets their sub
+    // row + welcome email regardless of which wallet they used.
     sipayGpayCharge: protectedProcedure
       .input(z.object({
         token: z.string().min(50),
@@ -596,6 +647,7 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const { chargeGpay } = await import("./_core/sipay");
         const order = `gpay-${ctx.user.id}-${Date.now()}`;
+        const startedAt = Date.now();
         const result = await chargeGpay({
           amountCents: input.amountCents,
           tokenGpay: input.token,
@@ -605,14 +657,62 @@ export const appRouter = router({
         const data = result.data as any;
         const payloadCode = data?.payload?.code ?? data?.code;
         if (!result.ok || payloadCode !== "0") {
+          const { recordWebhookEvent } = await import("./db");
+          await recordWebhookEvent({
+            provider: "sipay",
+            eventType: "gpay_charge_failed",
+            eventId: order,
+            status: "error",
+            errorMessage: data?.payload?.detail ?? data?.detail ?? "unknown",
+            durationMs: Date.now() - startedAt,
+            payload: data ?? result.raw,
+          });
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: `Sipay rechazó Google Pay: ${JSON.stringify(data ?? result.raw)}`,
           });
         }
+        const txn = data?.payload?.transaction_id ?? "";
+        const masked = data?.payload?.masked_card ?? "";
+        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent } = await import("./db");
+        const now = new Date();
+        const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        await upsertSubscription({
+          userId: ctx.user.id,
+          sipayToken: data?.payload?.token ?? "",
+          sipayOrder: order,
+          sipayTransactionId: txn,
+          sipayMaskedCard: masked,
+          sipayProvider: "gpay",
+          plan: "trial",
+          status: "trialing",
+          currentPeriodStart: now,
+          currentPeriodEnd: periodEnd,
+          cancelAtPeriodEnd: false,
+        });
+        await markDocumentsPaid(ctx.user.id);
+        await recordWebhookEvent({
+          provider: "sipay",
+          eventType: "gpay_intro_charge",
+          eventId: txn || order,
+          status: "ok",
+          durationMs: Date.now() - startedAt,
+          payload: data,
+        });
+        try {
+          const acceptLang = String(ctx.req?.headers?.["accept-language"] ?? "").split(",")[0]?.split("-")[0] ?? "es";
+          const { sendTrialWelcomeEmail } = await import("./email");
+          const u = await getUserById(ctx.user.id);
+          if (u?.email) {
+            sendTrialWelcomeEmail({ to: u.email, name: u.name ?? u.email, lang: acceptLang, trialEndDate: periodEnd })
+              .catch((err: any) => console.warn("[Sipay GPay] welcome email failed:", err?.message ?? err));
+          }
+        } catch (err: any) {
+          console.warn("[Sipay GPay] welcome email setup failed:", err?.message ?? err);
+        }
         return {
-          transactionId: data?.payload?.transaction_id ?? "",
-          maskedCard: data?.payload?.masked_card ?? "",
+          transactionId: txn,
+          maskedCard: masked,
           cardBrand: data?.payload?.card_brand ?? "",
           order,
         };

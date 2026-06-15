@@ -150,6 +150,11 @@ export async function upsertSubscription(data: {
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   stripeSessionId?: string;
+  sipayToken?: string;
+  sipayOrder?: string;
+  sipayTransactionId?: string;
+  sipayMaskedCard?: string;
+  sipayProvider?: "fastpay" | "gpay" | "apay";
   plan?: "trial" | "monthly" | "annual";
   status: "active" | "canceled" | "past_due" | "trialing" | "incomplete";
   currentPeriodStart?: Date;
@@ -176,21 +181,17 @@ export async function getSubscriptionByStripeSubId(stripeSubscriptionId: string)
   return result[0] ?? null;
 }
 
+// Phase 2: cancel is now DB-only. Sipay has no subscription concept on
+// their side (we drive recurring billing from our own MIT-R cron), so
+// flipping cancelAtPeriodEnd=true here is enough — the cron checks that
+// flag before initiating the next charge and skips canceled subs.
 export async function cancelSubscriptionDb(userId: number) {
   const db = await getDb();
   if (!db) return;
-  // Find the active subscription to cancel in Stripe if applicable
-  const sub = await getActiveSubscription(userId);
-  if (sub?.stripeSubscriptionId) {
-    try {
-      const { getStripe } = await import("./_core/stripe");
-      await getStripe().subscriptions.update(sub.stripeSubscriptionId, { cancel_at_period_end: true });
-    } catch (err) {
-      console.error("[Stripe] Failed to cancel subscription:", err);
-    }
-  }
-  await db.update(subscriptions).set({ status: "canceled", cancelAtPeriodEnd: true })
-    .where(eq(subscriptions.userId, userId));
+  await db.update(subscriptions).set({
+    cancelAtPeriodEnd: true,
+    updatedAt: new Date(),
+  }).where(eq(subscriptions.userId, userId));
 }
 
 export async function getAllSubscribedUsers() {
