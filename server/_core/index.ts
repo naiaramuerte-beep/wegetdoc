@@ -50,145 +50,6 @@ async function startServer() {
   app.get("/.well-known/apple-developer-merchantid-domain-association", sendApplePayDomain);
   app.get("/.well-known/apple-developer-merchantid-domain-association.txt", sendApplePayDomain);
 
-  // ── Stripe Webhook (MUST be before express.json — needs raw body) ──────────
-  app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
-    const { getStripe } = await import("./stripe");
-    const { ENV } = await import("./env");
-    const db = await import("../db");
-    const stripe = getStripe();
-    const sig = req.headers["stripe-signature"] as string;
-
-    let event;
-    try {
-      event = stripe.webhooks.constructEvent(req.body, sig, ENV.stripeWebhookSecret);
-    } catch (err: any) {
-      console.error("[Stripe Webhook] Signature verification failed:", err.message);
-      res.status(400).send(`Webhook Error: ${err.message}`);
-      return;
-    }
-
-    console.log("[Stripe Webhook] Event:", event.type);
-    const __webhookT0 = Date.now();
-
-    try {
-      switch (event.type) {
-        case "checkout.session.completed": {
-          const session = event.data.object as any;
-          const userId = parseInt(session.metadata?.userId || "0");
-          if (!userId) break;
-          const stripeSubscriptionId = session.subscription as string;
-          const stripeCustomerId = session.customer as string;
-          const trialEnd = new Date(Date.now() + 48 * 60 * 60 * 1000);
-          await db.upsertSubscription({
-            userId,
-            stripeCustomerId,
-            stripeSubscriptionId,
-            stripeSessionId: session.id,
-            plan: "trial",
-            status: "trialing",
-            currentPeriodStart: new Date(),
-            currentPeriodEnd: trialEnd,
-            cancelAtPeriodEnd: false,
-          });
-          await db.markDocumentsPaid(userId);
-          console.log(`[Stripe Webhook] Subscription activated for user ${userId} (trial)`);
-          break;
-        }
-        case "customer.subscription.updated": {
-          const sub = event.data.object as any;
-          const existing = await db.getSubscriptionByStripeSubId(sub.id);
-          if (!existing) break;
-          const status = sub.status === "active" ? "active"
-            : sub.status === "trialing" ? "trialing"
-            : sub.status === "past_due" ? "past_due"
-            : sub.status === "canceled" ? "canceled"
-            : "incomplete";
-          const plan = sub.status === "trialing" ? "trial" : "monthly";
-          await db.upsertSubscription({
-            userId: existing.userId,
-            stripeSubscriptionId: sub.id,
-            plan,
-            status,
-            currentPeriodStart: new Date(sub.current_period_start * 1000),
-            currentPeriodEnd: new Date(sub.current_period_end * 1000),
-            cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
-          });
-          if (status === "active") {
-            await db.markDocumentsPaid(existing.userId);
-          }
-          console.log(`[Stripe Webhook] Subscription updated for user ${existing.userId}: ${status}`);
-          break;
-        }
-        case "invoice.paid": {
-          const invoice = event.data.object as any;
-          const subId = invoice.subscription as string;
-          if (!subId) break;
-          const existing = await db.getSubscriptionByStripeSubId(subId);
-          if (!existing) break;
-          await db.upsertSubscription({
-            userId: existing.userId,
-            stripeSubscriptionId: subId,
-            plan: "monthly",
-            status: "active",
-            currentPeriodStart: new Date(invoice.period_start * 1000),
-            currentPeriodEnd: new Date(invoice.period_end * 1000),
-          });
-          await db.markDocumentsPaid(existing.userId);
-          console.log(`[Stripe Webhook] Invoice paid for user ${existing.userId}`);
-          break;
-        }
-        case "invoice.payment_failed": {
-          const invoice = event.data.object as any;
-          const subId = invoice.subscription as string;
-          if (!subId) break;
-          const existing = await db.getSubscriptionByStripeSubId(subId);
-          if (!existing) break;
-          await db.upsertSubscription({
-            userId: existing.userId,
-            stripeSubscriptionId: subId,
-            status: "past_due",
-          });
-          console.log(`[Stripe Webhook] Payment failed for user ${existing.userId}`);
-          break;
-        }
-        case "customer.subscription.deleted": {
-          const sub = event.data.object as any;
-          const existing = await db.getSubscriptionByStripeSubId(sub.id);
-          if (!existing) break;
-          await db.upsertSubscription({
-            userId: existing.userId,
-            stripeSubscriptionId: sub.id,
-            status: "canceled",
-          });
-          console.log(`[Stripe Webhook] Subscription canceled for user ${existing.userId}`);
-          break;
-        }
-      }
-      // Persist the successful delivery so the admin monitor has a trail.
-      await db.recordWebhookEvent({
-        provider: "stripe",
-        eventId: (event as any).id,
-        eventType: event.type,
-        status: "ok",
-        durationMs: Date.now() - __webhookT0,
-        payload: event.data?.object,
-      });
-    } catch (err) {
-      console.error("[Stripe Webhook] Error handling event:", err);
-      await db.recordWebhookEvent({
-        provider: "stripe",
-        eventId: (event as any).id,
-        eventType: event.type,
-        status: "error",
-        errorMessage: (err as Error)?.message ?? String(err),
-        durationMs: Date.now() - __webhookT0,
-        payload: event.data?.object,
-      });
-    }
-
-    res.json({ received: true });
-  });
-
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
@@ -221,14 +82,14 @@ async function startServer() {
     // Content Security Policy
     res.setHeader("Content-Security-Policy", [
       "frame-ancestors 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://www.gstatic.com https://translate.googleapis.com https://static.hotjar.com https://script.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://www.gstatic.com https://translate.googleapis.com https://static.hotjar.com https://script.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com https://translate.googleapis.com https://sandbox.sipay.es https://live.sipay.es",
       "font-src 'self' https://fonts.gstatic.com https://script.hotjar.com",
       "object-src 'none'",
       "base-uri 'self'",
-      "frame-src 'self' https://*.stripe.com https://www.googletagmanager.com https://vars.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com",
+      "frame-src 'self' https://www.googletagmanager.com https://vars.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com",
       "img-src 'self' data: https://www.googletagmanager.com https://www.google.com https://script.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com https://www.gstatic.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.doubleclick.net",
-      "connect-src 'self' data: https://api.stripe.com https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://google.com https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.doubleclick.net https://apple-pay-gateway.apple.com https://apple-pay-gateway-cert.apple.com",
+      "connect-src 'self' data: https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://google.com https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.doubleclick.net https://apple-pay-gateway.apple.com https://apple-pay-gateway-cert.apple.com",
     ].join("; "));
     next();
   });
@@ -970,10 +831,8 @@ ${allUrls.map(u => `  <url>
       console.log(`[Sipay] auth OK: userId=${customUserId} txn=${sipayTxn || "(empty)"} order=${order} card=${masked}`);
 
       if (customUserId > 0) {
-        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent } = await import("../db");
+        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge } = await import("../db");
         const now = new Date();
-        // Initial 0,50 € intro charge keeps the user in "trialing" for 30 days;
-        // the MIT-R cron picks up at currentPeriodEnd and bills monthly.
         const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
         await upsertSubscription({
           userId: customUserId,
@@ -989,6 +848,18 @@ ${allUrls.map(u => `  <url>
           cancelAtPeriodEnd: false,
         });
         await markDocumentsPaid(customUserId);
+        // Intro charge is 0,50 € — the amount we asked Sipay to authorize.
+        // If Sipay echoed back a different amount we use theirs instead.
+        const amountCents = Number(data?.payload?.amount ?? 50);
+        await recordCharge({
+          userId: customUserId,
+          provider: "fastpay",
+          amountCents,
+          sipayTransactionId: sipayTxn,
+          sipayOrder: order,
+          sipayMaskedCard: masked,
+          status: "ok",
+        });
         await recordWebhookEvent({
           provider: "sipay",
           eventType: "fastpay_intro_charge",
@@ -1035,6 +906,138 @@ ${allUrls.map(u => `  <url>
     const error = String(req.query.error ?? "unknown");
     console.warn("[Sipay] callback ko:", req.query);
     return res.redirect(`/?sipay_error=${encodeURIComponent(error)}`);
+  });
+
+  // ── Sipay MIT-R recurring billing cron ─────────────────────────────────
+  // Called by an external scheduler (Railway cron, Pingdom, etc.) once a day.
+  // Auth via shared `X-Cron-Secret` header — anything else returns 401. Runs
+  // in foreground (no queue) because the active sub set is small (<5k for
+  // the foreseeable future) and Sipay's all-in-one MIT-R is ~300 ms each.
+  app.post("/api/cron/sipay-renew", async (req, res) => {
+    const secret = String(req.headers["x-cron-secret"] ?? "");
+    const { ENV } = await import("./env");
+    if (!ENV.cronSecret || secret !== ENV.cronSecret) {
+      return res.status(401).json({ error: "unauthorized" });
+    }
+    const dryRun = req.query.dry === "1";
+    const startedAt = Date.now();
+    try {
+      const db = await import("../db");
+      const { createMITRecurring } = await import("./sipay");
+      const due = await db.getSubsDueForRenewal();
+      // Read price from site_settings so the A/B test toggle still drives
+      // recurring charges. Default to 19.99 € if the row was deleted.
+      const priceStr = await db.getSiteSetting?.("subscription_price_eur").catch(() => null);
+      const priceEur = Number(priceStr ?? "19.99");
+      const amountCents = Math.round(priceEur * 100);
+      const results: { userId: number; ok: boolean; reason?: string }[] = [];
+      for (const sub of due) {
+        if (dryRun) {
+          results.push({ userId: sub.userId, ok: true, reason: "dry-run" });
+          continue;
+        }
+        const order = `mit-${sub.userId}-${Date.now()}`;
+        const chargeStart = Date.now();
+        try {
+          const result = await createMITRecurring({
+            amountCents,
+            token: sub.sipayToken!,
+            order,
+            custom_01: String(sub.userId),
+          });
+          const data = result.data as any;
+          const code = data?.payload?.code ?? data?.code;
+          const ok = result.ok && code === "0";
+          const txn = data?.payload?.transaction_id ?? "";
+          const masked = data?.payload?.masked_card ?? sub.sipayMaskedCard ?? "";
+          if (ok) {
+            // Extend the period 30 days and bump status -> active. Past-due
+            // subs that paid now become active again.
+            const newPeriodStart = sub.currentPeriodEnd ?? new Date();
+            const newPeriodEnd = new Date(newPeriodStart.getTime() + 30 * 24 * 60 * 60 * 1000);
+            await db.upsertSubscription({
+              userId: sub.userId,
+              plan: "monthly",
+              status: "active",
+              currentPeriodStart: newPeriodStart,
+              currentPeriodEnd: newPeriodEnd,
+              sipayTransactionId: txn,
+              sipayOrder: order,
+              sipayMaskedCard: masked,
+            });
+            await db.recordCharge({
+              userId: sub.userId,
+              provider: "mit",
+              amountCents,
+              sipayTransactionId: txn,
+              sipayOrder: order,
+              sipayMaskedCard: masked,
+              status: "ok",
+            });
+            await db.recordWebhookEvent({
+              provider: "sipay",
+              eventType: "mit_charge_ok",
+              eventId: txn || order,
+              status: "ok",
+              durationMs: Date.now() - chargeStart,
+              payload: data,
+            });
+            results.push({ userId: sub.userId, ok: true });
+          } else {
+            // Mark sub past_due so admin sees it in the panel.
+            await db.upsertSubscription({
+              userId: sub.userId,
+              status: "past_due",
+              currentPeriodEnd: sub.currentPeriodEnd ?? new Date(),
+            });
+            const detail = data?.payload?.detail ?? data?.detail ?? "unknown";
+            await db.recordCharge({
+              userId: sub.userId,
+              provider: "mit",
+              amountCents,
+              sipayOrder: order,
+              status: "failed",
+              errorDetail: String(detail).slice(0, 500),
+            });
+            await db.recordWebhookEvent({
+              provider: "sipay",
+              eventType: "mit_charge_failed",
+              eventId: order,
+              status: "error",
+              errorMessage: String(detail),
+              durationMs: Date.now() - chargeStart,
+              payload: data ?? result.raw,
+            });
+            results.push({ userId: sub.userId, ok: false, reason: String(detail) });
+          }
+        } catch (err: any) {
+          const msg = err?.message ?? String(err);
+          await db.recordWebhookEvent({
+            provider: "sipay",
+            eventType: "mit_cron_exception",
+            eventId: order,
+            status: "error",
+            errorMessage: msg,
+            durationMs: Date.now() - chargeStart,
+          });
+          results.push({ userId: sub.userId, ok: false, reason: msg });
+        }
+      }
+      const succeeded = results.filter((r) => r.ok).length;
+      const failed = results.length - succeeded;
+      console.log(`[MIT-R cron] processed=${results.length} ok=${succeeded} fail=${failed} duration=${Date.now() - startedAt}ms dryRun=${dryRun}`);
+      return res.json({
+        processed: results.length,
+        succeeded,
+        failed,
+        durationMs: Date.now() - startedAt,
+        dryRun,
+        results,
+      });
+    } catch (err: any) {
+      console.error("[MIT-R cron] fatal:", err?.message ?? err);
+      return res.status(500).json({ error: "cron_exception", detail: err?.message ?? String(err) });
+    }
   });
 
   // Apple Pay merchant validation. Apple's JS API calls our backend with the

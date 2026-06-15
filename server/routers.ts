@@ -52,15 +52,12 @@ import {
   deleteEmailTemplate,
   getAdminStats,
   getAllSubscribedUsers,
-  createCoupon,
-  deleteCoupon,
   getAllDocuments,
   getAuditLog,
   getBillingStats,
   getCancelReasonsAgg,
   getCanceledSubscriptions,
   getHealthChecks,
-  listStripeCoupons,
   getPastDueSubs,
   getRecentSubsWithoutPayment,
   getRevenueByCountry,
@@ -397,137 +394,6 @@ export const appRouter = router({
       return result;
     }),
 
-    // After intro payment succeeds: set default payment method, create monthly subscription, save to DB
-    confirmSetup: protectedProcedure.mutation(async ({ ctx }) => {
-      const { getStripe } = await import("./_core/stripe");
-      const { ENV } = await import("./_core/env");
-      const { upsertSubscription, markDocumentsPaid, getActiveSubscription } = await import("./db");
-      const stripe = getStripe();
-
-      // Active price ID: site_settings override (admin-toggleable A/B test)
-      // takes precedence over env. Falls back to env when unset/empty.
-      const overridePriceId = (await getSiteSetting("active_stripe_price_id"))?.trim() ?? "";
-      const activePriceId = overridePriceId || ENV.stripePriceId;
-      if (!activePriceId) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stripe monthly price not configured" });
-      }
-
-      // Find the customer for this user
-      const existingCustomers = await stripe.customers.list({ email: ctx.user.email ?? undefined, limit: 1 });
-      const customer = existingCustomers.data[0];
-      if (!customer) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stripe customer not found" });
-      }
-
-      // ── Idempotency guard ─────────────────────────────────────
-      // If the user already has an active/trialing sub (our DB OR Stripe),
-      // don't create a second one — this prevents the duplicate-sub bug
-      // where a double-click / refresh during checkout would create two
-      // trials and charge €0.50 twice.
-      const existingLocal = await getActiveSubscription(ctx.user.id);
-      if (existingLocal && ["active", "trialing", "past_due"].includes(existingLocal.status)) {
-        return {
-          alreadySubscribed: true,
-          subscriptionId: existingLocal.stripeSubscriptionId,
-          plan: existingLocal.plan,
-          status: existingLocal.status,
-        };
-      }
-      const existingRemote = await stripe.subscriptions.list({
-        customer: customer.id,
-        status: "all",
-        limit: 5,
-      });
-      const liveRemote = existingRemote.data.find((s: any) => ["active", "trialing", "past_due"].includes(s.status));
-      if (liveRemote) {
-        // Reconcile local DB if it missed the sub; don't create a new one.
-        const r = liveRemote as any;
-        await upsertSubscription({
-          userId: ctx.user.id,
-          stripeCustomerId: customer.id,
-          stripeSubscriptionId: r.id,
-          plan: r.status === "trialing" ? "trial" : "monthly",
-          status: r.status,
-          currentPeriodStart: r.current_period_start ? new Date(r.current_period_start * 1000) : undefined,
-          currentPeriodEnd: r.current_period_end ? new Date(r.current_period_end * 1000) : undefined,
-          cancelAtPeriodEnd: r.cancel_at_period_end ?? false,
-        } as any);
-        return {
-          alreadySubscribed: true,
-          subscriptionId: liveRemote.id,
-          plan: liveRemote.status === "trialing" ? "trial" : "monthly",
-          status: liveRemote.status,
-        };
-      }
-
-      // Get the payment method saved by the PaymentIntent (setup_future_usage: "off_session")
-      const paymentMethods = await stripe.paymentMethods.list({ customer: customer.id, type: "card", limit: 1 });
-      const pm = paymentMethods.data[0];
-      if (pm) {
-        await stripe.customers.update(customer.id, {
-          invoice_settings: { default_payment_method: pm.id },
-        });
-      }
-
-      // Create the monthly subscription with a trial period so first charge is delayed
-      // The intro 0,50€ was already charged via PaymentIntent
-      const trialEnd = Math.floor(Date.now() / 1000) + 48 * 60 * 60; // 48 hours from now
-      const subscription = await stripe.subscriptions.create({
-        customer: customer.id,
-        items: [{ price: activePriceId }],
-        trial_end: trialEnd,
-        metadata: { userId: ctx.user.id.toString(), phase: "monthly" },
-      }, {
-        // Idempotency key prevents Stripe from creating a duplicate sub on
-        // retry of this same mutation within 24h.
-        idempotencyKey: `sub-create-${ctx.user.id}-${customer.id}`,
-      });
-
-      // Save to DB
-      const nowDate = new Date();
-      const phase1End = new Date(trialEnd * 1000);
-      await upsertSubscription({
-        userId: ctx.user.id,
-        stripeCustomerId: customer.id,
-        stripeSubscriptionId: subscription.id,
-        plan: "trial",
-        status: "active",
-        currentPeriodStart: nowDate,
-        currentPeriodEnd: phase1End,
-        cancelAtPeriodEnd: false,
-      });
-      await markDocumentsPaid(ctx.user.id);
-
-      // Send welcome email (product onboarding + small trial disclaimer
-      // at the bottom). Replaces the old terse confirmation email.
-      // Detect lang from Accept-Language header so the email matches
-      // the language the user signed up in.
-      if (ctx.user.email) {
-        const acceptLang = (ctx.req.headers["accept-language"] as string | undefined) ?? "";
-        const langMatch = acceptLang.toLowerCase().match(/^(es|en|fr|de|pt|it|nl|pl|ru|uk|ro|zh)/);
-        const lang = langMatch?.[1] ?? "es";
-        const { sendTrialWelcomeEmail } = await import("./email");
-        sendTrialWelcomeEmail({
-          to: ctx.user.email,
-          name: ctx.user.name ?? ctx.user.email.split("@")[0],
-          trialEndDate: phase1End,
-          lang,
-        }).catch((err) => console.error("[confirmSetup] welcome email error:", err));
-      }
-
-      return { success: true };
-    }),
-
-    // Stripe config — returns publishable key to frontend
-    stripeConfig: publicProcedure.query(async () => {
-      const { ENV } = await import("./_core/env");
-      const overridePriceId = (await getSiteSetting("active_stripe_price_id"))?.trim() ?? "";
-      return {
-        publishableKey: ENV.stripePublishableKey,
-        priceId: overridePriceId || ENV.stripePriceId,
-      };
-    }),
-
     // Sipay config — returns FastPay merchant key + bundle URL to frontend.
     // Key is public (it's the merchant identifier used in data-key); the
     // secret stays server-side and signs all-in-one calls.
@@ -589,7 +455,7 @@ export const appRouter = router({
         }
         const txn = data?.payload?.transaction_id ?? "";
         const masked = data?.payload?.masked_card ?? "";
-        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent } = await import("./db");
+        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge } = await import("./db");
         const now = new Date();
         const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
         await upsertSubscription({
@@ -606,6 +472,15 @@ export const appRouter = router({
           cancelAtPeriodEnd: false,
         });
         await markDocumentsPaid(ctx.user.id);
+        await recordCharge({
+          userId: ctx.user.id,
+          provider: "apay",
+          amountCents: input.amountCents,
+          sipayTransactionId: txn,
+          sipayOrder: order,
+          sipayMaskedCard: masked,
+          status: "ok",
+        });
         await recordWebhookEvent({
           provider: "sipay",
           eventType: "apay_intro_charge",
@@ -674,7 +549,7 @@ export const appRouter = router({
         }
         const txn = data?.payload?.transaction_id ?? "";
         const masked = data?.payload?.masked_card ?? "";
-        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent } = await import("./db");
+        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge } = await import("./db");
         const now = new Date();
         const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
         await upsertSubscription({
@@ -691,6 +566,15 @@ export const appRouter = router({
           cancelAtPeriodEnd: false,
         });
         await markDocumentsPaid(ctx.user.id);
+        await recordCharge({
+          userId: ctx.user.id,
+          provider: "gpay",
+          amountCents: input.amountCents,
+          sipayTransactionId: txn,
+          sipayOrder: order,
+          sipayMaskedCard: masked,
+          status: "ok",
+        });
         await recordWebhookEvent({
           provider: "sipay",
           eventType: "gpay_intro_charge",
@@ -753,96 +637,6 @@ export const appRouter = router({
         };
       }),
 
-    // Create a Subscription with the intro price (0,50€) — charges immediately
-    createCheckoutSession: protectedProcedure.mutation(async ({ ctx }) => {
-      const { getStripe } = await import("./_core/stripe");
-      const { ENV } = await import("./_core/env");
-      const { getActiveSubscription } = await import("./db");
-      const stripe = getStripe();
-
-      if (!ENV.stripeIntroPriceId) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stripe intro price not configured" });
-      }
-
-      // ── Prevent paying the €0.50 trial twice ────────────────────
-      // If the user already has an active/trialing/past_due sub, they shouldn't
-      // be going through the intro flow again — they should either wait for
-      // trial_end to fire the monthly charge or use the 1-click upgrade.
-      // Returning an error here stops the frontend from creating a second
-      // PaymentIntent → no double charge possible.
-      const existing = await getActiveSubscription(ctx.user.id);
-      if (existing && ["active", "trialing", "past_due"].includes(existing.status)) {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "ALREADY_SUBSCRIBED",
-        });
-      }
-      // Belt-and-suspenders: also check Stripe directly in case our local
-      // DB lost track of the sub (e.g., webhook never fired, manual Stripe
-      // cancel-but-still-active). Prevents the exact bug that happened today.
-      const customersList = await stripe.customers.list({ email: ctx.user.email ?? undefined, limit: 1 });
-      const prevCustomer = customersList.data[0];
-      if (prevCustomer) {
-        const remoteSubs = await stripe.subscriptions.list({ customer: prevCustomer.id, status: "all", limit: 5 });
-        const hasLive = remoteSubs.data.some((s: any) => ["active", "trialing", "past_due"].includes(s.status));
-        if (hasLive) {
-          throw new TRPCError({
-            code: "PRECONDITION_FAILED",
-            message: "ALREADY_SUBSCRIBED",
-          });
-        }
-      }
-
-      // Find or create Stripe customer
-      let customer = prevCustomer;
-      if (!customer) {
-        customer = await stripe.customers.create({
-          email: ctx.user.email ?? undefined,
-          name: ctx.user.name ?? undefined,
-          metadata: { userId: ctx.user.id.toString() },
-        });
-      }
-
-      // STRIPE_INTRO_PRICE_ID is a one-time price (0,50€), so we use a PaymentIntent
-      // instead of a Subscription. The monthly subscription is created in confirmSetup.
-      const introPrice = await stripe.prices.retrieve(ENV.stripeIntroPriceId);
-      const amount = introPrice.unit_amount ?? 50; // fallback 50 cents
-
-      // Dedupe: if the user opens the paywall multiple times without paying,
-      // reuse the most recent unconfirmed PaymentIntent instead of creating
-      // another one. Without this, the Stripe dashboard fills up with
-      // "Incomplete" rows — no charge happens, but it looks bad and a stale
-      // tab could later pay the wrong amount.
-      const recent = await stripe.paymentIntents.list({ customer: customer.id, limit: 10 });
-      const reusable = recent.data.find((pi: any) =>
-        pi.amount === amount &&
-        pi.metadata?.phase === "intro" &&
-        // Stripe's intermediate states where the PI is still usable from the client.
-        ["requires_payment_method", "requires_confirmation", "requires_action"].includes(pi.status) &&
-        // Only reuse if it's recent — avoids a 3-day-old client_secret that 3DS will reject.
-        Date.now() / 1000 - pi.created < 30 * 60
-      );
-      if (reusable && reusable.client_secret) {
-        return { clientSecret: reusable.client_secret, customerId: customer.id, reused: true };
-      }
-
-      const paymentIntent = await stripe.paymentIntents.create({
-        customer: customer.id,
-        amount,
-        currency: introPrice.currency ?? "eur",
-        setup_future_usage: "off_session",
-        metadata: { userId: ctx.user.id.toString(), phase: "intro" },
-      });
-
-      if (!paymentIntent.client_secret) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create payment intent" });
-      }
-
-      return {
-        clientSecret: paymentIntent.client_secret,
-        customerId: customer.id,
-      };
-    }),
   }),
 
   // ─── Documents ─────────────────────────────────────────────────
@@ -1447,47 +1241,9 @@ export const appRouter = router({
       return r;
     }),
 
-    // ── Coupons (F7) ─────────────────────────────────────────
-    coupons: adminProcedure.query(async () => {
-      return listStripeCoupons();
-    }),
-
-    createCoupon: adminProcedure
-      .input(z.object({
-        code: z.string().min(1).max(64),
-        percentOff: z.number().min(1).max(100).optional(),
-        amountOff: z.number().positive().optional(),
-        duration: z.enum(["once", "forever", "repeating"]),
-        durationInMonths: z.number().min(1).max(24).optional(),
-        maxRedemptions: z.number().min(1).optional(),
-        expiresAtIso: z.string().datetime().optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const result = await createCoupon(input);
-        await recordAuditEntry({
-          adminId: ctx.user.id,
-          adminEmail: ctx.user.email ?? null,
-          action: "create_coupon",
-          targetType: "stripe_coupon",
-          targetId: result.couponId,
-          metadata: { code: input.code, percentOff: input.percentOff, amountOff: input.amountOff, duration: input.duration },
-        });
-        return result;
-      }),
-
-    deleteCoupon: adminProcedure
-      .input(z.object({ couponId: z.string().min(1) }))
-      .mutation(async ({ ctx, input }) => {
-        await deleteCoupon(input.couponId);
-        await recordAuditEntry({
-          adminId: ctx.user.id,
-          adminEmail: ctx.user.email ?? null,
-          action: "delete_coupon",
-          targetType: "stripe_coupon",
-          targetId: input.couponId,
-        });
-        return { success: true };
-      }),
+    // Coupons removed in the Stripe-removal sweep — Sipay doesn't expose
+    // coupon objects. If we want promo codes again we'll model them in our
+    // own DB and apply discounts client-side at checkout.
 
     promoteUser: adminProcedure
       .input(z.object({ userId: z.number(), role: z.enum(["user", "admin"]) }))

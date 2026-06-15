@@ -237,6 +237,31 @@ export type WebhookEvent = typeof webhookEvents.$inferSelect;
 export type InsertWebhookEvent = typeof webhookEvents.$inferInsert;
 
 /**
+ * Charges — structured ledger of every Sipay charge attempt (intro + monthly
+ * MIT-R). Used by the admin billing tab to render revenue, refund individual
+ * charges, and spot failures. We log charges here in addition to
+ * `webhook_events` (which stores the raw payload for audit) so the queries
+ * the admin runs every page-load don't have to JSON-parse 8 KB blobs.
+ */
+export const charges = mysqlTable("charges", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  provider: mysqlEnum("provider", ["fastpay", "gpay", "apay", "mit"]).notNull(),
+  amountCents: int("amountCents").notNull(),
+  refundedCents: int("refundedCents").default(0).notNull(),
+  currency: varchar("currency", { length: 8 }).default("EUR").notNull(),
+  sipayTransactionId: varchar("sipayTransactionId", { length: 128 }),
+  sipayOrder: varchar("sipayOrder", { length: 128 }),
+  sipayMaskedCard: varchar("sipayMaskedCard", { length: 32 }),
+  status: mysqlEnum("status", ["ok", "failed", "refunded"]).default("ok").notNull(),
+  errorDetail: varchar("errorDetail", { length: 512 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Charge = typeof charges.$inferSelect;
+export type InsertCharge = typeof charges.$inferInsert;
+
+/**
  * Audit log — who did what in the admin panel. Keeps an immutable trail for
  * investigating incidents (rogue admins, bad refunds, role escalations).
  */

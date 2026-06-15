@@ -14,8 +14,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePricing } from "@/lib/usePricing";
 import { brandName } from "@/lib/brand";
-import { loadStripe } from "@stripe/stripe-js";
-import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import PaywallModal from "@/components/PaywallModal";
 
 export default function Pricing() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -257,42 +256,16 @@ export default function Pricing() {
         </div>
       </section>
 
-      {/* ── INLINE CHECKOUT ──────────────────────────────── */}
-      {showCheckout && isAuthenticated && (
-        <section id="pricing-checkout" className="pb-16">
-          <div className="container max-w-2xl mx-auto">
-            <div
-              className="rounded-2xl overflow-hidden"
-              style={{
-                border: "2px solid #E63946",
-                backgroundColor: "#FFFFFF",
-                boxShadow: "0 4px 24px rgba(13, 51, 17, 0.1)",
-              }}
-            >
-              <div
-                className="px-6 py-4 border-b flex items-center gap-3"
-                style={{ borderColor: "#e2e8f0", backgroundColor: "#f8fafc" }}
-              >
-                <CreditCard className="w-5 h-5" style={{ color: "#E63946" }} />
-                <h3
-                  className="text-lg font-bold"
-                  style={{ color: "#0f172a" }}
-                >
-                  {t.paywall_secure ?? "Pago 100% seguro"}
-                </h3>
-                <button
-                  onClick={() => setShowCheckout(false)}
-                  className="ml-auto text-sm hover:underline"
-                  style={{ color: "#64748b" }}
-                >
-                  Cancelar
-                </button>
-              </div>
-              <StripeInlineCheckout />
-            </div>
-          </div>
-        </section>
-      )}
+      {/* Sipay paywall — replaces the old Stripe inline checkout */}
+      <PaywallModal
+        isOpen={showCheckout && isAuthenticated}
+        onClose={() => setShowCheckout(false)}
+        onPaymentSuccess={() => {
+          setShowCheckout(false);
+          toast.success("Subscription activated!");
+        }}
+      />
+
 
       {/* ── COMPARISON TABLE ─────────────────────────────── */}
       <section
@@ -430,96 +403,9 @@ export default function Pricing() {
   );
 }
 
-// ── Inner payment form (must be inside <Elements>) ──────────────
-function PricingPaymentForm({ onSuccess }: { onSuccess: () => void }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [submitting, setSubmitting] = useState(false);
-  const { t } = useLanguage();
+// PricingPaymentForm (Stripe Elements wrapper) was removed in the Sipay
+// migration. The PaywallModal above handles the whole checkout now.
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-    setSubmitting(true);
-    try {
-      const { error } = await stripe.confirmSetup({ elements, redirect: "if_required" });
-      if (error) {
-        toast.error(error.message ?? "Payment failed");
-      } else {
-        onSuccess();
-      }
-    } catch (err: any) {
-      toast.error(err.message ?? "Payment failed");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" } }} />
-      <button
-        type="submit"
-        disabled={!stripe || submitting}
-        className="w-full mt-4 py-3 rounded-xl text-white font-semibold text-sm transition-colors disabled:opacity-50"
-        style={{ backgroundColor: "#E63946" }}
-      >
-        {submitting ? (
-          <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> {t.paywall_processing}</span>
-        ) : (
-          t.paywall_pay_download
-        )}
-      </button>
-    </form>
-  );
-}
-
-// ── Stripe Inline Checkout component ─────────────────────────────
-function StripeInlineCheckout() {
-  const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-
-  const stripeConfigQ = trpc.subscription.stripeConfig.useQuery();
-  const createCheckoutSession = trpc.subscription.createCheckoutSession.useMutation();
-  const utils = trpc.useUtils();
-
-  useEffect(() => {
-    if (stripeConfigQ.data?.publishableKey) {
-      setStripePromise(loadStripe(stripeConfigQ.data.publishableKey));
-    }
-  }, [stripeConfigQ.data?.publishableKey]);
-
-  useEffect(() => {
-    if (!stripeConfigQ.data?.publishableKey || clientSecret) return;
-    createCheckoutSession.mutateAsync().then((res) => {
-      if (res.clientSecret) setClientSecret(res.clientSecret);
-    }).catch((err) => {
-      console.error("[Stripe] Failed to create checkout session:", err);
-      toast.error("Error loading payment form.");
-    });
-  }, [stripeConfigQ.data?.publishableKey]);
-
-  const handleComplete = useCallback(async () => {
-    await utils.subscription.status.invalidate();
-    toast.success("Subscription activated!");
-  }, [utils]);
-
-  if (!stripePromise || !clientSecret) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#E63946" }} />
-        <span className="ml-3 text-sm" style={{ color: "#64748b" }}>
-          Cargando formulario de pago...
-        </span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-6">
-      <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: "stripe" } }}>
-        <PricingPaymentForm onSuccess={handleComplete} />
-      </Elements>
-    </div>
-  );
-}
+// StripeInlineCheckout removed in the Stripe → Sipay migration. The
+// public Pricing page now routes any "Subscribe" action through the
+// shared PaywallModal (FastPay + Apple Pay + Google Pay + card).

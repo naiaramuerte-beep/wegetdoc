@@ -4,17 +4,15 @@ export const ENV = {
   databaseUrl: process.env.DATABASE_URL ?? "",
   ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
   isProduction: process.env.NODE_ENV === "production",
-  // Stripe (in migration: replaced by Sipay below)
-  stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? "",
-  stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? "",
-  stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
-  stripePriceId: process.env.STRIPE_PRICE_ID ?? "",
-  stripeIntroPriceId: process.env.STRIPE_INTRO_PRICE_ID ?? "",
   // Sipay (Redsys-backed Spanish PSP). Endpoint defaults to sandbox.
   sipayEndpoint: process.env.SIPAY_ENDPOINT ?? "https://sandbox.sipay.es",
   sipayKey: process.env.SIPAY_KEY ?? "",
   sipaySecret: process.env.SIPAY_SECRET ?? "",
   sipayResource: process.env.SIPAY_RESOURCE ?? "",
+  // Shared secret for the MIT-R cron endpoint. Set the same value in your
+  // cron job (Railway scheduled task, external uptime monitor, etc.). If
+  // unset the endpoint refuses everything — recurring billing won't run.
+  cronSecret: process.env.CRON_SECRET ?? "",
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
   // Cloudflare R2 storage

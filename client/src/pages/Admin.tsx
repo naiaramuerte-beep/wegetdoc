@@ -120,7 +120,8 @@ export default function Admin() {
   const canceledQ = trpc.admin.canceledSubscriptions.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "canceled" });
   const webhookEventsQ = trpc.admin.webhookEvents.useQuery({ limit: 100 }, { enabled: !!user && user.role === "admin" && tab === "webhooks", refetchInterval: tab === "webhooks" ? 15000 : false });
   const auditLogQ = trpc.admin.auditLog.useQuery({ limit: 100 }, { enabled: !!user && user.role === "admin" && tab === "audit" });
-  const couponsQ = trpc.admin.coupons.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "coupons" });
+  // Coupons removed in the Sipay migration; the tab now renders a placeholder.
+  const couponsQ = { data: undefined, isLoading: false, refetch: () => {} } as any;
   const resetTrialMut = trpc.admin.resetMyTrialUsage.useMutation({
     onSuccess: (r) => toast.success(`Trial reseteado (${r.affected} docs)`),
     onError: (err) => toast.error(err.message || "Error"),
@@ -144,14 +145,9 @@ export default function Admin() {
     onError: (err) => toast.error(err.message || "Error"),
   });
   const [previewPaywallReason, setPreviewPaywallReason] = useState<"standard" | "trial-limit" | null>(null);
-  const createCouponMut = trpc.admin.createCoupon.useMutation({
-    onSuccess: (r) => { toast.success(`Cupón creado: ${r.code}`); utils.admin.coupons.invalidate(); },
-    onError: (err) => toast.error(err.message || "Error al crear cupón"),
-  });
-  const deleteCouponMut = trpc.admin.deleteCoupon.useMutation({
-    onSuccess: () => { toast.success("Cupón eliminado"); utils.admin.coupons.invalidate(); },
-    onError: (err) => toast.error(err.message || "Error al eliminar cupón"),
-  });
+  // createCouponMut / deleteCouponMut removed with the Stripe coupon system.
+  const createCouponMut = { mutate: () => {}, isPending: false } as any;
+  const deleteCouponMut = { mutate: () => {}, isPending: false } as any;
   const cancelReasonsQ = trpc.admin.cancelReasons.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "billing" });
   const geoQ = trpc.admin.revenueByCountry.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "billing" });
   const healthQ = trpc.admin.healthChecks.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "overview", refetchInterval: tab === "overview" ? 30000 : false });

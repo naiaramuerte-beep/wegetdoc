@@ -5,6 +5,7 @@ import {
   InsertBlogPost,
   auditLog,
   blogPosts,
+  charges,
   contactMessages,
   documents,
   emailTemplates,
@@ -792,205 +793,203 @@ export async function getBillingStats(opts?: { from?: Date; to?: Date }) {
 const stripeRevenueCache = new Map<string, { data: any; expires: number }>();
 const STRIPE_REVENUE_CACHE_MS = 60 * 1000;
 
-// ─── Stripe coupons / promotion codes (F7) ────────────────────
+// Stripe coupon helpers were deleted as part of the Sipay migration.
+// If we want promo codes again we'll model them in our own DB rather
+// than depending on a banned Stripe account.
 
 /**
- * List active coupons + their redemption counts. Combines stripe.coupons.list
- * and stripe.promotionCodes.list so the admin sees both the "backend" coupon
- * and the user-facing code (e.g. BLACKFRIDAY50).
+ * Insert a Sipay charge into the structured ledger. Called from the FastPay
+ * callback, the GPay mutation, the Apple Pay mutation, and the MIT-R cron.
+ * Returns the inserted id (best-effort) for callers that want it.
  */
-export async function listStripeCoupons() {
-  const { getStripe } = await import("./_core/stripe");
-  const stripe = getStripe();
-  const [coupons, promos] = await Promise.all([
-    stripe.coupons.list({ limit: 100 }),
-    stripe.promotionCodes.list({ limit: 100 }),
-  ]);
-  const byCouponId = new Map<string, any[]>();
-  for (const p of promos.data as any[]) {
-    const cid = typeof p.coupon === "string" ? p.coupon : p.coupon?.id;
-    if (!cid) continue;
-    if (!byCouponId.has(cid)) byCouponId.set(cid, []);
-    byCouponId.get(cid)!.push({
-      id: p.id, code: p.code, active: p.active,
-      timesRedeemed: p.times_redeemed, maxRedemptions: p.max_redemptions,
-      expiresAt: p.expires_at ? new Date(p.expires_at * 1000).toISOString() : null,
+/**
+ * Subs whose current period has expired and are not flagged for cancellation.
+ * The MIT-R cron iterates these and calls Sipay's all-in-one with the
+ * stored token to take the monthly charge. Only returns subs that:
+ *   - have a sipayToken (legacy Stripe subs are skipped)
+ *   - status in trialing / active / past_due (past_due gets one retry)
+ *   - cancelAtPeriodEnd = false (canceled subs roll off naturally)
+ *   - currentPeriodEnd <= now
+ */
+export async function getSubsDueForRenewal(now: Date = new Date()) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: subscriptions.id,
+    userId: subscriptions.userId,
+    sipayToken: subscriptions.sipayToken,
+    sipayOrder: subscriptions.sipayOrder,
+    sipayMaskedCard: subscriptions.sipayMaskedCard,
+    plan: subscriptions.plan,
+    status: subscriptions.status,
+    currentPeriodEnd: subscriptions.currentPeriodEnd,
+    cancelAtPeriodEnd: subscriptions.cancelAtPeriodEnd,
+  }).from(subscriptions)
+    .where(sql`
+      ${subscriptions.sipayToken} IS NOT NULL
+      AND ${subscriptions.sipayToken} <> ''
+      AND ${subscriptions.cancelAtPeriodEnd} = false
+      AND ${subscriptions.status} IN ('trialing', 'active', 'past_due')
+      AND ${subscriptions.currentPeriodEnd} <= ${now}
+    `);
+}
+
+export async function recordCharge(opts: {
+  userId: number;
+  provider: "fastpay" | "gpay" | "apay" | "mit";
+  amountCents: number;
+  sipayTransactionId?: string;
+  sipayOrder?: string;
+  sipayMaskedCard?: string;
+  status?: "ok" | "failed" | "refunded";
+  errorDetail?: string;
+  currency?: string;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    await db.insert(charges).values({
+      userId: opts.userId,
+      provider: opts.provider,
+      amountCents: opts.amountCents,
+      currency: opts.currency ?? "EUR",
+      sipayTransactionId: opts.sipayTransactionId ?? null,
+      sipayOrder: opts.sipayOrder ?? null,
+      sipayMaskedCard: opts.sipayMaskedCard ?? null,
+      status: opts.status ?? "ok",
+      errorDetail: opts.errorDetail ?? null,
     });
+  } catch (err) {
+    console.error("[recordCharge] failed:", err);
   }
-  return coupons.data.map((c: any) => ({
-    id: c.id,
-    name: c.name ?? c.id,
-    percentOff: c.percent_off ?? null,
-    amountOff: c.amount_off != null ? c.amount_off / 100 : null,
-    currency: c.currency?.toUpperCase() ?? "EUR",
-    duration: c.duration, // "once" | "forever" | "repeating"
-    durationInMonths: c.duration_in_months ?? null,
-    valid: c.valid,
-    timesRedeemed: c.times_redeemed ?? 0,
-    maxRedemptions: c.max_redemptions ?? null,
-    promotionCodes: byCouponId.get(c.id) ?? [],
-    created: new Date(c.created * 1000).toISOString(),
+  return null;
+}
+
+/**
+ * Per-charge listing for the admin billing tab. Reads from our local ledger
+ * (charges table) — no Sipay API call needed because we log every charge
+ * locally at write time. Returns the last N charges with owner email.
+ */
+export async function getStripeChargesList(opts?: { limit?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  const limit = Math.min(200, opts?.limit ?? 50);
+  const rows = await db.select({
+    id: charges.id,
+    amountCents: charges.amountCents,
+    refundedCents: charges.refundedCents,
+    currency: charges.currency,
+    provider: charges.provider,
+    sipayTransactionId: charges.sipayTransactionId,
+    sipayOrder: charges.sipayOrder,
+    sipayMaskedCard: charges.sipayMaskedCard,
+    status: charges.status,
+    errorDetail: charges.errorDetail,
+    createdAt: charges.createdAt,
+    userEmail: users.email,
+    userName: users.name,
+    userId: users.id,
+  }).from(charges)
+    .leftJoin(users, eq(charges.userId, users.id))
+    .where(eq(charges.status, "ok"))
+    .orderBy(desc(charges.createdAt))
+    .limit(limit);
+  return rows.map((r) => ({
+    id: String(r.id),
+    amountEur: r.amountCents / 100,
+    refundedEur: r.refundedCents / 100,
+    fullyRefunded: r.refundedCents >= r.amountCents,
+    currency: r.currency ?? "EUR",
+    created: r.createdAt?.toISOString?.() ?? new Date().toISOString(),
+    customerEmail: r.userEmail,
+    customerId: r.userId ? String(r.userId) : null,
+    description: `${r.provider.toUpperCase()} · ${r.sipayMaskedCard ?? ""}`.trim(),
+    sipayTransactionId: r.sipayTransactionId,
+    sipayOrder: r.sipayOrder,
+    provider: r.provider,
   }));
 }
 
 /**
- * Create a coupon + promotion code in one shot. Simpler UX than Stripe's
- * two-step model for ad-hoc campaigns.
- */
-export async function createCoupon(opts: {
-  code: string;
-  percentOff?: number;
-  amountOff?: number;
-  duration: "once" | "forever" | "repeating";
-  durationInMonths?: number;
-  maxRedemptions?: number;
-  expiresAtIso?: string;
-}) {
-  const { getStripe } = await import("./_core/stripe");
-  const stripe = getStripe();
-
-  if (!opts.percentOff && !opts.amountOff) {
-    throw new Error("Must provide percentOff or amountOff");
-  }
-
-  const couponParams: any = {
-    name: opts.code,
-    duration: opts.duration,
-  };
-  if (opts.percentOff) couponParams.percent_off = opts.percentOff;
-  if (opts.amountOff) {
-    couponParams.amount_off = Math.round(opts.amountOff * 100);
-    couponParams.currency = "eur";
-  }
-  if (opts.duration === "repeating" && opts.durationInMonths) {
-    couponParams.duration_in_months = opts.durationInMonths;
-  }
-  if (opts.maxRedemptions) couponParams.max_redemptions = opts.maxRedemptions;
-  const coupon = await stripe.coupons.create(couponParams);
-
-  const promoParams: any = { coupon: coupon.id, code: opts.code };
-  if (opts.maxRedemptions) promoParams.max_redemptions = opts.maxRedemptions;
-  if (opts.expiresAtIso) promoParams.expires_at = Math.floor(new Date(opts.expiresAtIso).getTime() / 1000);
-  const promo = await stripe.promotionCodes.create(promoParams);
-
-  return {
-    couponId: coupon.id,
-    promoId: promo.id,
-    code: promo.code,
-  };
-}
-
-/**
- * Delete a coupon (and optionally its promotion codes become inactive).
- */
-export async function deleteCoupon(couponId: string) {
-  const { getStripe } = await import("./_core/stripe");
-  const stripe = getStripe();
-  await stripe.coupons.del(couponId);
-  return { success: true };
-}
-
-/**
- * Per-charge listing for the Billing tab so admin can refund individual
- * charges without jumping to Stripe dashboard. Returns the last N charges
- * (most recent first) with owner email resolved from customer object.
- */
-export async function getStripeChargesList(opts?: { limit?: number }) {
-  const { getStripe } = await import("./_core/stripe");
-  const stripe = getStripe();
-  const limit = Math.min(100, opts?.limit ?? 50);
-
-  const page = await stripe.charges.list({ limit, expand: ["data.customer"] });
-  return page.data
-    .filter((c: any) => c.paid && c.status === "succeeded")
-    .map((c: any) => ({
-      id: c.id,
-      amountEur: c.amount / 100,
-      refundedEur: (c.amount_refunded ?? 0) / 100,
-      fullyRefunded: c.refunded ?? false,
-      currency: c.currency?.toUpperCase() ?? "EUR",
-      created: new Date(c.created * 1000).toISOString(),
-      customerEmail:
-        (typeof c.customer === "object" && c.customer && "email" in c.customer
-          ? (c.customer as any).email
-          : null) ?? c.billing_details?.email ?? null,
-      customerId: typeof c.customer === "string" ? c.customer : (c.customer as any)?.id ?? null,
-      description: c.description ?? null,
-    }));
-}
-
-/**
- * Refund a Stripe charge. Returns the refund object. Partial refunds supported
- * via optional amountEur; if omitted, Stripe refunds the remaining balance.
+ * Refund a Sipay charge. Calls Sipay's /mdwr/v1/refund endpoint with the
+ * sipayTransactionId (or order if txn is empty) and updates our local
+ * `charges` row with refundedCents + status="refunded". Partial refunds
+ * supported via amountEur (defaults to full refund).
  */
 export async function refundStripeCharge(opts: { chargeId: string; amountEur?: number; reason?: "duplicate" | "fraudulent" | "requested_by_customer" }) {
-  const { getStripe } = await import("./_core/stripe");
-  const stripe = getStripe();
-  const params: any = { charge: opts.chargeId };
-  if (opts.amountEur !== undefined) params.amount = Math.round(opts.amountEur * 100);
-  if (opts.reason) params.reason = opts.reason;
-  const refund = await stripe.refunds.create(params);
-  // Invalidate revenue cache so admin panel reflects the refund immediately.
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  // chargeId from the admin UI is now our local charges.id (string).
+  const idNum = Number(opts.chargeId);
+  const rows = await db.select().from(charges).where(eq(charges.id, idNum)).limit(1);
+  const row = rows[0];
+  if (!row) throw new Error("Charge not found");
+  const refundCents = opts.amountEur !== undefined
+    ? Math.round(opts.amountEur * 100)
+    : (row.amountCents - row.refundedCents);
+  if (refundCents <= 0) throw new Error("Nothing left to refund");
+  const { refundPayment } = await import("./_core/sipay");
+  const result = await refundPayment({
+    amountCents: refundCents,
+    transaction_id: row.sipayTransactionId ?? undefined,
+    order: row.sipayOrder ?? undefined,
+  });
+  const data = result.data as any;
+  const code = data?.payload?.code ?? data?.code;
+  if (!result.ok || code !== "0") {
+    throw new Error(`Sipay refund failed: ${JSON.stringify(data ?? result.raw)}`);
+  }
+  const newRefundedCents = row.refundedCents + refundCents;
+  await db.update(charges).set({
+    refundedCents: newRefundedCents,
+    status: newRefundedCents >= row.amountCents ? "refunded" : "ok",
+  }).where(eq(charges.id, idNum));
   stripeRevenueCache.clear();
   return {
-    id: refund.id,
-    amountEur: (refund.amount ?? 0) / 100,
-    status: refund.status,
-    chargeId: refund.charge as string,
+    id: String(idNum),
+    amountEur: refundCents / 100,
+    status: "succeeded",
+    chargeId: String(idNum),
   };
 }
 
 /**
- * Real cash revenue from Stripe for a date range. Pulls all charges (paid &
- * succeeded) within the range and aggregates: gross amount, refunds, net.
- *
- * Returns euros. If Stripe is configured in another currency this would need
- * a conversion step — for now we assume EUR (matches our Stripe account).
+ * Real cash revenue for a date range, summed from our local charges ledger.
+ * Returns euros. Caching is kept for parity with the prior Stripe-backed
+ * implementation, though queries on the local table are fast enough to
+ * skip caching if we ever need fresher numbers.
  */
 export async function getStripeRevenue(opts: { from: Date; to: Date }) {
   const cacheKey = `${opts.from.getTime()}-${opts.to.getTime()}`;
   const cached = stripeRevenueCache.get(cacheKey);
   if (cached && cached.expires > Date.now()) return cached.data;
 
-  const { getStripe } = await import("./_core/stripe");
-  const stripe = getStripe();
-
-  const fromTs = Math.floor(opts.from.getTime() / 1000);
-  const toTs = Math.floor(opts.to.getTime() / 1000);
+  const db = await getDb();
+  if (!db) {
+    const empty = { grossEur: 0, refundedEur: 0, netEur: 0, chargesCount: 0, refundsCount: 0, range: { from: opts.from.toISOString(), to: opts.to.toISOString() } };
+    return empty;
+  }
+  const rows = await db.select({
+    amountCents: charges.amountCents,
+    refundedCents: charges.refundedCents,
+  }).from(charges)
+    .where(sql`${charges.createdAt} >= ${opts.from} AND ${charges.createdAt} <= ${opts.to} AND ${charges.status} <> 'failed'`);
 
   let grossCents = 0;
   let refundedCents = 0;
   let chargesCount = 0;
   let refundsCount = 0;
-
-  // Paginate through charges in range (max 100 per page).
-  let hasMore = true;
-  let startingAfter: string | undefined = undefined;
-  while (hasMore) {
-    const page: any = await stripe.charges.list({
-      created: { gte: fromTs, lte: toTs },
-      limit: 100,
-      starting_after: startingAfter,
-    });
-    for (const charge of page.data) {
-      if (!charge.paid || charge.status !== "succeeded") continue;
-      grossCents += charge.amount;
-      refundedCents += charge.amount_refunded ?? 0;
-      chargesCount += 1;
-      if ((charge.amount_refunded ?? 0) > 0) refundsCount += 1;
-    }
-    hasMore = page.has_more;
-    if (hasMore) startingAfter = page.data[page.data.length - 1]?.id;
+  for (const r of rows) {
+    grossCents += r.amountCents;
+    refundedCents += r.refundedCents;
+    chargesCount += 1;
+    if (r.refundedCents > 0) refundsCount += 1;
   }
 
-  const grossEur = grossCents / 100;
-  const refundedEur = refundedCents / 100;
-  const netEur = grossEur - refundedEur;
-
   const data = {
-    grossEur: Math.round(grossEur * 100) / 100,
-    refundedEur: Math.round(refundedEur * 100) / 100,
-    netEur: Math.round(netEur * 100) / 100,
+    grossEur: Math.round((grossCents / 100) * 100) / 100,
+    refundedEur: Math.round((refundedCents / 100) * 100) / 100,
+    netEur: Math.round(((grossCents - refundedCents) / 100) * 100) / 100,
     chargesCount,
     refundsCount,
     range: { from: opts.from.toISOString(), to: opts.to.toISOString() },
@@ -1072,6 +1071,9 @@ export async function getPastDueSubs() {
     plan: subscriptions.plan,
     status: subscriptions.status,
     currentPeriodEnd: subscriptions.currentPeriodEnd,
+    sipayTransactionId: subscriptions.sipayTransactionId,
+    sipayOrder: subscriptions.sipayOrder,
+    sipayProvider: subscriptions.sipayProvider,
     stripeCustomerId: subscriptions.stripeCustomerId,
     stripeSubscriptionId: subscriptions.stripeSubscriptionId,
   }).from(users)
@@ -1081,31 +1083,27 @@ export async function getPastDueSubs() {
 
   if (rows.length === 0) return [];
 
-  const { getStripe } = await import("./_core/stripe");
-  const stripe = getStripe();
-
-  // Fetch decline detail in parallel — past-due set is small (<20 typically).
+  // For each past-due sub, find the most recent failed charge in our ledger
+  // so the admin sees the actual Sipay decline reason without round-tripping
+  // to Sipay's API. Limit to last 5 failed attempts per user — anything older
+  // is likely from a previous billing cycle.
   const enriched = await Promise.all(rows.map(async (row) => {
-    const base = { ...row, declineCode: null as string | null, declineMessage: null as string | null, attemptCount: 0, nextAttemptAt: null as string | null, amountDueEur: null as number | null };
-    if (!row.stripeSubscriptionId) return base;
-    try {
-      const sub = await stripe.subscriptions.retrieve(row.stripeSubscriptionId, {
-        expand: ["latest_invoice.payment_intent"],
-      }) as any;
-      const invoice = sub.latest_invoice;
-      if (!invoice) return base;
-      base.attemptCount = invoice.attempt_count ?? 0;
-      base.nextAttemptAt = invoice.next_payment_attempt ? new Date(invoice.next_payment_attempt * 1000).toISOString() : null;
-      base.amountDueEur = typeof invoice.amount_due === "number" ? invoice.amount_due / 100 : null;
-      const pi = invoice.payment_intent;
-      if (pi && typeof pi === "object" && pi.last_payment_error) {
-        base.declineCode = pi.last_payment_error.decline_code ?? pi.last_payment_error.code ?? null;
-        base.declineMessage = pi.last_payment_error.message ?? null;
-      }
-    } catch {
-      // Stripe fetch failed — leave nullable fields as null.
-    }
-    return base;
+    const lastFails = await db.select({
+      amountCents: charges.amountCents,
+      errorDetail: charges.errorDetail,
+      createdAt: charges.createdAt,
+    }).from(charges)
+      .where(sql`${charges.userId} = ${row.id} AND ${charges.status} = 'failed'`)
+      .orderBy(desc(charges.createdAt))
+      .limit(5);
+    return {
+      ...row,
+      declineCode: null as string | null,
+      declineMessage: lastFails[0]?.errorDetail ?? null,
+      attemptCount: lastFails.length,
+      nextAttemptAt: null as string | null,
+      amountDueEur: lastFails[0] ? lastFails[0].amountCents / 100 : null,
+    };
   }));
 
   return enriched;
@@ -1131,6 +1129,9 @@ export async function getRecentSubsWithoutPayment(opts?: { hours?: number }) {
     plan: subscriptions.plan,
     status: subscriptions.status,
     createdAt: subscriptions.createdAt,
+    sipayTransactionId: subscriptions.sipayTransactionId,
+    sipayOrder: subscriptions.sipayOrder,
+    sipayProvider: subscriptions.sipayProvider,
     stripeCustomerId: subscriptions.stripeCustomerId,
     stripeSubscriptionId: subscriptions.stripeSubscriptionId,
   }).from(users)
@@ -1140,52 +1141,36 @@ export async function getRecentSubsWithoutPayment(opts?: { hours?: number }) {
 
   if (rows.length === 0) return [];
 
-  const { getStripe } = await import("./_core/stripe");
-  const stripe = getStripe();
-
+  // A sub is "suspicious" when we have no successful charge logged for that
+  // user within the same window. This catches users who got as far as the
+  // 3DS screen but never came back to confirm — the FastPay callback never
+  // fired, so subscriptions row got created with status=incomplete or no
+  // sipayTransactionId was ever stamped.
   const enriched = await Promise.all(rows.map(async (row) => {
-    const base: any = {
+    const successful = await db.select({ id: charges.id })
+      .from(charges)
+      .where(sql`${charges.userId} = ${row.id} AND ${charges.status} = 'ok' AND ${charges.createdAt} >= ${since}`)
+      .limit(1);
+    const lastFails = await db.select({
+      amountCents: charges.amountCents,
+      errorDetail: charges.errorDetail,
+      createdAt: charges.createdAt,
+    }).from(charges)
+      .where(sql`${charges.userId} = ${row.id} AND ${charges.status} = 'failed'`)
+      .orderBy(desc(charges.createdAt))
+      .limit(1);
+    return {
       ...row,
-      invoiceStatus: null as string | null,
+      invoiceStatus: successful.length > 0 ? "paid" : "open",
       paymentIntentStatus: null as string | null,
       declineCode: null as string | null,
-      declineMessage: null as string | null,
-      amountDueEur: null as number | null,
+      declineMessage: lastFails[0]?.errorDetail ?? null,
+      amountDueEur: lastFails[0] ? lastFails[0].amountCents / 100 : null,
       hostedInvoiceUrl: null as string | null,
-      isSuspicious: false as boolean,
+      isSuspicious: successful.length === 0,
     };
-    if (!row.stripeSubscriptionId || row.stripeSubscriptionId.startsWith("fake_sub_qa_")) {
-      // Fake QA subs or missing Stripe ID → flag as suspicious-ish but distinct.
-      base.isSuspicious = row.stripeSubscriptionId?.startsWith("fake_sub_qa_") ? false : true;
-      return base;
-    }
-    try {
-      const sub = await stripe.subscriptions.retrieve(row.stripeSubscriptionId, {
-        expand: ["latest_invoice.payment_intent"],
-      }) as any;
-      const invoice = sub.latest_invoice;
-      if (!invoice) return base;
-      base.invoiceStatus = invoice.status ?? null;
-      base.amountDueEur = typeof invoice.amount_due === "number" ? invoice.amount_due / 100 : null;
-      base.hostedInvoiceUrl = invoice.hosted_invoice_url ?? null;
-      const pi = invoice.payment_intent;
-      if (pi && typeof pi === "object") {
-        base.paymentIntentStatus = pi.status ?? null;
-        if (pi.last_payment_error) {
-          base.declineCode = pi.last_payment_error.decline_code ?? pi.last_payment_error.code ?? null;
-          base.declineMessage = pi.last_payment_error.message ?? null;
-        }
-      }
-      // Suspicious = sub exists but invoice wasn't paid within the window.
-      // `paid` invoices or `trialing` subs with amount_due=0 are healthy.
-      base.isSuspicious = invoice.status !== "paid" && invoice.status !== "void";
-    } catch {
-      base.isSuspicious = true; // couldn't verify with Stripe — flag it
-    }
-    return base;
   }));
 
-  // Surface suspicious first; fall back to the rest after.
   return enriched.sort((a: any, b: any) => Number(b.isSuspicious) - Number(a.isSuspicious));
 }
 
@@ -1303,24 +1288,25 @@ export async function getHealthChecks() {
     }
   };
 
-  const [dbCheck, stripeCheck, r2Check, resendCheck, cloudConvertCheck] = await Promise.all([
+  const [dbCheck, sipayCheck, r2Check, resendCheck, cloudConvertCheck] = await Promise.all([
     runCheck("Database (MySQL)", async () => {
       const db = await getDb();
       if (!db) throw new Error("DB client not initialised");
       await db.execute(sql`SELECT 1`);
     }),
-    runCheck("Stripe API", async () => {
-      const { getStripe } = await import("./_core/stripe");
-      const stripe = getStripe();
-      // Cheapest read we can do — retrieve the account metadata.
-      await stripe.balance.retrieve();
+    runCheck("Sipay API", async () => {
+      // Cheapest connectivity probe — HEAD the public endpoint. We can't
+      // hit /mdwr/v1/* without a signed request, and we don't want to
+      // burn a real test charge on every health refresh.
+      const { ENV } = await import("./_core/env");
+      const resp = await fetch(ENV.sipayEndpoint, { method: "HEAD" });
+      if (resp.status >= 500) throw new Error(`Sipay endpoint returned ${resp.status}`);
     }),
     runCheck("Cloudflare R2", async () => {
       const endpoint = process.env.R2_ENDPOINT;
       const key = process.env.R2_ACCESS_KEY_ID ?? process.env.CF_R2_ACCESS_KEY_ID;
       const bucket = process.env.R2_BUCKET_NAME ?? process.env.CF_R2_BUCKET_NAME;
       if (!endpoint || !key || !bucket) throw new Error("R2 credentials missing");
-      // HEAD the bucket endpoint (no auth needed to confirm DNS/reachability).
       const resp = await fetch(endpoint, { method: "HEAD" });
       if (resp.status >= 500) throw new Error(`R2 endpoint returned ${resp.status}`);
     }),
@@ -1332,7 +1318,7 @@ export async function getHealthChecks() {
     }),
   ]);
 
-  return [dbCheck, stripeCheck, r2Check, resendCheck, cloudConvertCheck];
+  return [dbCheck, sipayCheck, r2Check, resendCheck, cloudConvertCheck];
 }
 
 /**
@@ -1560,56 +1546,80 @@ export async function canDownloadForUser(userId: number, docId: number) {
 }
 
 /**
- * Force-end the trial by telling Stripe to end it "now", which triggers the
- * €19.99 recurring charge against the saved card immediately. The existing
- * invoice.paid webhook will transition our local row to plan=monthly/status=active.
- * Returns {success, error?} so the caller can fall back to the full paywall
- * when the card is rejected.
+ * Force-end the trial early — runs the monthly MIT-R charge immediately
+ * against the saved Sipay token. On success, advance the sub to
+ * plan=monthly/status=active with a fresh 30-day period. On failure, the
+ * sub stays in trial and the caller can fall back to the full paywall.
  */
 export async function upgradeTrialImmediately(userId: number) {
   const sub = await getActiveSubscription(userId);
   if (!sub) return { success: false as const, error: "No active subscription", code: "NO_SUB" as const };
   if (sub.plan !== "trial") return { success: false as const, error: "Not on trial", code: "NOT_TRIAL" as const };
-  if (!sub.stripeSubscriptionId) return { success: false as const, error: "Stripe sub id missing", code: "NO_STRIPE_ID" as const };
+  if (!sub.sipayToken) return { success: false as const, error: "Sipay token missing", code: "NO_TOKEN" as const };
 
-  // Reject fake QA subs early — these only exist locally; Stripe knows nothing
-  // about them, so trying to update them would 404. Surface a clear message.
-  if (sub.stripeSubscriptionId.startsWith("fake_sub_qa_")) {
-    return {
-      success: false as const,
-      error: "This is a QA test subscription. The upgrade button only works with real Stripe subscriptions — pay 0,50€ for real to test the upgrade flow.",
-      code: "FAKE_QA_SUB" as const,
-    };
-  }
-
-  const { getStripe } = await import("./_core/stripe");
-  const stripe = getStripe();
+  const { createMITRecurring } = await import("./_core/sipay");
+  const price = await getActiveMonthlyPrice();
+  const amountCents = Math.round(price.eur * 100);
+  const order = `mit-upgrade-${userId}-${Date.now()}`;
   try {
-    await stripe.subscriptions.update(sub.stripeSubscriptionId, {
-      trial_end: "now",
-      proration_behavior: "none",
+    const result = await createMITRecurring({
+      amountCents,
+      token: sub.sipayToken,
+      order,
+      custom_01: String(userId),
     });
+    const data = result.data as any;
+    const code = data?.payload?.code ?? data?.code;
+    if (!result.ok || code !== "0") {
+      const detail = data?.payload?.detail ?? data?.detail ?? "unknown";
+      await recordCharge({
+        userId,
+        provider: "mit",
+        amountCents,
+        sipayOrder: order,
+        status: "failed",
+        errorDetail: String(detail).slice(0, 500),
+      });
+      // Card-style errors get a distinct code so the UI can offer "try a
+      // different card" — anything else is a generic SIPAY_ERROR.
+      const cardCodes = new Set(["card_declined", "expired_card", "incorrect_cvc", "insufficient_funds", "do_not_honor"]);
+      const isCardIssue = cardCodes.has(String(detail));
+      return {
+        success: false as const,
+        error: String(detail),
+        code: (isCardIssue ? "CARD_ERROR" : "SIPAY_ERROR") as "CARD_ERROR" | "SIPAY_ERROR",
+      };
+    }
+    const newStart = new Date();
+    const newEnd = new Date(newStart.getTime() + 30 * 24 * 60 * 60 * 1000);
     const db = await getDb();
     if (db) {
       await db.update(subscriptions)
-        .set({ plan: "monthly", status: "active" })
+        .set({
+          plan: "monthly",
+          status: "active",
+          currentPeriodStart: newStart,
+          currentPeriodEnd: newEnd,
+          sipayTransactionId: data?.payload?.transaction_id ?? null,
+          sipayOrder: order,
+        })
         .where(eq(subscriptions.id, sub.id));
     }
-    return { success: true as const, chargedAmountEur: (await getActiveMonthlyPrice()).eur };
+    await recordCharge({
+      userId,
+      provider: "mit",
+      amountCents,
+      sipayTransactionId: data?.payload?.transaction_id ?? "",
+      sipayOrder: order,
+      sipayMaskedCard: data?.payload?.masked_card ?? sub.sipayMaskedCard ?? "",
+      status: "ok",
+    });
+    return { success: true as const, chargedAmountEur: price.eur };
   } catch (err: any) {
-    // Distinguish card-related Stripe errors (where re-entering a card might
-    // help) from everything else (where retrying with the same card or a new
-    // card won't help — sub doesn't exist, no default PM, etc.).
-    const stripeCode: string | undefined = err?.code ?? err?.raw?.code;
-    const cardCodes = new Set([
-      "card_declined", "expired_card", "incorrect_cvc",
-      "processing_error", "insufficient_funds",
-    ]);
-    const isCardIssue = stripeCode ? cardCodes.has(stripeCode) : false;
     return {
       success: false as const,
       error: err?.message ?? String(err),
-      code: (isCardIssue ? "CARD_ERROR" : "STRIPE_ERROR") as "CARD_ERROR" | "STRIPE_ERROR",
+      code: "SIPAY_ERROR" as const,
     };
   }
 }

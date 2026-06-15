@@ -25,8 +25,6 @@ import { usePdfFile } from "@/contexts/PdfFileContext";
 import { brandName } from "@/lib/brand";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePricing } from "@/lib/usePricing";
-import { loadStripe } from "@stripe/stripe-js";
-import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
 type Tab = "account" | "documents" | "team" | "billing";
 
@@ -714,90 +712,9 @@ function TeamTab() {
   );
 }
 
-// ─── Dashboard Payment Form (inside Elements) ──────────────────
-function DashboardPaymentForm({ onSuccess }: { onSuccess: () => void }) {
-  const { t } = useLanguage();
-  const stripe = useStripe();
-  const elements = useElements();
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-    setSubmitting(true);
-    try {
-      const { error } = await stripe.confirmSetup({ elements, redirect: "if_required" });
-      if (error) {
-        toast.error(error.message ?? "Payment failed");
-      } else {
-        onSuccess();
-      }
-    } catch (err: any) {
-      toast.error(err.message ?? "Payment failed");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" } }} />
-      <button
-        type="submit"
-        disabled={!stripe || submitting}
-        className="w-full mt-4 py-3 rounded-xl bg-[#E63946] text-white font-semibold text-sm hover:bg-[#C72738] transition-colors disabled:opacity-50"
-      >
-        {submitting ? (
-          <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> ...</span>
-        ) : (
-          t.dash_subscribe
-        )}
-      </button>
-    </form>
-  );
-}
-
-// ─── Stripe Inline Checkout (Dashboard) ──────────────────────
-function DashboardStripeInline({ onComplete }: { onComplete: () => void }) {
-  const { t } = useLanguage();
-  const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const stripeConfigQ = trpc.subscription.stripeConfig.useQuery();
-  const createCheckoutSession = trpc.subscription.createCheckoutSession.useMutation();
-
-  useEffect(() => {
-    if (stripeConfigQ.data?.publishableKey) {
-      setStripePromise(loadStripe(stripeConfigQ.data.publishableKey));
-    }
-  }, [stripeConfigQ.data?.publishableKey]);
-
-  useEffect(() => {
-    if (!stripeConfigQ.data?.publishableKey || clientSecret) return;
-    createCheckoutSession.mutateAsync().then((res) => {
-      if (res.clientSecret) setClientSecret(res.clientSecret);
-    }).catch((err) => {
-      console.error("[Stripe] Failed to create checkout session:", err);
-      toast.error("Error loading payment form.");
-    });
-  }, [stripeConfigQ.data?.publishableKey]);
-
-  if (!stripePromise || !clientSecret) {
-    return (
-      <div className="flex items-center justify-center py-10">
-        <Loader2 className="w-6 h-6 animate-spin text-[#E63946]" />
-        <span className="ml-2 text-sm text-slate-500">{t.dash_loading_payment}</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-6">
-      <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: "stripe" } }}>
-        <DashboardPaymentForm onSuccess={onComplete} />
-      </Elements>
-    </div>
-  );
-}
+// Dashboard inline Stripe checkout was removed when we migrated to Sipay.
+// The "Subscribe" button now opens the shared PaywallModal (FastPay /
+// Apple Pay / Google Pay / card), matching the editor experience.
 
 // ─── Billing Tab ──────────────────────────────────────────────
 function BillingTab() {
@@ -807,16 +724,16 @@ function BillingTab() {
   const { data: subData, isLoading } = trpc.subscription.status.useQuery();
   const utils = trpc.useUtils();
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [showInlineCheckout, setShowInlineCheckout] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
 
-  const handleStripeComplete = useCallback(async () => {
+  const handleSipayComplete = useCallback(async () => {
     await utils.subscription.status.invalidate();
-    setShowInlineCheckout(false);
+    setShowPaywall(false);
     toast.success(t.dash_subscription_activated);
   }, [utils]);
 
   const openInlineCheckout = () => {
-    setShowInlineCheckout(true);
+    setShowPaywall(true);
     setTimeout(() => {
       document.getElementById("billing-checkout-section")?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 100);
@@ -978,28 +895,22 @@ function BillingTab() {
             <Button
               className="w-full bg-[#E63946] hover:bg-[#C72738] text-white"
               onClick={openInlineCheckout}
-              disabled={showInlineCheckout}
+              disabled={showPaywall}
             >
               <CreditCard size={16} className="mr-2" />
-              {showInlineCheckout ? t.dash_payment_form_open : t.dash_subscribe_now}
+              {showPaywall ? t.dash_payment_form_open : t.dash_subscribe_now}
             </Button>
           </div>
         </div>
       )}
 
-      {/* Inline Stripe Checkout */}
-      {showInlineCheckout && !isPremium && (
-        <div id="billing-checkout-section" className="bg-white rounded-2xl shadow-sm border border-[#E8E8EC] overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between" style={{ backgroundColor: "#f8fafc" }}>
-            <div className="flex items-center gap-2">
-              <CreditCard size={18} className="text-[#E63946]" />
-              <h3 className="font-bold text-slate-800">{t.dash_complete_subscription}</h3>
-            </div>
-            <button onClick={() => setShowInlineCheckout(false)} className="text-sm text-slate-500 hover:text-slate-700 hover:underline">{t.dash_cancel}</button>
-          </div>
-          <DashboardStripeInline onComplete={handleStripeComplete} />
-        </div>
-      )}
+      {/* Sipay paywall (FastPay + Apple Pay + Google Pay + card) */}
+      <PaywallModal
+        isOpen={showPaywall && !isPremium}
+        onClose={() => setShowPaywall(false)}
+        onPaymentSuccess={handleSipayComplete}
+      />
+
 
       {/* ── Cancel Confirmation Modal ── */}
       {showCancelModal && (
