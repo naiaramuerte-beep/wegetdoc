@@ -2408,17 +2408,22 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   };
 
   // ── Merge PDFs ────────────────────────────────────────────────
+  // Free of charge — the merge is just pdf-lib in the browser, no server
+  // call, no paywall. We replace pdfBytes with the merged output so the user
+  // can see the result inline, keep editing, and only hit the paywall when
+  // they click the main Descargar button. This matches the user's mental
+  // model: "let me merge, *then* ask me to register/pay if I want to save".
   const mergePdfs = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
+    // Reset the input so picking the same files again re-fires onChange
+    if (e.target) e.target.value = "";
     if (!files.length || !pdfBytes) return;
     toast.loading("Fusionando PDFs...", { id: "merge" });
     try {
       const merged = await PDFDocument.create();
-      // Add current PDF pages
       const currentDoc = await PDFDocument.load(pdfBytes);
       const currentPages = await merged.copyPages(currentDoc, currentDoc.getPageIndices());
       currentPages.forEach(p => merged.addPage(p));
-      // Add new PDFs
       for (const f of files) {
         const bytes = new Uint8Array(await f.arrayBuffer());
         const doc = await PDFDocument.load(bytes);
@@ -2426,8 +2431,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         pages.forEach(p => merged.addPage(p));
       }
       const out = await merged.save();
-      const blob = new Blob([out.buffer as ArrayBuffer], { type: "application/pdf" });
-      await guardedDownload(blob, "merged.pdf", "merge");
+      // Swap the current PDF for the merged one — annotations on the original
+      // are discarded (their page coordinates wouldn't match the new doc).
+      setPdfBytes(new Uint8Array(out));
+      setAnnotations([]);
+      toast.success(
+        files.length === 1 ? "PDF añadido. Pulsa Descargar para guardar." : `${files.length} PDFs añadidos. Pulsa Descargar para guardar.`,
+        { id: "merge" }
+      );
     } catch {
       toast.error("Error al fusionar", { id: "merge" });
     }
