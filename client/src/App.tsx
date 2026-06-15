@@ -37,6 +37,8 @@ const ToolLanding = lazy(() => import("./pages/ToolLanding"));
 const ConverterPage = lazy(() => import("./pages/ConverterPage"));
 const PdfConverterHub = lazy(() => import("./pages/PdfConverterHub"));
 const MergeLandingPage = lazy(() => import("./pages/MergeLandingPage"));
+const SplitLandingPage = lazy(() => import("./pages/SplitLandingPage"));
+const CompressLandingPage = lazy(() => import("./pages/CompressLandingPage"));
 const AdLandingPage = lazy(() => import("./pages/AdLanding"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
@@ -168,22 +170,32 @@ function Router() {
         <Route key={`conv-redirect-${slug}`} path={`/${slug}`} component={() => <Redirect to={`/en/${slug}`} />} />
       ))}
 
-      {/* Dedicated merge landing — overrides the generic ToolLanding for
-          merge-pdf because it needs a multi-file picker + reorder list. */}
+      {/* Dedicated PDF-utility landings — each one overrides the generic
+          ToolLanding because it needs a tool-specific UI (multi-file picker
+          for merge, page-range input for split, optimize stats for compress)
+          that the Home-as-tool-landing wrapper can't accommodate. */}
       {LANGUAGES.map(({ code }) => (
         <Route key={`${code}-merge-pdf`} path={`/${code}/merge-pdf`} component={MergeLandingPage} />
       ))}
       <Route path="/merge-pdf" component={() => <Redirect to="/en/merge-pdf" />} />
+      {LANGUAGES.map(({ code }) => (
+        <Route key={`${code}-split-pdf`} path={`/${code}/split-pdf`} component={SplitLandingPage} />
+      ))}
+      <Route path="/split-pdf" component={() => <Redirect to="/en/split-pdf" />} />
+      {LANGUAGES.map(({ code }) => (
+        <Route key={`${code}-compress-pdf`} path={`/${code}/compress-pdf`} component={CompressLandingPage} />
+      ))}
+      <Route path="/compress-pdf" component={() => <Redirect to="/en/compress-pdf" />} />
 
-      {/* Tool landing pages — language-prefixed (skips slugs handled by ConverterPage / hub / MergeLandingPage above) */}
+      {/* Tool landing pages — language-prefixed (skips slugs handled by ConverterPage / hub / dedicated utility landings above) */}
       {LANGUAGES.map(({ code }) =>
-        TOOL_LANDINGS.filter(tool => !(tool.slug in CONVERTER_ROUTES) && tool.slug !== HUB_SLUG && tool.slug !== "merge-pdf").map(tool => (
+        TOOL_LANDINGS.filter(tool => !(tool.slug in CONVERTER_ROUTES) && tool.slug !== HUB_SLUG && tool.slug !== "merge-pdf" && tool.slug !== "split-pdf" && tool.slug !== "compress-pdf").map(tool => (
           <Route key={`${code}-${tool.slug}`} path={`/${code}/${tool.slug}`} component={() => <ToolLanding tool={tool} />} />
         ))
       )}
 
       {/* Tool landing redirects without lang prefix */}
-      {TOOL_LANDINGS.filter(tool => !(tool.slug in CONVERTER_ROUTES) && tool.slug !== HUB_SLUG && tool.slug !== "merge-pdf").map(tool => (
+      {TOOL_LANDINGS.filter(tool => !(tool.slug in CONVERTER_ROUTES) && tool.slug !== HUB_SLUG && tool.slug !== "merge-pdf" && tool.slug !== "split-pdf" && tool.slug !== "compress-pdf").map(tool => (
         <Route key={`redirect-${tool.slug}`} path={`/${tool.slug}`} component={() => <Redirect to={`/en/${tool.slug}`} />} />
       ))}
 
