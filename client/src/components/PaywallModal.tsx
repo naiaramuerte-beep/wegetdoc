@@ -448,6 +448,12 @@ function SipayCheckoutForm({
                 data-color="#E63946"
                 data-buttoncolor="#E63946"
                 data-primary="#E63946"
+                /* Light-gray bg to match the rest of our modal. None of these
+                   keys are documented but cost nothing if Sipay ignores them. */
+                data-bg="#f7f8f9"
+                data-bgcolor="#f7f8f9"
+                data-background="#f7f8f9"
+                data-backgroundcolor="#f7f8f9"
                 /* Keep the iframe inline on mobile (default FastPay opens a
                    new tab on small screens). Confirmed working on mindmetric.io
                    which uses the same Sipay merchant. */
@@ -492,20 +498,16 @@ function SipayCheckoutForm({
                 Descargar
               </button>
               <style>{`
+                /* iframe fills the modal width — Sipay's internal grey panel
+                   stays gray (we can't reach inside their iframe to override
+                   it), but the area AROUND the iframe matches our requested
+                   light-gray so the seam is invisible. */
                 .fastpay-btn + iframe {
                   display: block !important;
-                  /* Narrowed from 100% so the DESCARGAR button inside the
-                     iframe no longer reaches the toggle. Sipay's layout is
-                     responsive: at this width the card-number / MM-YY /
-                     CVV inputs remain comfortably usable, but the button
-                     visually shrinks with the iframe so it stops touching
-                     the toggle handle on the left edge. */
                   width: 100% !important;
-                  max-width: 420px !important;
-                  margin: 0 auto !important;
                   min-height: 720px !important;
                   border: 0 !important;
-                  background: transparent !important;
+                  background: #f7f8f9 !important;
                   position: relative !important;
                   top: 0 !important;
                   left: 0 !important;
