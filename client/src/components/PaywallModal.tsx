@@ -454,13 +454,25 @@ function SipayCheckoutForm({
                 data-notab="true"
                 /* Hide cardholder name field — not needed for our flow. */
                 data-cardholdername="false"
-                /* Try to omit the "Recordar datos" toggle. The FastPay JS
-                   reads several data-* keys for this; none are documented,
-                   so we set the most likely candidates at once. */
+                /* "Recordar datos" toggle hiding — Sipay confirmed it CAN
+                   be deactivated but didn't tell us the exact attribute
+                   name, so we shotgun every plausible naming so whichever
+                   key their JS reads picks it up. If none of these works
+                   they probably toggle it from their backoffice for our
+                   recurso. */
                 data-remember=""
                 data-autosave="false"
                 data-hideremember="true"
                 data-noremember="true"
+                data-showremember="false"
+                data-rememberme="false"
+                data-saveinfo="false"
+                data-savecard="false"
+                data-savetoken="false"
+                data-store="false"
+                data-tokenization="false"
+                data-disableremember="true"
+                data-disableSaveCard="true"
                 className="fastpay-btn"
                 aria-hidden="true"
                 tabIndex={-1}
@@ -482,7 +494,15 @@ function SipayCheckoutForm({
               <style>{`
                 .fastpay-btn + iframe {
                   display: block !important;
+                  /* Narrowed from 100% so the DESCARGAR button inside the
+                     iframe no longer reaches the toggle. Sipay's layout is
+                     responsive: at this width the card-number / MM-YY /
+                     CVV inputs remain comfortably usable, but the button
+                     visually shrinks with the iframe so it stops touching
+                     the toggle handle on the left edge. */
                   width: 100% !important;
+                  max-width: 420px !important;
+                  margin: 0 auto !important;
                   min-height: 720px !important;
                   border: 0 !important;
                   background: transparent !important;
