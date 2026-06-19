@@ -460,7 +460,10 @@ export const appRouter = router({
         const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
         await upsertSubscription({
           userId: ctx.user.id,
-          sipayToken: data?.payload?.token ?? "",
+          // Wallet flows (Apple Pay / Google Pay) return `cof_id` (Credentials
+          // on File ID) instead of `token` — same role for MIT-R, different
+          // field name. Read either, prefer whichever Sipay returned.
+          sipayToken: data?.payload?.cof_id ?? data?.payload?.token ?? "",
           sipayOrder: order,
           sipayTransactionId: txn,
           sipayMaskedCard: masked,
@@ -554,7 +557,10 @@ export const appRouter = router({
         const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
         await upsertSubscription({
           userId: ctx.user.id,
-          sipayToken: data?.payload?.token ?? "",
+          // Wallet flows (Apple Pay / Google Pay) return `cof_id` (Credentials
+          // on File ID) instead of `token` — same role for MIT-R, different
+          // field name. Read either, prefer whichever Sipay returned.
+          sipayToken: data?.payload?.cof_id ?? data?.payload?.token ?? "",
           sipayOrder: order,
           sipayTransactionId: txn,
           sipayMaskedCard: masked,

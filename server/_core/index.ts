@@ -827,7 +827,10 @@ ${allUrls.map(u => `  <url>
       // so we can correlate the 3DS callback back to a user without a session
       // (the Redsys MPI redirect drops cookies on the floor in some browsers).
       const customUserId = Number(data?.payload?.custom_01 ?? 0);
-      const sipayToken = data?.payload?.token ?? "";
+      // FastPay returns `token` (vault tokenization on raw PAN); wallet
+      // flows return `cof_id`. Prefer whichever Sipay actually sent so this
+      // helper works for any future flow that uses the same callback path.
+      const sipayToken = data?.payload?.cof_id ?? data?.payload?.token ?? "";
       console.log(`[Sipay] auth OK: userId=${customUserId} txn=${sipayTxn || "(empty)"} order=${order} card=${masked}`);
 
       if (customUserId > 0) {
@@ -999,6 +1002,12 @@ ${allUrls.map(u => `  <url>
               status_code: data?.payload?.status_code ?? data?.status_code,
               return_code: data?.payload?.return_code ?? data?.return_code,
               reason_code: data?.payload?.reason_code ?? data?.reason_code,
+              // Token-like fields: in MIT failure responses Sipay sometimes
+              // returns the cof_id that DID work or hints at why the stored
+              // credentials are no longer usable. Logging both helps us
+              // diagnose token drift across renewals.
+              cof_id: data?.payload?.cof_id ?? data?.cof_id,
+              token: data?.payload?.token ?? data?.token,
             };
             console.warn(
               "[MIT-DUNNING-RAW]",
