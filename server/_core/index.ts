@@ -984,6 +984,32 @@ ${allUrls.map(u => `  <url>
             });
             results.push({ userId: sub.userId, ok: true });
           } else {
+            // Dunning audit — log the FULL Sipay response on every decline so
+            // we can see the exact field name + format used for the response
+            // code ("116", "0116", "R116", separate `error_code` field, etc).
+            // This drives the per-code retry policy in the dunning refactor;
+            // remove the log once the mapping is locked in. Marker prefix
+            // makes it grep-friendly in Railway logs.
+            const candidateCodes = {
+              code: data?.payload?.code ?? data?.code,
+              error_code: data?.payload?.error_code ?? data?.error_code,
+              errorCode: data?.payload?.errorCode ?? data?.errorCode,
+              response_code: data?.payload?.response_code ?? data?.response_code,
+              responseCode: data?.payload?.responseCode ?? data?.responseCode,
+              status_code: data?.payload?.status_code ?? data?.status_code,
+              return_code: data?.payload?.return_code ?? data?.return_code,
+              reason_code: data?.payload?.reason_code ?? data?.reason_code,
+            };
+            console.warn(
+              "[MIT-DUNNING-RAW]",
+              JSON.stringify({
+                userId: sub.userId,
+                order,
+                candidateCodes,
+                payload: data,
+                rawTail: typeof result.raw === "string" ? result.raw.slice(0, 2000) : null,
+              }),
+            );
             // Mark sub past_due so admin sees it in the panel.
             await db.upsertSubscription({
               userId: sub.userId,
