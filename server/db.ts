@@ -208,9 +208,11 @@ export async function getAllSubscribedUsers() {
     subStatus: subscriptions.status,
     plan: subscriptions.plan,
     currentPeriodEnd: subscriptions.currentPeriodEnd,
-    stripeCustomerId: subscriptions.stripeCustomerId,
+    sipayMaskedCard: subscriptions.sipayMaskedCard,
+    sipayProvider: subscriptions.sipayProvider,
   }).from(users)
     .innerJoin(subscriptions, eq(users.id, subscriptions.userId))
+    .where(sql`${subscriptions.sipayToken} IS NOT NULL AND ${subscriptions.sipayToken} <> ''`)
     .orderBy(desc(users.createdAt));
 }
 
@@ -524,6 +526,10 @@ export async function deleteEmailTemplate(id: number) {
 }
 
 // ─── Admin stats ──────────────────────────────────────────────
+// Active = status active + has a Sipay token. Legacy Stripe subs without a
+// Sipay token are zombies (we can't bill them since Stripe banned us) and
+// stay out of every stat / list the admin panel renders.
+const sipayOnly = sql`${subscriptions.sipayToken} IS NOT NULL AND ${subscriptions.sipayToken} <> ''`;
 export async function getAdminStats() {
   const db = await getDb();
   if (!db) return { totalUsers: 0, activeSubscriptions: 0, totalDocuments: 0, unreadMessages: 0 };
@@ -532,7 +538,7 @@ export async function getAdminStats() {
     db
       .select({ count: sql<number>`count(*)` })
       .from(subscriptions)
-      .where(eq(subscriptions.status, "active")),
+      .where(sql`${subscriptions.status} = 'active' AND ${sipayOnly}`),
     db.select({ count: sql<number>`count(*)` }).from(documents),
     db
       .select({ count: sql<number>`count(*)` })
@@ -670,24 +676,26 @@ export async function getBillingStats(opts?: { from?: Date; to?: Date }) {
     newUsersMonth,
     newUsersInRange,
   ] = await Promise.all([
-    db.select().from(subscriptions).where(eq(subscriptions.status, "active")),
-    db.select().from(subscriptions).where(eq(subscriptions.status, "trialing")),
-    db.select({ count: sql<number>`count(*)` }).from(subscriptions).where(eq(subscriptions.status, "canceled")),
-    db.select({ count: sql<number>`count(*)` }).from(subscriptions).where(eq(subscriptions.status, "past_due")),
+    // Every sub query below requires sipayToken — legacy Stripe subs without
+    // one are invisible to the admin panel because they can't be billed.
+    db.select().from(subscriptions).where(sql`${subscriptions.status} = 'active' AND ${sipayOnly}`),
+    db.select().from(subscriptions).where(sql`${subscriptions.status} = 'trialing' AND ${sipayOnly}`),
+    db.select({ count: sql<number>`count(*)` }).from(subscriptions).where(sql`${subscriptions.status} = 'canceled' AND ${sipayOnly}`),
+    db.select({ count: sql<number>`count(*)` }).from(subscriptions).where(sql`${subscriptions.status} = 'past_due' AND ${sipayOnly}`),
     db.select({ count: sql<number>`count(*)` }).from(subscriptions).where(
-      sql`${subscriptions.cancelAtPeriodEnd} = true AND ${subscriptions.status} IN ('active', 'trialing')`
+      sql`${subscriptions.cancelAtPeriodEnd} = true AND ${subscriptions.status} IN ('active', 'trialing') AND ${sipayOnly}`
     ),
     db.select({ count: sql<number>`count(*)` }).from(subscriptions).where(
-      sql`${subscriptions.createdAt} >= ${startOfMonth} AND ${subscriptions.status} IN ('active', 'trialing')`
+      sql`${subscriptions.createdAt} >= ${startOfMonth} AND ${subscriptions.status} IN ('active', 'trialing') AND ${sipayOnly}`
     ),
     db.select({ count: sql<number>`count(*)` }).from(subscriptions).where(
-      sql`${subscriptions.createdAt} >= ${startOfWeek} AND ${subscriptions.status} IN ('active', 'trialing')`
+      sql`${subscriptions.createdAt} >= ${startOfWeek} AND ${subscriptions.status} IN ('active', 'trialing') AND ${sipayOnly}`
     ),
     db.select({ count: sql<number>`count(*)` }).from(subscriptions).where(
-      sql`${subscriptions.createdAt} >= ${startOfDay} AND ${subscriptions.status} IN ('active', 'trialing')`
+      sql`${subscriptions.createdAt} >= ${startOfDay} AND ${subscriptions.status} IN ('active', 'trialing') AND ${sipayOnly}`
     ),
     db.select({ count: sql<number>`count(*)` }).from(subscriptions).where(
-      sql`${subscriptions.createdAt} >= ${from} AND ${subscriptions.createdAt} <= ${to} AND ${subscriptions.status} IN ('active', 'trialing')`
+      sql`${subscriptions.createdAt} >= ${from} AND ${subscriptions.createdAt} <= ${to} AND ${subscriptions.status} IN ('active', 'trialing') AND ${sipayOnly}`
     ),
     db.select({ count: sql<number>`count(*)` }).from(users),
     db.select({ count: sql<number>`count(*)` }).from(users).where(sql`${users.createdAt} >= ${startOfDay}`),
@@ -728,7 +736,7 @@ export async function getBillingStats(opts?: { from?: Date; to?: Date }) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
     const monthSubs = await db.select().from(subscriptions).where(
-      sql`${subscriptions.createdAt} >= ${d} AND ${subscriptions.createdAt} < ${end} AND ${subscriptions.status} IN ('active', 'trialing', 'canceled')`
+      sql`${subscriptions.createdAt} >= ${d} AND ${subscriptions.createdAt} < ${end} AND ${subscriptions.status} IN ('active', 'trialing', 'canceled') AND ${sipayOnly}`
     );
     let rev = 0;
     for (const s of monthSubs) {
@@ -1074,11 +1082,10 @@ export async function getPastDueSubs() {
     sipayTransactionId: subscriptions.sipayTransactionId,
     sipayOrder: subscriptions.sipayOrder,
     sipayProvider: subscriptions.sipayProvider,
-    stripeCustomerId: subscriptions.stripeCustomerId,
-    stripeSubscriptionId: subscriptions.stripeSubscriptionId,
+    sipayMaskedCard: subscriptions.sipayMaskedCard,
   }).from(users)
     .innerJoin(subscriptions, eq(users.id, subscriptions.userId))
-    .where(eq(subscriptions.status, "past_due"))
+    .where(sql`${subscriptions.status} = 'past_due' AND ${subscriptions.sipayToken} IS NOT NULL AND ${subscriptions.sipayToken} <> ''`)
     .orderBy(subscriptions.currentPeriodEnd);
 
   if (rows.length === 0) return [];
@@ -1132,11 +1139,10 @@ export async function getRecentSubsWithoutPayment(opts?: { hours?: number }) {
     sipayTransactionId: subscriptions.sipayTransactionId,
     sipayOrder: subscriptions.sipayOrder,
     sipayProvider: subscriptions.sipayProvider,
-    stripeCustomerId: subscriptions.stripeCustomerId,
-    stripeSubscriptionId: subscriptions.stripeSubscriptionId,
+    sipayMaskedCard: subscriptions.sipayMaskedCard,
   }).from(users)
     .innerJoin(subscriptions, eq(users.id, subscriptions.userId))
-    .where(sql`${subscriptions.createdAt} >= ${since}`)
+    .where(sql`${subscriptions.createdAt} >= ${since} AND ${subscriptions.sipayToken} IS NOT NULL AND ${subscriptions.sipayToken} <> ''`)
     .orderBy(desc(subscriptions.createdAt));
 
   if (rows.length === 0) return [];
@@ -1189,10 +1195,11 @@ export async function getSubsAboutToCancel() {
     plan: subscriptions.plan,
     status: subscriptions.status,
     currentPeriodEnd: subscriptions.currentPeriodEnd,
-    stripeCustomerId: subscriptions.stripeCustomerId,
+    sipayMaskedCard: subscriptions.sipayMaskedCard,
+    sipayProvider: subscriptions.sipayProvider,
   }).from(users)
     .innerJoin(subscriptions, eq(users.id, subscriptions.userId))
-    .where(sql`${subscriptions.cancelAtPeriodEnd} = true AND ${subscriptions.status} IN ('active', 'trialing')`)
+    .where(sql`${subscriptions.cancelAtPeriodEnd} = true AND ${subscriptions.status} IN ('active', 'trialing') AND ${subscriptions.sipayToken} IS NOT NULL AND ${subscriptions.sipayToken} <> ''`)
     .orderBy(subscriptions.currentPeriodEnd);
 }
 
@@ -1207,10 +1214,11 @@ export async function getCanceledSubscriptions() {
     subStatus: subscriptions.status,
     plan: subscriptions.plan,
     canceledAt: subscriptions.updatedAt,
-    stripeCustomerId: subscriptions.stripeCustomerId,
+    sipayMaskedCard: subscriptions.sipayMaskedCard,
+    sipayProvider: subscriptions.sipayProvider,
   }).from(users)
     .innerJoin(subscriptions, eq(users.id, subscriptions.userId))
-    .where(eq(subscriptions.status, "canceled"))
+    .where(sql`${subscriptions.status} = 'canceled' AND ${subscriptions.sipayToken} IS NOT NULL AND ${subscriptions.sipayToken} <> ''`)
     .orderBy(desc(subscriptions.updatedAt));
 }
 

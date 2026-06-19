@@ -136,7 +136,7 @@ export default function Admin() {
   const createFakeSubMut = trpc.admin.createFakeTrialSub.useMutation({
     onSuccess: (r) => {
       if (!r.success) toast.error(r.error || "No se pudo crear");
-      else toast.success(`Sub trial falsa creada (ID: ${r.stripeSubscriptionId}). Ahora eres "trial". Prueba el flujo.`);
+      else toast.success(`Sub trial falsa creada (ID: ${(r as any).stripeSubscriptionId ?? r}). Ahora eres "trial". Prueba el flujo.`);
     },
     onError: (err) => toast.error(err.message || "Error"),
   });
@@ -582,10 +582,10 @@ export default function Admin() {
                 </div>
               ) : billing ? (
                 <>
-                  {/* ── REAL CASH FROM STRIPE (range-aware) ── */}
+                  {/* ── REAL CASH FROM SIPAY (range-aware) ── */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Ingresos reales (Stripe)</p>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Ingresos reales (Sipay)</p>
                       {stripeRevQ.isLoading && (
                         <span className="text-[10px] text-gray-500 inline-flex items-center gap-1">
                           <RefreshCw size={10} className="animate-spin" /> consultando…
@@ -706,7 +706,7 @@ export default function Admin() {
                       {[
                         { label: "Pagando recurrente",  value: (billing as any).payingSubscriptions ?? 0,  color: "#10b981", icon: <CreditCard size={18} />, sub: "Plan monthly/annual" },
                         { label: "En trial (48h)",      value: billing.trialingSubscriptions,  color: "#E63946", icon: <Zap size={18} />, sub: "Convertirán en 48h" },
-                        { label: "Cobro fallido",       value: (billing as any).pastDueSubscriptions ?? 0, color: "#ef4444", icon: <RotateCcw size={18} />, sub: "Stripe reintentando" },
+                        { label: "Cobro fallido",       value: (billing as any).pastDueSubscriptions ?? 0, color: "#ef4444", icon: <RotateCcw size={18} />, sub: "Pendiente reintento" },
                         { label: "Por cancelar",        value: billing.subsAboutToCancel,      color: "#f59e0b", icon: <AlertTriangle size={18} />, sub: "Cancel at period end" },
                         { label: "Canceladas total",    value: billing.canceledSubscriptions,  color: "#ef4444", icon: <UserX size={18} /> },
                       ].map((card) => (
@@ -812,7 +812,7 @@ export default function Admin() {
                     <div className="px-5 py-3 border-b flex items-center justify-between" style={{ borderColor: "#1e2433" }}>
                       <div className="flex items-center gap-2">
                         <RotateCcw size={14} className="text-red-500" />
-                        <p className="text-sm font-semibold text-white">Cobro fallido — Stripe reintentando</p>
+                        <p className="text-sm font-semibold text-white">Cobro fallido — pendientes de reintento</p>
                       </div>
                       <p className="text-xs text-gray-500">
                         {pastDueSubsQ.data?.length ?? 0} {pastDueSubsQ.data?.length === 1 ? "cliente" : "clientes"}
@@ -830,7 +830,7 @@ export default function Admin() {
                               <th className="px-4 py-2 font-medium">Intentos</th>
                               <th className="px-4 py-2 font-medium">Próximo intento</th>
                               <th className="px-4 py-2 font-medium">País</th>
-                              <th className="px-4 py-2 font-medium">Stripe</th>
+                              <th className="px-4 py-2 font-medium">Provider</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -860,26 +860,15 @@ export default function Admin() {
                                   {s.nextAttemptAt ? new Date(s.nextAttemptAt).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" }) : "—"}
                                 </td>
                                 <td className="px-4 py-2 text-gray-400">{s.country ?? "—"}</td>
-                                <td className="px-4 py-2">
-                                  {s.stripeCustomerId ? (
-                                    <a
-                                      href={`https://dashboard.stripe.com/customers/${s.stripeCustomerId}`}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="text-[#E63946] hover:underline"
-                                    >
-                                      Ver →
-                                    </a>
-                                  ) : (
-                                    <span className="text-gray-500">—</span>
-                                  )}
+                                <td className="px-4 py-2 text-gray-400 font-mono text-xs">
+                                  {(s as any).sipayMaskedCard || "—"}
                                 </td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
                         <p className="px-5 py-3 text-[11px] text-gray-500 border-t" style={{ borderColor: "#1e2433" }}>
-                          Stripe reintenta el cobro automáticamente durante ~3 semanas (smart retries). Si todos los intentos fallan, la sub se cancela.
+                          Sipay no reintenta automáticamente. Nuestro cron MIT-R hace 1 intento por ciclo: si falla, la sub queda en past_due hasta el siguiente ciclo. Si fallan varios seguidos, considera contactar al cliente.
                         </p>
                       </div>
                     ) : (
@@ -915,7 +904,7 @@ export default function Admin() {
                               <th className="px-4 py-2 font-medium">Invoice</th>
                               <th className="px-4 py-2 font-medium">PaymentIntent</th>
                               <th className="px-4 py-2 font-medium">Motivo</th>
-                              <th className="px-4 py-2 font-medium">Stripe</th>
+                              <th className="px-4 py-2 font-medium">Provider</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -959,24 +948,12 @@ export default function Admin() {
                                         <div className="text-[11px] mt-0.5">{s.declineMessage}</div>
                                       )}
                                     </div>
-                                  ) : s.stripeSubscriptionId?.startsWith("fake_sub_qa_") ? (
-                                    <span className="text-gray-500 text-[11px]">QA test (admin simulado)</span>
                                   ) : (
                                     <span className="text-gray-500">—</span>
                                   )}
                                 </td>
-                                <td className="px-4 py-2">
-                                  {s.hostedInvoiceUrl ? (
-                                    <a href={s.hostedInvoiceUrl} target="_blank" rel="noreferrer" className="text-[#E63946] hover:underline">
-                                      Invoice →
-                                    </a>
-                                  ) : s.stripeCustomerId ? (
-                                    <a href={`https://dashboard.stripe.com/customers/${s.stripeCustomerId}`} target="_blank" rel="noreferrer" className="text-[#E63946] hover:underline">
-                                      Cliente →
-                                    </a>
-                                  ) : (
-                                    <span className="text-gray-500">—</span>
-                                  )}
+                                <td className="px-4 py-2 text-gray-400 font-mono text-xs">
+                                  {(s as any).sipayMaskedCard || "—"}
                                 </td>
                               </tr>
                             ))}
@@ -1038,15 +1015,8 @@ export default function Admin() {
                                       <span className="text-gray-600">—</span>
                                     )}
                                   </td>
-                                  <td className="px-4 py-2">
-                                    <a
-                                      href={`https://dashboard.stripe.com/payments/${c.id}`}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="text-[11px] font-mono text-gray-400 hover:text-[#E63946]"
-                                    >
-                                      {c.id.slice(0, 20)}…
-                                    </a>
+                                  <td className="px-4 py-2 text-[11px] font-mono text-gray-400">
+                                    {((c as any).sipayTransactionId || c.id).slice(0, 20)}…
                                   </td>
                                   <td className="px-4 py-2">
                                     {c.fullyRefunded || remaining <= 0 ? (
@@ -1240,7 +1210,7 @@ export default function Admin() {
                         currentPeriodEnd: s.currentPeriodEnd,
                         createdAt: s.createdAt,
                         lastSignedIn: s.lastSignedIn,
-                        stripeCustomerId: s.stripeCustomerId,
+                        sipayMaskedCard: (s as any).sipayMaskedCard,
                       })),
                       `subscribers-${new Date().toISOString().slice(0, 10)}.csv`
                     );
@@ -1266,7 +1236,7 @@ export default function Admin() {
                         <th className="px-4 py-2 font-medium">Estado</th>
                         <th className="px-4 py-2 font-medium">Fin periodo</th>
                         <th className="px-4 py-2 font-medium">País</th>
-                        <th className="px-4 py-2 font-medium">Stripe</th>
+                        <th className="px-4 py-2 font-medium">Tarjeta</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1298,19 +1268,8 @@ export default function Admin() {
                             {s.currentPeriodEnd ? new Date(s.currentPeriodEnd).toLocaleDateString("es-ES") : "—"}
                           </td>
                           <td className="px-4 py-2 text-gray-400">{s.country ?? "—"}</td>
-                          <td className="px-4 py-2">
-                            {s.stripeCustomerId ? (
-                              <a
-                                href={`https://dashboard.stripe.com/customers/${s.stripeCustomerId}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-[#E63946] hover:underline"
-                              >
-                                Ver →
-                              </a>
-                            ) : (
-                              <span className="text-gray-500">—</span>
-                            )}
+                          <td className="px-4 py-2 text-gray-400 font-mono text-xs">
+                            {(s as any).sipayMaskedCard || "—"}
                           </td>
                         </tr>
                       ))}
@@ -1495,7 +1454,7 @@ export default function Admin() {
                           country: u.country,
                           subStatus: u.subStatus,
                           plan: u.subPlan,
-                          stripeCustomerId: u.stripeCustomerId,
+                          sipayMaskedCard: (u as any).sipayMaskedCard,
                           currentPeriodEnd: u.currentPeriodEnd,
                           createdAt: u.createdAt,
                           lastSignedIn: u.lastSignedIn,
@@ -1582,7 +1541,7 @@ export default function Admin() {
                           {u.subPlan ?? "\u2014"}
                         </td>
                         <td className="px-4 py-3 text-xs text-gray-500 font-mono">
-                          {u.stripeCustomerId ??"\u2014"}
+                          {(u as any).sipayMaskedCard ??"\u2014"}
                         </td>
                         <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">
                           {u.currentPeriodEnd ? new Date(u.currentPeriodEnd).toLocaleDateString("es-ES") : "\u2014"}
@@ -1672,7 +1631,7 @@ export default function Admin() {
                         plan: c.plan,
                         canceledAt: c.canceledAt,
                         country: c.country,
-                        stripeCustomerId: c.stripeCustomerId,
+                        sipayMaskedCard: c.sipayMaskedCard,
                       })),
                       `canceled-${new Date().toISOString().slice(0, 10)}.csv`
                     );
@@ -1732,7 +1691,7 @@ export default function Admin() {
                         </td>
                         <td className="px-4 py-3 text-gray-400">{u.country ?? "—"}</td>
                         <td className="px-4 py-3 text-gray-500 text-xs font-mono">
-                          {u.stripeCustomerId ??"—"}
+                          {(u as any).sipayMaskedCard ??"—"}
                         </td>
                       </tr>
                     ))}
@@ -2095,8 +2054,8 @@ export default function Admin() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-white">Webhooks de Stripe</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">Últimos 100 eventos recibidos. Auto-refresca cada 15s.</p>
+                  <h2 className="text-lg font-semibold text-white">Eventos de Sipay</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">Últimos 100 eventos del cron + callbacks. Auto-refresca cada 15s.</p>
                 </div>
                 <button
                   onClick={() => utils.admin.webhookEvents.invalidate()}
@@ -2335,7 +2294,7 @@ export default function Admin() {
                     Precio de suscripción
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    Cambia el precio mensual mostrado en toda la web y el Stripe Price ID que se usa al crear nuevas suscripciones.
+                    Cambia el precio mensual mostrado en toda la web y el que se cobra a las nuevas suscripciones vía MIT-R.
                     <strong className="text-amber-300"> Solo afecta a NUEVOS checkouts.</strong> Los suscriptores existentes mantienen su precio actual.
                   </p>
                 </div>
@@ -2345,7 +2304,6 @@ export default function Admin() {
                   <div className="space-y-3">
                     {[
                       { key: "subscription_price_eur", label: "Precio mensual (€)", placeholder: "19.99 (deja vacío para 19,99)" },
-                      { key: "active_stripe_price_id", label: "Stripe Price ID", placeholder: "price_xxx (deja vacío para usar STRIPE_PRICE_ID env)" },
                     ].map((setting) => {
                       const current =
                         settingsQ.data?.find((s) => s.key === setting.key)?.value ?? "";
@@ -2364,8 +2322,7 @@ export default function Admin() {
                   </div>
                 )}
                 <p className="text-[10px] text-gray-500 pt-2 border-t" style={{ borderColor: "#1e2433" }}>
-                  💡 El cambio se aplica inmediatamente. Si dejas ambos vacíos, se usa el precio por defecto (19,99€) y el <code className="font-mono">STRIPE_PRICE_ID</code> del env.
-                  Para crear un nuevo Price en Stripe: <code className="font-mono">railway run node scripts/create-test-price.mjs</code>.
+                  💡 El cambio se aplica inmediatamente al cron MIT-R. Si lo dejas vacío, se usa el precio por defecto (19,99 €). Los suscriptores ya activos siguen al precio que tenían cuando se dieron de alta.
                 </p>
               </div>
 
@@ -2470,7 +2427,7 @@ export default function Admin() {
                     className="px-4 py-3 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-60"
                     style={{ backgroundColor: "#8b5cf6" }}
                   >
-                    {createFakeSubMut.isPending ? "Creando…" : "1. Crear sub trial falsa (sin Stripe)"}
+                    {createFakeSubMut.isPending ? "Creando…" : "1. Crear sub trial falsa"}
                   </button>
                   <button
                     onClick={() => simulateTrialMut.mutate()}
@@ -2627,13 +2584,8 @@ export default function Admin() {
                             {s.cancelReason && (
                               <span className="text-amber-400 text-[11px]">cancel: {s.cancelReason}</span>
                             )}
-                            {s.stripeCustomerId && (
-                              <a
-                                href={`https://dashboard.stripe.com/customers/${s.stripeCustomerId}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-[#E63946] hover:underline"
-                              >Stripe →</a>
+                            {s.sipayMaskedCard && (
+                              <span className="text-gray-400 font-mono text-[11px]">{s.sipayMaskedCard}</span>
                             )}
                           </div>
                         ))}
