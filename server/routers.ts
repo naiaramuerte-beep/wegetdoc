@@ -124,7 +124,7 @@ export const appRouter = router({
       const raw = await getSiteSetting("subscription_price_eur");
       const priceEur = (() => {
         const n = Number((raw ?? "").replace(",", "."));
-        return Number.isFinite(n) && n > 0 ? n : 19.99;
+        return Number.isFinite(n) && n > 0 ? n : 19.95;
       })();
       // "39.90" → "39,90" for de/es/fr/it/pl/pt/ro/ru/uk; "39.90" stays for en/zh/nl
       const decimals = priceEur.toFixed(2);

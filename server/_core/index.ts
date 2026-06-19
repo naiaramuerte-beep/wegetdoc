@@ -934,9 +934,9 @@ ${allUrls.map(u => `  <url>
       const { createMITRecurring } = await import("./sipay");
       const due = await db.getSubsDueForRenewal();
       // Read price from site_settings so the A/B test toggle still drives
-      // recurring charges. Default to 19.99 € if the row was deleted.
+      // recurring charges. Default to 19.95 € if the row was deleted.
       const priceStr = await db.getSiteSetting?.("subscription_price_eur").catch(() => null);
-      const priceEur = Number(priceStr ?? "19.99");
+      const priceEur = Number(priceStr ?? "19.95");
       const amountCents = Math.round(priceEur * 100);
       const results: { userId: number; ok: boolean; reason?: string }[] = [];
       for (const sub of due) {

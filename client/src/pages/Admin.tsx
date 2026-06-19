@@ -2303,7 +2303,7 @@ export default function Admin() {
                 ) : (
                   <div className="space-y-3">
                     {[
-                      { key: "subscription_price_eur", label: "Precio mensual (€)", placeholder: "19.99 (deja vacío para 19,99)" },
+                      { key: "subscription_price_eur", label: "Precio mensual (€)", placeholder: "19.95 (deja vacío para usar el default)" },
                     ].map((setting) => {
                       const current =
                         settingsQ.data?.find((s) => s.key === setting.key)?.value ?? "";
@@ -2322,7 +2322,7 @@ export default function Admin() {
                   </div>
                 )}
                 <p className="text-[10px] text-gray-500 pt-2 border-t" style={{ borderColor: "#1e2433" }}>
-                  💡 El cambio se aplica inmediatamente al cron MIT-R. Si lo dejas vacío, se usa el precio por defecto (19,99 €). Los suscriptores ya activos siguen al precio que tenían cuando se dieron de alta.
+                  💡 El cambio se aplica inmediatamente al cron MIT-R. Si lo dejas vacío, se usa el precio por defecto (19,95 €). Los suscriptores ya activos siguen al precio que tenían cuando se dieron de alta.
                 </p>
               </div>
 

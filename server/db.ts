@@ -409,7 +409,7 @@ export async function getAllSiteSettings() {
 export async function getActiveMonthlyPrice(): Promise<{ eur: number; formatted: string }> {
   const raw = await getSiteSetting("subscription_price_eur");
   const n = Number((raw ?? "").replace(",", "."));
-  const eur = Number.isFinite(n) && n > 0 ? n : 19.99;
+  const eur = Number.isFinite(n) && n > 0 ? n : 19.95;
   const formatted = `${eur.toFixed(2).replace(".", ",")}€`;
   return { eur, formatted };
 }
@@ -1765,7 +1765,7 @@ export async function getRevenueByCountry() {
     const existing = byCountry.get(c) || { country: c, subs: 0, mrrEur: 0 };
     existing.subs += Number(r.count);
     // Trials project to monthly price (consistent with mrrCommitted).
-    if (r.plan === "monthly" || r.plan === "trial") existing.mrrEur += Number(r.count) * 19.99;
+    if (r.plan === "monthly" || r.plan === "trial") existing.mrrEur += Number(r.count) * 19.95;
     else if (r.plan === "annual") existing.mrrEur += Number(r.count) * (99 / 12);
     byCountry.set(c, existing);
   }
