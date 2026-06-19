@@ -836,7 +836,12 @@ ${allUrls.map(u => `  <url>
       if (customUserId > 0) {
         const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge } = await import("../db");
         const now = new Date();
-        const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        // 0,50 € intro buys a 2-day trial. The cron picks the sub up at
+        // currentPeriodEnd and charges the 19,95 € monthly via MIT-R, which
+        // extends the period 30 days. Until that first MIT clears, the user
+        // is on `plan='trial'` / `status='trialing'`.
+        const TRIAL_DAYS = 2;
+        const periodEnd = new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
         await upsertSubscription({
           userId: customUserId,
           sipayToken,

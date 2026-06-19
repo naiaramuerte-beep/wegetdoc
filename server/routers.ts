@@ -457,7 +457,9 @@ export const appRouter = router({
         const masked = data?.payload?.masked_card ?? "";
         const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge } = await import("./db");
         const now = new Date();
-        const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        // 0,50 € intro buys a 2-day trial. After it expires the cron picks
+        // the sub up and charges 19,95 € MIT-R, which extends 30 days.
+        const periodEnd = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
         await upsertSubscription({
           userId: ctx.user.id,
           // Wallet flows (Apple Pay / Google Pay) return `cof_id` (Credentials
@@ -554,7 +556,9 @@ export const appRouter = router({
         const masked = data?.payload?.masked_card ?? "";
         const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge } = await import("./db");
         const now = new Date();
-        const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        // 0,50 € intro buys a 2-day trial. After it expires the cron picks
+        // the sub up and charges 19,95 € MIT-R, which extends 30 days.
+        const periodEnd = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
         await upsertSubscription({
           userId: ctx.user.id,
           // Wallet flows (Apple Pay / Google Pay) return `cof_id` (Credentials
