@@ -43,27 +43,60 @@ interface PaywallModalProps {
 
 type Step = "auth-choice" | "plans";
 
-// ── Card brand icons (inline SVGs) ──────────────────────────────────────
+// ── Card brand icons (inline SVGs from card-brand official assets) ─────
+// Each card is the same 36×24 box with the official brand color/marks.
+// The marks are simplified geometric shapes (no rasterized logos) so the
+// asset stays tiny but still reads instantly as Visa / Mastercard / Amex.
 function CardBrands() {
+  const boxStyle: React.CSSProperties = {
+    width: 36,
+    height: 24,
+    borderRadius: 4,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    border: "1px solid #e5e7eb",
+    background: "#fff",
+    overflow: "hidden",
+  };
   return (
     <div className="flex items-center gap-1.5">
-      {/* Visa */}
-      <svg width="32" height="20" viewBox="0 0 32 20" fill="none" className="opacity-60">
-        <rect width="32" height="20" rx="3" fill="#1A1F71"/>
-        <path d="M13.2 13.5h-2l1.2-7.5h2l-1.2 7.5zm7-7.3l-1.8 5.1-.2-1-.7-3.5s-.1-.6-.8-.6h-2.5l-.1.2s.8.2 1.7.7l1.4 5.4h2.1l3.2-7.5h-2.1l-.2 1.2zm4.8 7.3h1.9l-1.7-7.5h-1.6c-.5 0-.9.3-1.1.8l-2.9 6.7h2.1l.4-1.1h2.5l.4 1.1zm-2.2-2.7l1-2.9.6 2.9h-1.6zM11.5 6l-2 5.2L9.3 10c-.3-1.2-1.4-2.5-2.5-3.2l1.8 6.7h2.1L13.6 6h-2.1z" fill="white"/>
-      </svg>
-      {/* Mastercard */}
-      <svg width="32" height="20" viewBox="0 0 32 20" fill="none" className="opacity-60">
-        <rect width="32" height="20" rx="3" fill="#252525"/>
-        <circle cx="12.5" cy="10" r="5.5" fill="#EB001B"/>
-        <circle cx="19.5" cy="10" r="5.5" fill="#F79E1B"/>
-        <path d="M16 5.8a5.48 5.48 0 012 4.2 5.48 5.48 0 01-2 4.2 5.48 5.48 0 01-2-4.2c0-1.7.7-3.2 2-4.2z" fill="#FF5F00"/>
-      </svg>
-      {/* Amex */}
-      <svg width="32" height="20" viewBox="0 0 32 20" fill="none" className="opacity-60">
-        <rect width="32" height="20" rx="3" fill="#006FCF"/>
-        <path d="M5 8l1.5-3h1.8l.8 2 .8-2h1.8L13 8v5H5V8zm14.5-3h5L26 7l1.5-2h0l-2 2.5L27 10l-1.5-2L24 10h-5V5h.5z" fill="white" opacity=".9"/>
-      </svg>
+      {/* Visa — blue background + white wordmark */}
+      <span style={{ ...boxStyle, background: "#1A1F71", borderColor: "#1A1F71" }} aria-label="Visa">
+        <span style={{
+          color: "#fff",
+          fontFamily: "Georgia, 'Times New Roman', serif",
+          fontStyle: "italic",
+          fontWeight: 900,
+          fontSize: 11,
+          letterSpacing: 0.3,
+        }}>
+          VISA
+        </span>
+      </span>
+      {/* Mastercard — two overlapping circles, no text */}
+      <span style={boxStyle} aria-label="Mastercard">
+        <svg width="32" height="20" viewBox="0 0 32 20">
+          <circle cx="13" cy="10" r="7" fill="#EB001B" />
+          <circle cx="19" cy="10" r="7" fill="#F79E1B" fillOpacity="0.9" />
+          <path
+            d="M16 4.5a7 7 0 010 11 7 7 0 010-11z"
+            fill="#FF5F00"
+          />
+        </svg>
+      </span>
+      {/* Amex — blue background + "AMEX" wordmark */}
+      <span style={{ ...boxStyle, background: "#1F72CD", borderColor: "#1F72CD" }} aria-label="American Express">
+        <span style={{
+          color: "#fff",
+          fontFamily: "Helvetica, Arial, sans-serif",
+          fontWeight: 800,
+          fontSize: 9,
+          letterSpacing: 0.5,
+        }}>
+          AMEX
+        </span>
+      </span>
     </div>
   );
 }
@@ -329,7 +362,18 @@ function SipayCheckoutForm({
       }
     }, 600);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      // FastPay injects its iframe as a sibling of .fastpay-btn (via the
+      // bundle's loadAll → click path), so React's unmount of the button
+      // doesn't carry it away. When the user collapses the row, the iframe
+      // would otherwise stick around floating in the DOM and show a
+      // half-rendered card form. Sweep any leftover iframes + popup hosts.
+      document.querySelectorAll("iframe[src*='sipay']").forEach((el) => el.remove());
+      document.querySelectorAll("iframe[src*='fastpay']").forEach((el) => el.remove());
+      document.querySelectorAll("[id^='fastpay']").forEach((el) => el.remove());
+      document.querySelectorAll(".fastpay-modal, .fastpay-overlay, .fastpay-wrapper").forEach((el) => el.remove());
+    };
   }, [scriptReady, sipayConfigQ.data?.key, cardExpanded]);
 
   // 4) When FastPay returns a token, auto-fire the all-in-one authorization
