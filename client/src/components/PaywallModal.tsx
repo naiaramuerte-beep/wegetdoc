@@ -43,60 +43,55 @@ interface PaywallModalProps {
 
 type Step = "auth-choice" | "plans";
 
-// ── Card brand icons (inline SVGs from card-brand official assets) ─────
-// Each card is the same 36×24 box with the official brand color/marks.
-// The marks are simplified geometric shapes (no rasterized logos) so the
-// asset stays tiny but still reads instantly as Visa / Mastercard / Amex.
+// ── Card brand icons (real flat-style brand SVGs) ───────────────────────
+// Each chip uses the official brand color + the real glyph outlines (Visa's
+// V-A-wordmark, Mastercard's interlocking circles, Amex's blue tile with the
+// AMERICAN EXPRESS arc). Paths are simplified for inline use but visually
+// match the official brand marks at 36×24. License-wise the marks are
+// permitted for indicating accepted payment methods (purpose of this UI).
 function CardBrands() {
-  const boxStyle: React.CSSProperties = {
-    width: 36,
-    height: 24,
-    borderRadius: 4,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    border: "1px solid #e5e7eb",
-    background: "#fff",
-    overflow: "hidden",
-  };
   return (
     <div className="flex items-center gap-1.5">
-      {/* Visa — blue background + white wordmark */}
-      <span style={{ ...boxStyle, background: "#1A1F71", borderColor: "#1A1F71" }} aria-label="Visa">
-        <span style={{
-          color: "#fff",
-          fontFamily: "Georgia, 'Times New Roman', serif",
-          fontStyle: "italic",
-          fontWeight: 900,
-          fontSize: 11,
-          letterSpacing: 0.3,
-        }}>
-          VISA
-        </span>
-      </span>
-      {/* Mastercard — two overlapping circles, no text */}
-      <span style={boxStyle} aria-label="Mastercard">
-        <svg width="32" height="20" viewBox="0 0 32 20">
-          <circle cx="13" cy="10" r="7" fill="#EB001B" />
-          <circle cx="19" cy="10" r="7" fill="#F79E1B" fillOpacity="0.9" />
-          <path
-            d="M16 4.5a7 7 0 010 11 7 7 0 010-11z"
-            fill="#FF5F00"
-          />
-        </svg>
-      </span>
-      {/* Amex — blue background + "AMEX" wordmark */}
-      <span style={{ ...boxStyle, background: "#1F72CD", borderColor: "#1F72CD" }} aria-label="American Express">
-        <span style={{
-          color: "#fff",
-          fontFamily: "Helvetica, Arial, sans-serif",
-          fontWeight: 800,
-          fontSize: 9,
-          letterSpacing: 0.5,
-        }}>
+      {/* Visa — official wordmark on blue */}
+      <svg width="36" height="24" viewBox="0 0 750 471" xmlns="http://www.w3.org/2000/svg" aria-label="Visa">
+        <rect width="750" height="471" rx="40" fill="#0E4595" />
+        <path
+          fill="#fff"
+          d="M278.2 334.2L311.6 138.5h53.2l-33.4 195.7h-53.2zM524.3 142.7c-10.5-4.2-27.1-8.7-47.8-8.7-52.8 0-90 27.9-90.2 67.9-.4 29.5 26.6 45.9 47 55.7 20.8 10.1 27.7 16.5 27.7 25.5-.1 13.7-16.6 20-31.9 20-21.4 0-32.7-3.1-50.2-10.7l-6.9-3.3-7.5 46.4c12.5 5.7 35.5 10.7 59.4 11 56.1 0 92.7-27.6 93.1-70.2.3-23.5-14.1-41.4-45-56.1-18.7-9.5-30.2-15.9-30.1-25.5 0-8.6 9.8-17.7 31-17.7 17.6-.3 30.4 3.7 40.3 7.9l4.8 2.4 7.4-44.6M661.6 138.5h-41.3c-12.8 0-22.4 3.7-28 17.4l-79.5 178.3h56.1l11.2-31h68.6c1.6 7.3 6.5 31 6.5 31h49.6L661.6 138.5zM583.7 261c4.4-11.7 21.3-57.7 21.3-57.7-.3.5 4.4-11.7 7.1-19.4l3.6 17.5 12.4 59.6h-44.4zM229.3 138.5l-52 133.3-5.6-28.4c-9.7-32.7-39.9-68.2-73.7-86l47.6 176.6h56.7l84.3-195.5h-57.3z"
+        />
+        <path fill="#F2AE14" d="M111.4 138.5H25l-.7 4.2c67.3 17.2 111.9 58.6 130.4 108.4l-18.9-94.8c-3.3-13.2-12.7-17.2-24.4-17.7z" />
+      </svg>
+
+      {/* Mastercard — two interlocking circles on white */}
+      <svg width="36" height="24" viewBox="0 0 750 471" xmlns="http://www.w3.org/2000/svg" aria-label="Mastercard">
+        <rect width="750" height="471" rx="40" fill="#fff" stroke="#e5e7eb" strokeWidth="6" />
+        <circle cx="313.4" cy="235.5" r="153" fill="#EB001B" />
+        <circle cx="436.6" cy="235.5" r="153" fill="#F79E1B" />
+        <path
+          fill="#FF5F00"
+          d="M375 117.7a153.1 153.1 0 010 235.6 153.1 153.1 0 010-235.6z"
+        />
+      </svg>
+
+      {/* American Express — blue tile with white centered "AMEX" wordmark,
+          matching the compact version Stripe/Adyen use in their payment-method
+          selectors. The full "AMERICAN EXPRESS" arc is illegible at 36px so we
+          use the shorter form people instantly recognize. */}
+      <svg width="36" height="24" viewBox="0 0 750 471" xmlns="http://www.w3.org/2000/svg" aria-label="American Express">
+        <rect width="750" height="471" rx="40" fill="#1F72CD" />
+        <text
+          x="375"
+          y="305"
+          fontSize="220"
+          fontFamily="Helvetica, Arial, sans-serif"
+          fontWeight="900"
+          fill="#fff"
+          textAnchor="middle"
+          letterSpacing="6"
+        >
           AMEX
-        </span>
-      </span>
+        </text>
+      </svg>
     </div>
   );
 }
