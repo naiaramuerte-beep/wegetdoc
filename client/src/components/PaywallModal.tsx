@@ -796,8 +796,13 @@ function GooglePayButton({
     // live domain (real cards, real money via Sipay). On other hosts (preview
     // deploys, localhost) we stay in TEST so we don't accidentally charge.
     const GOOGLE_PAY_MERCHANT_ID = "BCR2DN4T2627BZYZ";
+    // Match both the apex and www host so the button doesn't fall back to TEST
+    // when a visitor lands on www.editorpdf.net (Cloudflare adds www in some
+    // SERPs / shared links). Railway preview hosts (*.up.railway.app) and
+    // localhost still resolve to TEST so we never accidentally charge there.
+    const host = window.location.hostname;
     const isProd =
-      window.location.hostname === "editorpdf.net" && !!GOOGLE_PAY_MERCHANT_ID;
+      (host === "editorpdf.net" || host === "www.editorpdf.net") && !!GOOGLE_PAY_MERCHANT_ID;
     const client = new g.payments.api.PaymentsClient({
       environment: isProd ? "PRODUCTION" : "TEST",
     });
