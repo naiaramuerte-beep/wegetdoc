@@ -1246,23 +1246,34 @@ export default function Admin() {
                           <td className="px-4 py-2 text-gray-300">{s.name || "—"}</td>
                           <td className="px-4 py-2 text-gray-300">{s.plan}</td>
                           <td className="px-4 py-2">
-                            <span
-                              className="inline-flex px-2 py-0.5 rounded text-[10px] font-semibold"
-                              style={{
-                                backgroundColor:
-                                  s.subStatus === "active" ? "#10b98120" :
-                                  s.subStatus === "trialing" ? "#E6394620" :
-                                  s.subStatus === "past_due" ? "#ef444420" :
-                                  s.subStatus === "canceled" ? "#6b728020" : "#6b728020",
-                                color:
-                                  s.subStatus === "active" ? "#10b981" :
-                                  s.subStatus === "trialing" ? "#60a5fa" :
-                                  s.subStatus === "past_due" ? "#ef4444" :
-                                  "#9ca3af",
-                              }}
-                            >
-                              {s.subStatus}
-                            </span>
+                            <div className="flex flex-col gap-1">
+                              <span
+                                className="inline-flex px-2 py-0.5 rounded text-[10px] font-semibold w-fit"
+                                style={{
+                                  backgroundColor:
+                                    s.subStatus === "active" ? "#10b98120" :
+                                    s.subStatus === "trialing" ? "#E6394620" :
+                                    s.subStatus === "past_due" ? "#ef444420" :
+                                    s.subStatus === "canceled" ? "#6b728020" : "#6b728020",
+                                  color:
+                                    s.subStatus === "active" ? "#10b981" :
+                                    s.subStatus === "trialing" ? "#60a5fa" :
+                                    s.subStatus === "past_due" ? "#ef4444" :
+                                    "#9ca3af",
+                                }}
+                              >
+                                {s.subStatus}
+                              </span>
+                              {(s as any).cancelAtPeriodEnd && (
+                                <span
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold w-fit"
+                                  style={{ backgroundColor: "#f59e0b20", color: "#fbbf24" }}
+                                  title="El usuario canceló — no se renueva al final del periodo"
+                                >
+                                  ⚠ cancela {s.currentPeriodEnd ? new Date(s.currentPeriodEnd).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit" }) : ""}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-2 text-gray-300">
                             {s.currentPeriodEnd ? new Date(s.currentPeriodEnd).toLocaleDateString("es-ES") : "—"}
@@ -1511,7 +1522,7 @@ export default function Admin() {
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          {u.subStatus ? (
+                          {u.subStatus ? (<>
                             <span
                               className="px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap"
                               style={{
@@ -1533,7 +1544,16 @@ export default function Admin() {
                                u.subStatus === "past_due" ? "\u26A0\uFE0F Impago" :
                                u.subStatus === "incomplete" ? "\u23F3 Incompleta" : u.subStatus}
                             </span>
-                          ) : (
+                            {(u as any).cancelAtPeriodEnd ? (
+                              <span
+                                className="ml-1 px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap"
+                                style={{ backgroundColor: "#f59e0b20", color: "#fbbf24" }}
+                                title="El usuario cancelo - no se renueva al final del periodo"
+                              >
+                                {"⚠"} cancela {u.currentPeriodEnd ? new Date(u.currentPeriodEnd).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit" }) : ""}
+                              </span>
+                            ) : null}
+                          </>) : (
                             <span className="text-xs text-gray-500">Sin suscripci\u00f3n</span>
                           )}
                         </td>

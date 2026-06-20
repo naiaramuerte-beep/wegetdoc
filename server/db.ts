@@ -208,6 +208,7 @@ export async function getAllSubscribedUsers() {
     subStatus: subscriptions.status,
     plan: subscriptions.plan,
     currentPeriodEnd: subscriptions.currentPeriodEnd,
+    cancelAtPeriodEnd: subscriptions.cancelAtPeriodEnd,
     sipayMaskedCard: subscriptions.sipayMaskedCard,
     sipayProvider: subscriptions.sipayProvider,
   }).from(users)
