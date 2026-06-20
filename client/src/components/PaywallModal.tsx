@@ -790,11 +790,12 @@ function GooglePayButton({
     if (!scriptReady || !hostRef.current) return;
     const g = (window as any).google;
     if (!g?.payments?.api?.PaymentsClient) return;
-    // Stay in TEST until Google approves our domain at pay.google.com and
-    // gives us the merchantId. PRODUCTION without merchantId hides the
-    // button entirely (silent failure), which would block the screenshot
-    // approval flow we need to send Google.
-    const GOOGLE_PAY_MERCHANT_ID = ""; // TODO: paste here after approval
+    // Google-issued merchantId for "Clicklabs Digital Venture S.L." (the
+    // legal entity that owns editorpdf.net) — pasted after the Web Integration
+    // submission. With this set, the button switches to PRODUCTION on the
+    // live domain (real cards, real money via Sipay). On other hosts (preview
+    // deploys, localhost) we stay in TEST so we don't accidentally charge.
+    const GOOGLE_PAY_MERCHANT_ID = "BCR2DN4T2627BZYZ";
     const isProd =
       window.location.hostname === "editorpdf.net" && !!GOOGLE_PAY_MERCHANT_ID;
     const client = new g.payments.api.PaymentsClient({
