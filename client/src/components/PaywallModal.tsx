@@ -197,6 +197,28 @@ const SIPAY_STRINGS: Record<string, {
     payButton: "下载",
     cardOption: "信用卡或借记卡",
   },
+  uk: {
+    loading: "Завантаження форми оплати…",
+    authorizing: "Авторизація та перенаправлення на 3DS…",
+    authFailedTitle: "Не вдалося авторизувати платіж",
+    authFailedBody: "Спробуйте ще раз за кілька хвилин або зверніться до підтримки, якщо проблема не зникає.",
+    cancel: "Скасувати",
+    trust3ds: "3DS Redsys",
+    trustPci: "PCI Sipay",
+    payButton: "Завантажити",
+    cardOption: "Кредитна або дебетова картка",
+  },
+  ro: {
+    loading: "Se încarcă formularul de plată…",
+    authorizing: "Se autorizează și se redirecționează către 3DS…",
+    authFailedTitle: "Nu am putut autoriza plata",
+    authFailedBody: "Te rugăm să încerci din nou peste câteva minute sau să contactezi suportul dacă problema persistă.",
+    cancel: "Anulează",
+    trust3ds: "3DS Redsys",
+    trustPci: "PCI Sipay",
+    payButton: "Descarcă",
+    cardOption: "Card de credit sau de debit",
+  },
 };
 
 // FastPay only supports es / en / ca. Map any other code down to en.
@@ -414,17 +436,35 @@ function SipayCheckoutForm({
               <button
                 type="button"
                 onClick={() => setCardExpanded((v) => !v)}
-                className="flex items-center justify-between w-full px-4 py-3 rounded-lg border bg-white hover:bg-gray-50 transition-colors"
-                style={{ borderColor: "#e5e7eb" }}
+                className="group flex items-center justify-between w-full px-4 py-3.5 rounded-xl border bg-white hover:border-gray-300 hover:shadow-sm transition-all"
+                style={{
+                  borderColor: cardExpanded ? "#0A0A0B" : "#e5e7eb",
+                  boxShadow: cardExpanded ? "0 0 0 1px #0A0A0B" : undefined,
+                }}
               >
-                <span className="flex items-center gap-2 text-sm text-gray-800">
-                  <CreditCard className="w-4 h-4 text-gray-500" />
+                <span className="flex items-center gap-3 text-sm font-medium text-gray-900">
+                  <span
+                    className="flex items-center justify-center w-9 h-9 rounded-lg"
+                    style={{ background: cardExpanded ? "#0A0A0B" : "#f3f4f6" }}
+                  >
+                    <CreditCard
+                      className="w-4 h-4"
+                      style={{ color: cardExpanded ? "#fff" : "#6b7280" }}
+                    />
+                  </span>
                   {s.cardOption}
                 </span>
-                <ChevronDown
-                  className="w-4 h-4 text-gray-500 transition-transform"
-                  style={{ transform: cardExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
-                />
+                <span className="flex items-center gap-2">
+                  {/* Card brand logos — hidden on small screens to keep the row
+                      from wrapping when the localized label is long. */}
+                  <span className="hidden sm:block">
+                    <CardBrands />
+                  </span>
+                  <ChevronDown
+                    className="w-4 h-4 text-gray-400 transition-transform"
+                    style={{ transform: cardExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
+                  />
+                </span>
               </button>
 
               {cardExpanded && !scriptReady && (
@@ -874,7 +914,15 @@ function GooglePayButton({
               onSuccess(txnId);
             } catch (err: any) {
               const msg = err?.message ?? "Error con Google Pay";
-              if (!String(msg).includes("CANCELED")) setError(msg);
+              const lower = String(msg).toLowerCase();
+              const isUserCancel =
+                lower.includes("canceled") ||
+                lower.includes("cancelled") ||
+                lower.includes("user closed") ||
+                lower.includes("payment request ui") ||
+                lower.includes("aborted") ||
+                lower.includes("dismissed");
+              if (!isUserCancel) setError(msg);
             } finally {
               setSubmitting(false);
             }
