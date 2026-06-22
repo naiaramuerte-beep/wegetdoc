@@ -50,7 +50,7 @@ function useSteps(): StepType[] {
         border: `1px solid ${LINE}`,
         fontFamily: "inherit",
         minWidth: 320,
-        maxWidth: 360,
+        maxWidth: 400,
       }),
     },
   };
@@ -142,14 +142,19 @@ export function ProductTour({
         controls: (base) => ({
           ...base,
           marginTop: 16,
-          flexWrap: "nowrap" as const,
-          gap: 8,
+          // Allow wrap on narrow popovers so the Next button never spills out
+          // of the box (happened when the Skip pill grew with a border).
+          flexWrap: "wrap" as const,
+          rowGap: 10,
+          columnGap: 8,
+          justifyContent: "space-between" as const,
         }),
         navigation: (base) => ({
           ...base,
           flexWrap: "nowrap" as const,
           gap: 6,
-          margin: "0 8px",
+          margin: 0,
+          flexShrink: 0,
         }),
         dot: (base, { current, disabled }: any = {}) => ({
           ...base,
