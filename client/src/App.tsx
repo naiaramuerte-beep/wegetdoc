@@ -39,6 +39,8 @@ const PdfConverterHub = lazy(() => import("./pages/PdfConverterHub"));
 const MergeLandingPage = lazy(() => import("./pages/MergeLandingPage"));
 const SplitLandingPage = lazy(() => import("./pages/SplitLandingPage"));
 const CompressLandingPage = lazy(() => import("./pages/CompressLandingPage"));
+const RotateLandingPage = lazy(() => import("./pages/RotateLandingPage"));
+const WatermarkLandingPage = lazy(() => import("./pages/WatermarkLandingPage"));
 const AdLandingPage = lazy(() => import("./pages/AdLanding"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
@@ -186,16 +188,24 @@ function Router() {
         <Route key={`${code}-compress-pdf`} path={`/${code}/compress-pdf`} component={CompressLandingPage} />
       ))}
       <Route path="/compress-pdf" component={() => <Redirect to="/en/compress-pdf" />} />
+      {LANGUAGES.map(({ code }) => (
+        <Route key={`${code}-rotate-pdf`} path={`/${code}/rotate-pdf`} component={RotateLandingPage} />
+      ))}
+      <Route path="/rotate-pdf" component={() => <Redirect to="/en/rotate-pdf" />} />
+      {LANGUAGES.map(({ code }) => (
+        <Route key={`${code}-watermark-pdf`} path={`/${code}/watermark-pdf`} component={WatermarkLandingPage} />
+      ))}
+      <Route path="/watermark-pdf" component={() => <Redirect to="/en/watermark-pdf" />} />
 
       {/* Tool landing pages — language-prefixed (skips slugs handled by ConverterPage / hub / dedicated utility landings above) */}
       {LANGUAGES.map(({ code }) =>
-        TOOL_LANDINGS.filter(tool => !(tool.slug in CONVERTER_ROUTES) && tool.slug !== HUB_SLUG && tool.slug !== "merge-pdf" && tool.slug !== "split-pdf" && tool.slug !== "compress-pdf").map(tool => (
+        TOOL_LANDINGS.filter(tool => !(tool.slug in CONVERTER_ROUTES) && tool.slug !== HUB_SLUG && tool.slug !== "merge-pdf" && tool.slug !== "split-pdf" && tool.slug !== "compress-pdf" && tool.slug !== "rotate-pdf" && tool.slug !== "watermark-pdf").map(tool => (
           <Route key={`${code}-${tool.slug}`} path={`/${code}/${tool.slug}`} component={() => <ToolLanding tool={tool} />} />
         ))
       )}
 
       {/* Tool landing redirects without lang prefix */}
-      {TOOL_LANDINGS.filter(tool => !(tool.slug in CONVERTER_ROUTES) && tool.slug !== HUB_SLUG && tool.slug !== "merge-pdf" && tool.slug !== "split-pdf" && tool.slug !== "compress-pdf").map(tool => (
+      {TOOL_LANDINGS.filter(tool => !(tool.slug in CONVERTER_ROUTES) && tool.slug !== HUB_SLUG && tool.slug !== "merge-pdf" && tool.slug !== "split-pdf" && tool.slug !== "compress-pdf" && tool.slug !== "rotate-pdf" && tool.slug !== "watermark-pdf").map(tool => (
         <Route key={`redirect-${tool.slug}`} path={`/${tool.slug}`} component={() => <Redirect to={`/en/${tool.slug}`} />} />
       ))}
 

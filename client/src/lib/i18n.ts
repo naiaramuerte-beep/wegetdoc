@@ -1493,6 +1493,13 @@ export const translations: Translations = {
     landing_compress_feat4: "Proceso veloz",
     landing_compress_bottom_cta_title: "Reduce tu PDF ahora",
 
+    landing_rotate_h1: "Rotar páginas PDF",
+    landing_rotate_subtitle: "Gira las páginas 90°, 180° o 270° — corrige escaneos torcidos en segundos.",
+    landing_rotate_meta_title: "Rotar PDF en línea",
+    landing_watermark_h1: "Marca de agua en PDF",
+    landing_watermark_subtitle: "Estampa cada página con un texto — confidencial, borrador, tu marca. En tu navegador.",
+    landing_watermark_meta_title: "Añadir marca de agua a PDF",
+
     landing_jpg2pdf_h1: "Pasa tu JPG a PDF",
     landing_jpg2pdf_subtitle: "Convierte tus fotos JPG a documentos PDF de forma instantánea",
     landing_jpg2pdf_cta: "Subir imagen",
@@ -2451,6 +2458,13 @@ export const translations: Translations = {
     landing_compress_feat4: "Quick turnaround",
     landing_compress_bottom_cta_title: "Compress your PDF now",
 
+    landing_rotate_h1: "Rotate PDF pages",
+    landing_rotate_subtitle: "Turn pages 90°, 180° or 270° — fix sideways scans in seconds.",
+    landing_rotate_meta_title: "Rotate PDF online",
+    landing_watermark_h1: "Watermark PDF",
+    landing_watermark_subtitle: "Stamp every page with text — confidential, draft, your brand. In your browser.",
+    landing_watermark_meta_title: "Add watermark to PDF",
+
     landing_jpg2pdf_h1: "JPG to PDF Converter",
     landing_jpg2pdf_subtitle: "Turn your JPG images into PDF documents instantly",
     landing_jpg2pdf_cta: "Upload image",
@@ -3323,6 +3337,13 @@ export const translations: Translations = {
     cookie_banner_necessary: "Cookies nécessaires (toujours actifs)",
     cookie_banner_analytics: "Cookies analytiques",
     cookie_banner_more_info: "Plus d'informations dans notre",
+
+    landing_rotate_h1: "Faire pivoter les pages PDF",
+    landing_rotate_subtitle: "Tournez les pages de 90°, 180° ou 270° — corrigez les scans en travers en quelques secondes.",
+    landing_rotate_meta_title: "Faire pivoter un PDF en ligne",
+    landing_watermark_h1: "Filigrane PDF",
+    landing_watermark_subtitle: "Apposez un texte sur chaque page — confidentiel, brouillon, votre marque. Dans votre navigateur.",
+    landing_watermark_meta_title: "Ajouter un filigrane à un PDF",
   }),
 
   de: applyBrand({
@@ -3992,6 +4013,13 @@ export const translations: Translations = {
     cookie_banner_necessary: "Notwendige Cookies (immer aktiv)",
     cookie_banner_analytics: "Analyse-Cookies",
     cookie_banner_more_info: "Mehr Informationen in unserer",
+
+    landing_rotate_h1: "PDF-Seiten drehen",
+    landing_rotate_subtitle: "Drehen Sie Seiten um 90°, 180° oder 270° — schiefe Scans in Sekunden korrigieren.",
+    landing_rotate_meta_title: "PDF online drehen",
+    landing_watermark_h1: "Wasserzeichen für PDF",
+    landing_watermark_subtitle: "Stempeln Sie jede Seite mit Text — vertraulich, Entwurf, Ihre Marke. Im Browser.",
+    landing_watermark_meta_title: "Wasserzeichen zu PDF hinzufügen",
   }),
 
   pt: applyBrand({
@@ -4661,6 +4689,13 @@ export const translations: Translations = {
     cookie_banner_necessary: "Cookies necessários (sempre ativos)",
     cookie_banner_analytics: "Cookies de análise",
     cookie_banner_more_info: "Mais informações na nossa",
+
+    landing_rotate_h1: "Girar páginas PDF",
+    landing_rotate_subtitle: "Vire as páginas 90°, 180° ou 270° — corrija digitalizações tortas em segundos.",
+    landing_rotate_meta_title: "Girar PDF online",
+    landing_watermark_h1: "Marca d'água em PDF",
+    landing_watermark_subtitle: "Carimbe cada página com texto — confidencial, rascunho, sua marca. No navegador.",
+    landing_watermark_meta_title: "Adicionar marca d'água a PDF",
   }),
 
   it: applyBrand({
@@ -5330,6 +5365,13 @@ export const translations: Translations = {
     cookie_banner_necessary: "Cookie necessari (sempre attivi)",
     cookie_banner_analytics: "Cookie analitici",
     cookie_banner_more_info: "Maggiori informazioni nella nostra",
+
+    landing_rotate_h1: "Ruotare pagine PDF",
+    landing_rotate_subtitle: "Ruota le pagine di 90°, 180° o 270° — correggi le scansioni storte in pochi secondi.",
+    landing_rotate_meta_title: "Ruotare PDF online",
+    landing_watermark_h1: "Filigrana PDF",
+    landing_watermark_subtitle: "Stampa ogni pagina con un testo — riservato, bozza, il tuo brand. Nel browser.",
+    landing_watermark_meta_title: "Aggiungere filigrana a PDF",
   }),
 
   nl: applyBrand({
@@ -5999,6 +6041,13 @@ export const translations: Translations = {
     cookie_banner_necessary: "Noodzakelijke cookies (altijd actief)",
     cookie_banner_analytics: "Analytische cookies",
     cookie_banner_more_info: "Meer informatie in ons",
+
+    landing_rotate_h1: "PDF-pagina's draaien",
+    landing_rotate_subtitle: "Draai pagina's 90°, 180° of 270° — herstel scheve scans in seconden.",
+    landing_rotate_meta_title: "PDF online draaien",
+    landing_watermark_h1: "Watermerk op PDF",
+    landing_watermark_subtitle: "Stempel elke pagina met tekst — vertrouwelijk, concept, jouw merk. In je browser.",
+    landing_watermark_meta_title: "Watermerk toevoegen aan PDF",
   }),
 
   pl: applyBrand({
@@ -6668,6 +6717,13 @@ export const translations: Translations = {
     cookie_banner_necessary: "Niezbędne pliki cookie (zawsze aktywne)",
     cookie_banner_analytics: "Analityczne pliki cookie",
     cookie_banner_more_info: "Więcej informacji w naszej",
+
+    landing_rotate_h1: "Obróć strony PDF",
+    landing_rotate_subtitle: "Obróć strony o 90°, 180° lub 270° — popraw przekrzywione skany w kilka sekund.",
+    landing_rotate_meta_title: "Obróć PDF online",
+    landing_watermark_h1: "Znak wodny PDF",
+    landing_watermark_subtitle: "Ostempluj każdą stronę tekstem — poufne, wersja robocza, twoja marka. W przeglądarce.",
+    landing_watermark_meta_title: "Dodaj znak wodny do PDF",
   }),
 
   ru: applyBrand({
@@ -7337,6 +7393,13 @@ export const translations: Translations = {
     cookie_banner_necessary: "Обязательные cookie (включены постоянно)",
     cookie_banner_analytics: "Cookie для аналитики",
     cookie_banner_more_info: "Детали в нашей",
+
+    landing_rotate_h1: "Повернуть страницы PDF",
+    landing_rotate_subtitle: "Поверните страницы на 90°, 180° или 270° — исправьте перевёрнутые сканы за секунды.",
+    landing_rotate_meta_title: "Повернуть PDF онлайн",
+    landing_watermark_h1: "Водяной знак на PDF",
+    landing_watermark_subtitle: "Нанесите текст на каждую страницу — конфиденциально, черновик, ваш бренд. В браузере.",
+    landing_watermark_meta_title: "Добавить водяной знак на PDF",
   }),
 
   uk: applyBrand({
@@ -8091,6 +8154,13 @@ export const translations: Translations = {
     landing_compress_feat3: "Ідеально для вкладень електронної пошти",
     landing_compress_feat4: "Швидка обробка",
     landing_compress_bottom_cta_title: "Стисніть ваш PDF зараз",
+
+    landing_rotate_h1: "Повернути сторінки PDF",
+    landing_rotate_subtitle: "Поверніть сторінки на 90°, 180° або 270° — виправте бокові скани за секунди.",
+    landing_rotate_meta_title: "Повернути PDF онлайн",
+    landing_watermark_h1: "Водяний знак на PDF",
+    landing_watermark_subtitle: "Нанесіть текст на кожну сторінку — конфіденційно, чернетка, ваш бренд. У браузері.",
+    landing_watermark_meta_title: "Додати водяний знак до PDF",
 
     landing_jpg2pdf_h1: "Конвертер JPG у PDF",
     landing_jpg2pdf_subtitle: "Перетворіть зображення JPG на PDF-документи миттєво",
@@ -9050,6 +9120,13 @@ export const translations: Translations = {
     landing_compress_feat4: "Procesare rapidă",
     landing_compress_bottom_cta_title: "Comprimă acum PDF-ul",
 
+    landing_rotate_h1: "Rotește paginile PDF",
+    landing_rotate_subtitle: "Întoarce paginile cu 90°, 180° sau 270° — repară scanările întoarse în secunde.",
+    landing_rotate_meta_title: "Rotire PDF online",
+    landing_watermark_h1: "Filigran PDF",
+    landing_watermark_subtitle: "Aplică text pe fiecare pagină — confidențial, schiță, marca ta. În browser.",
+    landing_watermark_meta_title: "Adaugă filigran la PDF",
+
     landing_jpg2pdf_h1: "Convertor JPG în PDF",
     landing_jpg2pdf_subtitle: "Transformă imaginile JPG în documente PDF instant",
     landing_jpg2pdf_cta: "Încarcă imaginea",
@@ -9921,6 +9998,13 @@ export const translations: Translations = {
     cookie_banner_necessary: "必要Cookie（始终活跃）",
     cookie_banner_analytics: "分析Cookie",
     cookie_banner_more_info: "更多信息请参阅我们的",
+
+    landing_rotate_h1: "旋转 PDF 页面",
+    landing_rotate_subtitle: "将页面旋转 90°、180° 或 270° — 几秒钟内修复歪扫描。",
+    landing_rotate_meta_title: "在线旋转 PDF",
+    landing_watermark_h1: "PDF 水印",
+    landing_watermark_subtitle: "在每页加上文字 — 机密、草稿、您的品牌。在浏览器中完成。",
+    landing_watermark_meta_title: "为 PDF 添加水印",
   }),
 };
 
