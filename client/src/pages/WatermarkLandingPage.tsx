@@ -124,8 +124,15 @@ export default function WatermarkLandingPage() {
   const [stampedName, setStampedName] = useState("watermarked.pdf");
   const [showPaywall, setShowPaywall] = useState(false);
 
-  const tr = (key: string, fallback: string): string =>
-    ((t as any)[key] as string | undefined) || fallback;
+  const tr = (key: string, fallback: string, vars?: Record<string, string | number>): string => {
+    let s = ((t as any)[key] as string | undefined) || fallback;
+    if (vars) {
+      for (const k of Object.keys(vars)) {
+        s = s.replace(new RegExp(`\\{${k}\\}`, "g"), String(vars[k]));
+      }
+    }
+    return s;
+  };
   const heroTitle = tr("landing_watermark_h1", "Watermark PDF");
   const heroSubtitle = tr("landing_watermark_subtitle", "Stamp every page with text — confidential, draft, your brand. In your browser.");
 
@@ -150,7 +157,7 @@ export default function WatermarkLandingPage() {
   const acceptPdf = async (incoming: File | undefined) => {
     if (!incoming) return;
     if (incoming.type !== "application/pdf" && !incoming.name.toLowerCase().endsWith(".pdf")) {
-      toast.error("Only PDF files are supported");
+      toast.error(tr("landing_common_only_pdf", "Only PDF files are supported"));
       return;
     }
     setFile(incoming);
@@ -160,7 +167,7 @@ export default function WatermarkLandingPage() {
       const doc = await PDFDocument.load(bytes);
       setPageCount(doc.getPageCount());
     } catch {
-      toast.error("Couldn't read the PDF");
+      toast.error(tr("landing_common_couldnt_read", "Couldn't read the PDF"));
       setPageCount(0);
     }
   };
@@ -180,11 +187,11 @@ export default function WatermarkLandingPage() {
     if (!file || pageCount === 0) return;
     const trimmed = text.trim();
     if (!trimmed) {
-      toast.error("Enter the watermark text");
+      toast.error(tr("landing_watermark_toast_enter_text", "Enter the watermark text"));
       return;
     }
     setPhase("stamping");
-    toast.loading("Stamping pages…", { id: "wm" });
+    toast.loading(tr("landing_watermark_loading", "Stamping pages…"), { id: "wm" });
     try {
       const doc = await PDFDocument.load(new Uint8Array(await file.arrayBuffer()));
       // Helvetica is built-in — no fontkit, no extra bytes. Latin-only;
@@ -248,10 +255,13 @@ export default function WatermarkLandingPage() {
       const base = file.name.replace(/\.pdf$/i, "");
       setStampedName(`${base}-watermarked.pdf`);
       setPhase("ready");
-      toast.success(`Watermark applied to ${pageCount} page${pageCount === 1 ? "" : "s"}`, { id: "wm" });
+      toast.success(
+        tr("landing_watermark_toast_success", "Watermark applied to {count} pages", { count: pageCount }),
+        { id: "wm" }
+      );
     } catch (err) {
       console.error("[watermark] failed:", err);
-      toast.error("Could not watermark the PDF", { id: "wm" });
+      toast.error(tr("landing_watermark_toast_error", "Could not watermark the PDF"), { id: "wm" });
       setPhase("have-file");
     }
   };
@@ -288,7 +298,7 @@ export default function WatermarkLandingPage() {
       <section className="relative pt-16 md:pt-[72px] pb-20 overflow-hidden flex-1">
         <div className="container mx-auto max-w-5xl px-4 py-10 md:py-20">
           <p className="text-center text-[12px] font-semibold tracking-[0.18em] uppercase mb-3" style={{ color: ACCENT }}>
-            WATERMARK PDF
+            {tr("landing_watermark_preheader", "Watermark PDF")}
           </p>
 
           <h1 className="text-center text-3xl md:text-5xl font-extrabold leading-[1.1] tracking-[-0.02em] mb-4">
@@ -337,14 +347,14 @@ export default function WatermarkLandingPage() {
                   }}
                 >
                   <Droplet className="w-10 h-10" style={{ color: ACCENT }} />
-                  <strong className="text-[15px] font-bold text-[#0A0A0B]">Drop your PDF here</strong>
+                  <strong className="text-[15px] font-bold text-[#0A0A0B]">{tr("landing_common_drop_here", "Drop your PDF here")}</strong>
                   <button
                     onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
                     className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#E63946] text-white text-sm font-bold border border-[#E63946] shadow-[0_6px_16px_-6px_rgba(230,57,70,0.55)] hover:bg-[#C72738] hover:border-[#C72738] hover:-translate-y-px transition-all"
                     type="button"
                   >
                     <Upload className="w-4 h-4" />
-                    Select PDF
+                    {tr("landing_common_select_pdf", "Select PDF")}
                   </button>
                 </div>
               )}
@@ -358,7 +368,9 @@ export default function WatermarkLandingPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] font-semibold text-[#0A0A0B] truncate">{file.name}</p>
                       <p className="text-[11px]" style={{ color: MUTED }}>
-                        {formatBytes(file.size)} · {pageCount} page{pageCount === 1 ? "" : "s"}
+                        {formatBytes(file.size)} · {pageCount} {pageCount === 1
+                          ? tr("landing_common_page_word", "page")
+                          : tr("landing_common_pages_word", "pages")}
                       </p>
                     </div>
                     <button
@@ -366,12 +378,12 @@ export default function WatermarkLandingPage() {
                       className="text-[12px] font-semibold hover:underline"
                       style={{ color: ACCENT }}
                     >
-                      Change
+                      {tr("landing_common_change", "Change")}
                     </button>
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[12px] font-semibold text-[#0A0A0B]">Watermark text</label>
+                    <label className="text-[12px] font-semibold text-[#0A0A0B]">{tr("landing_watermark_text_label", "Watermark text")}</label>
                     <input
                       type="text"
                       value={text}
@@ -384,12 +396,12 @@ export default function WatermarkLandingPage() {
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[12px] font-semibold text-[#0A0A0B]">Position</label>
+                    <label className="text-[12px] font-semibold text-[#0A0A0B]">{tr("landing_watermark_position_label", "Position")}</label>
                     <div className="grid grid-cols-3 gap-2">
                       {([
-                        { value: "diagonal" as const, label: "Diagonal" },
-                        { value: "center" as const, label: "Center" },
-                        { value: "footer" as const, label: "Footer" },
+                        { value: "diagonal" as const, label: tr("landing_watermark_pos_diagonal", "Diagonal") },
+                        { value: "center" as const, label: tr("landing_watermark_pos_center", "Center") },
+                        { value: "footer" as const, label: tr("landing_watermark_pos_footer", "Footer") },
                       ]).map(({ value, label }) => (
                         <button
                           key={value}
@@ -410,7 +422,7 @@ export default function WatermarkLandingPage() {
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[12px] font-semibold text-[#0A0A0B] flex items-center justify-between">
-                      <span>Opacity</span>
+                      <span>{tr("landing_watermark_opacity_label", "Opacity")}</span>
                       <span className="font-mono text-[11px] font-normal" style={{ color: MUTED }}>{opacity}%</span>
                     </label>
                     <input
@@ -430,7 +442,7 @@ export default function WatermarkLandingPage() {
                     className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#E63946] text-white text-[15px] font-extrabold border border-[#E63946] shadow-[0_8px_20px_-6px_rgba(230,57,70,0.6)] hover:bg-[#C72738] hover:border-[#C72738] hover:-translate-y-px transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Droplet className="w-4 h-4" />
-                    Add watermark
+                    {tr("landing_watermark_button", "Add watermark")}
                   </button>
                 </div>
               )}
@@ -442,10 +454,10 @@ export default function WatermarkLandingPage() {
                     <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#E63946] ring-2 ring-white" />
                   </div>
                   <div className="text-center">
-                    <p className="font-bold text-[15px] text-[#0A0A0B]">Stamping pages…</p>
+                    <p className="font-bold text-[15px] text-[#0A0A0B]">{tr("landing_watermark_loading", "Stamping pages…")}</p>
                     <p className="text-[12px] mt-1 inline-flex items-center gap-1.5" style={{ color: MUTED }}>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Runs locally in your browser
+                      {tr("landing_common_runs_locally", "Runs locally in your browser")}
                     </p>
                   </div>
                 </div>
@@ -484,7 +496,7 @@ export default function WatermarkLandingPage() {
                   <div className="text-center px-2">
                     <p className="font-extrabold text-[18px] text-[#0A0A0B] tracking-[-0.01em] flex items-center justify-center gap-1.5">
                       <CheckCircle2 className="w-4 h-4" style={{ color: "#1E9E63" }} />
-                      Your watermarked PDF is ready
+                      {tr("landing_watermark_ready_title", "Your watermarked PDF is ready")}
                     </p>
                     <p className="text-[13px] mt-1 truncate max-w-[280px] mx-auto" style={{ color: MUTED }}>
                       <span className="font-semibold text-[#1A1A1C]">{stampedName}</span>
@@ -498,10 +510,10 @@ export default function WatermarkLandingPage() {
                     className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-[#E63946] text-white text-[15px] font-extrabold border border-[#E63946] shadow-[0_8px_20px_-6px_rgba(230,57,70,0.6)] hover:bg-[#C72738] hover:border-[#C72738] hover:-translate-y-px transition-all disabled:opacity-60"
                   >
                     <DownloadIcon className="w-4 h-4" />
-                    Download
+                    {tr("landing_common_download", "Download")}
                   </button>
                   <p className="text-[11px]" style={{ color: MUTED }}>
-                    Only 0,50 € to unlock the download.
+                    {tr("landing_common_unlock_price", "Only 0,50 € to unlock the download.")}
                   </p>
                 </div>
               )}
@@ -512,9 +524,9 @@ export default function WatermarkLandingPage() {
                     <CheckCircle2 className="w-8 h-8" style={{ color: "#1E9E63" }} />
                   </div>
                   <div>
-                    <p className="font-extrabold text-[17px] text-[#0A0A0B]">Download complete</p>
+                    <p className="font-extrabold text-[17px] text-[#0A0A0B]">{tr("landing_common_download_complete", "Download complete")}</p>
                     <p className="text-[13px] mt-0.5" style={{ color: MUTED }}>
-                      Your file <strong className="text-[#0A0A0B]">{stampedName}</strong> has been downloaded.
+                      {tr("landing_common_file_downloaded_pre", "Your file")} <strong className="text-[#0A0A0B]">{stampedName}</strong> {tr("landing_common_file_downloaded_post", "has been downloaded.")}
                     </p>
                   </div>
                   <button
@@ -522,7 +534,7 @@ export default function WatermarkLandingPage() {
                     className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#0A0A0B] text-white text-sm font-bold hover:bg-[#1A1A1C] transition-all"
                   >
                     <RefreshCw className="w-4 h-4" />
-                    Watermark another PDF
+                    {tr("landing_watermark_another", "Watermark another PDF")}
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -531,7 +543,7 @@ export default function WatermarkLandingPage() {
               <div className="flex justify-center mt-4">
                 <span className="inline-flex items-center gap-1.5 text-[12px] font-medium" style={{ color: MUTED }}>
                   <Cloud className="w-3.5 h-3.5" />
-                  Files up to 100&nbsp;MB · Processed in your browser
+                  {tr("landing_common_files_limit", "Files up to 100 MB · Processed in your browser")}
                 </span>
               </div>
             </div>
@@ -539,15 +551,15 @@ export default function WatermarkLandingPage() {
             <div className="flex items-center justify-center gap-6 mt-8 text-[12px]" style={{ color: MUTED }}>
               <span className="inline-flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#1E9E63" }} />
-                No installation
+                {tr("landing_common_no_installation", "No installation")}
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#1E9E63" }} />
-                Private — runs locally
+                {tr("landing_common_private_local", "Private — runs locally")}
               </span>
               <span className="hidden md:inline-flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#1E9E63" }} />
-                Works on any device
+                {tr("landing_common_any_device", "Works on any device")}
               </span>
             </div>
           </div>
@@ -555,10 +567,10 @@ export default function WatermarkLandingPage() {
           <div className="mt-20 max-w-5xl mx-auto">
             <div className="text-center mb-8">
               <p className="text-[12px] font-semibold tracking-[0.18em] uppercase mb-2" style={{ color: ACCENT }}>
-                All PDF tools
+                {tr("landing_common_all_tools_kicker", "All PDF tools")}
               </p>
               <h2 className="text-2xl md:text-3xl font-extrabold tracking-[-0.02em] text-[#0A0A0B]">
-                Need a different action?
+                {tr("landing_common_need_different", "Need a different action?")}
               </h2>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
