@@ -11,7 +11,7 @@ import { useLocation } from "wouter";
 import {
   FileText, PenTool, MessageSquare, Type, Image, Lock,
   ChevronDown, Upload, Edit3, Cloud, RefreshCw,
-  Shield, Zap, Star, Sparkles,
+  Shield, Zap, Star, Sparkles, ArrowRight,
   Merge, Scissors, RotateCcw, Minimize2, Droplet,
   FileImage, FileSpreadsheet, Presentation, FileCode,
 } from "lucide-react";
@@ -47,41 +47,59 @@ const ACCENT_BORDER = "#F2C1C6";
 // ─── Tool definitions, grouped into bundle's 6 categories ──────
 // `landingSlug` (optional) makes the home-grid button navigate to that
 // dedicated SEO landing instead of triggering the editor upload flow.
-type ToolDef = { icon: any; label_key: string; tool: string; landingSlug?: string };
+// `tint` + `iconBg` give each tile a brand-tinted icon chip (matches
+// the colour language used inside the landings' "All PDF tools" grid).
+type ToolDef = {
+  icon: any;
+  label_key: string;
+  tool: string;
+  landingSlug?: string;
+  tint: string;
+  iconBg: string;
+};
+
+// Brand palette helpers — kept inline so the array stays readable.
+const RED       = "#E63946"; const RED_BG    = "#FEE7EA";
+const BLUE      = "#2B579A"; const BLUE_BG   = "#E8F0FA";
+const GREEN     = "#1F7244"; const GREEN_BG  = "#E8F5EC";
+const ORANGE    = "#D04423"; const ORANGE_BG = "#FBEBE5";
+const PURPLE    = "#8A57DC"; const PURPLE_BG = "#F1EAFB";
+const INK       = "#0A0A0B"; const INK_BG    = "#F0F0F2";
+const CYAN      = "#0F8FA3"; const CYAN_BG   = "#E4F4F7";
 
 const TOOLS_EDIT_CAT: ToolDef[] = [
-  { icon: Type,          label_key: "tool_edit_text", tool: "text"  },
-  { icon: MessageSquare, label_key: "tool_annotate",  tool: "notes" },
-  { icon: Image,         label_key: "tool_images",    tool: "image" },
+  { icon: Type,          label_key: "tool_edit_text", tool: "text",  tint: RED,    iconBg: RED_BG    },
+  { icon: MessageSquare, label_key: "tool_annotate",  tool: "notes", tint: BLUE,   iconBg: BLUE_BG   },
+  { icon: Image,         label_key: "tool_images",    tool: "image", tint: ORANGE, iconBg: ORANGE_BG },
 ];
 const TOOLS_ORGANIZE: ToolDef[] = [
-  { icon: Merge,     label_key: "tool_merge",  tool: "merge",  landingSlug: "merge-pdf"  },
-  { icon: Scissors,  label_key: "tool_split",  tool: "split",  landingSlug: "split-pdf"  },
-  { icon: RotateCcw, label_key: "tool_rotate", tool: "rotate", landingSlug: "rotate-pdf" },
+  { icon: Merge,     label_key: "tool_merge",  tool: "merge",  landingSlug: "merge-pdf",  tint: BLUE,   iconBg: BLUE_BG   },
+  { icon: Scissors,  label_key: "tool_split",  tool: "split",  landingSlug: "split-pdf",  tint: GREEN,  iconBg: GREEN_BG  },
+  { icon: RotateCcw, label_key: "tool_rotate", tool: "rotate", landingSlug: "rotate-pdf", tint: PURPLE, iconBg: PURPLE_BG },
 ];
 const TOOLS_OPTIMIZE: ToolDef[] = [
-  { icon: Minimize2, label_key: "tool_compress",  tool: "compress",  landingSlug: "compress-pdf"  },
-  { icon: Droplet,   label_key: "tool_watermark", tool: "watermark", landingSlug: "watermark-pdf" },
+  { icon: Minimize2, label_key: "tool_compress",  tool: "compress",  landingSlug: "compress-pdf",  tint: ORANGE, iconBg: ORANGE_BG },
+  { icon: Droplet,   label_key: "tool_watermark", tool: "watermark", landingSlug: "watermark-pdf", tint: CYAN,   iconBg: CYAN_BG   },
 ];
 const TOOLS_SECURITY: ToolDef[] = [
-  { icon: PenTool, label_key: "tool_add_sign", tool: "sign"    },
-  { icon: Lock,    label_key: "tool_protect",  tool: "protect" },
+  { icon: PenTool, label_key: "tool_add_sign", tool: "sign",    tint: RED, iconBg: RED_BG },
+  { icon: Lock,    label_key: "tool_protect",  tool: "protect", tint: INK, iconBg: INK_BG },
 ];
 const TOOLS_FROM_PDF: ToolDef[] = [
-  { icon: FileText,        label_key: "tool_pdf_word",  tool: "convert-word",  landingSlug: "pdf-to-word"       },
-  { icon: FileSpreadsheet, label_key: "tool_pdf_excel", tool: "convert-excel", landingSlug: "pdf-to-excel"      },
-  { icon: Presentation,    label_key: "tool_pdf_ppt",   tool: "convert-ppt",   landingSlug: "pdf-to-powerpoint" },
-  { icon: FileImage,       label_key: "tool_pdf_jpg",   tool: "convert-jpg",   landingSlug: "pdf-to-jpg"        },
-  { icon: FileImage,       label_key: "tool_pdf_png",   tool: "convert-png"   },
-  { icon: FileCode,        label_key: "tool_pdf_html",  tool: "convert-html"  },
+  { icon: FileText,        label_key: "tool_pdf_word",  tool: "convert-word",  landingSlug: "pdf-to-word",       tint: BLUE,   iconBg: BLUE_BG   },
+  { icon: FileSpreadsheet, label_key: "tool_pdf_excel", tool: "convert-excel", landingSlug: "pdf-to-excel",      tint: GREEN,  iconBg: GREEN_BG  },
+  { icon: Presentation,    label_key: "tool_pdf_ppt",   tool: "convert-ppt",   landingSlug: "pdf-to-powerpoint", tint: ORANGE, iconBg: ORANGE_BG },
+  { icon: FileImage,       label_key: "tool_pdf_jpg",   tool: "convert-jpg",   landingSlug: "pdf-to-jpg",        tint: RED,    iconBg: RED_BG    },
+  { icon: FileImage,       label_key: "tool_pdf_png",   tool: "convert-png",                                     tint: INK,    iconBg: INK_BG    },
+  { icon: FileCode,        label_key: "tool_pdf_html",  tool: "convert-html",                                    tint: PURPLE, iconBg: PURPLE_BG },
 ];
 const TOOLS_TO_PDF: ToolDef[] = [
-  { icon: FileText,        label_key: "tool_word_pdf",  tool: "word-to-pdf", landingSlug: "word-to-pdf" },
-  { icon: FileSpreadsheet, label_key: "tool_excel_pdf", tool: "excel-to-pdf" },
-  { icon: Presentation,    label_key: "tool_ppt_pdf",   tool: "ppt-to-pdf"   },
-  { icon: FileImage,       label_key: "tool_jpg_pdf",   tool: "jpg-to-pdf",  landingSlug: "jpg-to-pdf" },
-  { icon: FileImage,       label_key: "tool_png_pdf",   tool: "png-to-pdf",  landingSlug: "png-to-pdf" },
-  { icon: FileCode,        label_key: "tool_html_pdf",  tool: "html-to-pdf"  },
+  { icon: FileText,        label_key: "tool_word_pdf",  tool: "word-to-pdf",  landingSlug: "word-to-pdf", tint: BLUE,   iconBg: BLUE_BG   },
+  { icon: FileSpreadsheet, label_key: "tool_excel_pdf", tool: "excel-to-pdf",                             tint: GREEN,  iconBg: GREEN_BG  },
+  { icon: Presentation,    label_key: "tool_ppt_pdf",   tool: "ppt-to-pdf",                               tint: ORANGE, iconBg: ORANGE_BG },
+  { icon: FileImage,       label_key: "tool_jpg_pdf",   tool: "jpg-to-pdf",   landingSlug: "jpg-to-pdf",  tint: RED,    iconBg: RED_BG    },
+  { icon: FileImage,       label_key: "tool_png_pdf",   tool: "png-to-pdf",   landingSlug: "png-to-pdf",  tint: INK,    iconBg: INK_BG    },
+  { icon: FileCode,        label_key: "tool_html_pdf",  tool: "html-to-pdf",                              tint: PURPLE, iconBg: PURPLE_BG },
 ];
 
 const FILE_FREE_TOOLS = ["jpg-to-pdf", "png-to-pdf", "word-to-pdf", "excel-to-pdf", "ppt-to-pdf", "html-to-pdf"];
@@ -474,18 +492,19 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
             </p>
           </div>
 
-          <div className="flex flex-col gap-10">
+          <div className="flex flex-col gap-12">
             {TOOL_CATEGORIES.map((cat) => (
               <div key={cat.titleKey}>
-                <div className="flex items-baseline gap-4 mb-4 pb-3 border-b border-[#F1F1F4] flex-wrap">
-                  <h3 className="text-[22px] font-extrabold tracking-[-0.015em] text-[#0A0A0B]">
+                <div className="flex items-center gap-4 mb-5 flex-wrap">
+                  <h3 className="text-[20px] md:text-[22px] font-extrabold tracking-[-0.015em] text-[#0A0A0B]">
                     {resolveLabel(cat.titleKey)}
                   </h3>
-                  <span className="ml-auto text-[11px] font-bold tracking-[0.12em] text-[#8A8A92] uppercase">
+                  <span className="text-[10px] font-extrabold tracking-[0.12em] text-[#8A8A92] uppercase px-2 py-0.5 rounded-full bg-white border border-[#E8E8EC]">
                     {cat.tools.length}
                   </span>
+                  <div className="flex-1 h-px bg-[#E8E8EC]" />
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                   {cat.tools.map((tool) => (
                     <button
                       key={tool.label_key}
@@ -496,14 +515,27 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
                           triggerUpload(tool.tool);
                         }
                       }}
-                      className="bg-white border border-[#E8E8EC] rounded-xl px-4 py-3.5 flex items-center gap-3 text-left text-[#0A0A0B] hover:border-[#E63946] hover:-translate-y-px hover:shadow-[0_8px_18px_-10px_rgba(230,57,70,0.28)] transition-all"
+                      className="group relative bg-white border border-[#E8E8EC] rounded-2xl p-4 flex items-center gap-3.5 text-left text-[#0A0A0B] hover:border-[#0A0A0B]/15 hover:-translate-y-0.5 hover:shadow-[0_18px_38px_-18px_rgba(10,10,11,0.25)] transition-all overflow-hidden"
                     >
-                      <div className="w-[34px] h-[34px] rounded-lg bg-[#F6F6F7] flex items-center justify-center flex-shrink-0">
-                        <tool.icon className="w-[17px] h-[17px] text-[#0A0A0B]" />
+                      {/* subtle tinted glow on hover — gives the card a personality colour */}
+                      <span
+                        className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{ background: `radial-gradient(120% 80% at 0% 0%, ${tool.iconBg} 0%, transparent 55%)` }}
+                        aria-hidden="true"
+                      />
+                      <div
+                        className="relative w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-[1.06]"
+                        style={{ background: tool.iconBg }}
+                      >
+                        <tool.icon className="w-5 h-5" style={{ color: tool.tint }} />
                       </div>
-                      <span className="text-sm font-semibold">
+                      <span className="relative text-[14px] font-bold leading-tight flex-1 min-w-0">
                         {resolveLabel(tool.label_key)}
                       </span>
+                      <ArrowRight
+                        className="relative w-4 h-4 flex-shrink-0 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all"
+                        style={{ color: tool.tint }}
+                      />
                     </button>
                   ))}
                 </div>
