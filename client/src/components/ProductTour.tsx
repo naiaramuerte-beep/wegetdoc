@@ -176,7 +176,7 @@ export function ProductTour({
             {!isLast && (
               <button
                 onClick={() => { markTourSeen(); setIsOpen(false); }}
-                className="px-3 py-1.5 rounded-lg text-[13px] font-medium text-[#5A5A62] hover:bg-[#F6F6F7] transition-colors"
+                className="px-3 py-1.5 rounded-lg text-[13px] font-semibold text-[#5A5A62] bg-white border border-[#E4E4E7] hover:bg-[#F6F6F7] hover:border-[#D4D4D8] transition-colors whitespace-nowrap"
               >{t.tour_skip}</button>
             )}
             <button
