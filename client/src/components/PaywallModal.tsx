@@ -475,15 +475,15 @@ function SipayCheckoutForm({
               <button
                 type="button"
                 onClick={() => setCardExpanded((v) => !v)}
-                className="group flex items-center justify-between w-full px-4 py-3.5 rounded-xl border bg-white hover:border-gray-300 hover:shadow-sm transition-all"
+                className="group flex items-center justify-between gap-2 w-full px-3 sm:px-4 py-3.5 rounded-xl border bg-white hover:border-gray-300 hover:shadow-sm transition-all"
                 style={{
                   borderColor: cardExpanded ? "#0A0A0B" : "#e5e7eb",
                   boxShadow: cardExpanded ? "0 0 0 1px #0A0A0B" : undefined,
                 }}
               >
-                <span className="flex items-center gap-3 text-sm font-medium text-gray-900">
+                <span className="flex items-center gap-3 text-sm font-medium text-gray-900 min-w-0 flex-1">
                   <span
-                    className="flex items-center justify-center w-9 h-9 rounded-lg"
+                    className="flex items-center justify-center w-9 h-9 rounded-lg flex-shrink-0"
                     style={{ background: cardExpanded ? "#0A0A0B" : "#f3f4f6" }}
                   >
                     <CreditCard
@@ -491,9 +491,9 @@ function SipayCheckoutForm({
                       style={{ color: cardExpanded ? "#fff" : "#6b7280" }}
                     />
                   </span>
-                  {s.cardOption}
+                  <span className="truncate text-left">{s.cardOption}</span>
                 </span>
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-2 flex-shrink-0">
                   {/* Card brand logos — hidden on small screens to keep the row
                       from wrapping when the localized label is long. */}
                   <span className="hidden sm:block">
@@ -580,17 +580,27 @@ function SipayCheckoutForm({
                 /* iframe fills the modal width — Sipay's internal grey panel
                    stays gray (we can't reach inside their iframe to override
                    it), but the area AROUND the iframe matches our requested
-                   light-gray so the seam is invisible. */
+                   light-gray so the seam is invisible. Responsive heights:
+                   480px is the smallest that fits the FastPay form (number +
+                   MM/YY + CVV + Recordar toggle + DESCARGAR + Powered/3DS
+                   footer). Tablet bumps to 540, desktop to 580 so it never
+                   needs nested scrolling on the common viewport sizes. */
                 .fastpay-btn + iframe {
                   display: block !important;
                   width: 100% !important;
-                  min-height: 720px !important;
+                  min-height: 480px !important;
                   border: 0 !important;
                   background: #f7f8f9 !important;
                   position: relative !important;
                   top: 0 !important;
                   left: 0 !important;
                   overflow: hidden !important;
+                }
+                @media (min-height: 700px) {
+                  .fastpay-btn + iframe { min-height: 540px !important; }
+                }
+                @media (min-width: 768px) {
+                  .fastpay-btn + iframe { min-height: 580px !important; }
                 }
               `}</style>
               </>
@@ -1145,14 +1155,34 @@ export default function PaywallModal({
       style={{ backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
+      <style>{`
+        /* 100dvh = dynamic viewport height; respects iOS Safari's retracting
+           URL bar so the modal never gets cut off. The vh declaration is the
+           older-browser fallback (Safari <15.4, Chrome <108). */
+        .paywall-modal-shell {
+          max-height: 100vh;
+          max-height: 100dvh;
+          /* Respect iPhone notch / Android nav bar at the modal edges */
+          padding-bottom: env(safe-area-inset-bottom, 0);
+        }
+      `}</style>
       <div
-        className="relative w-full bg-white shadow-2xl overflow-hidden md:rounded-2xl"
-        style={{ maxWidth: currentStep === "plans" ? 880 : 480, maxHeight: "100vh", overflowY: "auto" }}
+        className="paywall-modal-shell relative w-full bg-white shadow-2xl overflow-hidden md:rounded-2xl"
+        style={{
+          maxWidth: currentStep === "plans" ? 880 : 480,
+          overflowY: "auto",
+        }}
       >
-        {/* Close */}
+        {/* Close — honors iOS safe-area-inset-top so the button doesn't sit
+            under the notch / dynamic island when the modal is fullscreen on
+            mobile. */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center bg-white/80 hover:bg-slate-100 transition-colors border border-slate-200"
+          className="absolute z-10 w-8 h-8 rounded-full flex items-center justify-center bg-white/80 hover:bg-slate-100 transition-colors border border-slate-200"
+          style={{
+            top: "calc(env(safe-area-inset-top, 0px) + 12px)",
+            right: "calc(env(safe-area-inset-right, 0px) + 12px)",
+          }}
         >
           <X className="w-4 h-4 text-slate-500" />
         </button>
