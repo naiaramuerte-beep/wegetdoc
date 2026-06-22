@@ -248,14 +248,27 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
 
   const resolveLabel = (key: string) => (t as any)[key] ?? key;
 
-  const HERO_TABS: { id: TabId; labelKey: string; icon: any; alwaysShow?: boolean }[] = [
-    { id: "edit",     labelKey: "hero_pill_edit",     icon: Edit3,     alwaysShow: true },
-    { id: "merge",    labelKey: "hero_pill_merge",    icon: Merge },
-    { id: "split",    labelKey: "hero_pill_split",    icon: Scissors },
-    { id: "compress", labelKey: "hero_pill_compress", icon: Minimize2 },
-    { id: "convert",  labelKey: "hero_pill_convert",  icon: RefreshCw, alwaysShow: true },
-    { id: "sign",     labelKey: "hero_pill_sign",     icon: PenTool,   alwaysShow: true },
+  // Hero quick-access cards. Each card navigates to its dedicated landing
+  // when `landingSlug` is set; otherwise it triggers the upload flow with
+  // the matching editor tool. The cards render above the upload box.
+  const HERO_TABS: { id: TabId; labelKey: string; icon: any; landingSlug?: string; tint: string; iconBg: string }[] = [
+    { id: "edit",     labelKey: "hero_pill_edit",     icon: Edit3,                                       tint: "#E63946", iconBg: "#FEE7EA" },
+    { id: "merge",    labelKey: "hero_pill_merge",    icon: Merge,     landingSlug: "merge-pdf",         tint: "#2B579A", iconBg: "#E8F0FA" },
+    { id: "split",    labelKey: "hero_pill_split",    icon: Scissors,  landingSlug: "split-pdf",         tint: "#1F7244", iconBg: "#E8F5EC" },
+    { id: "compress", labelKey: "hero_pill_compress", icon: Minimize2, landingSlug: "compress-pdf",      tint: "#D04423", iconBg: "#FBEBE5" },
+    { id: "convert",  labelKey: "hero_pill_convert",  icon: RefreshCw, landingSlug: "pdf-converter",     tint: "#8A57DC", iconBg: "#F1EAFB" },
+    { id: "sign",     labelKey: "hero_pill_sign",     icon: PenTool,                                     tint: "#0A0A0B", iconBg: "#F0F0F2" },
   ];
+
+  const handleHeroToolClick = (tab: typeof HERO_TABS[number]) => {
+    if (tab.landingSlug) {
+      navigate(`/${lang}/${tab.landingSlug}`);
+      return;
+    }
+    // edit + sign have no dedicated landing — open editor upload flow
+    setActiveTab(tab.id);
+    triggerUpload(TAB_TO_TOOL[tab.id]);
+  };
 
   const TOOL_CATEGORIES: { titleKey: string; tools: ToolDef[] }[] = [
     { titleKey: "tools_tab_edit",     tools: TOOLS_EDIT_CAT },
@@ -290,37 +303,40 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
         }}
       >
         {withTabs && (
-          <div className="flex justify-center gap-1.5 mb-5 flex-nowrap">
-            {HERO_TABS.map(tab => {
-              const active = tab.id === activeTab;
-              const Ico = tab.icon;
-              const visibility = tab.alwaysShow ? "flex" : "hidden md:flex";
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    // The Convert tab doesn't have a single target format (Word vs Excel
-                    // vs PPT vs JPG), so instead of opening the editor with one tool,
-                    // route visitors to the dedicated converter hub to pick the format.
-                    if (tab.id === "convert") {
-                      navigate(`/${lang}/pdf-converter`);
-                      return;
-                    }
-                    setActiveTab(tab.id);
-                  }}
-                  className={`${visibility} shrink-0 px-2.5 py-1.5 rounded-full text-[12px] font-semibold border transition-all items-center gap-1.5 whitespace-nowrap ${
-                    active
-                      ? "bg-[#0A0A0B] text-white border-[#0A0A0B] shadow-sm"
-                      : "bg-white text-[#1A1A1C] border-[#E8E8EC] hover:border-[#0A0A0B]/30 hover:bg-[#F6F6F7]"
-                  }`}
-                  type="button"
-                  aria-pressed={active}
-                >
-                  <Ico className="w-3.5 h-3.5" style={{ color: active ? "#E63946" : "#5A5A62" }} />
-                  {resolveLabel(tab.labelKey)}
-                </button>
-              );
-            })}
+          <div className="mb-5 -mx-2 sm:mx-0">
+            <div
+              className="rounded-2xl p-2 sm:p-2.5"
+              style={{
+                background: "linear-gradient(180deg,#FAFAFB 0%,#F4F4F6 100%)",
+                border: "1px solid rgba(10,10,11,0.06)",
+                boxShadow: "0 1px 0 rgba(255,255,255,0.9) inset, 0 4px 12px -6px rgba(10,10,11,0.08)",
+              }}
+            >
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-1.5 sm:gap-2">
+                {HERO_TABS.map(tab => {
+                  const Ico = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => handleHeroToolClick(tab)}
+                      className="group relative flex flex-col items-center justify-start gap-1.5 px-1.5 py-3 sm:py-3.5 rounded-xl bg-white border border-[#EBEBEE] hover:border-[#0A0A0B]/15 hover:-translate-y-px hover:shadow-[0_10px_24px_-12px_rgba(10,10,11,0.18)] transition-all"
+                      type="button"
+                      aria-label={resolveLabel(tab.labelKey)}
+                    >
+                      <div
+                        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105"
+                        style={{ background: tab.iconBg }}
+                      >
+                        <Ico className="w-[18px] h-[18px]" style={{ color: tab.tint }} />
+                      </div>
+                      <span className="text-[12px] sm:text-[13px] font-bold text-[#0A0A0B] leading-tight text-center">
+                        {resolveLabel(tab.labelKey)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
 
