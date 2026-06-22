@@ -111,6 +111,7 @@ export type TranslationKeys = {
   tool_split: string;
   tool_rotate: string;
   tool_compress: string;
+  tool_watermark: string;
   tool_delete_pages: string;
   tool_html_pdf: string;
   tool_upload_cta: string;
@@ -824,6 +825,7 @@ export const translations: Translations = {
     tool_split: "Dividir PDF",
     tool_rotate: "Rotar páginas",
     tool_compress: "Reducir peso del PDF",
+    tool_watermark: "Marca de agua",
     tool_delete_pages: "Eliminar páginas",
     tool_html_pdf: "HTML hacia PDF",
     tool_upload_cta: "Sube un archivo para comenzar",
@@ -1835,6 +1837,7 @@ export const translations: Translations = {
     tool_split: "Split PDF",
     tool_rotate: "Flip pages",
     tool_compress: "Reduce size",
+    tool_watermark: "Watermark",
     tool_delete_pages: "Remove pages",
     tool_html_pdf: "HTML to PDF",
     tool_upload_cta: "Upload a document to begin working",
@@ -2846,6 +2849,7 @@ export const translations: Translations = {
     tool_split: "Séparer PDF",
     tool_rotate: "Tourner les pages",
     tool_compress: "Compresser PDF",
+    tool_watermark: "Filigrane",
     tool_delete_pages: "Retirer des pages",
     tool_html_pdf: "HTML en PDF",
     tool_upload_cta: "Chargez un document pour commencer à travailler",
@@ -3568,6 +3572,7 @@ export const translations: Translations = {
     tool_split: "PDF aufteilen",
     tool_rotate: "Seiten rotieren",
     tool_compress: "PDF verkleinern",
+    tool_watermark: "Wasserzeichen",
     tool_delete_pages: "Seiten löschen",
     tool_html_pdf: "HTML nach PDF",
     tool_upload_cta: "Wählen Sie eine Datei aus, um dieses Tool zu nutzen",
@@ -4290,6 +4295,7 @@ export const translations: Translations = {
     tool_split: "Separar PDF",
     tool_rotate: "Girar páginas",
     tool_compress: "Otimizar PDF",
+    tool_watermark: "Marca d'água",
     tool_delete_pages: "Remover páginas",
     tool_html_pdf: "HTML para PDF",
     tool_upload_cta: "Carregue um ficheiro para usar esta ferramenta",
@@ -5012,6 +5018,7 @@ export const translations: Translations = {
     tool_split: "Separa PDF",
     tool_rotate: "Gira pagine",
     tool_compress: "Ottimizza PDF",
+    tool_watermark: "Filigrana",
     tool_delete_pages: "Rimuovi pagine",
     tool_html_pdf: "HTML in PDF",
     tool_upload_cta: "Carica un file per usare questo strumento",
@@ -5734,6 +5741,7 @@ export const translations: Translations = {
     tool_split: "PDF splitsen",
     tool_rotate: "Pagina's roteren",
     tool_compress: "PDF comprimeren",
+    tool_watermark: "Watermerk",
     tool_delete_pages: "Pagina's verwijderen",
     tool_html_pdf: "HTML naar PDF",
     tool_upload_cta: "Upload een bestand om deze tool te gebruiken",
@@ -6456,6 +6464,7 @@ export const translations: Translations = {
     tool_split: "Podziel PDF",
     tool_rotate: "Obróć strony",
     tool_compress: "Kompresuj PDF",
+    tool_watermark: "Znak wodny",
     tool_delete_pages: "Usuń strony",
     tool_html_pdf: "HTML do PDF",
     tool_upload_cta: "Prześlij plik, aby użyć tego narzędzia",
@@ -7178,6 +7187,7 @@ export const translations: Translations = {
     tool_split: "Разбить PDF на части",
     tool_rotate: "Развернуть страницы",
     tool_compress: "Уменьшить размер PDF",
+    tool_watermark: "Водяной знак",
     tool_delete_pages: "Убрать страницы",
     tool_html_pdf: "Из HTML в PDF",
     tool_upload_cta: "Добавьте файл для работы с этим инструментом",
@@ -7900,6 +7910,7 @@ export const translations: Translations = {
     tool_split: "Розділити PDF",
     tool_rotate: "Обертати сторінки",
     tool_compress: "Зменшити розмір",
+    tool_watermark: "Водяний знак",
     tool_delete_pages: "Видалити сторінки",
     tool_html_pdf: "HTML у PDF",
     tool_upload_cta: "Завантажте документ, щоб почати",
@@ -8911,6 +8922,7 @@ export const translations: Translations = {
     tool_split: "Împarte PDF",
     tool_rotate: "Rotește paginile",
     tool_compress: "Reduce dimensiunea",
+    tool_watermark: "Filigran",
     tool_delete_pages: "Șterge pagini",
     tool_html_pdf: "HTML în PDF",
     tool_upload_cta: "Încarcă un document pentru a începe",
@@ -9922,6 +9934,7 @@ export const translations: Translations = {
     tool_split: "拆分PDF",
     tool_rotate: "旋转页面",
     tool_compress: "压缩PDF",
+    tool_watermark: "水印",
     tool_delete_pages: "删除页面",
     tool_html_pdf: "HTML转PDF",
     tool_upload_cta: "上传文件以使用此工具",

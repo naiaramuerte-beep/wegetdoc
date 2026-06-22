@@ -12,7 +12,7 @@ import {
   FileText, PenTool, MessageSquare, Type, Image, Lock,
   ChevronDown, Upload, Edit3, Cloud, RefreshCw,
   Shield, Zap, Star, Sparkles,
-  Merge, Scissors, RotateCcw, Minimize2,
+  Merge, Scissors, RotateCcw, Minimize2, Droplet,
   FileImage, FileSpreadsheet, Presentation, FileCode,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -45,7 +45,9 @@ const ACCENT = "#E63946";
 const ACCENT_BORDER = "#F2C1C6";
 
 // ─── Tool definitions, grouped into bundle's 6 categories ──────
-type ToolDef = { icon: any; label_key: string; tool: string };
+// `landingSlug` (optional) makes the home-grid button navigate to that
+// dedicated SEO landing instead of triggering the editor upload flow.
+type ToolDef = { icon: any; label_key: string; tool: string; landingSlug?: string };
 
 const TOOLS_EDIT_CAT: ToolDef[] = [
   { icon: Type,          label_key: "tool_edit_text", tool: "text"  },
@@ -53,31 +55,32 @@ const TOOLS_EDIT_CAT: ToolDef[] = [
   { icon: Image,         label_key: "tool_images",    tool: "image" },
 ];
 const TOOLS_ORGANIZE: ToolDef[] = [
-  { icon: Merge,     label_key: "tool_merge",  tool: "merge"  },
-  { icon: Scissors,  label_key: "tool_split",  tool: "split"  },
-  { icon: RotateCcw, label_key: "tool_rotate", tool: "rotate" },
+  { icon: Merge,     label_key: "tool_merge",  tool: "merge",  landingSlug: "merge-pdf"  },
+  { icon: Scissors,  label_key: "tool_split",  tool: "split",  landingSlug: "split-pdf"  },
+  { icon: RotateCcw, label_key: "tool_rotate", tool: "rotate", landingSlug: "rotate-pdf" },
 ];
 const TOOLS_OPTIMIZE: ToolDef[] = [
-  { icon: Minimize2, label_key: "tool_compress", tool: "compress" },
+  { icon: Minimize2, label_key: "tool_compress",  tool: "compress",  landingSlug: "compress-pdf"  },
+  { icon: Droplet,   label_key: "tool_watermark", tool: "watermark", landingSlug: "watermark-pdf" },
 ];
 const TOOLS_SECURITY: ToolDef[] = [
   { icon: PenTool, label_key: "tool_add_sign", tool: "sign"    },
   { icon: Lock,    label_key: "tool_protect",  tool: "protect" },
 ];
 const TOOLS_FROM_PDF: ToolDef[] = [
-  { icon: FileText,        label_key: "tool_pdf_word",  tool: "convert-word"  },
-  { icon: FileSpreadsheet, label_key: "tool_pdf_excel", tool: "convert-excel" },
-  { icon: Presentation,    label_key: "tool_pdf_ppt",   tool: "convert-ppt"   },
-  { icon: FileImage,       label_key: "tool_pdf_jpg",   tool: "convert-jpg"   },
+  { icon: FileText,        label_key: "tool_pdf_word",  tool: "convert-word",  landingSlug: "pdf-to-word"       },
+  { icon: FileSpreadsheet, label_key: "tool_pdf_excel", tool: "convert-excel", landingSlug: "pdf-to-excel"      },
+  { icon: Presentation,    label_key: "tool_pdf_ppt",   tool: "convert-ppt",   landingSlug: "pdf-to-powerpoint" },
+  { icon: FileImage,       label_key: "tool_pdf_jpg",   tool: "convert-jpg",   landingSlug: "pdf-to-jpg"        },
   { icon: FileImage,       label_key: "tool_pdf_png",   tool: "convert-png"   },
   { icon: FileCode,        label_key: "tool_pdf_html",  tool: "convert-html"  },
 ];
 const TOOLS_TO_PDF: ToolDef[] = [
-  { icon: FileText,        label_key: "tool_word_pdf",  tool: "word-to-pdf"  },
+  { icon: FileText,        label_key: "tool_word_pdf",  tool: "word-to-pdf", landingSlug: "word-to-pdf" },
   { icon: FileSpreadsheet, label_key: "tool_excel_pdf", tool: "excel-to-pdf" },
   { icon: Presentation,    label_key: "tool_ppt_pdf",   tool: "ppt-to-pdf"   },
-  { icon: FileImage,       label_key: "tool_jpg_pdf",   tool: "jpg-to-pdf"   },
-  { icon: FileImage,       label_key: "tool_png_pdf",   tool: "png-to-pdf"   },
+  { icon: FileImage,       label_key: "tool_jpg_pdf",   tool: "jpg-to-pdf",  landingSlug: "jpg-to-pdf" },
+  { icon: FileImage,       label_key: "tool_png_pdf",   tool: "png-to-pdf",  landingSlug: "png-to-pdf" },
   { icon: FileCode,        label_key: "tool_html_pdf",  tool: "html-to-pdf"  },
 ];
 
@@ -470,7 +473,13 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
                   {cat.tools.map((tool) => (
                     <button
                       key={tool.label_key}
-                      onClick={() => triggerUpload(tool.tool)}
+                      onClick={() => {
+                        if (tool.landingSlug) {
+                          navigate(`/${lang}/${tool.landingSlug}`);
+                        } else {
+                          triggerUpload(tool.tool);
+                        }
+                      }}
                       className="bg-white border border-[#E8E8EC] rounded-xl px-4 py-3.5 flex items-center gap-3 text-left text-[#0A0A0B] hover:border-[#E63946] hover:-translate-y-px hover:shadow-[0_8px_18px_-10px_rgba(230,57,70,0.28)] transition-all"
                     >
                       <div className="w-[34px] h-[34px] rounded-lg bg-[#F6F6F7] flex items-center justify-center flex-shrink-0">
