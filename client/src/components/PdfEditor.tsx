@@ -126,6 +126,7 @@ interface NativeTextBlock {
   fontFamily?: string; // CSS font-family from pdf.js styles
   fontWeight?: string; // "bold" or "normal"
   fontStyle?: string; // "italic" or "normal"
+  textDecoration?: string; // "underline" or undefined — detected from canvas pixel sampling
   pdfFontName?: string; // raw font name from pdf.js (e.g. "g_d0_f1")
   bgColor?: string; // background color sampled from canvas
   textAlign?: string; // text alignment: left, center, right
@@ -969,7 +970,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const pdfFontName = rawRealName.includes("+") ? rawRealName.split("+").pop()! : rawRealName;
       // Detect bold/italic from real font name
       const nameLC = pdfFontName.toLowerCase();
-      const fontWeight = (nameLC.includes("bold") || nameLC.includes("black") || nameLC.includes("heavy")) ? "bold" : "normal";
+      // Strict bold detection: only word-boundary "bold" (Arial-Bold, ArialBold,
+      // CalibriBoldItalic, …) — substring matches on "black"/"heavy" produced
+      // false positives when a PDF embeds a font with one of those strings as
+      // part of its subset prefix or family name (e.g. "BlackOpsOne" is a
+      // regular weight). Same goes for "demi" / "semibold" — those are real
+      // bold-family weights but pdf.js often reports them with the regular
+      // family name only.
+      const isBoldName = /(?:^|[-_\s])bold|bold(?:italic|oblique)?$/i.test(pdfFontName);
+      const fontWeight = isBoldName ? "bold" : "normal";
       const fontStyle = (nameLC.includes("italic") || nameLC.includes("oblique")) ? "italic" : "normal";
       // Map real PDF font names to CSS equivalents.
       // Prefix with metric-compatible web font (Carlito/Arimo/Tinos/Cousine) so editor
@@ -1285,6 +1294,45 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               }
               block.bgColor = "#" + best.rgb.map(c => c.toString(16).padStart(2, "0")).join("");
             }
+
+            // ── Underline detection ─────────────────────────────────────
+            // After we know the text color, scan the few rows immediately
+            // below the text glyphs for a solid horizontal line in that
+            // same color. Headings/links in office PDFs draw the underline
+            // as a thin filled rect 1-3 px below the baseline. If a single
+            // scanline has ≥60% of its pixels close to the text color, we
+            // call it an underline.
+            const baselineY = block.y + block.fontSize * 0.95; // approx baseline
+            const scanStartY = Math.round((baselineY + 0) * dpr);
+            const scanEndY = Math.round((baselineY + block.fontSize * 0.4) * dpr);
+            const ulRegionX = Math.round(block.x * dpr);
+            const ulRegionW = Math.min(Math.round(block.width * dpr), canvas.width - ulRegionX);
+            let underlineDetected = false;
+            if (ulRegionX >= 0 && scanStartY >= 0 && ulRegionW > 4 && scanEndY < canvas.height && scanEndY > scanStartY) {
+              try {
+                const ulData = ctx.getImageData(ulRegionX, scanStartY, ulRegionW, scanEndY - scanStartY).data;
+                const cols = ulRegionW;
+                const rows = (ulData.length / 4) / cols;
+                for (let row = 0; row < rows; row++) {
+                  let matchCount = 0;
+                  for (let col = 0; col < cols; col++) {
+                    const idx = (row * cols + col) * 4;
+                    const r = ulData[idx], g = ulData[idx + 1], b = ulData[idx + 2];
+                    // skip near-white background
+                    if (r > 240 && g > 240 && b > 240) continue;
+                    // similar enough to text color counts
+                    if (Math.abs(r - textR) + Math.abs(g - textG) + Math.abs(b - textB) < 80) {
+                      matchCount++;
+                    }
+                  }
+                  if (matchCount / cols >= 0.6) {
+                    underlineDetected = true;
+                    break;
+                  }
+                }
+              } catch { /* getImageData throws on tainted canvases — ignore */ }
+            }
+            if (underlineDetected) block.textDecoration = "underline";
           }
         }
       }
@@ -2773,6 +2821,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         const defaultColor = block.fontColor && block.fontColor.length === 7 ? block.fontColor : "#000000";
         const defaultBold = block.fontWeight === "bold";
         const defaultItalic = block.fontStyle === "italic";
+        const defaultUnderline = block.textDecoration === "underline";
 
         const parseHtmlToRuns = (html: string): TextRun[] => {
           const runs: TextRun[] = [];
@@ -2808,12 +2857,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             if (el.style.textDecoration?.includes("line-through")) s = true;
             for (const child of Array.from(node.childNodes)) walk(child, b, i, u, s, c);
           };
-          walk(div, defaultBold, defaultItalic, false, false, defaultColor);
+          walk(div, defaultBold, defaultItalic, defaultUnderline, false, defaultColor);
           return runs;
         };
 
         const htmlContent = block.editedHtml || block.editedStr || block.str;
-        const runs = block.editedHtml ? parseHtmlToRuns(htmlContent) : [{ text: htmlContent, bold: defaultBold, italic: defaultItalic, underline: false, strike: false, color: defaultColor }];
+        const runs = block.editedHtml ? parseHtmlToRuns(htmlContent) : [{ text: htmlContent, bold: defaultBold, italic: defaultItalic, underline: defaultUnderline, strike: false, color: defaultColor }];
 
         // Pick metric-compatible family from the block's CSS stack, embed its 4 variants.
         // This makes the exported PDF wrap identically to the editor overlay.
@@ -5240,6 +5289,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         fontFamily: block.fontFamily || "sans-serif",
                         fontWeight: (block.fontWeight || "normal") as any,
                         fontStyle: block.fontStyle || "normal",
+                        textDecoration: block.textDecoration || "none",
                         color: editTextColor,
                         backgroundColor: "transparent",
                         // Use outline (not border) so the indicator doesn't shrink the text area — keeps wrap aligned with export
@@ -5282,6 +5332,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         fontFamily: block.fontFamily || "sans-serif",
                         fontWeight: (block.fontWeight || "normal") as any,
                         fontStyle: block.fontStyle || "normal",
+                        textDecoration: block.textDecoration || "none",
                         color: (editingBlockId === block.id || block.editedStr !== undefined || block.origX !== undefined) ? (block.fontColor ?? "#000") : "transparent",
                         backgroundColor: "transparent",
                         // Use outline (not border) so the indicator doesn't shrink the text area — keeps wrap aligned with export
@@ -5291,7 +5342,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         padding: 0, margin: 0,
                         boxSizing: "border-box",
                         whiteSpace: "normal", wordWrap: "break-word",
-                        overflow: "hidden", lineHeight: 1.2,
+                        overflow: "visible", lineHeight: 1.2,
                         borderRadius: 2, cursor: editingBlockId === block.id ? "move" : "pointer",
                       }}
                     >
