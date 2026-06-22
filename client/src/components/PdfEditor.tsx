@@ -928,6 +928,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       canvasX: number; canvasY: number; canvasW: number; canvasH: number;
       fontFamily: string; fontSize: number; pdfFontName: string;
       fontWeight: string; fontStyle: string;
+      // Populated AFTER paragraphs are built (canvas-pixel sampling). Used both
+      // for block.fontColor + to detect color changes between consecutive
+      // lines in the phase-2 grouping (e.g. heading vs orange link).
+      sampledColor?: [number, number, number];
+      sampledUnderline?: boolean;
     }
     // Defensive: on some Safari versions pdfjs returns a TextContent object
     // whose `items` key is missing or undefined (internal crash swallowed
@@ -1083,6 +1088,90 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
     if (currentPara.length > 0) paragraphs.push(currentPara);
 
+    // ── Phase 1.5: sample per-LINE color + underline ───────────────────
+    // We do this BEFORE phase-2 paragraph grouping so that lines with
+    // different colors (e.g. an orange hyperlink immediately under a
+    // black heading) don't get merged into one block that loses the
+    // hyperlink's color. Mode-of-pixels approach is more robust than the
+    // earlier single-best-pixel scoring because anti-aliased edges
+    // produce many transitional shades; the mode of the genuine glyph
+    // pixels reliably surfaces the original ink color.
+    {
+      const canvas = mainCanvasRef.current;
+      const ctx = canvas?.getContext("2d");
+      if (canvas && ctx) {
+        const dpr = window.devicePixelRatio || 1;
+        for (const lineArr of paragraphs) {
+          if (lineArr.length === 0) continue;
+          const first = lineArr[0];
+          const lineMinX = Math.min(...lineArr.map(l => l.canvasX));
+          const lineMaxR = Math.max(...lineArr.map(l => l.canvasX + l.canvasW));
+          const sampleX = Math.round(lineMinX * dpr);
+          const sampleY = Math.round(first.canvasY * dpr);
+          const sampleW = Math.min(Math.round((lineMaxR - lineMinX) * dpr), canvas.width - sampleX);
+          const sampleH = Math.min(Math.round(first.fontSize * 1.2 * dpr), canvas.height - sampleY);
+          if (sampleX < 0 || sampleY < 0 || sampleW <= 4 || sampleH <= 4) continue;
+          let imageData: ImageData;
+          try { imageData = ctx.getImageData(sampleX, sampleY, sampleW, sampleH); }
+          catch { continue; }
+          const data = imageData.data;
+          // Histogram on quantized colors (4-bit per channel = 4096 buckets)
+          // — picks the MODE of ink pixels, immune to AA transition shades.
+          const buckets = new Map<number, { r: number; g: number; b: number; count: number }>();
+          const step = Math.max(4, Math.floor(data.length / 4 / 400) * 4);
+          for (let i = 0; i < data.length; i += step) {
+            const r = data[i], g = data[i + 1], b = data[i + 2];
+            if (r > 230 && g > 230 && b > 230) continue; // background
+            // Reject very-light pixels (antialiased edges blending with bg)
+            const brightness = (r + g + b) / 3;
+            if (brightness > 200) continue;
+            const key = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
+            const cur = buckets.get(key);
+            if (cur) { cur.r += r; cur.g += g; cur.b += b; cur.count++; }
+            else buckets.set(key, { r, g, b, count: 1 });
+          }
+          if (buckets.size > 0) {
+            let best: { r: number; g: number; b: number; count: number } | null = null;
+            buckets.forEach((v) => { if (!best || v.count > best.count) best = v; });
+            if (best) {
+              const b = best as { r: number; g: number; b: number; count: number };
+              first.sampledColor = [
+                Math.round(b.r / b.count),
+                Math.round(b.g / b.count),
+                Math.round(b.b / b.count),
+              ];
+            }
+          }
+          // Underline detection — scan rows just below baseline for a
+          // solid horizontal line in the line's ink color.
+          if (first.sampledColor) {
+            const [tr, tg, tb] = first.sampledColor;
+            const ulStart = Math.round((first.canvasY + first.fontSize * 0.95) * dpr);
+            const ulEnd = Math.round((first.canvasY + first.fontSize * 1.35) * dpr);
+            if (ulStart < canvas.height && ulEnd > ulStart && ulEnd < canvas.height) {
+              try {
+                const ulData = ctx.getImageData(sampleX, ulStart, sampleW, ulEnd - ulStart).data;
+                const rows = (ulData.length / 4) / sampleW;
+                outer: for (let row = 0; row < rows; row++) {
+                  let match = 0;
+                  for (let col = 0; col < sampleW; col++) {
+                    const idx = (row * sampleW + col) * 4;
+                    const r = ulData[idx], g = ulData[idx + 1], b = ulData[idx + 2];
+                    if (r > 230 && g > 230 && b > 230) continue;
+                    if (Math.abs(r - tr) + Math.abs(g - tg) + Math.abs(b - tb) < 90) match++;
+                  }
+                  if (match / sampleW >= 0.55) {
+                    first.sampledUnderline = true;
+                    break outer;
+                  }
+                }
+              } catch {}
+            }
+          }
+        }
+      }
+    }
+
     // ── Phase 2: group consecutive LINES into actual paragraphs ───────
     // After the loop above, `paragraphs` holds one entry per visual line
     // (items grouped by same canvasY). We now decide which lines should
@@ -1105,6 +1194,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const lineY = (l: LineItem[]) => l[0].canvasY;
     const lineFontSize = (l: LineItem[]) => l[0].fontSize;
     const lineFontName = (l: LineItem[]) => l[0].pdfFontName;
+    const lineColor = (l: LineItem[]) => l[0].sampledColor;
+    const lineUnderlined = (l: LineItem[]) => !!l[0].sampledUnderline;
+    const colorChanged = (a: LineItem[], b: LineItem[]) => {
+      const ca = lineColor(a), cb = lineColor(b);
+      if (!ca || !cb) return false;
+      // Sum of absolute channel deltas — >90 = clearly different ink colors
+      // (black vs orange link, white-on-color vs dark text, etc.)
+      return Math.abs(ca[0] - cb[0]) + Math.abs(ca[1] - cb[1]) + Math.abs(ca[2] - cb[2]) > 90;
+    };
 
     const grouped: LineItem[][] = [];
     let currentGroup: LineItem[][] = [];
@@ -1128,7 +1226,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const bigGap = yGap > fsCur * 1.7;
       const wentBackOrUp = yGap < fsCur * 0.2; // line went up or stayed (new column)
       const indentChanged = indentDelta > fsCur * 2;
-      if (startsList || sizeChanged || fontChanged || bigGap || wentBackOrUp || indentChanged) {
+      const colorDiffers = colorChanged(prev, lineArr);
+      const underlineToggled = lineUnderlined(prev) !== lineUnderlined(lineArr);
+      if (startsList || sizeChanged || fontChanged || bigGap || wentBackOrUp || indentChanged || colorDiffers || underlineToggled) {
         flushGroup();
         currentGroup.push(lineArr);
       } else {
@@ -1189,6 +1289,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const maxR = Math.max(...para.map(l => l.canvasX + l.canvasW));
       const maxB = Math.max(...para.map(l => l.canvasY + l.canvasH));
 
+      const firstColor = first.sampledColor;
+      const colorHex = firstColor
+        ? "#" + firstColor.map(c => c.toString(16).padStart(2, "0")).join("")
+        : undefined;
       blocks.push({
         id: Math.random().toString(36).slice(2),
         str: combinedStr,
@@ -1205,134 +1309,63 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         fontWeight: first.fontWeight,
         fontStyle: first.fontStyle,
         pdfFontName: first.pdfFontName,
+        fontColor: colorHex,
+        textDecoration: first.sampledUnderline ? "underline" : undefined,
       });
     }
-    // Step 3: Detect text color by sampling canvas pixels
+    // Step 3: Sample BACKGROUND color around each block edge. fontColor +
+    // textDecoration are already set per-line during phase 1.5 — we only
+    // need bgColor here, used by the export to draw a filled rectangle
+    // when a block sits on a colored background instead of plain white.
     const canvas = mainCanvasRef.current;
     if (canvas) {
       const dpr = window.devicePixelRatio || 1;
       const ctx = canvas.getContext("2d");
       if (ctx) {
         for (const block of blocks) {
-          // Sample a grid of pixels across the first line of text and pick the most saturated non-white one
-          const regionX = Math.round(block.x * dpr);
-          const regionY = Math.round(block.y * dpr);
-          const regionW = Math.min(Math.round(block.width * dpr), canvas.width - regionX);
-          const regionH = Math.min(Math.round(block.fontSize * 1.2 * dpr), canvas.height - regionY);
-          if (regionX >= 0 && regionY >= 0 && regionW > 0 && regionH > 0) {
-            const imageData = ctx.getImageData(regionX, regionY, regionW, regionH);
-            const data = imageData.data;
-            let bestColor = [0, 0, 0];
-            let bestScore = -1;
-            // Step through pixels (sample every few for performance)
-            const step = Math.max(1, Math.floor(data.length / 4 / 200)) * 4;
-            for (let i = 0; i < data.length; i += step) {
-              const r = data[i], g = data[i+1], b = data[i+2];
-              // Skip white/near-white pixels (background)
-              if (r > 240 && g > 240 && b > 240) continue;
-              // Skip very light pixels (antialiased edges)
-              if (r > 200 && g > 200 && b > 200) continue;
-              // Score by saturation + darkness — prefer vivid colors and darker text
-              const max = Math.max(r, g, b), min = Math.min(r, g, b);
-              const saturation = max > 0 ? (max - min) / max : 0;
-              const darkness = 1 - (r + g + b) / (255 * 3);
-              const score = saturation * 2 + darkness;
-              if (score > bestScore) {
-                bestScore = score;
-                bestColor = [r, g, b];
-              }
+          const fontColor = block.fontColor && block.fontColor.length === 7 ? block.fontColor : "#000000";
+          const textR = parseInt(fontColor.slice(1, 3), 16);
+          const textG = parseInt(fontColor.slice(3, 5), 16);
+          const textB = parseInt(fontColor.slice(5, 7), 16);
+          const isTextLike = (r: number, g: number, b: number) =>
+            Math.abs(r - textR) + Math.abs(g - textG) + Math.abs(b - textB) < 60;
+          const trySample = (x: number, y: number): [number, number, number] | null => {
+            const sx = Math.round(x * dpr);
+            const sy = Math.round(y * dpr);
+            if (sx < 0 || sy < 0 || sx >= canvas.width || sy >= canvas.height) return null;
+            const p = ctx.getImageData(sx, sy, 1, 1).data;
+            if (isTextLike(p[0], p[1], p[2])) return null;
+            return [p[0], p[1], p[2]];
+          };
+          const bcx = block.x + block.width / 2;
+          const bcy = block.y + block.height / 2;
+          const probes: Array<[number, number]> = [
+            [bcx, block.y - 4], [bcx, block.y - 10],
+            [bcx, block.y + block.height + 4], [bcx, block.y + block.height + 10],
+            [block.x - 6, bcy], [block.x - 14, bcy],
+            [block.x + block.width + 6, bcy], [block.x + block.width + 14, bcy],
+            [block.x - 6, block.y - 6], [block.x + block.width + 6, block.y - 6],
+            [block.x - 6, block.y + block.height + 6], [block.x + block.width + 6, block.y + block.height + 6],
+          ];
+          const candidates: Array<[number, number, number]> = [];
+          for (const [px, py] of probes) {
+            const c = trySample(px, py);
+            if (c) candidates.push(c);
+          }
+          if (candidates.length > 0) {
+            const buckets = new Map<string, { rgb: [number, number, number]; count: number }>();
+            for (const [r, g, b] of candidates) {
+              const key = (r >> 4) + "," + (g >> 4) + "," + (b >> 4);
+              const cur = buckets.get(key);
+              if (cur) cur.count++;
+              else buckets.set(key, { rgb: [r, g, b], count: 1 });
             }
-            if (bestScore > 0) {
-              const hex = "#" + bestColor.map(c => c.toString(16).padStart(2, "0")).join("");
-              block.fontColor = hex;
+            const bucketList = Array.from(buckets.values());
+            let best = bucketList[0];
+            for (const bucket of bucketList) {
+              if (bucket.count > best.count) best = bucket;
             }
-            // Sample background color from multiple points around the block edges.
-            // Single-point sampling failed when the probe landed on adjacent text or graphics
-            // (e.g. on a PDF with colored background + title above the block). We sample ~12
-            // points, skip anything close to the detected text color, then pick the mode.
-            const textR = bestColor[0] ?? 0;
-            const textG = bestColor[1] ?? 0;
-            const textB = bestColor[2] ?? 0;
-            const isTextLike = (r: number, g: number, b: number) =>
-              Math.abs(r - textR) + Math.abs(g - textG) + Math.abs(b - textB) < 60;
-            const trySample = (x: number, y: number): [number, number, number] | null => {
-              const sx = Math.round(x * dpr);
-              const sy = Math.round(y * dpr);
-              if (sx < 0 || sy < 0 || sx >= canvas.width || sy >= canvas.height) return null;
-              const p = ctx.getImageData(sx, sy, 1, 1).data;
-              if (isTextLike(p[0], p[1], p[2])) return null;
-              return [p[0], p[1], p[2]];
-            };
-            const bcx = block.x + block.width / 2;
-            const bcy = block.y + block.height / 2;
-            const probes: Array<[number, number]> = [
-              [bcx, block.y - 4], [bcx, block.y - 10],
-              [bcx, block.y + block.height + 4], [bcx, block.y + block.height + 10],
-              [block.x - 6, bcy], [block.x - 14, bcy],
-              [block.x + block.width + 6, bcy], [block.x + block.width + 14, bcy],
-              [block.x - 6, block.y - 6], [block.x + block.width + 6, block.y - 6],
-              [block.x - 6, block.y + block.height + 6], [block.x + block.width + 6, block.y + block.height + 6],
-            ];
-            const candidates: Array<[number, number, number]> = [];
-            for (const [px, py] of probes) {
-              const c = trySample(px, py);
-              if (c) candidates.push(c);
-            }
-            if (candidates.length > 0) {
-              // Quantize to 16-step buckets (coarse grouping) and pick the most common
-              const buckets = new Map<string, { rgb: [number, number, number]; count: number }>();
-              for (const [r, g, b] of candidates) {
-                const key = (r >> 4) + "," + (g >> 4) + "," + (b >> 4);
-                const cur = buckets.get(key);
-                if (cur) cur.count++;
-                else buckets.set(key, { rgb: [r, g, b], count: 1 });
-              }
-              const bucketList = Array.from(buckets.values());
-              let best = bucketList[0];
-              for (const bucket of bucketList) {
-                if (bucket.count > best.count) best = bucket;
-              }
-              block.bgColor = "#" + best.rgb.map(c => c.toString(16).padStart(2, "0")).join("");
-            }
-
-            // ── Underline detection ─────────────────────────────────────
-            // After we know the text color, scan the few rows immediately
-            // below the text glyphs for a solid horizontal line in that
-            // same color. Headings/links in office PDFs draw the underline
-            // as a thin filled rect 1-3 px below the baseline. If a single
-            // scanline has ≥60% of its pixels close to the text color, we
-            // call it an underline.
-            const baselineY = block.y + block.fontSize * 0.95; // approx baseline
-            const scanStartY = Math.round((baselineY + 0) * dpr);
-            const scanEndY = Math.round((baselineY + block.fontSize * 0.4) * dpr);
-            const ulRegionX = Math.round(block.x * dpr);
-            const ulRegionW = Math.min(Math.round(block.width * dpr), canvas.width - ulRegionX);
-            let underlineDetected = false;
-            if (ulRegionX >= 0 && scanStartY >= 0 && ulRegionW > 4 && scanEndY < canvas.height && scanEndY > scanStartY) {
-              try {
-                const ulData = ctx.getImageData(ulRegionX, scanStartY, ulRegionW, scanEndY - scanStartY).data;
-                const cols = ulRegionW;
-                const rows = (ulData.length / 4) / cols;
-                for (let row = 0; row < rows; row++) {
-                  let matchCount = 0;
-                  for (let col = 0; col < cols; col++) {
-                    const idx = (row * cols + col) * 4;
-                    const r = ulData[idx], g = ulData[idx + 1], b = ulData[idx + 2];
-                    // skip near-white background
-                    if (r > 240 && g > 240 && b > 240) continue;
-                    // similar enough to text color counts
-                    if (Math.abs(r - textR) + Math.abs(g - textG) + Math.abs(b - textB) < 80) {
-                      matchCount++;
-                    }
-                  }
-                  if (matchCount / cols >= 0.6) {
-                    underlineDetected = true;
-                    break;
-                  }
-                }
-              } catch { /* getImageData throws on tainted canvases — ignore */ }
-            }
-            if (underlineDetected) block.textDecoration = "underline";
+            block.bgColor = "#" + best.rgb.map(c => c.toString(16).padStart(2, "0")).join("");
           }
         }
       }
