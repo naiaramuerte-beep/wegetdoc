@@ -86,25 +86,18 @@ function triggerBlobDownload(blob: Blob, name: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-type ToolEntry = {
-  slug: string;
-  label: string;
-  desc: string;
-  icon: typeof FileText;
-  iconColor: string;
-  iconBg: string;
-};
-const ALL_TOOLS: ToolEntry[] = [
-  { slug: "pdf-to-word",       label: "PDF to Word",       desc: "Editable .docx",        icon: FileText,        iconColor: "#2B579A", iconBg: "#E8F0FA" },
-  { slug: "pdf-to-excel",      label: "PDF to Excel",      desc: "Tables to .xlsx",       icon: FileSpreadsheet, iconColor: "#1F7244", iconBg: "#E8F5EC" },
-  { slug: "pdf-to-powerpoint", label: "PDF to PowerPoint", desc: "Slides to .pptx",       icon: Presentation,    iconColor: "#D04423", iconBg: "#FBEBE5" },
-  { slug: "pdf-to-jpg",        label: "PDF to JPG",        desc: "High-res image",        icon: ImageIcon,       iconColor: "#1A1A1C", iconBg: "#F0F0F2" },
-  { slug: "word-to-pdf",       label: "Word to PDF",       desc: ".docx → .pdf",          icon: FileType,        iconColor: "#2B579A", iconBg: "#E8F0FA" },
-  { slug: "jpg-to-pdf",        label: "JPG to PDF",        desc: "Photos to .pdf",        icon: FileImage,       iconColor: "#E63946", iconBg: "#FEE7EA" },
-  { slug: "png-to-pdf",        label: "PNG to PDF",        desc: "Images to .pdf",        icon: FileImage,       iconColor: "#0A0A0B", iconBg: "#F0F0F2" },
-  { slug: "merge-pdf",         label: "Merge PDF",         desc: "Combine PDFs",          icon: Layers,          iconColor: "#5A5A62", iconBg: "#F0F0F2" },
-  { slug: "split-pdf",         label: "Split PDF",         desc: "Extract pages",         icon: Scissors,        iconColor: "#5A5A62", iconBg: "#F0F0F2" },
-  { slug: "compress-pdf",      label: "Compress PDF",      desc: "Reduce file size",      icon: Minimize2,       iconColor: "#5A5A62", iconBg: "#F0F0F2" },
+// Cross-tool grid — labels/descs resolved via `landing_grid_*` i18n keys at render.
+const ALL_TOOLS: { slug: string; labelKey: string; labelFallback: string; descKey: string; descFallback: string; icon: typeof FileText; iconColor: string; iconBg: string }[] = [
+  { slug: "pdf-to-word",       labelKey: "landing_grid_pdf_to_word_label",  labelFallback: "PDF to Word",       descKey: "landing_grid_pdf_to_word_desc",  descFallback: "Editable .docx",   icon: FileText,        iconColor: "#2B579A", iconBg: "#E8F0FA" },
+  { slug: "pdf-to-excel",      labelKey: "landing_grid_pdf_to_excel_label", labelFallback: "PDF to Excel",      descKey: "landing_grid_pdf_to_excel_desc", descFallback: "Tables to .xlsx",  icon: FileSpreadsheet, iconColor: "#1F7244", iconBg: "#E8F5EC" },
+  { slug: "pdf-to-powerpoint", labelKey: "landing_grid_pdf_to_ppt_label",   labelFallback: "PDF to PowerPoint", descKey: "landing_grid_pdf_to_ppt_desc",   descFallback: "Slides to .pptx",  icon: Presentation,    iconColor: "#D04423", iconBg: "#FBEBE5" },
+  { slug: "pdf-to-jpg",        labelKey: "landing_grid_pdf_to_jpg_label",   labelFallback: "PDF to JPG",        descKey: "landing_grid_pdf_to_jpg_desc",   descFallback: "High-res image",   icon: ImageIcon,       iconColor: "#1A1A1C", iconBg: "#F0F0F2" },
+  { slug: "word-to-pdf",       labelKey: "landing_grid_word_to_pdf_label",  labelFallback: "Word to PDF",       descKey: "landing_grid_word_to_pdf_desc",  descFallback: ".docx → .pdf",     icon: FileType,        iconColor: "#2B579A", iconBg: "#E8F0FA" },
+  { slug: "jpg-to-pdf",        labelKey: "landing_grid_jpg_to_pdf_label",   labelFallback: "JPG to PDF",        descKey: "landing_grid_jpg_to_pdf_desc",   descFallback: "Photos to .pdf",   icon: FileImage,       iconColor: "#E63946", iconBg: "#FEE7EA" },
+  { slug: "png-to-pdf",        labelKey: "landing_grid_png_to_pdf_label",   labelFallback: "PNG to PDF",        descKey: "landing_grid_png_to_pdf_desc",   descFallback: "Images to .pdf",   icon: FileImage,       iconColor: "#0A0A0B", iconBg: "#F0F0F2" },
+  { slug: "merge-pdf",         labelKey: "landing_grid_merge_label",        labelFallback: "Merge PDF",         descKey: "landing_grid_merge_desc",        descFallback: "Combine PDFs",     icon: Layers,          iconColor: "#5A5A62", iconBg: "#F0F0F2" },
+  { slug: "split-pdf",         labelKey: "landing_grid_split_label",        labelFallback: "Split PDF",         descKey: "landing_grid_split_desc",        descFallback: "Extract pages",    icon: Scissors,        iconColor: "#5A5A62", iconBg: "#F0F0F2" },
+  { slug: "compress-pdf",      labelKey: "landing_grid_compress_label",     labelFallback: "Compress PDF",      descKey: "landing_grid_compress_desc",     descFallback: "Reduce file size", icon: Minimize2,       iconColor: "#5A5A62", iconBg: "#F0F0F2" },
 ];
 
 type Phase = "idle" | "compressing" | "ready" | "awaiting-payment" | "done";
@@ -124,8 +117,11 @@ export default function CompressLandingPage() {
   const [compressedName, setCompressedName] = useState("compressed.pdf");
   const [showPaywall, setShowPaywall] = useState(false);
 
-  const tr = (key: string, fallback: string): string =>
-    ((t as any)[key] as string | undefined) || fallback;
+  const tr = (key: string, fallback: string, vars?: Record<string, string | number>): string => {
+    let s = ((t as any)[key] as string | undefined) || fallback;
+    if (vars) for (const k of Object.keys(vars)) s = s.replace(new RegExp(`\\{${k}\\}`, "g"), String(vars[k]));
+    return s;
+  };
   const heroTitle = tr("landing_compress_h1", "Compress PDF files");
   const heroSubtitle = tr("landing_compress_subtitle", "Shrink your PDF without losing visual quality. Faster to share, easier to upload.");
 
@@ -146,13 +142,13 @@ export default function CompressLandingPage() {
 
   const startCompression = async (incoming: File) => {
     if (incoming.type !== "application/pdf" && !incoming.name.toLowerCase().endsWith(".pdf")) {
-      toast.error("Only PDF files are supported");
+      toast.error(tr("landing_common_only_pdf", "Only PDF files are supported"));
       return;
     }
     setFile(incoming);
     setOriginalSize(incoming.size);
     setPhase("compressing");
-    toast.loading("Compressing your PDF…", { id: "compress" });
+    toast.loading(tr("landing_compress_loading", "Compressing your PDF…"), { id: "compress" });
     try {
       const bytes = new Uint8Array(await incoming.arrayBuffer());
       const doc = await PDFDocument.load(bytes);
@@ -169,13 +165,13 @@ export default function CompressLandingPage() {
       const saved = Math.max(0, bytes.byteLength - finalBytes.byteLength);
       const pct = bytes.byteLength > 0 ? Math.round((saved / bytes.byteLength) * 100) : 0;
       if (pct > 0) {
-        toast.success(`Compressed! ${pct}% smaller (${formatBytes(saved)} saved).`, { id: "compress" });
+        toast.success(`${tr("landing_compress_toast_success", "PDF compressed")} (-${pct}%, ${formatBytes(saved)})`, { id: "compress" });
       } else {
-        toast.success("Already optimized — your PDF is at its smallest size.", { id: "compress" });
+        toast.success(tr("landing_compress_no_savings", "This PDF is already optimized"), { id: "compress" });
       }
     } catch (err) {
       console.error("[compress] failed:", err);
-      toast.error("Could not compress the PDF", { id: "compress" });
+      toast.error(tr("landing_compress_toast_error", "Could not compress the PDF"), { id: "compress" });
       setPhase("idle");
     }
   };
@@ -228,7 +224,7 @@ export default function CompressLandingPage() {
       <section className="relative pt-16 md:pt-[72px] pb-20 overflow-hidden flex-1">
         <div className="container mx-auto max-w-5xl px-4 py-10 md:py-20">
           <p className="text-center text-[12px] font-semibold tracking-[0.18em] uppercase mb-3" style={{ color: ACCENT }}>
-            COMPRESS PDF
+            {tr("landing_compress_preheader", "Compress PDF")}
           </p>
 
           <h1 className="text-center text-3xl md:text-5xl font-extrabold leading-[1.1] tracking-[-0.02em] mb-4">
@@ -277,14 +273,14 @@ export default function CompressLandingPage() {
                   }}
                 >
                   <Minimize2 className="w-10 h-10" style={{ color: ACCENT }} />
-                  <strong className="text-[15px] font-bold text-[#0A0A0B]">Drop your PDF here</strong>
+                  <strong className="text-[15px] font-bold text-[#0A0A0B]">{tr("landing_common_drop_here", "Drop your PDF here")}</strong>
                   <button
                     onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
                     className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#E63946] text-white text-sm font-bold border border-[#E63946] shadow-[0_6px_16px_-6px_rgba(230,57,70,0.55)] hover:bg-[#C72738] hover:border-[#C72738] hover:-translate-y-px transition-all"
                     type="button"
                   >
                     <Upload className="w-4 h-4" />
-                    Select PDF
+                    {tr("landing_common_select_pdf", "Select PDF")}
                   </button>
                 </div>
               )}
@@ -299,7 +295,7 @@ export default function CompressLandingPage() {
                     <p className="font-bold text-[15px] text-[#0A0A0B] truncate max-w-[280px]">{file.name}</p>
                     <p className="text-[12px] mt-1 inline-flex items-center gap-1.5" style={{ color: MUTED }}>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Compressing… {formatBytes(originalSize)}
+                      {tr("landing_compress_loading", "Optimizing…")} {formatBytes(originalSize)}
                     </p>
                   </div>
                 </div>
@@ -322,7 +318,7 @@ export default function CompressLandingPage() {
                     <div className="relative flex flex-col items-center justify-center gap-2 py-8" style={{ background: "#FEF6F7", aspectRatio: "0.707" }}>
                       <Minimize2 className="w-12 h-12" style={{ color: ACCENT }} />
                       <span className="text-[11px] font-semibold" style={{ color: ACCENT }}>
-                        {savedPct > 0 ? `−${savedPct}%` : "Optimized"}
+                        {savedPct > 0 ? `−${savedPct}%` : tr("landing_compress_no_savings", "Optimized")}
                       </span>
                     </div>
                   </div>
@@ -330,7 +326,7 @@ export default function CompressLandingPage() {
                   <div className="text-center px-2">
                     <p className="font-extrabold text-[18px] text-[#0A0A0B] tracking-[-0.01em] flex items-center justify-center gap-1.5">
                       <CheckCircle2 className="w-4 h-4" style={{ color: "#1E9E63" }} />
-                      Your compressed PDF is ready
+                      {tr("landing_compress_ready_title", "Your compressed PDF is ready")}
                     </p>
                     <div className="flex items-center justify-center gap-2 mt-2 text-[13px]">
                       <span className="line-through" style={{ color: MUTED }}>{formatBytes(originalSize)}</span>
@@ -353,10 +349,10 @@ export default function CompressLandingPage() {
                     className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-[#E63946] text-white text-[15px] font-extrabold border border-[#E63946] shadow-[0_8px_20px_-6px_rgba(230,57,70,0.6)] hover:bg-[#C72738] hover:border-[#C72738] hover:-translate-y-px transition-all disabled:opacity-60"
                   >
                     <DownloadIcon className="w-4 h-4" />
-                    Download compressed PDF
+                    {tr("landing_compress_download_button", "Download compressed PDF")}
                   </button>
                   <p className="text-[11px]" style={{ color: MUTED }}>
-                    Only 0,50 € to unlock the download.
+                    {tr("landing_common_unlock_price", "Only 0,50 € to unlock the download.")}
                   </p>
                 </div>
               )}
@@ -367,9 +363,9 @@ export default function CompressLandingPage() {
                     <CheckCircle2 className="w-8 h-8" style={{ color: "#1E9E63" }} />
                   </div>
                   <div>
-                    <p className="font-extrabold text-[17px] text-[#0A0A0B]">Download complete</p>
+                    <p className="font-extrabold text-[17px] text-[#0A0A0B]">{tr("landing_common_download_complete", "Download complete")}</p>
                     <p className="text-[13px] mt-0.5" style={{ color: MUTED }}>
-                      Your file <strong className="text-[#0A0A0B]">{compressedName}</strong> has been downloaded.
+                      {tr("landing_common_file_downloaded_pre", "Your file")} <strong className="text-[#0A0A0B]">{compressedName}</strong> {tr("landing_common_file_downloaded_post", "has been downloaded.")}
                     </p>
                   </div>
                   <button
@@ -377,7 +373,7 @@ export default function CompressLandingPage() {
                     className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#0A0A0B] text-white text-sm font-bold hover:bg-[#1A1A1C] transition-all"
                   >
                     <RefreshCw className="w-4 h-4" />
-                    Compress another PDF
+                    {tr("landing_compress_another", "Compress another PDF")}
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -386,7 +382,7 @@ export default function CompressLandingPage() {
               <div className="flex justify-center mt-4">
                 <span className="inline-flex items-center gap-1.5 text-[12px] font-medium" style={{ color: MUTED }}>
                   <Cloud className="w-3.5 h-3.5" />
-                  Files up to 100&nbsp;MB · Processed in your browser
+                  {tr("landing_common_files_limit", "Files up to 100 MB · Processed in your browser")}
                 </span>
               </div>
             </div>
@@ -394,15 +390,15 @@ export default function CompressLandingPage() {
             <div className="flex items-center justify-center gap-6 mt-8 text-[12px]" style={{ color: MUTED }}>
               <span className="inline-flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#1E9E63" }} />
-                No installation
+                {tr("landing_common_no_installation", "No installation")}
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#1E9E63" }} />
-                Private — runs locally
+                {tr("landing_common_private_local", "Private — runs locally")}
               </span>
               <span className="hidden md:inline-flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#1E9E63" }} />
-                Works on any device
+                {tr("landing_common_any_device", "Works on any device")}
               </span>
             </div>
           </div>
@@ -410,11 +406,14 @@ export default function CompressLandingPage() {
           <div className="mt-20 max-w-5xl mx-auto">
             <div className="text-center mb-8">
               <p className="text-[12px] font-semibold tracking-[0.18em] uppercase mb-2" style={{ color: ACCENT }}>
-                All PDF tools
+                {tr("landing_common_all_tools_kicker", "All PDF tools")}
               </p>
               <h2 className="text-2xl md:text-3xl font-extrabold tracking-[-0.02em] text-[#0A0A0B]">
-                Need a different action?
+                {tr("landing_common_need_different", "Need a different action?")}
               </h2>
+              <p className="text-[14px] mt-2" style={{ color: MUTED }}>
+                {tr("landing_common_pick_another", "Pick another tool — same simple flow, no installation required.")}
+              </p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
               {ALL_TOOLS.map((tool) => {
@@ -445,8 +444,8 @@ export default function CompressLandingPage() {
                       <Icon className="w-4.5 h-4.5" style={{ color: tool.iconColor, width: 18, height: 18 }} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-bold text-[#0A0A0B] leading-tight">{tool.label}</p>
-                      <p className="text-[11px] mt-0.5 truncate" style={{ color: MUTED }}>{tool.desc}</p>
+                      <p className="text-[13px] font-bold text-[#0A0A0B] leading-tight">{tr(tool.labelKey, tool.labelFallback)}</p>
+                      <p className="text-[11px] mt-0.5 truncate" style={{ color: MUTED }}>{tr(tool.descKey, tool.descFallback)}</p>
                     </div>
                     {isActive && (
                       <span className="absolute top-2 right-2 text-[9px] font-extrabold tracking-[0.1em] px-1.5 py-0.5 rounded" style={{ background: ACCENT, color: "white" }}>

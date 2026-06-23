@@ -80,27 +80,20 @@ function triggerBlobDownload(blob: Blob, name: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-type ToolEntry = {
-  slug: string;
-  label: string;
-  desc: string;
-  icon: typeof FileText;
-  iconColor: string;
-  iconBg: string;
-};
-const ALL_TOOLS: ToolEntry[] = [
-  { slug: "pdf-to-word",       label: "PDF to Word",       desc: "Editable .docx",   icon: FileText,        iconColor: "#2B579A", iconBg: "#E8F0FA" },
-  { slug: "pdf-to-excel",      label: "PDF to Excel",      desc: "Tables to .xlsx",  icon: FileSpreadsheet, iconColor: "#1F7244", iconBg: "#E8F5EC" },
-  { slug: "pdf-to-powerpoint", label: "PDF to PowerPoint", desc: "Slides to .pptx",  icon: Presentation,    iconColor: "#D04423", iconBg: "#FBEBE5" },
-  { slug: "pdf-to-jpg",        label: "PDF to JPG",        desc: "High-res image",   icon: ImageIcon,       iconColor: "#1A1A1C", iconBg: "#F0F0F2" },
-  { slug: "word-to-pdf",       label: "Word to PDF",       desc: ".docx → .pdf",     icon: FileType,        iconColor: "#2B579A", iconBg: "#E8F0FA" },
-  { slug: "jpg-to-pdf",        label: "JPG to PDF",        desc: "Photos to .pdf",   icon: FileImage,       iconColor: "#E63946", iconBg: "#FEE7EA" },
-  { slug: "png-to-pdf",        label: "PNG to PDF",        desc: "Images to .pdf",   icon: FileImage,       iconColor: "#0A0A0B", iconBg: "#F0F0F2" },
-  { slug: "merge-pdf",         label: "Merge PDF",         desc: "Combine PDFs",     icon: Layers,          iconColor: "#5A5A62", iconBg: "#F0F0F2" },
-  { slug: "split-pdf",         label: "Split PDF",         desc: "Extract pages",    icon: Scissors,        iconColor: "#5A5A62", iconBg: "#F0F0F2" },
-  { slug: "compress-pdf",      label: "Compress PDF",      desc: "Reduce file size", icon: Minimize2,       iconColor: "#5A5A62", iconBg: "#F0F0F2" },
-  { slug: "rotate-pdf",        label: "Rotate PDF",        desc: "Turn pages",       icon: RotateCw,        iconColor: "#5A5A62", iconBg: "#F0F0F2" },
-  { slug: "watermark-pdf",     label: "Watermark PDF",     desc: "Stamp text",       icon: Droplet,         iconColor: "#5A5A62", iconBg: "#F0F0F2" },
+// Cross-tool grid — labels/descs resolved via `landing_grid_*` i18n keys at render.
+const ALL_TOOLS: { slug: string; labelKey: string; labelFallback: string; descKey: string; descFallback: string; icon: typeof FileText; iconColor: string; iconBg: string }[] = [
+  { slug: "pdf-to-word",       labelKey: "landing_grid_pdf_to_word_label",  labelFallback: "PDF to Word",       descKey: "landing_grid_pdf_to_word_desc",  descFallback: "Editable .docx",   icon: FileText,        iconColor: "#2B579A", iconBg: "#E8F0FA" },
+  { slug: "pdf-to-excel",      labelKey: "landing_grid_pdf_to_excel_label", labelFallback: "PDF to Excel",      descKey: "landing_grid_pdf_to_excel_desc", descFallback: "Tables to .xlsx",  icon: FileSpreadsheet, iconColor: "#1F7244", iconBg: "#E8F5EC" },
+  { slug: "pdf-to-powerpoint", labelKey: "landing_grid_pdf_to_ppt_label",   labelFallback: "PDF to PowerPoint", descKey: "landing_grid_pdf_to_ppt_desc",   descFallback: "Slides to .pptx",  icon: Presentation,    iconColor: "#D04423", iconBg: "#FBEBE5" },
+  { slug: "pdf-to-jpg",        labelKey: "landing_grid_pdf_to_jpg_label",   labelFallback: "PDF to JPG",        descKey: "landing_grid_pdf_to_jpg_desc",   descFallback: "High-res image",   icon: ImageIcon,       iconColor: "#1A1A1C", iconBg: "#F0F0F2" },
+  { slug: "word-to-pdf",       labelKey: "landing_grid_word_to_pdf_label",  labelFallback: "Word to PDF",       descKey: "landing_grid_word_to_pdf_desc",  descFallback: ".docx → .pdf",     icon: FileType,        iconColor: "#2B579A", iconBg: "#E8F0FA" },
+  { slug: "jpg-to-pdf",        labelKey: "landing_grid_jpg_to_pdf_label",   labelFallback: "JPG to PDF",        descKey: "landing_grid_jpg_to_pdf_desc",   descFallback: "Photos to .pdf",   icon: FileImage,       iconColor: "#E63946", iconBg: "#FEE7EA" },
+  { slug: "png-to-pdf",        labelKey: "landing_grid_png_to_pdf_label",   labelFallback: "PNG to PDF",        descKey: "landing_grid_png_to_pdf_desc",   descFallback: "Images to .pdf",   icon: FileImage,       iconColor: "#0A0A0B", iconBg: "#F0F0F2" },
+  { slug: "merge-pdf",         labelKey: "landing_grid_merge_label",        labelFallback: "Merge PDF",         descKey: "landing_grid_merge_desc",        descFallback: "Combine PDFs",     icon: Layers,          iconColor: "#5A5A62", iconBg: "#F0F0F2" },
+  { slug: "split-pdf",         labelKey: "landing_grid_split_label",        labelFallback: "Split PDF",         descKey: "landing_grid_split_desc",        descFallback: "Extract pages",    icon: Scissors,        iconColor: "#5A5A62", iconBg: "#F0F0F2" },
+  { slug: "compress-pdf",      labelKey: "landing_grid_compress_label",     labelFallback: "Compress PDF",      descKey: "landing_grid_compress_desc",     descFallback: "Reduce file size", icon: Minimize2,       iconColor: "#5A5A62", iconBg: "#F0F0F2" },
+  { slug: "rotate-pdf",        labelKey: "landing_grid_rotate_label",       labelFallback: "Rotate PDF",        descKey: "landing_grid_rotate_desc",       descFallback: "Turn pages",       icon: RotateCw,        iconColor: "#5A5A62", iconBg: "#F0F0F2" },
+  { slug: "watermark-pdf",     labelKey: "landing_grid_watermark_label",    labelFallback: "Watermark PDF",     descKey: "landing_grid_watermark_desc",    descFallback: "Stamp text",       icon: Droplet,         iconColor: "#5A5A62", iconBg: "#F0F0F2" },
 ];
 
 type Phase = "idle" | "have-file" | "stamping" | "ready" | "awaiting-payment" | "done";
@@ -572,6 +565,9 @@ export default function WatermarkLandingPage() {
               <h2 className="text-2xl md:text-3xl font-extrabold tracking-[-0.02em] text-[#0A0A0B]">
                 {tr("landing_common_need_different", "Need a different action?")}
               </h2>
+              <p className="text-[14px] mt-2" style={{ color: MUTED }}>
+                {tr("landing_common_pick_another", "Pick another tool — same simple flow, no installation required.")}
+              </p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {ALL_TOOLS.map((tool) => {
@@ -602,8 +598,8 @@ export default function WatermarkLandingPage() {
                       <Icon className="w-4.5 h-4.5" style={{ color: tool.iconColor, width: 18, height: 18 }} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-bold text-[#0A0A0B] leading-tight">{tool.label}</p>
-                      <p className="text-[11px] mt-0.5 truncate" style={{ color: MUTED }}>{tool.desc}</p>
+                      <p className="text-[13px] font-bold text-[#0A0A0B] leading-tight">{tr(tool.labelKey, tool.labelFallback)}</p>
+                      <p className="text-[11px] mt-0.5 truncate" style={{ color: MUTED }}>{tr(tool.descKey, tool.descFallback)}</p>
                     </div>
                     {isActive && (
                       <span className="absolute top-2 right-2 text-[9px] font-extrabold tracking-[0.1em] px-1.5 py-0.5 rounded" style={{ background: ACCENT, color: "white" }}>
