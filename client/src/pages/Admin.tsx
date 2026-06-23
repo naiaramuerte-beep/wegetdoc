@@ -2140,6 +2140,64 @@ export default function Admin() {
                 ))}
               </div>
 
+              {/* ── Funnel de pagos ─────────────────────────────────
+                  Counts how many init_started events vs init_failed vs
+                  intro_charge (the success) we have across providers.
+                  Conversion = charges / starts. Lets the admin spot if
+                  one provider is dropping hard before others. */}
+              {(() => {
+                const evts: any[] = webhookEventsQ.data ?? [];
+                const byProvider = (started: string, failed: string, ok: string) => ({
+                  started: evts.filter((e) => e.eventType === started).length,
+                  failed: evts.filter((e) => e.eventType === failed).length,
+                  ok: evts.filter((e) => e.eventType === ok).length,
+                });
+                const funnel = [
+                  { label: "FastPay (tarjeta)", color: "#1E66C9", ...byProvider("fastpay_init_started", "fastpay_init_failed", "fastpay_intro_charge") },
+                  { label: "Apple Pay",         color: "#000000", ...byProvider("apay_init_started",     "apay_init_failed",     "apay_intro_charge")    },
+                  { label: "Google Pay",        color: "#34A853", ...byProvider("gpay_init_started",     "gpay_init_failed",     "gpay_intro_charge")    },
+                ];
+                return (
+                  <div className="rounded-xl p-5 border" style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}>
+                    <p className="text-sm font-semibold text-white mb-1">Funnel de intentos de pago</p>
+                    <p className="text-[11px] text-gray-500 mb-4">Última ventana de 100 eventos. <span className="text-gray-400">started</span> = abrió el flujo, <span className="text-green-400">ok</span> = cargo confirmado, <span className="text-red-400">failed</span> = Sipay rechazó antes del 3DS.</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {funnel.map((f) => {
+                        const conv = f.started > 0 ? Math.round((f.ok / f.started) * 100) : 0;
+                        return (
+                          <div key={f.label} className="rounded-lg p-3 border" style={{ backgroundColor: "#0a0d14", borderColor: "#1e2433" }}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: f.color }} />
+                              <span className="text-xs font-semibold text-white">{f.label}</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-1 text-center mb-2">
+                              <div>
+                                <p className="text-[10px] text-gray-500 uppercase tracking-wide">Started</p>
+                                <p className="text-lg font-bold text-gray-300">{f.started}</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] text-gray-500 uppercase tracking-wide">OK</p>
+                                <p className="text-lg font-bold text-green-400">{f.ok}</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] text-gray-500 uppercase tracking-wide">Failed</p>
+                                <p className="text-lg font-bold text-red-400">{f.failed}</p>
+                              </div>
+                            </div>
+                            <p className="text-[10px] text-gray-500 text-center">
+                              Conversión: <span className="text-white font-semibold">{conv}%</span>
+                              {f.started > 0 && f.started > f.ok + f.failed && (
+                                <span className="text-gray-500"> · {f.started - f.ok - f.failed} abandono</span>
+                              )}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#1e2433", backgroundColor: "#131720" }}>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">

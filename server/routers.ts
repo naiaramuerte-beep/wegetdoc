@@ -428,6 +428,17 @@ export const appRouter = router({
         const { chargeApplePay } = await import("./_core/sipay");
         const order = `apay-${ctx.user.id}-${Date.now()}`;
         const startedAt = Date.now();
+        // Log the funnel start so the admin can compare started → succeeded
+        // and spot Sipay-side rejections vs Apple-side abandons.
+        const { recordWebhookEvent: recordEvtStart } = await import("./db");
+        await recordEvtStart({
+          provider: "sipay",
+          eventType: "apay_init_started",
+          eventId: order,
+          status: "ok",
+          durationMs: 0,
+          payload: { userId: ctx.user.id, amountCents: input.amountCents },
+        });
         const result = await chargeApplePay({
           amountCents: input.amountCents,
           tokenApay: input.tokenApay,
@@ -528,6 +539,15 @@ export const appRouter = router({
         const { chargeGpay } = await import("./_core/sipay");
         const order = `gpay-${ctx.user.id}-${Date.now()}`;
         const startedAt = Date.now();
+        const { recordWebhookEvent: recordEvtStart } = await import("./db");
+        await recordEvtStart({
+          provider: "sipay",
+          eventType: "gpay_init_started",
+          eventId: order,
+          status: "ok",
+          durationMs: 0,
+          payload: { userId: ctx.user.id, amountCents: input.amountCents },
+        });
         const result = await chargeGpay({
           amountCents: input.amountCents,
           tokenGpay: input.token,
@@ -615,6 +635,10 @@ export const appRouter = router({
     // Phase 1 — wire FastPay token into all-in-one and return the 3DS URL
     // the frontend must navigate to. No DB writes; the customer comes back
     // through /api/sipay/callback/ok where we confirm and create the sub.
+    //
+    // We log an `fastpay_init_started` event up-front and a matching
+    // `_failed` if Sipay rejects, so the admin can see the FULL payment
+    // funnel (start → 3DS → confirm) and spot abandonment between steps.
     sipayCheckoutInit: protectedProcedure
       .input(z.object({
         fastpayRequestId: z.string().min(8),
@@ -622,8 +646,18 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const { createCheckoutFastpay } = await import("./_core/sipay");
+        const { recordWebhookEvent } = await import("./db");
         const order = `sipay-${ctx.user.id}-${Date.now()}`;
         const token = `usr-${ctx.user.id}`;
+        const startedAt = Date.now();
+        await recordWebhookEvent({
+          provider: "sipay",
+          eventType: "fastpay_init_started",
+          eventId: order,
+          status: "ok",
+          durationMs: 0,
+          payload: { userId: ctx.user.id, amountCents: input.amountCents },
+        });
         const result = await createCheckoutFastpay({
           amountCents: input.amountCents,
           fastpayRequestId: input.fastpayRequestId,
@@ -635,6 +669,15 @@ export const appRouter = router({
         });
         const data = result.data as any;
         if (!result.ok || data?.code !== "0") {
+          await recordWebhookEvent({
+            provider: "sipay",
+            eventType: "fastpay_init_failed",
+            eventId: order,
+            status: "error",
+            errorMessage: data?.detail ?? data?.description ?? "unknown",
+            durationMs: Date.now() - startedAt,
+            payload: data ?? result.raw,
+          });
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: `Sipay rechazó la petición: ${JSON.stringify(data ?? result.raw)}`,
