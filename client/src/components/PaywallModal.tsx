@@ -1043,6 +1043,52 @@ export default function PaywallModal({
   const upgradeTrialNowMut = trpc.subscription.upgradeTrialNow.useMutation();
   const utils2 = trpc.useUtils();
 
+  // Track whether we've already uploaded the doc to the dashboard during
+  // this open-cycle of the modal. Set to true by either handleEmailSubmit
+  // (right after register/login, before payment) or handlePaymentSuccess
+  // (for already-authed users who skipped the auth step). Reset on close.
+  const docSavedRef = useRef(false);
+
+  // Saves the current PDF (from a landing's `buildPdfForUpload`) to the
+  // user's dashboard. Idempotent via `docSavedRef` so we never create
+  // duplicate rows when both the post-register and post-payment hooks
+  // fire for the same modal open. Errors are logged but swallowed — a
+  // failed save must not block the user's download.
+  //
+  // SKIP for editor flow: PdfEditor passes `pdfData` AND runs its own
+  // `autoSaveDocument` on mount, so the doc is already in the panel as
+  // `pending` before the paywall ever opens. Re-saving here would
+  // duplicate the row. Landings only pass `buildPdfForUpload` — they
+  // depend on us to do the save.
+  //
+  // NOTE: declared BEFORE the early return so React's hook order stays stable.
+  const saveDocToDashboard = useCallback(async (): Promise<void> => {
+    if (docSavedRef.current) return;
+    if (pdfData) return; // editor handles its own save
+    const docToSave = buildPdfForUpload ? await buildPdfForUpload() : null;
+    if (!docToSave || !("base64" in docToSave)) return;
+    try {
+      const binaryStr = atob(docToSave.base64);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const fd = new FormData();
+      fd.append("file", blob, docToSave.name);
+      fd.append("name", docToSave.name);
+      const res = await fetch("/api/documents/auto-save", { method: "POST", credentials: "include", body: fd });
+      if (res.ok) docSavedRef.current = true;
+      else console.warn("[PaywallModal] auto-save failed", res.status);
+    } catch (err) {
+      console.warn("[PaywallModal] auto-save error", err);
+    }
+  }, [pdfData, buildPdfForUpload]);
+
+  // Reset the saved flag whenever the modal re-opens, so a user who
+  // closes mid-flow and re-opens with new content gets their new doc saved.
+  useEffect(() => {
+    if (isOpen) docSavedRef.current = false;
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const currentStep = isAuthenticated ? "plans" : step;
@@ -1092,19 +1138,7 @@ export default function PaywallModal({
         await loginMutation.mutateAsync({ email: emailInput.trim(), password: passwordInput });
       }
       await refresh();
-      const docToSave = (effectivePdfData && "base64" in effectivePdfData ? effectivePdfData : null) ?? (buildPdfForUpload ? await buildPdfForUpload() : null);
-      if (docToSave && "base64" in docToSave) {
-        try {
-          const binaryStr = atob(docToSave.base64);
-          const bytes = new Uint8Array(binaryStr.length);
-          for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-          const blob = new Blob([bytes], { type: "application/pdf" });
-          const fd = new FormData();
-          fd.append("file", blob, docToSave.name);
-          fd.append("name", docToSave.name);
-          await fetch("/api/documents/auto-save", { method: "POST", credentials: "include", body: fd });
-        } catch {}
-      }
+      await saveDocToDashboard();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Error");
     } finally {
@@ -1113,6 +1147,11 @@ export default function PaywallModal({
   };
 
   const handlePaymentSuccess = (transactionId?: string) => {
+    // Critical: also save the doc for already-authenticated users who
+    // skipped the registration step entirely. Without this their paid
+    // download never lands in the dashboard panel. Fire-and-forget so
+    // a slow upload never delays the close+redirect.
+    saveDocToDashboard().catch((err) => console.warn("[PaywallModal] post-payment save failed", err));
     clearPendingEditedPdf();
     onClose();
     if (onPaymentSuccess) onPaymentSuccess(transactionId);

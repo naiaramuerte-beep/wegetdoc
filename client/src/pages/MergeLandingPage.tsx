@@ -92,17 +92,19 @@ type ToolEntry = {
   iconColor: string;
   iconBg: string;
 };
-const ALL_TOOLS: ToolEntry[] = [
-  { slug: "pdf-to-word",       label: "PDF to Word",       desc: "Editable .docx",        icon: FileText,        iconColor: "#2B579A", iconBg: "#E8F0FA" },
-  { slug: "pdf-to-excel",      label: "PDF to Excel",      desc: "Tables to .xlsx",       icon: FileSpreadsheet, iconColor: "#1F7244", iconBg: "#E8F5EC" },
-  { slug: "pdf-to-powerpoint", label: "PDF to PowerPoint", desc: "Slides to .pptx",       icon: Presentation,    iconColor: "#D04423", iconBg: "#FBEBE5" },
-  { slug: "pdf-to-jpg",        label: "PDF to JPG",        desc: "High-res image",        icon: ImageIcon,       iconColor: "#1A1A1C", iconBg: "#F0F0F2" },
-  { slug: "word-to-pdf",       label: "Word to PDF",       desc: ".docx → .pdf",          icon: FileType,        iconColor: "#2B579A", iconBg: "#E8F0FA" },
-  { slug: "jpg-to-pdf",        label: "JPG to PDF",        desc: "Photos to .pdf",        icon: FileImage,       iconColor: "#E63946", iconBg: "#FEE7EA" },
-  { slug: "png-to-pdf",        label: "PNG to PDF",        desc: "Images to .pdf",        icon: FileImage,       iconColor: "#0A0A0B", iconBg: "#F0F0F2" },
-  { slug: "merge-pdf",         label: "Merge PDF",         desc: "Combine PDFs",          icon: Layers,          iconColor: "#5A5A62", iconBg: "#F0F0F2" },
-  { slug: "split-pdf",         label: "Split PDF",         desc: "Extract pages",         icon: Scissors,        iconColor: "#5A5A62", iconBg: "#F0F0F2" },
-  { slug: "compress-pdf",      label: "Compress PDF",      desc: "Reduce file size",      icon: Minimize2,       iconColor: "#5A5A62", iconBg: "#F0F0F2" },
+// Each tool's label + desc are looked up via i18n keys (`landing_grid_*`).
+// We keep an English fallback inline so the page never shows blanks.
+const ALL_TOOLS: { slug: string; labelKey: string; labelFallback: string; descKey: string; descFallback: string; icon: typeof FileText; iconColor: string; iconBg: string }[] = [
+  { slug: "pdf-to-word",       labelKey: "landing_grid_pdf_to_word_label",  labelFallback: "PDF to Word",       descKey: "landing_grid_pdf_to_word_desc",  descFallback: "Editable .docx",   icon: FileText,        iconColor: "#2B579A", iconBg: "#E8F0FA" },
+  { slug: "pdf-to-excel",      labelKey: "landing_grid_pdf_to_excel_label", labelFallback: "PDF to Excel",      descKey: "landing_grid_pdf_to_excel_desc", descFallback: "Tables to .xlsx",  icon: FileSpreadsheet, iconColor: "#1F7244", iconBg: "#E8F5EC" },
+  { slug: "pdf-to-powerpoint", labelKey: "landing_grid_pdf_to_ppt_label",   labelFallback: "PDF to PowerPoint", descKey: "landing_grid_pdf_to_ppt_desc",   descFallback: "Slides to .pptx",  icon: Presentation,    iconColor: "#D04423", iconBg: "#FBEBE5" },
+  { slug: "pdf-to-jpg",        labelKey: "landing_grid_pdf_to_jpg_label",   labelFallback: "PDF to JPG",        descKey: "landing_grid_pdf_to_jpg_desc",   descFallback: "High-res image",   icon: ImageIcon,       iconColor: "#1A1A1C", iconBg: "#F0F0F2" },
+  { slug: "word-to-pdf",       labelKey: "landing_grid_word_to_pdf_label",  labelFallback: "Word to PDF",       descKey: "landing_grid_word_to_pdf_desc",  descFallback: ".docx → .pdf",     icon: FileType,        iconColor: "#2B579A", iconBg: "#E8F0FA" },
+  { slug: "jpg-to-pdf",        labelKey: "landing_grid_jpg_to_pdf_label",   labelFallback: "JPG to PDF",        descKey: "landing_grid_jpg_to_pdf_desc",   descFallback: "Photos to .pdf",   icon: FileImage,       iconColor: "#E63946", iconBg: "#FEE7EA" },
+  { slug: "png-to-pdf",        labelKey: "landing_grid_png_to_pdf_label",   labelFallback: "PNG to PDF",        descKey: "landing_grid_png_to_pdf_desc",   descFallback: "Images to .pdf",   icon: FileImage,       iconColor: "#0A0A0B", iconBg: "#F0F0F2" },
+  { slug: "merge-pdf",         labelKey: "landing_grid_merge_label",        labelFallback: "Merge PDF",         descKey: "landing_grid_merge_desc",        descFallback: "Combine PDFs",     icon: Layers,          iconColor: "#5A5A62", iconBg: "#F0F0F2" },
+  { slug: "split-pdf",         labelKey: "landing_grid_split_label",        labelFallback: "Split PDF",         descKey: "landing_grid_split_desc",        descFallback: "Extract pages",    icon: Scissors,        iconColor: "#5A5A62", iconBg: "#F0F0F2" },
+  { slug: "compress-pdf",      labelKey: "landing_grid_compress_label",     labelFallback: "Compress PDF",      descKey: "landing_grid_compress_desc",     descFallback: "Reduce file size", icon: Minimize2,       iconColor: "#5A5A62", iconBg: "#F0F0F2" },
 ];
 
 type Phase = "idle" | "have-files" | "merging" | "ready" | "awaiting-payment" | "done";
@@ -122,12 +124,15 @@ export default function MergeLandingPage() {
   const [showPaywall, setShowPaywall] = useState(false);
 
   // Localized copy with English fallbacks so the page never shows blanks
-  // while the language context resolves.
-  const tr = (key: string, fallback: string): string =>
-    ((t as any)[key] as string | undefined) || fallback;
+  // while the language context resolves. Supports {var} interpolation.
+  const tr = (key: string, fallback: string, vars?: Record<string, string | number>): string => {
+    let s = ((t as any)[key] as string | undefined) || fallback;
+    if (vars) for (const k of Object.keys(vars)) s = s.replace(new RegExp(`\\{${k}\\}`, "g"), String(vars[k]));
+    return s;
+  };
   const heroTitle = tr("landing_merge_h1", "Merge PDF files");
   const heroSubtitle = tr("landing_merge_subtitle", "Combine multiple PDFs into a single document in seconds.");
-  const eyebrow = "MERGE PDF";
+  const eyebrow = tr("landing_merge_preheader", "Merge PDF");
   const ctaSelect = tr("landing_merge_cta", "Select PDFs");
   const ctaDrag = tr("landing_merge_drag", "or drag your files here");
 
@@ -150,7 +155,7 @@ export default function MergeLandingPage() {
       (f) => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf"),
     );
     if (pdfs.length === 0) {
-      toast.error("Only PDF files are supported");
+      toast.error(tr("landing_common_only_pdf", "Only PDF files are supported"));
       return;
     }
     setFiles((prev) => [...prev, ...pdfs]);
@@ -190,11 +195,11 @@ export default function MergeLandingPage() {
 
   const doMerge = async () => {
     if (files.length < 2) {
-      toast.error("Add at least two PDFs to merge");
+      toast.error(tr("landing_merge_toast_min", "Add at least two PDFs to merge"));
       return;
     }
     setPhase("merging");
-    toast.loading("Merging PDFs…", { id: "merge" });
+    toast.loading(tr("landing_merge_toast_loading", "Merging PDFs…"), { id: "merge" });
     try {
       const merged = await PDFDocument.create();
       for (const f of files) {
@@ -208,10 +213,10 @@ export default function MergeLandingPage() {
       const base = files[0].name.replace(/\.pdf$/i, "");
       setMergedName(`${base}-merged.pdf`);
       setPhase("ready");
-      toast.success("Merged! Ready to download.", { id: "merge" });
+      toast.success(tr("landing_merge_toast_success", "Merged! Ready to download."), { id: "merge" });
     } catch (err) {
       console.error("[merge] failed:", err);
-      toast.error("Could not merge PDFs", { id: "merge" });
+      toast.error(tr("landing_merge_toast_error", "Could not merge PDFs"), { id: "merge" });
       setPhase("have-files");
     }
   };
@@ -313,7 +318,7 @@ export default function MergeLandingPage() {
                     {ctaSelect}
                   </button>
                   <p className="text-[12px] mt-1" style={{ color: MUTED }}>
-                    Select 2 or more PDFs · in any order
+                    {tr("landing_merge_drag_subtitle", "Select 2 or more PDFs · in any order")}
                   </p>
                 </div>
               )}
@@ -323,7 +328,9 @@ export default function MergeLandingPage() {
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <p className="text-[13px] font-semibold text-[#0A0A0B]">
-                      {files.length} {files.length === 1 ? "file" : "files"} · {formatBytes(totalSize)}
+                      {files.length} {files.length === 1
+                        ? tr("landing_merge_file_word", "file")
+                        : tr("landing_merge_files_word", "files")} · {formatBytes(totalSize)}
                     </p>
                     <button
                       onClick={() => fileInputRef.current?.click()}
@@ -331,7 +338,7 @@ export default function MergeLandingPage() {
                       style={{ color: ACCENT }}
                     >
                       <Upload className="w-3.5 h-3.5" />
-                      Add more
+                      {tr("landing_merge_add_more", "Add more")}
                     </button>
                   </div>
 
@@ -382,11 +389,11 @@ export default function MergeLandingPage() {
                     className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#E63946] text-white text-[15px] font-extrabold border border-[#E63946] shadow-[0_8px_20px_-6px_rgba(230,57,70,0.6)] hover:bg-[#C72738] hover:border-[#C72738] hover:-translate-y-px transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Layers className="w-4 h-4" />
-                    Merge {files.length >= 2 ? files.length : ""} PDFs
+                    {tr("landing_merge_button", "Merge")} {files.length >= 2 ? files.length : ""} PDFs
                   </button>
                   {files.length < 2 && (
                     <p className="text-center text-[11px]" style={{ color: MUTED }}>
-                      Add at least one more PDF to merge.
+                      {tr("landing_merge_more_pdfs_hint", "Add at least one more PDF to merge.")}
                     </p>
                   )}
                 </div>
@@ -400,10 +407,10 @@ export default function MergeLandingPage() {
                     <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#E63946] ring-2 ring-white" />
                   </div>
                   <div className="text-center">
-                    <p className="font-bold text-[15px] text-[#0A0A0B]">Merging your PDFs…</p>
+                    <p className="font-bold text-[15px] text-[#0A0A0B]">{tr("landing_merge_loading_title", "Merging your PDFs…")}</p>
                     <p className="text-[12px] mt-1 inline-flex items-center gap-1.5" style={{ color: MUTED }}>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      This happens entirely in your browser
+                      {tr("landing_merge_loading_subtitle", "This happens entirely in your browser")}
                     </p>
                   </div>
                 </div>
@@ -427,7 +434,7 @@ export default function MergeLandingPage() {
                     <div className="relative flex flex-col items-center justify-center gap-2 py-8" style={{ background: "#FEF6F7", aspectRatio: "0.707" }}>
                       <Layers className="w-12 h-12" style={{ color: ACCENT }} />
                       <span className="text-[11px] font-semibold" style={{ color: ACCENT }}>
-                        {files.length} PDFs · merged
+                        {files.length} {tr("landing_merge_card_label", "PDFs · merged")}
                       </span>
                     </div>
                   </div>
@@ -435,7 +442,7 @@ export default function MergeLandingPage() {
                   <div className="text-center px-2">
                     <p className="font-extrabold text-[18px] text-[#0A0A0B] tracking-[-0.01em] flex items-center justify-center gap-1.5">
                       <CheckCircle2 className="w-4 h-4" style={{ color: "#1E9E63" }} />
-                      Your merged PDF is ready
+                      {tr("landing_merge_ready_title", "Your merged PDF is ready")}
                     </p>
                     <p className="text-[13px] mt-1 truncate max-w-[280px] mx-auto" style={{ color: MUTED }}>
                       <span className="font-semibold text-[#1A1A1C]">{mergedName}</span>
@@ -449,10 +456,10 @@ export default function MergeLandingPage() {
                     className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-[#E63946] text-white text-[15px] font-extrabold border border-[#E63946] shadow-[0_8px_20px_-6px_rgba(230,57,70,0.6)] hover:bg-[#C72738] hover:border-[#C72738] hover:-translate-y-px transition-all disabled:opacity-60"
                   >
                     <DownloadIcon className="w-4 h-4" />
-                    Download merged PDF
+                    {tr("landing_merge_download_button", "Download merged PDF")}
                   </button>
                   <p className="text-[11px]" style={{ color: MUTED }}>
-                    Only 0,50 € to unlock the download.
+                    {tr("landing_common_unlock_price", "Only 0,50 € to unlock the download.")}
                   </p>
                 </div>
               )}
@@ -464,9 +471,9 @@ export default function MergeLandingPage() {
                     <CheckCircle2 className="w-8 h-8" style={{ color: "#1E9E63" }} />
                   </div>
                   <div>
-                    <p className="font-extrabold text-[17px] text-[#0A0A0B]">Download complete</p>
+                    <p className="font-extrabold text-[17px] text-[#0A0A0B]">{tr("landing_common_download_complete", "Download complete")}</p>
                     <p className="text-[13px] mt-0.5" style={{ color: MUTED }}>
-                      Your file <strong className="text-[#0A0A0B]">{mergedName}</strong> has been downloaded.
+                      {tr("landing_common_file_downloaded_pre", "Your file")} <strong className="text-[#0A0A0B]">{mergedName}</strong> {tr("landing_common_file_downloaded_post", "has been downloaded.")}
                     </p>
                   </div>
                   <button
@@ -474,7 +481,7 @@ export default function MergeLandingPage() {
                     className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#0A0A0B] text-white text-sm font-bold hover:bg-[#1A1A1C] transition-all"
                   >
                     <RefreshCw className="w-4 h-4" />
-                    Merge more PDFs
+                    {tr("landing_merge_another", "Merge more PDFs")}
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -483,7 +490,7 @@ export default function MergeLandingPage() {
               <div className="flex justify-center mt-4">
                 <span className="inline-flex items-center gap-1.5 text-[12px] font-medium" style={{ color: MUTED }}>
                   <Cloud className="w-3.5 h-3.5" />
-                  Files up to 100&nbsp;MB · Processed in your browser
+                  {tr("landing_common_files_limit", "Files up to 100 MB · Processed in your browser")}
                 </span>
               </div>
             </div>
@@ -491,15 +498,15 @@ export default function MergeLandingPage() {
             <div className="flex items-center justify-center gap-6 mt-8 text-[12px]" style={{ color: MUTED }}>
               <span className="inline-flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#1E9E63" }} />
-                No installation
+                {tr("landing_common_no_installation", "No installation")}
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#1E9E63" }} />
-                Private — runs locally
+                {tr("landing_common_private_local", "Private — runs locally")}
               </span>
               <span className="hidden md:inline-flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#1E9E63" }} />
-                Works on any device
+                {tr("landing_common_any_device", "Works on any device")}
               </span>
             </div>
           </div>
@@ -508,13 +515,13 @@ export default function MergeLandingPage() {
           <div className="mt-20 max-w-5xl mx-auto">
             <div className="text-center mb-8">
               <p className="text-[12px] font-semibold tracking-[0.18em] uppercase mb-2" style={{ color: ACCENT }}>
-                All PDF tools
+                {tr("landing_common_all_tools_kicker", "All PDF tools")}
               </p>
               <h2 className="text-2xl md:text-3xl font-extrabold tracking-[-0.02em] text-[#0A0A0B]">
-                Need a different action?
+                {tr("landing_common_need_different", "Need a different action?")}
               </h2>
               <p className="text-[14px] mt-2" style={{ color: MUTED }}>
-                Pick another tool — same simple flow, no installation required.
+                {tr("landing_common_pick_another", "Pick another tool — same simple flow, no installation required.")}
               </p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -549,8 +556,8 @@ export default function MergeLandingPage() {
                       <Icon className="w-4.5 h-4.5" style={{ color: tool.iconColor, width: 18, height: 18 }} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-bold text-[#0A0A0B] leading-tight">{tool.label}</p>
-                      <p className="text-[11px] mt-0.5 truncate" style={{ color: MUTED }}>{tool.desc}</p>
+                      <p className="text-[13px] font-bold text-[#0A0A0B] leading-tight">{tr(tool.labelKey, tool.labelFallback)}</p>
+                      <p className="text-[11px] mt-0.5 truncate" style={{ color: MUTED }}>{tr(tool.descKey, tool.descFallback)}</p>
                     </div>
                     {isActive && (
                       <span className="absolute top-2 right-2 text-[9px] font-extrabold tracking-[0.1em] px-1.5 py-0.5 rounded" style={{ background: ACCENT, color: "white" }}>
