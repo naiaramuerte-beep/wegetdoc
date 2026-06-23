@@ -29,17 +29,17 @@ El acceso a las funcionalidades avanzadas de la Plataforma requiere la creación
 
 ### 3.1 Periodo de prueba inicial
 
-La contratación del servicio incluye un **periodo de prueba de 7 días** con un coste inicial de **0,50 EUR** (impuestos incluidos). Durante este periodo, el usuario dispondrá de acceso completo a todas las funcionalidades avanzadas de la Plataforma.
+La contratación del servicio incluye un **periodo de prueba de 2 días** con un coste inicial de **0,50 EUR** (impuestos incluidos). Durante este periodo, el usuario dispondrá de acceso completo a todas las funcionalidades avanzadas de la Plataforma.
 
 ### 3.2 Cobro recurrente y autorización expresa
 
-**AVISO IMPORTANTE:** Al formalizar el pago inicial de 0,50 EUR, el usuario **otorga autorización expresa** para que EditorPDF efectúe un cargo periódico de **49,90 EUR/mes** (impuestos incluidos) en el medio de pago registrado una vez concluido el periodo de prueba de 7 días. Dicho cargo se repetirá mensualmente de forma automática hasta que el usuario proceda a la cancelación de su suscripción.
+**AVISO IMPORTANTE:** Al formalizar el pago inicial de 0,50 EUR, el usuario **otorga autorización expresa** para que IQBOOST efectúe un cargo periódico de **{price}/mes** (impuestos incluidos) en el medio de pago registrado una vez concluido el periodo de prueba de 2 días. Dicho cargo se repetirá mensualmente de forma automática hasta que el usuario proceda a la cancelación de su suscripción.
 
 El importe mensual se cargará en el mismo medio de pago utilizado en la transacción inicial, salvo que el usuario cancele antes de la finalización del periodo de prueba.
 
 ### 3.3 Procedimiento de cancelación
 
-El usuario podrá dar de baja su suscripción en cualquier momento **con anterioridad a la finalización del periodo de prueba** sin que se genere cargo adicional alguno. Si la cancelación se produce una vez iniciado un ciclo de facturación mensual, esta surtirá efecto al término del periodo ya abonado, sin derecho a devolución proporcional.
+El usuario podrá dar de baja su suscripción en cualquier momento **con anterioridad a la finalización del periodo de prueba de 2 días** sin que se genere cargo adicional alguno. Si la cancelación se produce una vez iniciado un ciclo de facturación mensual, esta surtirá efecto al término del periodo ya abonado, sin derecho a devolución proporcional.
 
 Para proceder a la cancelación, el usuario deberá acceder a su panel de control en [editorpdf.net/dashboard](https://editorpdf.net/dashboard), dirigirse a la sección **Facturación** y pulsar **Cancelar suscripción**.
 
