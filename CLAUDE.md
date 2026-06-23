@@ -152,6 +152,23 @@ Online PDF editor SaaS — edit, convert, sign, and protect PDFs in the browser.
     - **Pendiente Fase 1**: integrar FastPay JS en `PaywallModal.tsx` (script `sandbox.sipay.es/fpay/v1/static/bundle/fastpay.js`), capturar `request_id` por callback JS, mandar a backend `POST /api/sipay/confirm`. Endpoint `/sipay/callback/ok` para volver tras 3DS y disparar `confirmPayment`.
 40. **Google Pay: merchantId pegado → PRODUCTION en editorpdf.net.** Tras crear el perfil en pay.google.com/business/console como "Clicklabs Digital Venture S.L." y obtener el merchantId `BCR2DN4T2627BZYZ`, el botón GPay deja de mostrar el banner "Test Card / No se realizará ningún cargo" en `editorpdf.net` y pasa a cobrar tarjetas reales vía Sipay. En hosts no-prod (preview de Railway, localhost) sigue en TEST para no cobrar por error en pruebas. Pendiente: la aprobación final de Google del Web Integration (3 flags AI de "Potential issue": ecommerce intent, fondo oscuro del botón, screenshot del sheet con últimos 4 dígitos). Mientras Google aprueba, las transacciones pasan por Sipay normalmente — Google solo certifica la integración, no actúa de gateway.
 
+52. **Visitantes en directo en el admin (tracker in-memory + heartbeat).** Nueva card "Visitantes en directo" en la pestaña Resumen del admin que muestra el número de sesiones activas en los últimos 60s, con desglose por ruta (top 8). Implementación:
+    - **`server/_core/presence.ts`** (nuevo): tracker en memoria con `Map<sessionId, {lastSeen, path}>`, ventana de 60s, pruner cada 30s, cap de 50k sesiones. `recordPing()` upsertea entradas, `activeBreakdown()` devuelve count + paths agrupados.
+    - **Endpoint `POST /api/presence/ping`** (express en `_core/index.ts`): acepta `{sessionId, path}` no autenticado, swallowea errores, responde 204.
+    - **`client/src/components/PresenceTracker.tsx`** (nuevo): montado una vez en App.tsx. Genera un UUID per-tab en `sessionStorage`, envía `navigator.sendBeacon` cada 25s con la ruta actual (`useLocation`), skip si la tab está oculta.
+    - **`admin.liveVisitors`** tRPC query: polled cada 5s cuando la pestaña Resumen está abierta. La card muestra el conteo grande con un dot verde animado (`animate-ping`) + el top 8 de rutas activas. Si el conteo es 0 muestra "Sin visitantes activos ahora mismo."
+    - **Limitaciones**: el tracker es in-memory por proceso — si Railway corre varias réplicas, cada una tiene su propio conteo (no escalable horizontalmente). Para una sola réplica como ahora basta.
+
+51. **Aviso Legal / RGPD / Privacy / Cookies / Terms: titularidad actualizada a CLICKLABS DIGITAL VENTURES, S.L. (IQBOOST).** Las 5 páginas legales (terms, privacy, cookies, legal, gdpr) ahora identifican correctamente al titular conforme a LSSI Art. 10 + RGPD:
+    - **Razón social**: CLICKLABS DIGITAL VENTURES, S.L.
+    - **Nombre comercial**: IQBOOST
+    - **CIF**: B-56888761
+    - **Domicilio**: Avenida Can Fontanals S/N, Sant Cugat del Vallès, Barcelona (España)
+    - **Email RGPD/legal**: info@iqboost.mobi
+    - **Email soporte**: support@editorpdf.net (sin cambios — sigue siendo el canal de atención al cliente)
+    - **Marca del servicio**: EditorPDF (operada por IQBOOST en editorpdf.net)
+    - Modificadas en `scripts/seed-legal.mjs` y re-seedeadas contra la DB de Railway. La nueva entrada de "Aviso Legal" se insertó por primera vez (antes no existía la página `legal`).
+
 50. **PdfConverterHub (/pdf-converter) localizado × 12 idiomas.** El hub que mostraba "Convert PDF to anything / Pick the format you need below / PDF TO Word/Excel/PPT/JPG / Convert now / No installation / Other tools / Convert files into PDF, or edit your PDFs / Six more tools..." todo en inglés en `/es/pdf-converter` y similares. Cambios:
     - **15 keys nuevas `landing_hub_*` × 12 idiomas** (~180 strings): `preheader`, `headline_template` (con placeholder `{pdf}` para soportar orden de palabras DE/UA, etc.), `doc_title`, `subtitle`, `pdf_to_prefix`, `convert_now`, `files_up_to`, `processed_securely`, `other_tools_kicker`, `other_tools_title`, `other_tools_subtitle`, `card_word_desc`, `card_excel_desc`, `card_ppt_desc`, `card_jpg_desc`.
     - **`renderHubHeadline(template)`** parsea el template y aplica el squiggle rojo al placeholder `{pdf}`. Idéntico al patrón usado en `ConverterPage.tsx`.

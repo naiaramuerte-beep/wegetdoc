@@ -9,6 +9,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import PresenceTracker from "./components/PresenceTracker";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { PdfFileProvider } from "./contexts/PdfFileContext";
@@ -258,6 +259,7 @@ function App() {
           <PdfFileProvider>
             <TooltipProvider>
               <Toaster position="top-center" duration={2000} style={{ top: "60px" }} />
+              <PresenceTracker />
               <Suspense fallback={null}>
                 <AnnouncementBanner />
               </Suspense>

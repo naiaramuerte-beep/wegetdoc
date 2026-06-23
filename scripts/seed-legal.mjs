@@ -11,9 +11,11 @@ const db = await mysql.createConnection(process.env.DATABASE_URL);
 // ─── Condiciones Generales de Uso y Contratación ────────────────────
 const termsContent = `# Condiciones Generales de Uso y Contratación
 
-**Fecha de entrada en vigor:** 7 de abril de 2026
+**Fecha de entrada en vigor:** 23 de junio de 2026
 
-El presente documento establece las condiciones que regulan el acceso y la utilización de la plataforma **EditorPDF**, disponible en el dominio editorpdf.net (en lo sucesivo, "la Plataforma"). Toda persona que acceda a la Plataforma o haga uso de sus funcionalidades adquiere la condición de usuario y se obliga al cumplimiento íntegro de las presentes Condiciones. En caso de desacuerdo con cualquiera de las disposiciones aquí recogidas, el usuario deberá abstenerse de utilizar la Plataforma.
+> **Titular y responsable del servicio:** Este sitio (editorpdf.net) es propiedad y está operado por **CLICKLABS DIGITAL VENTURES, S.L.** (en adelante "**IQBOOST**"), con domicilio en Avenida Can Fontanals S/N, Sant Cugat del Vallès, Barcelona (España), CIF B-56888761. "EditorPDF" es la marca comercial bajo la que IQBOOST presta los servicios descritos a continuación. Para consultas legales y protección de datos: **info@iqboost.mobi**. Para soporte al cliente: **support@editorpdf.net**.
+
+El presente documento establece las condiciones que regulan el acceso y la utilización de la plataforma **EditorPDF** (operada por IQBOOST), disponible en el dominio editorpdf.net (en lo sucesivo, "la Plataforma"). Toda persona que acceda a la Plataforma o haga uso de sus funcionalidades adquiere la condición de usuario y se obliga al cumplimiento íntegro de las presentes Condiciones. En caso de desacuerdo con cualquiera de las disposiciones aquí recogidas, el usuario deberá abstenerse de utilizar la Plataforma.
 
 ## 1. Identificación de la Plataforma
 
@@ -21,7 +23,7 @@ EditorPDF es una solución digital de edición documental en formato PDF accesib
 
 ## 2. Creación de Cuenta y Responsabilidad del Usuario
 
-El acceso a las funcionalidades avanzadas de la Plataforma requiere la creación de una cuenta de usuario a través del sistema de autenticación habilitado. El usuario asume la plena responsabilidad sobre la custodia de sus credenciales de acceso, así como sobre cualquier actividad realizada desde su cuenta. Cualquier indicio de acceso no autorizado deberá ser comunicado de forma inmediata a EditorPDF a través de support@editorpdf.net.
+El acceso a las funcionalidades avanzadas de la Plataforma requiere la creación de una cuenta de usuario a través del sistema de autenticación habilitado. El usuario asume la plena responsabilidad sobre la custodia de sus credenciales de acceso, así como sobre cualquier actividad realizada desde su cuenta. Cualquier indicio de acceso no autorizado deberá ser comunicado de forma inmediata a EditorPDF a través de info@iqboost.mobi (consultas legales/RGPD) o support@editorpdf.net (soporte).
 
 ## 3. Suscripciones y Condiciones de Pago
 
@@ -85,18 +87,29 @@ Las presentes Condiciones quedan sometidas a la legislación de la Unión Europe
 
 ## 10. Datos de Contacto
 
-Para cualquier cuestión relativa a las presentes Condiciones, el usuario puede dirigirse a EditorPDF a través de support@editorpdf.net o mediante el formulario disponible en [editorpdf.net/contact](https://editorpdf.net/contact).`;
+Para cualquier cuestión relativa a las presentes Condiciones, el usuario puede dirigirse a EditorPDF a través de info@iqboost.mobi (consultas legales/RGPD) o support@editorpdf.net (soporte) o mediante el formulario disponible en [editorpdf.net/contact](https://editorpdf.net/contact).`;
 
 // ─── Política de Privacidad ─────────────────────────────────────────
 const privacyContent = `# Política de Privacidad
 
-**Fecha de entrada en vigor:** 7 de abril de 2026
+**Fecha de entrada en vigor:** 23 de junio de 2026
 
-**EditorPDF** (accesible en editorpdf.net) reconoce la importancia de salvaguardar la privacidad y los datos personales de sus usuarios. La presente Política de Privacidad detalla las prácticas relativas a la recogida, uso, conservación y protección de la información personal cuando se accede o se utiliza nuestra plataforma de edición documental PDF.
+> **Responsable del tratamiento:** **CLICKLABS DIGITAL VENTURES, S.L.** (en adelante "**IQBOOST**"), con domicilio en Avenida Can Fontanals S/N, Sant Cugat del Vallès, Barcelona (España), CIF B-56888761, opera el sitio editorpdf.net bajo la marca comercial "EditorPDF". Para ejercer derechos en materia de protección de datos, contáctenos en **info@iqboost.mobi**.
+
+**EditorPDF** (operada por IQBOOST, accesible en editorpdf.net) reconoce la importancia de salvaguardar la privacidad y los datos personales de sus usuarios. La presente Política de Privacidad detalla las prácticas relativas a la recogida, uso, conservación y protección de la información personal cuando se accede o se utiliza nuestra plataforma de edición documental PDF.
 
 ## 1. Identidad del Responsable del Tratamiento
 
-El responsable del tratamiento de los datos personales es **EditorPDF**, con sede digital en editorpdf.net. El usuario puede dirigir cualquier consulta a la dirección support@editorpdf.net o a través del formulario de contacto disponible en [editorpdf.net/contact](https://editorpdf.net/contact).
+El responsable del tratamiento de los datos personales es:
+
+- **Razón social:** CLICKLABS DIGITAL VENTURES, S.L.
+- **Nombre comercial:** IQBOOST
+- **Marca / sitio:** EditorPDF (editorpdf.net)
+- **CIF:** B-56888761
+- **Domicilio:** Avenida Can Fontanals S/N, Sant Cugat del Vallès, Barcelona (España)
+- **Email RGPD / privacidad:** info@iqboost.mobi
+- **Email soporte cliente:** support@editorpdf.net
+- **Formulario de contacto:** [editorpdf.net/contact](https://editorpdf.net/contact)
 
 ## 2. Categorías de Datos Recabados
 
@@ -195,9 +208,11 @@ Para cualquier consulta relativa a la presente Política o al tratamiento de dat
 // ─── Política de Cookies ────────────────────────────────────────────
 const cookiesContent = `# Política de Cookies
 
-**Fecha de entrada en vigor:** 7 de abril de 2026
+**Fecha de entrada en vigor:** 23 de junio de 2026
 
-**EditorPDF** (editorpdf.net) emplea cookies y mecanismos de seguimiento similares con el objetivo de optimizar la experiencia de navegación, evaluar el rendimiento de la Plataforma y adaptar los contenidos mostrados al usuario. En el presente documento se describe qué son las cookies, qué categorías emplea EditorPDF y de qué manera el usuario puede administrarlas.
+> **Titular:** **CLICKLABS DIGITAL VENTURES, S.L.** (IQBOOST), CIF B-56888761, domicilio en Avenida Can Fontanals S/N, Sant Cugat del Vallès, Barcelona (España), opera editorpdf.net bajo la marca "EditorPDF". Contacto en materia de cookies/privacidad: **info@iqboost.mobi**.
+
+**EditorPDF** (operada por IQBOOST, accesible en editorpdf.net) emplea cookies y mecanismos de seguimiento similares con el objetivo de optimizar la experiencia de navegación, evaluar el rendimiento de la Plataforma y adaptar los contenidos mostrados al usuario. En el presente documento se describe qué son las cookies, qué categorías emplea EditorPDF y de qué manera el usuario puede administrarlas.
 
 ## 1. Definición de Cookie
 
@@ -266,20 +281,27 @@ Ante cualquier duda relativa a la Política de Cookies, el usuario puede dirigir
 // ─── Aviso Legal e Información Corporativa ──────────────────────────
 const legalContent = `# Aviso Legal e Información Corporativa
 
-**Fecha de entrada en vigor:** 7 de abril de 2026
+**Fecha de entrada en vigor:** 23 de junio de 2026
 
 ## 1. Información del Titular
 
 De conformidad con lo dispuesto en el artículo 10 de la Ley 34/2002, de 11 de julio, de Servicios de la Sociedad de la Información y de Comercio Electrónico (LSSI-CE), se facilitan los siguientes datos identificativos del titular del sitio web:
 
-- **Denominación:** EditorPDF
+Este sitio (editorpdf.net) es propiedad y está operado por **CLICKLABS DIGITAL VENTURES, S.L.** (en adelante "**IQBOOST**"):
+
+- **Razón social:** CLICKLABS DIGITAL VENTURES, S.L.
+- **Nombre comercial:** IQBOOST
+- **Marca del servicio:** EditorPDF
+- **Domicilio social:** Avenida Can Fontanals S/N, Sant Cugat del Vallès, Barcelona (España)
+- **CIF:** B-56888761
 - **Dominio web:** [editorpdf.net](https://editorpdf.net)
-- **Correo electrónico:** support@editorpdf.net
+- **Correo electrónico corporativo / RGPD:** info@iqboost.mobi
+- **Correo de soporte al cliente:** support@editorpdf.net
 - **Formulario de contacto:** [editorpdf.net/contact](https://editorpdf.net/contact)
 
 ## 2. Actividad y Finalidad del Sitio Web
 
-EditorPDF proporciona a los usuarios una plataforma digital de edición de documentos en formato PDF que permite modificar, anotar, firmar electrónicamente, comprimir, proteger y convertir archivos PDF de manera íntegra a través del navegador web, sin requerir la instalación de software en el dispositivo del usuario.
+EditorPDF (servicio operado por IQBOOST) proporciona a los usuarios una plataforma digital de edición de documentos en formato PDF que permite modificar, anotar, firmar electrónicamente, comprimir, proteger y convertir archivos PDF de manera íntegra a través del navegador web, sin requerir la instalación de software en el dispositivo del usuario.
 
 ## 3. Derechos de Propiedad Intelectual e Industrial
 
@@ -315,9 +337,11 @@ Adicionalmente, y conforme al Reglamento (UE) 524/2013, se informa de que la Com
 // ─── Compromiso con el RGPD ────────────────────────────────────────
 const gdprContent = `# Compromiso con el Reglamento General de Protección de Datos
 
-**Fecha de entrada en vigor:** 7 de abril de 2026
+**Fecha de entrada en vigor:** 23 de junio de 2026
 
-**EditorPDF** (editorpdf.net) mantiene un firme compromiso con el cumplimiento del Reglamento (UE) 2016/679 del Parlamento Europeo y del Consejo, de 27 de abril de 2016, relativo a la protección de las personas físicas en lo que respecta al tratamiento de datos personales (RGPD), así como de la Ley Orgánica 3/2018, de 5 de diciembre, de Protección de Datos Personales y garantía de los derechos digitales (LOPDGDD).
+> **Responsable del tratamiento:** **CLICKLABS DIGITAL VENTURES, S.L.** (IQBOOST), CIF B-56888761, Avenida Can Fontanals S/N, Sant Cugat del Vallès, Barcelona (España). Para ejercer derechos RGPD (acceso, rectificación, supresión, oposición, portabilidad, limitación): **info@iqboost.mobi**.
+
+**EditorPDF** (operada por IQBOOST, accesible en editorpdf.net) mantiene un firme compromiso con el cumplimiento del Reglamento (UE) 2016/679 del Parlamento Europeo y del Consejo, de 27 de abril de 2016, relativo a la protección de las personas físicas en lo que respecta al tratamiento de datos personales (RGPD), así como de la Ley Orgánica 3/2018, de 5 de diciembre, de Protección de Datos Personales y garantía de los derechos digitales (LOPDGDD).
 
 ## 1. Principios Rectores del Tratamiento
 

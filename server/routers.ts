@@ -1189,6 +1189,15 @@ export const appRouter = router({
         return getUserTimeline(input.userId);
       }),
 
+    // ── Live visitors counter (real-time, in-memory) ──────────
+    // Returns the number of distinct sessions that have pinged
+    // /api/presence/ping in the last 60 s, plus a top-paths
+    // breakdown so the admin can see which page is hot right now.
+    liveVisitors: adminProcedure.query(async () => {
+      const { activeBreakdown } = await import("./_core/presence");
+      return activeBreakdown();
+    }),
+
     // ── Health checks (O1) ────────────────────────────────────
     healthChecks: adminProcedure.query(async () => {
       return getHealthChecks();

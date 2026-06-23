@@ -762,6 +762,23 @@ ${allUrls.map(u => `  <url>
     }
   });
 
+  // ── Presence ping (live visitors counter) ───────────────────────────────
+  // Client pings every ~25 s with a sessionId + current path. Body is tiny
+  // JSON, never authenticated — anyone visiting the site counts as a
+  // visitor (which is the whole point). We swallow errors silently because
+  // a failed ping must never spam the user's console.
+  app.post("/api/presence/ping", express.json({ limit: "2kb" }), async (req, res) => {
+    try {
+      const { recordPing } = await import("./presence");
+      const sessionId = String(req.body?.sessionId ?? "").slice(0, 128);
+      const path = typeof req.body?.path === "string" ? req.body.path.slice(0, 256) : undefined;
+      if (sessionId) recordPing(sessionId, path);
+      res.status(204).end();
+    } catch {
+      res.status(204).end();
+    }
+  });
+
   // Inbound email webhook — Cloudflare Email Worker POSTs here when a
   // user replies to an admin email. Body is JSON with the parsed
   // sender/subject/body. Auth is a shared secret in the X-Inbound-Secret

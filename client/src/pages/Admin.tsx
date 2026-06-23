@@ -151,6 +151,9 @@ export default function Admin() {
   const cancelReasonsQ = trpc.admin.cancelReasons.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "billing" });
   const geoQ = trpc.admin.revenueByCountry.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "billing" });
   const healthQ = trpc.admin.healthChecks.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "overview", refetchInterval: tab === "overview" ? 30000 : false });
+  // Live visitors counter — polled every 5 s when the Resumen tab is open.
+  // Backed by the in-memory presence tracker on the server.
+  const liveVisitorsQ = trpc.admin.liveVisitors.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "overview", refetchInterval: tab === "overview" ? 5000 : false });
   const [timelineUserId, setTimelineUserId] = useState<number | null>(null);
   const timelineQ = trpc.admin.userTimeline.useQuery(
     { userId: timelineUserId ?? 0 },
@@ -462,6 +465,42 @@ export default function Admin() {
                 >
                   Ver estadísticas de facturación →
                 </button>
+              </div>
+
+              {/* ── LIVE VISITORS (real-time, polled every 5s) ── */}
+              <div
+                className="rounded-xl border overflow-hidden"
+                style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}
+              >
+                <div className="px-5 py-3 border-b flex items-center justify-between" style={{ borderColor: "#1e2433" }}>
+                  <div>
+                    <p className="text-sm font-semibold text-white flex items-center gap-2">
+                      <span className="relative inline-flex w-2 h-2">
+                        <span className="absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping" style={{ backgroundColor: "#10b981" }} />
+                        <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: "#10b981" }} />
+                      </span>
+                      Visitantes en directo
+                    </p>
+                    <p className="text-[11px] text-gray-500 mt-0.5">Sesiones activas en los últimos 60s. Auto-refresca cada 5s.</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-3xl font-extrabold text-white leading-none">{liveVisitorsQ.data?.count ?? 0}</p>
+                    <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-[0.1em]">online ahora</p>
+                  </div>
+                </div>
+                {liveVisitorsQ.data?.paths && liveVisitorsQ.data.paths.length > 0 && (
+                  <div className="divide-y" style={{ borderColor: "#1e2433" }}>
+                    {liveVisitorsQ.data.paths.slice(0, 8).map((p: any) => (
+                      <div key={p.path} className="flex items-center justify-between px-5 py-2" style={{ borderColor: "#1e2433" }}>
+                        <span className="text-[12px] text-gray-300 font-mono truncate max-w-[60%]">{p.path || "(sin ruta)"}</span>
+                        <span className="text-[12px] text-white font-bold">{p.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {(!liveVisitorsQ.data || liveVisitorsQ.data.count === 0) && (
+                  <p className="px-5 py-6 text-center text-xs text-gray-500">Sin visitantes activos ahora mismo.</p>
+                )}
               </div>
 
               {/* ── HEALTH CHECKS (O1) ── */}
