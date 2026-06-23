@@ -97,6 +97,13 @@ function CardBrands() {
 }
 
 // ── Sipay checkout ─────────────────────────────────────────────────────────────
+// ─── Google Pay kill switch ──────────────────────────────────────────────────
+// Set to true the moment Google approves the Web Integration (the 3 brand-
+// compliance flags at pay.google.com/business/console). The button + its
+// hooks/scripts stay in the codebase — only the render is gated — so flipping
+// this back to `true` re-enables Google Pay in one diff.
+const GPAY_ENABLED = false;
+
 // FastPay JS captures the card in Sipay's iframe; we forward the resulting
 // request_id to our backend to fire /mdwr/v1/all-in-one and then navigate the
 // parent window to the 3DS URL Sipay returns.
@@ -459,15 +466,20 @@ function SipayCheckoutForm({
                 }}
               />
 
-              {/* Google Pay button — only shown when Sipay account has a Google
-                  Pay merchant configured. Auto-detects user readiness. */}
-              <GooglePayButton
-                sipayMerchantKey={sipayConfigQ.data.key}
-                amountCents={50}
-                onSuccess={(txn) => {
-                  window.location.href = `/payment/success?txn=${encodeURIComponent(txn)}&provider=sipay-gpay`;
-                }}
-              />
+              {/* Google Pay button — hidden until Google approves our Web
+                  Integration (3 brand-compliance flags pending in pay.google.com/
+                  business/console). Flip `GPAY_ENABLED` to true once approved.
+                  The button code is kept mounted via the flag so we don't lose
+                  the integration; the gate is the cheapest possible kill switch. */}
+              {GPAY_ENABLED && (
+                <GooglePayButton
+                  sipayMerchantKey={sipayConfigQ.data.key}
+                  amountCents={50}
+                  onSuccess={(txn) => {
+                    window.location.href = `/payment/success?txn=${encodeURIComponent(txn)}&provider=sipay-gpay`;
+                  }}
+                />
+              )}
 
               {/* Card / debit collapsible row — clicking it expands the FastPay
                   iframe inline. Keeping it collapsed by default avoids the mobile
