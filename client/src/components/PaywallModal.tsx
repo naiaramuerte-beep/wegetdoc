@@ -436,7 +436,7 @@ function SipayCheckoutForm({
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
         <div className="px-3 py-4 md:px-6 md:py-5 space-y-4 md:space-y-5">
           {/* Pricing breakdown */}
-          <div className="rounded-xl p-5 text-center" style={{ background: "linear-gradient(135deg, #0A0A0B, #1A1A1C)" }}>
+          <div className="rounded-xl p-5 text-center" style={{ background: "linear-gradient(135deg, #1E66C9, #1551A8)" }}>
             <p className="text-sm text-white/70 mb-1">{converter ? `Your ${converter.label} file` : t.paywall_your_pdf}</p>
             <p className="text-3xl font-extrabold text-white tracking-tight">
               {converter ? <>only <span style={{ color: "#E63946" }}>{converter.price}</span></> : t.paywall_only_for}
@@ -931,7 +931,10 @@ function GooglePayButton({
         // Clear previous button if remounting
         host.innerHTML = "";
         const button = client.createButton({
-          buttonColor: "black",
+          // Google Pay button colour is constrained by Google's brand to
+          // {black|white|default}. Black competes visually with the now-blue
+          // price card above, so we use white (outlined) to keep contrast.
+          buttonColor: "white",
           buttonType: "pay",
           buttonRadius: 10,
           buttonSizeMode: "fill",
@@ -1243,7 +1246,7 @@ export default function PaywallModal({
             </div>
 
             {/* Pricing highlight */}
-            <div className="max-w-sm mx-auto rounded-xl p-5 text-center mb-5" style={{ background: "linear-gradient(135deg, #0A0A0B, #1A1A1C)" }}>
+            <div className="max-w-sm mx-auto rounded-xl p-5 text-center mb-5" style={{ background: "linear-gradient(135deg, #1E66C9, #1551A8)" }}>
               <p className="text-sm text-white/70 mb-1">{(t as any).paywall_trial_limit_card_label ?? "Suscripción mensual"}</p>
               <p className="text-3xl font-extrabold text-white tracking-tight">
                 <span style={{ color: "#E63946" }}>{price}</span>
