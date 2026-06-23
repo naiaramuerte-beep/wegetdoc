@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import { useLocation } from "wouter";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   FileText, FileSpreadsheet, Presentation, Image as ImageIcon,
   ArrowRight, CheckCircle2, FileType, FileImage, Layers, Scissors, Minimize2,
@@ -48,66 +49,64 @@ function LogoSvg() {
   );
 }
 
-// Primary tiles: PDF → Office/Image. These are the "main event" of the hub.
+// Primary tiles: PDF → Office/Image. Brand label stays as a product name
+// ("Word", "Excel", etc. — those don't translate). The descriptions are
+// resolved at render time via `landing_hub_card_*_desc`.
 const PDF_TO_TOOLS = [
-  {
-    slug: "pdf-to-word",
-    label: "Word",
-    ext: "DOCX",
-    desc: "Editable .docx with layout, fonts and images preserved.",
-    icon: FileText,
-    color: "#2B579A",
-    bgColor: "#E8F0FA",
-  },
-  {
-    slug: "pdf-to-excel",
-    label: "Excel",
-    ext: "XLSX",
-    desc: "Extract tables straight into a clean .xlsx spreadsheet.",
-    icon: FileSpreadsheet,
-    color: "#1F7244",
-    bgColor: "#E8F5EC",
-  },
-  {
-    slug: "pdf-to-powerpoint",
-    label: "PowerPoint",
-    ext: "PPTX",
-    desc: "Reuse a PDF as a .pptx deck with editable slides.",
-    icon: Presentation,
-    color: "#D04423",
-    bgColor: "#FBEBE5",
-  },
-  {
-    slug: "pdf-to-jpg",
-    label: "JPG",
-    ext: "JPG",
-    desc: "Export pages as high-quality images, ready to share.",
-    icon: ImageIcon,
-    color: "#1A1A1C",
-    bgColor: "#F0F0F2",
-  },
+  { slug: "pdf-to-word",       label: "Word",       ext: "DOCX", descKey: "landing_hub_card_word_desc",  descFallback: "Editable .docx with layout, fonts and images preserved.",  icon: FileText,        color: "#2B579A", bgColor: "#E8F0FA" },
+  { slug: "pdf-to-excel",      label: "Excel",      ext: "XLSX", descKey: "landing_hub_card_excel_desc", descFallback: "Extract tables straight into a clean .xlsx spreadsheet.", icon: FileSpreadsheet, color: "#1F7244", bgColor: "#E8F5EC" },
+  { slug: "pdf-to-powerpoint", label: "PowerPoint", ext: "PPTX", descKey: "landing_hub_card_ppt_desc",   descFallback: "Reuse a PDF as a .pptx deck with editable slides.",       icon: Presentation,    color: "#D04423", bgColor: "#FBEBE5" },
+  { slug: "pdf-to-jpg",        label: "JPG",        ext: "JPG",  descKey: "landing_hub_card_jpg_desc",   descFallback: "Export pages as high-quality images, ready to share.",    icon: ImageIcon,       color: "#1A1A1C", bgColor: "#F0F0F2" },
 ] as const;
 
-// Secondary tools shown below: X→PDF + utilities. Smaller tiles.
+// Secondary tools shown below: X→PDF + utilities. Labels translated via
+// `landing_grid_*` keys (shared with all landings' cross-tool grid).
 const SECONDARY_TOOLS = [
-  { slug: "word-to-pdf",  label: "Word to PDF",   icon: FileType,    color: "#2B579A", bgColor: "#E8F0FA" },
-  { slug: "jpg-to-pdf",   label: "JPG to PDF",    icon: FileImage,   color: "#E63946", bgColor: "#FEE7EA" },
-  { slug: "png-to-pdf",   label: "PNG to PDF",    icon: FileImage,   color: "#0A0A0B", bgColor: "#F0F0F2" },
-  { slug: "merge-pdf",    label: "Merge PDF",     icon: Layers,      color: "#5A5A62", bgColor: "#F0F0F2" },
-  { slug: "split-pdf",    label: "Split PDF",     icon: Scissors,    color: "#5A5A62", bgColor: "#F0F0F2" },
-  { slug: "compress-pdf", label: "Compress PDF",  icon: Minimize2,   color: "#5A5A62", bgColor: "#F0F0F2" },
+  { slug: "word-to-pdf",  labelKey: "landing_grid_word_to_pdf_label", labelFallback: "Word to PDF",  icon: FileType,    color: "#2B579A", bgColor: "#E8F0FA" },
+  { slug: "jpg-to-pdf",   labelKey: "landing_grid_jpg_to_pdf_label",  labelFallback: "JPG to PDF",   icon: FileImage,   color: "#E63946", bgColor: "#FEE7EA" },
+  { slug: "png-to-pdf",   labelKey: "landing_grid_png_to_pdf_label",  labelFallback: "PNG to PDF",   icon: FileImage,   color: "#0A0A0B", bgColor: "#F0F0F2" },
+  { slug: "merge-pdf",    labelKey: "landing_grid_merge_label",       labelFallback: "Merge PDF",    icon: Layers,      color: "#5A5A62", bgColor: "#F0F0F2" },
+  { slug: "split-pdf",    labelKey: "landing_grid_split_label",       labelFallback: "Split PDF",    icon: Scissors,    color: "#5A5A62", bgColor: "#F0F0F2" },
+  { slug: "compress-pdf", labelKey: "landing_grid_compress_label",    labelFallback: "Compress PDF", icon: Minimize2,   color: "#5A5A62", bgColor: "#F0F0F2" },
 ] as const;
+
+// Renders an i18n template like "Convert {pdf} to anything", with the {pdf}
+// placeholder coloured red + underlined. Supports word-order changes per
+// language (e.g. German: "{pdf} in jedes Format konvertieren").
+function renderHubHeadline(template: string) {
+  const parts = template.split(/(\{pdf\})/g);
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (part === "{pdf}") {
+          return (
+            <SquiggleUnderline key={i}>
+              <span style={{ color: ACCENT }}>PDF</span>
+            </SquiggleUnderline>
+          );
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </>
+  );
+}
 
 export default function PdfConverterHub() {
+  const { t } = useLanguage();
+  const tr = (key: string, fallback: string): string =>
+    ((t as any)[key] as string | undefined) || fallback;
   const [location, navigate] = useLocation();
   const langMatch = location.match(/^\/([a-z]{2})(\/|$)/);
   const lang = langMatch ? langMatch[1] : "en";
 
+  const headlineTemplate = tr("landing_hub_headline_template", "Convert {pdf} to anything");
+  const docTitle = tr("landing_hub_doc_title", "Convert PDF to anything");
+
   useEffect(() => {
     const prev = document.title;
-    document.title = "Convert PDF to anything · editorpdf.net";
+    document.title = `${docTitle} · editorpdf.net`;
     return () => { document.title = prev; };
-  }, []);
+  }, [docTitle]);
 
   const goTo = (slug: string) => navigate(`/${lang}/${slug}`);
 
@@ -119,17 +118,15 @@ export default function PdfConverterHub() {
         <div className="container mx-auto max-w-5xl px-4 py-10 md:py-20">
           {/* Eyebrow */}
           <p className="text-center text-[12px] font-semibold tracking-[0.18em] uppercase mb-3" style={{ color: ACCENT }}>
-            PDF Converter
+            {tr("landing_hub_preheader", "PDF Converter")}
           </p>
 
           {/* Headline */}
           <h1 className="text-center text-3xl md:text-5xl font-extrabold leading-[1.1] tracking-[-0.02em] mb-4">
-            Convert{" "}
-            <SquiggleUnderline><span style={{ color: ACCENT }}>PDF</span></SquiggleUnderline>
-            {" "}to anything
+            {renderHubHeadline(headlineTemplate)}
           </h1>
           <p className="text-center text-[15px] md:text-base max-w-xl mx-auto mb-12" style={{ color: MUTED }}>
-            Pick the format you need below — we'll convert your file in seconds, with layout and formatting preserved.
+            {tr("landing_hub_subtitle", "Pick the format you need below — we'll convert your file in seconds, with layout and formatting preserved.")}
           </p>
 
           {/* Primary picker — 4 tiles. Mobile: 2-col compact (no desc, smaller
@@ -167,19 +164,19 @@ export default function PdfConverterHub() {
                   {/* Label + desc (desc hidden on mobile) */}
                   <div>
                     <p className="text-[10px] sm:text-[11px] font-semibold tracking-[0.12em] uppercase mb-0.5 sm:mb-1" style={{ color: MUTED }}>
-                      PDF to
+                      {tr("landing_hub_pdf_to_prefix", "PDF to")}
                     </p>
                     <h3 className="text-[17px] sm:text-[22px] font-extrabold tracking-[-0.02em] leading-tight text-[#0A0A0B]">
                       {tool.label}
                     </h3>
                     <p className="hidden sm:block text-[13px] mt-2 leading-relaxed" style={{ color: MUTED }}>
-                      {tool.desc}
+                      {tr(tool.descKey, tool.descFallback)}
                     </p>
                   </div>
 
                   {/* CTA arrow */}
                   <span className="inline-flex items-center gap-1.5 text-[12px] sm:text-[13px] font-bold mt-auto pt-1 sm:pt-2" style={{ color: ACCENT }}>
-                    Convert now
+                    {tr("landing_hub_convert_now", "Convert now")}
                     <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:translate-x-0.5" />
                   </span>
                 </button>
@@ -191,19 +188,19 @@ export default function PdfConverterHub() {
           <div className="flex items-center justify-center gap-6 mt-12 text-[12px] flex-wrap" style={{ color: MUTED }}>
             <span className="inline-flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#1E9E63" }} />
-              No installation
+              {tr("landing_common_no_installation", "No installation")}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#1E9E63" }} />
-              Works on any device
+              {tr("landing_common_any_device", "Works on any device")}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#1E9E63" }} />
-              Files up to 100&nbsp;MB
+              {tr("landing_hub_files_up_to", "Files up to 100 MB")}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#1E9E63" }} />
-              Processed securely
+              {tr("landing_hub_processed_securely", "Processed securely")}
             </span>
           </div>
 
@@ -211,13 +208,13 @@ export default function PdfConverterHub() {
           <div className="mt-20 max-w-5xl mx-auto">
             <div className="text-center mb-8">
               <p className="text-[12px] font-semibold tracking-[0.18em] uppercase mb-2" style={{ color: ACCENT }}>
-                Other tools
+                {tr("landing_hub_other_tools_kicker", "Other tools")}
               </p>
               <h2 className="text-2xl md:text-3xl font-extrabold tracking-[-0.02em] text-[#0A0A0B]">
-                Convert files into PDF, or edit your PDFs
+                {tr("landing_hub_other_tools_title", "Convert files into PDF, or edit your PDFs")}
               </h2>
               <p className="text-[14px] mt-2" style={{ color: MUTED }}>
-                Six more tools — all free to try, no installation.
+                {tr("landing_hub_other_tools_subtitle", "Six more tools — all free to try, no installation.")}
               </p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -238,7 +235,7 @@ export default function PdfConverterHub() {
                     >
                       <Icon style={{ color: tool.color, width: 18, height: 18 }} />
                     </div>
-                    <p className="text-[13px] font-bold text-[#0A0A0B] leading-tight">{tool.label}</p>
+                    <p className="text-[13px] font-bold text-[#0A0A0B] leading-tight">{tr(tool.labelKey, tool.labelFallback)}</p>
                   </button>
                 );
               })}
