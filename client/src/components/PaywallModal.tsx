@@ -291,7 +291,10 @@ function SipayCheckoutForm({
   // expand the FastPay iframe. Auto-opening on mount triggers FastPay's
   // mobile new-tab fallback in some scenarios; making the user opt-in keeps
   // the iframe inline and matches the UX on mindmetric.io.
-  const [cardExpanded, setCardExpanded] = useState(false);
+  // Card option is expanded by default so the user lands on a fully-visible
+  // payment form without needing to click "Tarjeta de crédito o débito".
+  // The collapse/expand toggle still works if they want to hide it.
+  const [cardExpanded, setCardExpanded] = useState(true);
   // Tracks which fastpay request_ids we've already attempted so we don't
   // retry the same token (one-shot). Without this, the effect re-fired on
   // every setRedirecting(false) → infinite loop spamming Sipay.
