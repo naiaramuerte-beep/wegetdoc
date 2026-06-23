@@ -267,25 +267,42 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
   const resolveLabel = (key: string) => (t as any)[key] ?? key;
 
   // Hero quick-access cards. Each card navigates to its dedicated landing
-  // when `landingSlug` is set; otherwise it triggers the upload flow with
-  // the matching editor tool. The cards render above the upload box.
-  const HERO_TABS: { id: TabId; labelKey: string; icon: any; landingSlug?: string; tint: string; iconBg: string }[] = [
-    { id: "edit",     labelKey: "hero_pill_edit",     icon: Edit3,                                       tint: "#E63946", iconBg: "#FEE7EA" },
-    { id: "merge",    labelKey: "hero_pill_merge",    icon: Merge,     landingSlug: "merge-pdf",         tint: "#2B579A", iconBg: "#E8F0FA" },
-    { id: "split",    labelKey: "hero_pill_split",    icon: Scissors,  landingSlug: "split-pdf",         tint: "#1F7244", iconBg: "#E8F5EC" },
-    { id: "compress", labelKey: "hero_pill_compress", icon: Minimize2, landingSlug: "compress-pdf",      tint: "#D04423", iconBg: "#FBEBE5" },
-    { id: "convert",  labelKey: "hero_pill_convert",  icon: RefreshCw, landingSlug: "pdf-converter",     tint: "#8A57DC", iconBg: "#F1EAFB" },
-    { id: "sign",     labelKey: "hero_pill_sign",     icon: PenTool,                                     tint: "#0A0A0B", iconBg: "#F0F0F2" },
+  // when `landingSlug` is set; otherwise it triggers the editor upload flow
+  // with `toolForUpload`. Designed as a 2-row × 6-col grid on desktop so the
+  // visitor sees every common tool above the fold.
+  type HeroToolDef = {
+    id: string;
+    labelKey: string;
+    icon: any;
+    tint: string;
+    iconBg: string;
+    landingSlug?: string;
+    toolForUpload?: string;
+  };
+  const HERO_TOOLS: HeroToolDef[] = [
+    // Row 1 — editor-centric tools (most common)
+    { id: "edit",      labelKey: "hero_pill_edit",     icon: Edit3,           tint: "#E63946", iconBg: "#FEE7EA", toolForUpload: "text" },
+    { id: "merge",     labelKey: "hero_pill_merge",    icon: Merge,           tint: "#2B579A", iconBg: "#E8F0FA", landingSlug: "merge-pdf" },
+    { id: "split",     labelKey: "hero_pill_split",    icon: Scissors,        tint: "#1F7244", iconBg: "#E8F5EC", landingSlug: "split-pdf" },
+    { id: "compress",  labelKey: "hero_pill_compress", icon: Minimize2,       tint: "#D04423", iconBg: "#FBEBE5", landingSlug: "compress-pdf" },
+    { id: "convert",   labelKey: "hero_pill_convert",  icon: RefreshCw,       tint: "#8A57DC", iconBg: "#F1EAFB", landingSlug: "pdf-converter" },
+    { id: "sign",      labelKey: "hero_pill_sign",     icon: PenTool,         tint: "#0A0A0B", iconBg: "#F0F0F2", toolForUpload: "sign" },
+    // Row 2 — organize/convert specifics, each goes to its landing
+    { id: "rotate",    labelKey: "tool_rotate",        icon: RotateCcw,       tint: "#8A57DC", iconBg: "#F1EAFB", landingSlug: "rotate-pdf" },
+    { id: "watermark", labelKey: "tool_watermark",     icon: Droplet,         tint: "#0F8FA3", iconBg: "#E4F4F7", landingSlug: "watermark-pdf" },
+    { id: "pdf-word",  labelKey: "tool_pdf_word",      icon: FileText,        tint: "#2B579A", iconBg: "#E8F0FA", landingSlug: "pdf-to-word" },
+    { id: "pdf-excel", labelKey: "tool_pdf_excel",     icon: FileSpreadsheet, tint: "#1F7244", iconBg: "#E8F5EC", landingSlug: "pdf-to-excel" },
+    { id: "pdf-jpg",   labelKey: "tool_pdf_jpg",       icon: FileImage,       tint: "#E63946", iconBg: "#FEE7EA", landingSlug: "pdf-to-jpg" },
+    { id: "jpg-pdf",   labelKey: "tool_jpg_pdf",       icon: FileImage,       tint: "#0A0A0B", iconBg: "#F0F0F2", landingSlug: "jpg-to-pdf" },
   ];
 
-  const handleHeroToolClick = (tab: typeof HERO_TABS[number]) => {
-    if (tab.landingSlug) {
-      navigate(`/${lang}/${tab.landingSlug}`);
+  const handleHeroToolClick = (tool: HeroToolDef) => {
+    if (tool.landingSlug) {
+      navigate(`/${lang}/${tool.landingSlug}`);
       return;
     }
     // edit + sign have no dedicated landing — open editor upload flow
-    setActiveTab(tab.id);
-    triggerUpload(TAB_TO_TOOL[tab.id]);
+    if (tool.toolForUpload) triggerUpload(tool.toolForUpload);
   };
 
   const TOOL_CATEGORIES: { titleKey: string; tools: ToolDef[] }[] = [
@@ -320,44 +337,6 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
             "0 1px 0 rgba(255,255,255,0.9) inset, 0 0 0 1px rgba(10,10,11,0.02), 0 2px 4px rgba(10,10,11,0.04), 0 12px 24px -8px rgba(10,10,11,0.08), 0 32px 56px -16px rgba(10,10,11,0.12)",
         }}
       >
-        {withTabs && (
-          <div className="mb-5 -mx-2 sm:mx-0">
-            <div
-              className="rounded-2xl p-2 sm:p-2.5"
-              style={{
-                background: "linear-gradient(180deg,#FAFAFB 0%,#F4F4F6 100%)",
-                border: "1px solid rgba(10,10,11,0.06)",
-                boxShadow: "0 1px 0 rgba(255,255,255,0.9) inset, 0 4px 12px -6px rgba(10,10,11,0.08)",
-              }}
-            >
-              <div className="grid grid-cols-3 md:grid-cols-6 gap-1.5 sm:gap-2">
-                {HERO_TABS.map(tab => {
-                  const Ico = tab.icon;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => handleHeroToolClick(tab)}
-                      className="group relative flex flex-col items-center justify-start gap-1.5 px-1.5 py-3 sm:py-3.5 rounded-xl bg-white border border-[#EBEBEE] hover:border-[#0A0A0B]/15 hover:-translate-y-px hover:shadow-[0_10px_24px_-12px_rgba(10,10,11,0.18)] transition-all"
-                      type="button"
-                      aria-label={resolveLabel(tab.labelKey)}
-                    >
-                      <div
-                        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105"
-                        style={{ background: tab.iconBg }}
-                      >
-                        <Ico className="w-[18px] h-[18px]" style={{ color: tab.tint }} />
-                      </div>
-                      <span className="text-[12px] sm:text-[13px] font-bold text-[#0A0A0B] leading-tight text-center">
-                        {resolveLabel(tab.labelKey)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-
         <div
           onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
           onDragLeave={() => setIsDraggingOver(false)}
@@ -384,6 +363,35 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
             {t.hero_upload_btn}
           </button>
         </div>
+
+        {withTabs && (
+          <div className="mt-5 -mx-1 sm:mx-0">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+              {HERO_TOOLS.map(tool => {
+                const Ico = tool.icon;
+                return (
+                  <button
+                    key={tool.id}
+                    onClick={() => handleHeroToolClick(tool)}
+                    className="group relative flex flex-col items-center justify-start gap-1.5 px-1.5 py-3 sm:py-3.5 rounded-xl bg-white border border-[#EBEBEE] hover:border-[#0A0A0B]/15 hover:-translate-y-px hover:shadow-[0_10px_24px_-12px_rgba(10,10,11,0.18)] transition-all"
+                    type="button"
+                    aria-label={resolveLabel(tool.labelKey)}
+                  >
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105"
+                      style={{ background: tool.iconBg }}
+                    >
+                      <Ico className="w-[18px] h-[18px]" style={{ color: tool.tint }} />
+                    </div>
+                    <span className="text-[12px] sm:text-[13px] font-bold text-[#0A0A0B] leading-tight text-center">
+                      {resolveLabel(tool.labelKey)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="flex justify-center mt-4">
           <span className="inline-flex items-center gap-1.5 text-[12px] text-[#5A5A62] font-medium">
