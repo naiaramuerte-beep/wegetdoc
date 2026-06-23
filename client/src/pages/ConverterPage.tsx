@@ -14,6 +14,7 @@ import { useLocation } from "wouter";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Upload, FileText, Loader2, CheckCircle2, RefreshCw, Cloud, ArrowRight,
   Download as DownloadIcon, FileSpreadsheet, Presentation, Image as ImageIcon,
@@ -64,61 +65,50 @@ async function renderPdfThumbnail(file: File, maxWidth = 240): Promise<string | 
 
 export type ConverterTarget = "docx" | "xlsx" | "pptx" | "jpg";
 
-interface ConverterCopy {
-  eyebrow: string;
-  title: string;
-  highlight: string;
-  subtitle: string;
-  cta: string;
-  successCta: string;
-}
-
 // Visual identity per output format — Word blue, Excel green, PPT orange, JPG gray.
+// `readyKey/eyebrowKey/subtitleKey` reference i18n keys resolved at render time.
 const FORMAT_META: Record<ConverterTarget, {
   label: string;
   ext: string;
   color: string;
   bgColor: string;
-  readyTitle: string;
+  eyebrowKey: string;
+  subtitleKey: string;
+  readyKey: string;
+  readyFallback: string;
+  subtitleFallback: string;
 }> = {
-  docx: { label: "Word",       ext: "DOCX", color: "#2B579A", bgColor: "#E8F0FA", readyTitle: "Your Word is ready" },
-  xlsx: { label: "Excel",      ext: "XLSX", color: "#1F7244", bgColor: "#E8F5EC", readyTitle: "Your Excel is ready" },
-  pptx: { label: "PowerPoint", ext: "PPTX", color: "#D04423", bgColor: "#FBEBE5", readyTitle: "Your PowerPoint is ready" },
-  jpg:  { label: "JPG",        ext: "JPG",  color: "#1A1A1C", bgColor: "#F0F0F2", readyTitle: "Your JPG is ready" },
-};
-
-const COPY: Record<ConverterTarget, ConverterCopy> = {
   docx: {
-    eyebrow: "PDF → Word",
-    title: "Convert PDF to Word",
-    highlight: "Word",
-    subtitle: "Turn any PDF into an editable .docx in seconds. Layout, fonts and images preserved.",
-    cta: "Select PDF",
-    successCta: "Convert another PDF",
+    label: "Word", ext: "DOCX", color: "#2B579A", bgColor: "#E8F0FA",
+    eyebrowKey: "landing_converter_eyebrow_word",
+    subtitleKey: "landing_converter_subtitle_word",
+    readyKey: "landing_converter_ready_word",
+    readyFallback: "Your Word is ready",
+    subtitleFallback: "Turn any PDF into an editable .docx in seconds. Layout, fonts and images preserved.",
   },
   xlsx: {
-    eyebrow: "PDF → Excel",
-    title: "Convert PDF to Excel",
-    highlight: "Excel",
-    subtitle: "Extract tables from your PDF into a clean .xlsx spreadsheet ready to edit.",
-    cta: "Select PDF",
-    successCta: "Convert another PDF",
+    label: "Excel", ext: "XLSX", color: "#1F7244", bgColor: "#E8F5EC",
+    eyebrowKey: "landing_converter_eyebrow_excel",
+    subtitleKey: "landing_converter_subtitle_excel",
+    readyKey: "landing_converter_ready_excel",
+    readyFallback: "Your Excel is ready",
+    subtitleFallback: "Extract tables from your PDF into a clean .xlsx spreadsheet ready to edit.",
   },
   pptx: {
-    eyebrow: "PDF → PowerPoint",
-    title: "Convert PDF to PowerPoint",
-    highlight: "PowerPoint",
-    subtitle: "Reuse a PDF as a .pptx deck with editable slides, text and images.",
-    cta: "Select PDF",
-    successCta: "Convert another PDF",
+    label: "PowerPoint", ext: "PPTX", color: "#D04423", bgColor: "#FBEBE5",
+    eyebrowKey: "landing_converter_eyebrow_ppt",
+    subtitleKey: "landing_converter_subtitle_ppt",
+    readyKey: "landing_converter_ready_ppt",
+    readyFallback: "Your PowerPoint is ready",
+    subtitleFallback: "Reuse a PDF as a .pptx deck with editable slides, text and images.",
   },
   jpg: {
-    eyebrow: "PDF → JPG",
-    title: "Convert PDF to JPG",
-    highlight: "JPG",
-    subtitle: "Export a PDF page as a high-quality .jpg image — perfect for sharing or embedding.",
-    cta: "Select PDF",
-    successCta: "Convert another PDF",
+    label: "JPG", ext: "JPG", color: "#1A1A1C", bgColor: "#F0F0F2",
+    eyebrowKey: "landing_converter_eyebrow_jpg",
+    subtitleKey: "landing_converter_subtitle_jpg",
+    readyKey: "landing_converter_ready_jpg",
+    readyFallback: "Your JPG is ready",
+    subtitleFallback: "Export a PDF page as a high-quality .jpg image — perfect for sharing or embedding.",
   },
 };
 
@@ -159,17 +149,32 @@ function SquiggleUnderline({ children }: { children: React.ReactNode }) {
   );
 }
 
-// "Convert PDF to <Format>" headline — colours PDF red (with squiggle) and
-// the target format in its corporate colour (Word blue, Excel green, etc.).
-function renderHeadline(formatLabel: string, formatColor: string) {
+// Renders the title from an i18n template like "Convert {pdf} to {format}"
+// or "{pdf} en {format} convertir". Parses the placeholders, colours PDF
+// red (with the squiggle underline) and the target format in its corporate
+// colour. Falls back to the English template if the lang key is missing.
+function renderHeadlineFromTemplate(template: string, formatLabel: string, formatColor: string) {
+  // Split on placeholders preserving the {pdf} / {format} tokens.
+  const parts = template.split(/(\{pdf\}|\{format\})/g);
   return (
     <>
-      Convert{" "}
-      <SquiggleUnderline>
-        <span style={{ color: ACCENT }}>PDF</span>
-      </SquiggleUnderline>
-      {" "}to{" "}
-      <span style={{ color: formatColor }}>{formatLabel}</span>
+      {parts.map((part, i) => {
+        if (part === "{pdf}") {
+          return (
+            <SquiggleUnderline key={i}>
+              <span style={{ color: ACCENT }}>PDF</span>
+            </SquiggleUnderline>
+          );
+        }
+        if (part === "{format}") {
+          return (
+            <span key={i} style={{ color: formatColor }}>
+              {formatLabel}
+            </span>
+          );
+        }
+        return <span key={i}>{part}</span>;
+      })}
     </>
   );
 }
@@ -204,35 +209,33 @@ function triggerBlobDownload(blob: Blob, name: string) {
 }
 
 // All conversion tools shown in the "More tools" grid below the converter card.
-// Each entry maps to a SEO landing slug already registered in App.tsx.
-type ToolEntry = {
-  slug: string;
-  label: string;
-  desc: string;
-  icon: typeof FileText;
-  iconColor: string;
-  iconBg: string;
-};
-const ALL_CONVERSION_TOOLS: ToolEntry[] = [
-  // PDF → X (handled by ConverterPage)
-  { slug: "pdf-to-word",       label: "PDF to Word",       desc: "Editable .docx",        icon: FileText,        iconColor: "#2B579A", iconBg: "#E8F0FA" },
-  { slug: "pdf-to-excel",      label: "PDF to Excel",      desc: "Tables to .xlsx",       icon: FileSpreadsheet, iconColor: "#1F7244", iconBg: "#E8F5EC" },
-  { slug: "pdf-to-powerpoint", label: "PDF to PowerPoint", desc: "Slides to .pptx",       icon: Presentation,    iconColor: "#D04423", iconBg: "#FBEBE5" },
-  { slug: "pdf-to-jpg",        label: "PDF to JPG",        desc: "High-res image",        icon: ImageIcon,       iconColor: "#1A1A1C", iconBg: "#F0F0F2" },
-  // X → PDF (handled by EditorPage upload-zone flow)
-  { slug: "word-to-pdf",       label: "Word to PDF",       desc: ".docx → .pdf",          icon: FileType,        iconColor: "#2B579A", iconBg: "#E8F0FA" },
-  { slug: "jpg-to-pdf",        label: "JPG to PDF",        desc: "Photos to .pdf",        icon: FileImage,       iconColor: "#E63946", iconBg: "#FEE7EA" },
-  { slug: "png-to-pdf",        label: "PNG to PDF",        desc: "Images to .pdf",        icon: FileImage,       iconColor: "#0A0A0B", iconBg: "#F0F0F2" },
-  // Utilities
-  { slug: "merge-pdf",         label: "Merge PDF",         desc: "Combine PDFs",          icon: Layers,          iconColor: "#5A5A62", iconBg: "#F0F0F2" },
-  { slug: "split-pdf",         label: "Split PDF",         desc: "Extract pages",         icon: Scissors,        iconColor: "#5A5A62", iconBg: "#F0F0F2" },
-  { slug: "compress-pdf",      label: "Compress PDF",      desc: "Reduce file size",      icon: Minimize2,       iconColor: "#5A5A62", iconBg: "#F0F0F2" },
+// Labels/descs are resolved from i18n at render time (`landing_grid_*`).
+const ALL_CONVERSION_TOOLS: { slug: string; labelKey: string; labelFallback: string; descKey: string; descFallback: string; icon: typeof FileText; iconColor: string; iconBg: string }[] = [
+  { slug: "pdf-to-word",       labelKey: "landing_grid_pdf_to_word_label",  labelFallback: "PDF to Word",       descKey: "landing_grid_pdf_to_word_desc",  descFallback: "Editable .docx",   icon: FileText,        iconColor: "#2B579A", iconBg: "#E8F0FA" },
+  { slug: "pdf-to-excel",      labelKey: "landing_grid_pdf_to_excel_label", labelFallback: "PDF to Excel",      descKey: "landing_grid_pdf_to_excel_desc", descFallback: "Tables to .xlsx",  icon: FileSpreadsheet, iconColor: "#1F7244", iconBg: "#E8F5EC" },
+  { slug: "pdf-to-powerpoint", labelKey: "landing_grid_pdf_to_ppt_label",   labelFallback: "PDF to PowerPoint", descKey: "landing_grid_pdf_to_ppt_desc",   descFallback: "Slides to .pptx",  icon: Presentation,    iconColor: "#D04423", iconBg: "#FBEBE5" },
+  { slug: "pdf-to-jpg",        labelKey: "landing_grid_pdf_to_jpg_label",   labelFallback: "PDF to JPG",        descKey: "landing_grid_pdf_to_jpg_desc",   descFallback: "High-res image",   icon: ImageIcon,       iconColor: "#1A1A1C", iconBg: "#F0F0F2" },
+  { slug: "word-to-pdf",       labelKey: "landing_grid_word_to_pdf_label",  labelFallback: "Word to PDF",       descKey: "landing_grid_word_to_pdf_desc",  descFallback: ".docx → .pdf",     icon: FileType,        iconColor: "#2B579A", iconBg: "#E8F0FA" },
+  { slug: "jpg-to-pdf",        labelKey: "landing_grid_jpg_to_pdf_label",   labelFallback: "JPG to PDF",        descKey: "landing_grid_jpg_to_pdf_desc",   descFallback: "Photos to .pdf",   icon: FileImage,       iconColor: "#E63946", iconBg: "#FEE7EA" },
+  { slug: "png-to-pdf",        labelKey: "landing_grid_png_to_pdf_label",   labelFallback: "PNG to PDF",        descKey: "landing_grid_png_to_pdf_desc",   descFallback: "Images to .pdf",   icon: FileImage,       iconColor: "#0A0A0B", iconBg: "#F0F0F2" },
+  { slug: "merge-pdf",         labelKey: "landing_grid_merge_label",        labelFallback: "Merge PDF",         descKey: "landing_grid_merge_desc",        descFallback: "Combine PDFs",     icon: Layers,          iconColor: "#5A5A62", iconBg: "#F0F0F2" },
+  { slug: "split-pdf",         labelKey: "landing_grid_split_label",        labelFallback: "Split PDF",         descKey: "landing_grid_split_desc",        descFallback: "Extract pages",    icon: Scissors,        iconColor: "#5A5A62", iconBg: "#F0F0F2" },
+  { slug: "compress-pdf",      labelKey: "landing_grid_compress_label",     labelFallback: "Compress PDF",      descKey: "landing_grid_compress_desc",     descFallback: "Reduce file size", icon: Minimize2,       iconColor: "#5A5A62", iconBg: "#F0F0F2" },
 ];
 
 type Phase = "idle" | "fake-converting" | "ready" | "awaiting-payment" | "processing" | "done" | "error";
 
 export default function ConverterPage({ target }: { target: ConverterTarget }) {
-  const copy = COPY[target];
+  const { t } = useLanguage();
+  const tr = (key: string, fallback: string): string =>
+    ((t as any)[key] as string | undefined) || fallback;
+  const meta = FORMAT_META[target];
+  const eyebrow = tr(meta.eyebrowKey, `PDF → ${meta.label}`);
+  const subtitle = tr(meta.subtitleKey, meta.subtitleFallback);
+  const readyTitle = tr(meta.readyKey, meta.readyFallback);
+  const titleTemplate = tr("landing_converter_title_template", "Convert {pdf} to {format}");
+  const successCta = tr("landing_converter_success_cta", "Convert another PDF");
+  const docTitle = titleTemplate.replace("{pdf}", "PDF").replace("{format}", meta.label);
   const [location, navigate] = useLocation();
   // Detect active landing slug to highlight (or skip) the corresponding tile in the grid below.
   const activeSlugMatch = location.match(/\/[a-z]{2}\/([^/?#]+)/);
@@ -263,7 +266,7 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
   // ── Step 1: user picks PDF → render preview thumb in parallel + fake progress ──
   const startFakeConvert = (f: File) => {
     if (f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf")) {
-      toast.error("Only PDF files are supported");
+      toast.error(tr("landing_common_only_pdf", "Only PDF files are supported"));
       return;
     }
     setFile(f);
@@ -304,7 +307,7 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
 
     setPhase("processing");
     setProgress(60);
-    toast.loading("Converting your PDF…", { id: "post-pay-conv" });
+    toast.loading(tr("landing_converter_converting", "Converting your PDF…"), { id: "post-pay-conv" });
 
     let downloaded = false;
     try {
@@ -334,9 +337,9 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
       setResultName(outName);
       setProgress(100);
       setPhase("done");
-      toast.success("Conversion complete! File downloaded.", { id: "post-pay-conv" });
+      toast.success(tr("landing_converter_complete_title", "Conversion complete") + "!", { id: "post-pay-conv" });
     } catch (err) {
-      toast.error((err as Error).message || "Conversion failed", { id: "post-pay-conv" });
+      toast.error((err as Error).message || tr("landing_converter_error_title", "Something went wrong"), { id: "post-pay-conv" });
       setPhase("error");
     }
 
@@ -366,9 +369,9 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
   // Tab title
   useEffect(() => {
     const prev = document.title;
-    document.title = `${copy.title} · editorpdf.net`;
+    document.title = `${docTitle} · editorpdf.net`;
     return () => { document.title = prev; };
-  }, [copy.title]);
+  }, [docTitle]);
 
   // Cleanup any running timer on unmount
   useEffect(() => () => {
@@ -390,14 +393,14 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
       <section className="relative pt-16 md:pt-[72px] pb-20 overflow-hidden flex-1">
         <div className="container mx-auto max-w-5xl px-4 py-10 md:py-20">
           <p className="text-center text-[12px] font-semibold tracking-[0.18em] uppercase mb-3" style={{ color: ACCENT }}>
-            {copy.eyebrow}
+            {eyebrow}
           </p>
 
           <h1 className="text-center text-3xl md:text-5xl font-extrabold leading-[1.1] tracking-[-0.02em] mb-4">
-            {renderHeadline(FORMAT_META[target].label, FORMAT_META[target].color)}
+            {renderHeadlineFromTemplate(titleTemplate, meta.label, meta.color)}
           </h1>
           <p className="text-center text-[15px] md:text-base max-w-xl mx-auto mb-10" style={{ color: MUTED }}>
-            {copy.subtitle}
+            {subtitle}
           </p>
 
           <div className="max-w-xl mx-auto">
@@ -426,15 +429,15 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
                     minHeight: 160,
                   }}
                 >
-                  <strong className="text-[15px] font-bold text-[#0A0A0B]">Drop your PDF here</strong>
-                  <span className="text-[15px] text-[#1A1A1C] font-medium">or</span>
+                  <strong className="text-[15px] font-bold text-[#0A0A0B]">{tr("landing_common_drop_here", "Drop your PDF here")}</strong>
+                  <span className="text-[15px] text-[#1A1A1C] font-medium">{tr("landing_common_or", "or")}</span>
                   <button
                     onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
                     className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#E63946] text-white text-sm font-bold border border-[#E63946] shadow-[0_6px_16px_-6px_rgba(230,57,70,0.55)] hover:bg-[#C72738] hover:border-[#C72738] hover:-translate-y-px transition-all"
                     type="button"
                   >
                     <Upload className="w-4 h-4" />
-                    {copy.cta}
+                    {tr("landing_common_select_pdf", "Select PDF")}
                   </button>
                 </div>
               )}
@@ -459,7 +462,9 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
                     <div className="flex items-center justify-between mt-2 text-[12px]" style={{ color: MUTED }}>
                       <span className="inline-flex items-center gap-1.5">
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        {phase === "processing" ? "Finalizing your file…" : "Converting your PDF…"}
+                        {phase === "processing"
+                          ? tr("landing_converter_finalizing", "Finalizing your file…")
+                          : tr("landing_converter_converting", "Converting your PDF…")}
                       </span>
                       <span className="font-semibold">{progress}%</span>
                     </div>
@@ -468,7 +473,6 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
               )}
 
               {(phase === "ready" || phase === "awaiting-payment") && file && (() => {
-                const meta = FORMAT_META[target];
                 const outName = file.name.replace(/\.pdf$/i, "") + "." + target;
                 return (
                   <div className="flex flex-col items-center gap-5 py-4">
@@ -506,7 +510,7 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
                           <div className="flex flex-col items-center gap-2">
                             <FileText className="w-10 h-10" style={{ color: meta.color }} />
                             <span className="text-[11px] font-semibold" style={{ color: meta.color }}>
-                              {meta.label} preview
+                              {meta.label} {tr("landing_converter_preview_suffix", "preview")}
                             </span>
                           </div>
                         )}
@@ -517,7 +521,7 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
                     <div className="text-center px-2">
                       <p className="font-extrabold text-[18px] text-[#0A0A0B] tracking-[-0.01em] flex items-center justify-center gap-1.5">
                         <CheckCircle2 className="w-4 h-4" style={{ color: "#1E9E63" }} />
-                        {meta.readyTitle}
+                        {readyTitle}
                       </p>
                       <p className="text-[13px] mt-1 truncate max-w-[280px] mx-auto" style={{ color: MUTED }}>
                         <span className="font-semibold text-[#1A1A1C]">{outName}</span>
@@ -532,10 +536,10 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
                       className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-[#E63946] text-white text-[15px] font-extrabold border border-[#E63946] shadow-[0_8px_20px_-6px_rgba(230,57,70,0.6)] hover:bg-[#C72738] hover:border-[#C72738] hover:-translate-y-px transition-all disabled:opacity-60"
                     >
                       <DownloadIcon className="w-4 h-4" />
-                      Download {meta.label}
+                      {tr("landing_converter_download_prefix", "Download")} {meta.label}
                     </button>
                     <p className="text-[11px]" style={{ color: MUTED }}>
-                      A free account is required to download.
+                      {tr("landing_converter_account_required", "A free account is required to download.")}
                     </p>
                   </div>
                 );
@@ -547,9 +551,9 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
                     <CheckCircle2 className="w-8 h-8" style={{ color: "#1E9E63" }} />
                   </div>
                   <div>
-                    <p className="font-extrabold text-[17px] text-[#0A0A0B]">Conversion complete</p>
+                    <p className="font-extrabold text-[17px] text-[#0A0A0B]">{tr("landing_converter_complete_title", "Conversion complete")}</p>
                     <p className="text-[13px] mt-0.5" style={{ color: MUTED }}>
-                      Your file <strong className="text-[#0A0A0B]">{resultName}</strong> has been downloaded.
+                      {tr("landing_common_file_downloaded_pre", "Your file")} <strong className="text-[#0A0A0B]">{resultName}</strong> {tr("landing_common_file_downloaded_post", "has been downloaded.")}
                     </p>
                   </div>
                   <button
@@ -557,7 +561,7 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
                     className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#0A0A0B] text-white text-sm font-bold hover:bg-[#1A1A1C] transition-all"
                   >
                     <RefreshCw className="w-4 h-4" />
-                    {copy.successCta}
+                    {successCta}
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -565,12 +569,12 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
 
               {phase === "error" && (
                 <div className="flex flex-col items-center gap-4 py-8 text-center">
-                  <p className="font-bold text-[15px] text-[#0A0A0B]">Something went wrong</p>
+                  <p className="font-bold text-[15px] text-[#0A0A0B]">{tr("landing_converter_error_title", "Something went wrong")}</p>
                   <button
                     onClick={reset}
                     className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#E63946] text-white text-sm font-bold hover:bg-[#C72738] transition-all"
                   >
-                    Try again
+                    {tr("landing_converter_try_again", "Try again")}
                   </button>
                 </div>
               )}
@@ -578,7 +582,7 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
               <div className="flex justify-center mt-4">
                 <span className="inline-flex items-center gap-1.5 text-[12px] font-medium" style={{ color: MUTED }}>
                   <Cloud className="w-3.5 h-3.5" />
-                  Files up to 100&nbsp;MB · Processed securely
+                  {tr("landing_converter_files_limit", "Files up to 100 MB · Processed securely")}
                 </span>
               </div>
             </div>
@@ -586,15 +590,15 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
             <div className="flex items-center justify-center gap-6 mt-8 text-[12px]" style={{ color: MUTED }}>
               <span className="inline-flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#1E9E63" }} />
-                No installation
+                {tr("landing_common_no_installation", "No installation")}
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#1E9E63" }} />
-                Works on any device
+                {tr("landing_common_any_device", "Works on any device")}
               </span>
               <span className="hidden md:inline-flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#1E9E63" }} />
-                High-fidelity output
+                {tr("landing_converter_high_fidelity", "High-fidelity output")}
               </span>
             </div>
           </div>
@@ -603,13 +607,13 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
           <div className="mt-20 max-w-5xl mx-auto">
             <div className="text-center mb-8">
               <p className="text-[12px] font-semibold tracking-[0.18em] uppercase mb-2" style={{ color: ACCENT }}>
-                All conversion tools
+                {tr("landing_converter_all_tools_kicker", "All conversion tools")}
               </p>
               <h2 className="text-2xl md:text-3xl font-extrabold tracking-[-0.02em] text-[#0A0A0B]">
-                Need a different conversion?
+                {tr("landing_converter_need_different", "Need a different conversion?")}
               </h2>
               <p className="text-[14px] mt-2" style={{ color: MUTED }}>
-                Pick another tool — same simple flow, no installation required.
+                {tr("landing_common_pick_another", "Pick another tool — same simple flow, no installation required.")}
               </p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -644,8 +648,8 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
                       <Icon className="w-4.5 h-4.5" style={{ color: tool.iconColor, width: 18, height: 18 }} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-bold text-[#0A0A0B] leading-tight">{tool.label}</p>
-                      <p className="text-[11px] mt-0.5 truncate" style={{ color: MUTED }}>{tool.desc}</p>
+                      <p className="text-[13px] font-bold text-[#0A0A0B] leading-tight">{tr(tool.labelKey, tool.labelFallback)}</p>
+                      <p className="text-[11px] mt-0.5 truncate" style={{ color: MUTED }}>{tr(tool.descKey, tool.descFallback)}</p>
                     </div>
                     {isActive && (
                       <span className="absolute top-2 right-2 text-[9px] font-extrabold tracking-[0.1em] px-1.5 py-0.5 rounded" style={{ background: ACCENT, color: "white" }}>
