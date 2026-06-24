@@ -98,11 +98,11 @@ function CardBrands() {
 
 // ── Sipay checkout ─────────────────────────────────────────────────────────────
 // ─── Google Pay kill switch ──────────────────────────────────────────────────
-// Set to true the moment Google approves the Web Integration (the 3 brand-
-// compliance flags at pay.google.com/business/console). The button + its
-// hooks/scripts stay in the codebase — only the render is gated — so flipping
-// this back to `true` re-enables Google Pay in one diff.
-const GPAY_ENABLED = false;
+// Set to true while we capture the screenshots Google requested for the
+// Web Integration review (3 brand-compliance flags at
+// pay.google.com/business/console). Set back to false once the captures
+// are uploaded and we're waiting on approval if needed.
+const GPAY_ENABLED = true;
 
 // FastPay JS captures the card in Sipay's iframe; we forward the resulting
 // request_id to our backend to fire /mdwr/v1/all-in-one and then navigate the
