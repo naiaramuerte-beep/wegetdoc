@@ -291,7 +291,13 @@ function SipayCheckoutForm({
   // expand the FastPay iframe. Auto-opening on mount triggers FastPay's
   // mobile new-tab fallback in some scenarios; making the user opt-in keeps
   // the iframe inline and matches the UX on mindmetric.io.
-  const [cardExpanded, setCardExpanded] = useState(false);
+  // Card expanded by default on desktop only — there's enough vertical
+  // space to show the FastPay iframe (~580px) without cutting off the pay
+  // button below. On mobile we keep it collapsed because expanding pushes
+  // the pay button off-screen and forces the user to scroll.
+  const [cardExpanded, setCardExpanded] = useState(() =>
+    typeof window !== "undefined" && window.innerWidth >= 768
+  );
   // Tracks which fastpay request_ids we've already attempted so we don't
   // retry the same token (one-shot). Without this, the effect re-fired on
   // every setRedirecting(false) → infinite loop spamming Sipay.
@@ -449,6 +455,20 @@ function SipayCheckoutForm({
               {converter ? <>only <span style={{ color: "#E63946" }}>{converter.price}</span></> : t.paywall_only_for}
             </p>
           </div>
+
+          {/* Recurring price disclosure — shown PROMINENTLY to avoid the
+              "didn't know I'd be charged again" chargebacks. The legal
+              terms cover it too but a visual cue at the moment of payment
+              is what stops disputes. */}
+          {!converter && (
+            <div className="rounded-lg px-3 py-2.5 flex items-start gap-2 text-[12px] leading-relaxed" style={{ backgroundColor: "#FFF8E7", border: "1px solid #F4D87A", color: "#7A5A00" }}>
+              <span className="text-base leading-none flex-shrink-0 mt-px">⚠️</span>
+              <p>
+                <strong>Suscripción auto-renovable:</strong> 0,50&nbsp;€ hoy → 2 días de prueba → <strong>19,95&nbsp;€/mes</strong> después.{" "}
+                <span className="opacity-90">Cancela en 1 clic desde tu panel.</span>
+              </p>
+            </div>
+          )}
 
           {/* FastPay button + loading + redirect overlay */}
           {!sipayConfigQ.data?.key && (
@@ -632,10 +652,16 @@ function SipayCheckoutForm({
             </div>
           )}
 
-          {/* Trust strip — sin iconos de marca duplicados (el iframe Sipay ya los muestra) */}
-          <div className="flex items-center justify-center gap-5 text-[11px] text-gray-500 pt-2 border-t" style={{ borderColor: "#e5e7eb" }}>
-            <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> {s.trust3ds}</span>
-            <span className="flex items-center gap-1"><Lock className="w-3 h-3" /> {s.trustPci}</span>
+          {/* Trust strip — moved here, expanded with a "card never touches
+              our servers" cue. The visual reassurance right above the
+              cancel link reduces last-second abandonment, especially for
+              first-time buyers who hesitate before submitting card data. */}
+          <div className="pt-2 border-t" style={{ borderColor: "#e5e7eb" }}>
+            <div className="flex items-center justify-center gap-4 text-[11px] text-gray-500 flex-wrap">
+              <span className="flex items-center gap-1.5"><Shield className="w-3 h-3" /> {s.trust3ds}</span>
+              <span className="flex items-center gap-1.5"><Lock className="w-3 h-3" /> {s.trustPci}</span>
+              <span className="flex items-center gap-1.5"><CreditCard className="w-3 h-3" /> Tu tarjeta nunca pasa por nuestros servidores</span>
+            </div>
           </div>
 
           <button onClick={onClose} className="text-xs text-gray-500 hover:text-gray-700 underline text-center w-full">
@@ -1297,19 +1323,31 @@ export default function PaywallModal({
           </div>
         )}
 
-        {/* ── Unified Auth (Google + email/password + GDPR) ── */}
+        {/* ── Unified Auth (Google + email/password + GDPR) ──
+            Softened copy so this step feels like a continuation of the
+            purchase flow instead of a "create an account" hurdle. The
+            user sees the same price hook from the next step and a
+            receipt-framed subtitle, so the friction perceived as
+            registration shrinks. Same DB writes underneath. */}
         {reason !== "trial-limit" && currentStep === "auth-choice" && (
           <div className="p-8">
-            <div className="text-center mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-[#0A0A0B] flex items-center justify-center mx-auto mb-4 relative">
-                <FileText className="w-7 h-7 text-white" />
-                <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#E63946] ring-2 ring-white" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">{emailMode === "register" ? s.paywallTitle : t.paywall_login}</h2>
+            {/* Mini price hook at the top — same gradient + amount as the
+                payment step, so the user feels they're already in the
+                checkout flow rather than a separate signup form. */}
+            <div className="rounded-xl px-4 py-3 text-center mb-5" style={{ background: "linear-gradient(135deg, #1E66C9, #1551A8)" }}>
+              <p className="text-xs text-white/70">{converter ? `Tu ${converter.label} por solo` : t.paywall_your_pdf}</p>
+              <p className="text-xl font-extrabold text-white tracking-tight">
+                {converter ? converter.price : t.paywall_only_for}
+              </p>
+            </div>
+            <div className="text-center mb-5">
+              <h2 className="text-lg font-bold text-gray-900 mb-1">
+                {emailMode === "register" ? "Solo un paso más" : t.paywall_login}
+              </h2>
               <p className="text-sm text-gray-500">
-                {converter
-                  ? `to download your ${converter.label} file`
-                  : (emailMode === "register" ? s.paywallSubtitle : t.paywall_enter_email)}
+                {emailMode === "register"
+                  ? "Te enviamos el recibo y el acceso a tu archivo a este email"
+                  : t.paywall_enter_email}
               </p>
             </div>
             <div className="max-w-sm mx-auto space-y-3">
@@ -1351,7 +1389,12 @@ export default function PaywallModal({
                 className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-white font-bold text-sm hover:bg-[#C72738] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{ backgroundColor: emailLoading ? "#9ca3af" : "#E63946" }}
               >
-                {emailLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> {emailMode === "register" ? t.paywall_registering : t.paywall_logging_in}</> : (emailMode === "register" ? t.paywall_register : t.paywall_login)}
+                {/* Copy that reads as "next checkout step" not "open account"
+                    — reduces the perceived commitment of the auth step. */}
+                {emailLoading
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> {emailMode === "register" ? t.paywall_registering : t.paywall_logging_in}</>
+                  : (emailMode === "register" ? <>Continuar al pago →</> : t.paywall_login)
+                }
               </button>
               <div className="text-center text-sm text-gray-500 pt-1">
                 {emailMode === "register"
