@@ -545,7 +545,28 @@ function SipayCheckoutForm({
                 </div>
               )}
               {cardExpanded && (
-              <>
+              <div className="fastpay-shell relative">
+                {/* Skeleton shown while Sipay is decorating the .fastpay-btn
+                    and creating the iframe (~600 ms). Without this the user
+                    sees blank space and some bounce thinking it broke. CSS
+                    `:has(iframe)` hides the skeleton the instant the real
+                    iframe appears (Chrome 105+ / Safari 15.4+ / FF 121+).
+                    Older browsers see both stacked — not pretty but works. */}
+                <div className="fastpay-skel rounded-lg overflow-hidden" style={{ background: "#f7f8f9", border: "1px solid #e5e7eb" }}>
+                  <div className="p-4 space-y-3 animate-pulse">
+                    <div className="h-3 w-24 rounded bg-gray-200" />
+                    <div className="h-10 rounded bg-gray-200" />
+                    <div className="flex gap-3">
+                      <div className="h-10 flex-1 rounded bg-gray-200" />
+                      <div className="h-10 flex-1 rounded bg-gray-200" />
+                    </div>
+                    <div className="h-12 rounded bg-gray-300" />
+                    <div className="flex items-center justify-center gap-2 pt-2 text-[11px] text-gray-400">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Preparando formulario seguro…
+                    </div>
+                  </div>
+                </div>
               <button
                 type="button"
                 data-key={sipayConfigQ.data.key}
@@ -634,8 +655,12 @@ function SipayCheckoutForm({
                 @media (min-width: 768px) {
                   .fastpay-btn + iframe { min-height: 580px !important; }
                 }
+                /* Hide the skeleton the instant the real iframe shows up. */
+                .fastpay-shell:has(iframe) .fastpay-skel {
+                  display: none !important;
+                }
               `}</style>
-              </>
+              </div>
               )}
               {redirecting && (
                 <div className="flex items-center justify-center gap-2 py-3 text-sm text-gray-600">
