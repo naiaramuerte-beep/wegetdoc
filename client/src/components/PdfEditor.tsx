@@ -4777,7 +4777,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
                     <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
                   </svg>
-                  <span className="font-semibold text-[#0A0A0B]">Descargar con Google</span>
+                  <span className="font-semibold text-[#0A0A0B]">{t.download_with_google}</span>
                 </button>
                 <div className="h-px bg-[#F1F1F4]" />
                 <button
@@ -4789,7 +4789,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm hover:bg-[#F6F6F7] transition-colors"
                 >
                   <Mail className="w-[18px] h-[18px] text-[#5A5A62]" />
-                  <span className="font-semibold text-[#0A0A0B]">Descargar con Email</span>
+                  <span className="font-semibold text-[#0A0A0B]">{t.download_with_email}</span>
                 </button>
               </div>
             </>

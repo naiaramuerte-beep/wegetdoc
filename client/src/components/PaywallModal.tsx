@@ -445,7 +445,7 @@ function SipayCheckoutForm({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-1">
             <div className="w-4 h-4 rounded-full bg-[#1E9E63] flex items-center justify-center"><Check className="w-2.5 h-2.5 text-white" /></div>
-            <p className="text-xs font-semibold text-slate-800">Tu documento está listo</p>
+            <p className="text-xs font-semibold text-slate-800">{t.paywall_doc_ready}</p>
           </div>
           <p className="text-[11px] text-slate-500 truncate">{pdfData?.name ?? "document.pdf"}</p>
         </div>
@@ -453,7 +453,7 @@ function SipayCheckoutForm({
       <div className="hidden md:flex flex-col bg-[#f4f5f7] p-6" style={{ minWidth: 300, maxWidth: 320 }}>
         <div className="flex items-center gap-2 mb-4 w-full">
           <div className="w-6 h-6 rounded-full bg-[#1E9E63] flex items-center justify-center flex-shrink-0"><Check className="w-3.5 h-3.5 text-white" /></div>
-          <p className="text-sm font-semibold text-slate-800">Tu documento está listo</p>
+          <p className="text-sm font-semibold text-slate-800">{t.paywall_doc_ready}</p>
         </div>
         <div className="w-full rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden flex items-center justify-center mb-3" style={{ aspectRatio: "0.707", maxHeight: 220 }}>
           {thumbnailUrl ? (
@@ -468,7 +468,7 @@ function SipayCheckoutForm({
             mirror the visual of the real Trustpilot embed but render it
             locally so the modal stays fast and works offline of their CDN. */}
         <div className="flex items-center gap-2 mb-3 pt-4 border-t" style={{ borderColor: "#e2e8f0" }}>
-          <span className="text-sm font-bold text-slate-700">Excelente</span>
+          <span className="text-sm font-bold text-slate-700">{t.paywall_trustpilot_excellent}</span>
           <div className="flex gap-0.5">
             {[1,2,3,4,5].map((i) => (
               <div key={i} className="w-4 h-4 flex items-center justify-center" style={{ backgroundColor: "#00B67A" }}>
@@ -479,14 +479,14 @@ function SipayCheckoutForm({
           <span className="text-xs font-semibold text-slate-700">4.6</span>
         </div>
         <p className="text-[11px] text-slate-500 leading-snug">
-          <strong className="text-slate-700">8.247</strong> reseñas en{" "}
+          <strong className="text-slate-700">8.247</strong> {t.paywall_trustpilot_reviews_label}{" "}
           <span className="font-semibold" style={{ color: "#00B67A" }}>★ Trustpilot</span>
         </p>
 
         {/* PDFs processed today — animated counter, mirrors Home stats. */}
         <div className="mt-4 pt-4 border-t flex items-center justify-between" style={{ borderColor: "#e2e8f0" }}>
-          <p className="text-[11px] text-slate-500">PDFs procesados hoy</p>
-          <p className="text-sm font-bold text-slate-800 tabular-nums">{(70244).toLocaleString("es-ES")}</p>
+          <p className="text-[11px] text-slate-500">{t.paywall_pdfs_today}</p>
+          <p className="text-sm font-bold text-slate-800 tabular-nums">{(70244).toLocaleString(lang === "en" ? "en-US" : "es-ES")}</p>
         </div>
       </div>
 
@@ -500,10 +500,12 @@ function SipayCheckoutForm({
               the visual hierarchy reads clean (matches pdfe.com). */}
           <div>
             <h3 className="text-[17px] font-bold text-slate-900 leading-snug mb-3">
-              {converter ? `Descarga tu ${converter.label} al instante` : "Descarga tu PDF al instante"}
+              {converter
+                ? t.paywall_download_instant.replace("PDF", converter.label)
+                : t.paywall_download_instant}
             </h3>
             <div className="flex items-baseline justify-between pt-3 border-t" style={{ borderColor: "#e5e7eb" }}>
-              <p className="text-sm text-slate-600">Total a pagar hoy</p>
+              <p className="text-sm text-slate-600">{t.paywall_total_today}</p>
               <p className="text-2xl font-extrabold text-slate-900 tracking-tight">
                 {converter ? converter.price : "0,50 €"}
               </p>
@@ -725,7 +727,7 @@ function SipayCheckoutForm({
           {/* Mobile-only: compact Trustpilot strip at the bottom of the
               modal. On desktop the widget lives in the left column. */}
           <div className="md:hidden flex items-center justify-center gap-2 pt-3 border-t" style={{ borderColor: "#e5e7eb" }}>
-            <span className="text-xs font-bold text-slate-700">Excelente</span>
+            <span className="text-xs font-bold text-slate-700">{t.paywall_trustpilot_excellent}</span>
             <div className="flex gap-0.5">
               {[1,2,3,4,5].map((i) => (
                 <div key={i} className="w-3 h-3 flex items-center justify-center" style={{ backgroundColor: "#00B67A" }}>
@@ -733,7 +735,7 @@ function SipayCheckoutForm({
                 </div>
               ))}
             </div>
-            <span className="text-[10px] text-slate-500"><strong className="text-slate-700">8.247</strong> reseñas · <span style={{ color: "#00B67A" }} className="font-semibold">★ Trustpilot</span></span>
+            <span className="text-[10px] text-slate-500"><strong className="text-slate-700">8.247</strong> {t.paywall_trustpilot_reviews_label} · <span style={{ color: "#00B67A" }} className="font-semibold">★ Trustpilot</span></span>
           </div>
         </div>
 
@@ -742,7 +744,7 @@ function SipayCheckoutForm({
             the user is here: their PDF is one click away. */}
         <div className="flex items-center justify-center gap-2 px-4 py-2.5 text-[12px] font-medium" style={{ backgroundColor: "#E8F7EF", color: "#1E9E63", borderTop: "1px solid #C7EAD5" }}>
           <Check className="w-3.5 h-3.5" />
-          <span>Edita tus PDFs al instante. Listo para descargar.</span>
+          <span>{t.paywall_bottom_strip}</span>
         </div>
       </div>
     </div>
@@ -1431,17 +1433,13 @@ export default function PaywallModal({
           <div className="p-8">
             <div className="mb-5">
               <p className="text-xs font-semibold text-gray-400 mb-2">
-                {emailMode === "register" ? "Último paso" : ""}
+                {emailMode === "register" ? t.paywall_auth_eyebrow : ""}
               </p>
               <h2 className="text-xl font-bold text-gray-900 mb-1.5 leading-tight">
-                {emailMode === "register"
-                  ? "Crea una cuenta para descargar tu documento"
-                  : t.paywall_login}
+                {emailMode === "register" ? t.paywall_auth_heading : t.paywall_login}
               </h2>
               <p className="text-sm text-gray-500">
-                {emailMode === "register"
-                  ? "Regístrate con tu red social o email"
-                  : t.paywall_enter_email}
+                {emailMode === "register" ? t.paywall_auth_subtitle : t.paywall_enter_email}
               </p>
             </div>
             <div className="max-w-sm mx-auto space-y-3">
@@ -1469,7 +1467,7 @@ export default function PaywallModal({
                     rest of the modal copy that frames this as a signup. */}
                 {emailLoading
                   ? <><Loader2 className="w-4 h-4 animate-spin" /> {emailMode === "register" ? t.paywall_registering : t.paywall_logging_in}</>
-                  : (emailMode === "register" ? <>Crear cuenta</> : t.paywall_login)
+                  : (emailMode === "register" ? t.paywall_auth_create : t.paywall_login)
                 }
               </button>
               <div className="flex items-center gap-3 py-1">
@@ -1487,11 +1485,11 @@ export default function PaywallModal({
                   <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
                   <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
                 </svg>
-                {emailMode === "register" ? "Crear cuenta con Google" : t.paywall_continue_google}
+                {emailMode === "register" ? t.paywall_auth_create_google : t.paywall_continue_google}
               </button>
               <div className="text-center text-sm text-gray-500 pt-1">
                 {emailMode === "register"
-                  ? <>Ya tengo una cuenta · <button onClick={() => setEmailMode("login")} className="text-[#E63946] font-semibold hover:underline">{t.paywall_login}</button></>
+                  ? <>{t.paywall_auth_have_account} · <button onClick={() => setEmailMode("login")} className="text-[#E63946] font-semibold hover:underline">{t.paywall_login}</button></>
                   : <>{t.paywall_no_account}{" "}<button onClick={() => setEmailMode("register")} className="text-[#E63946] font-semibold hover:underline">{t.paywall_register}</button></>}
               </div>
               {emailMode === "register" && (
