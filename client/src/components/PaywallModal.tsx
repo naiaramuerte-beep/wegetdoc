@@ -299,13 +299,10 @@ function SipayCheckoutForm({
   // expand the FastPay iframe. Auto-opening on mount triggers FastPay's
   // mobile new-tab fallback in some scenarios; making the user opt-in keeps
   // the iframe inline and matches the UX on mindmetric.io.
-  // Card expanded by default on desktop only — there's enough vertical
-  // space to show the FastPay iframe (~580px) without cutting off the pay
-  // button below. On mobile we keep it collapsed because expanding pushes
-  // the pay button off-screen and forces the user to scroll.
-  const [cardExpanded, setCardExpanded] = useState(() =>
-    typeof window !== "undefined" && window.innerWidth >= 768
-  );
+  // Card collapsed by default on every viewport — the user explicitly
+  // prefers the closed state so the modal stays compact until they
+  // commit to the card path.
+  const [cardExpanded, setCardExpanded] = useState(false);
   // Tracks which fastpay request_ids we've already attempted so we don't
   // retry the same token (one-shot). Without this, the effect re-fired on
   // every setRedirecting(false) → infinite loop spamming Sipay.
@@ -708,19 +705,6 @@ function SipayCheckoutForm({
               )}
             </div>
           )}
-
-          {/* Pdfe-style legal microcopy below the pay button. Carries
-              the recurring-charge disclosure (legally required) plus
-              the T&C + Privacy links. No prominent yellow warning box
-              anymore — the user explicitly asked to remove the trial /
-              recurring callouts to clean up the visual hierarchy. */}
-          <p className="text-[11px] text-slate-500 leading-relaxed">
-            Al pulsar Pagar, aceptas los{" "}
-            <a href={`/${lang}/terms`} target="_blank" rel="noreferrer" className="underline text-slate-600 hover:text-[#E63946]">Términos del Servicio</a>
-            {" "}y la{" "}
-            <a href={`/${lang}/privacy`} target="_blank" rel="noreferrer" className="underline text-slate-600 hover:text-[#E63946]">Política de Privacidad</a>
-            , y nos autorizas a cobrarte según las condiciones hasta que canceles desde tu cuenta.
-          </p>
 
           {/* Compact trust badges — kept slim, no border */}
           <div className="flex items-center justify-center gap-3 text-[10px] text-gray-400 flex-wrap">
