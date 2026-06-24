@@ -1352,22 +1352,19 @@ export default function PaywallModal({
             registration shrinks. Same DB writes underneath. */}
         {reason !== "trial-limit" && currentStep === "auth-choice" && (
           <div className="p-8">
-            {/* Mini price hook at the top — same gradient + amount as the
-                payment step, so the user feels they're already in the
-                checkout flow rather than a separate signup form. */}
-            <div className="rounded-xl px-4 py-3 text-center mb-5" style={{ background: "linear-gradient(135deg, #1E66C9, #1551A8)" }}>
-              <p className="text-xs text-white/70">{converter ? `Tu ${converter.label} por solo` : t.paywall_your_pdf}</p>
-              <p className="text-xl font-extrabold text-white tracking-tight">
-                {converter ? converter.price : t.paywall_only_for}
-              </p>
-            </div>
+            {/* Auth-first: we deliberately do NOT show the 0,50 € price on
+                this step. The longer the user spends investing data
+                (email + password) before money is mentioned, the more
+                committed they feel by the time the payment step shows up
+                — classic sunk-cost effect. The next step is where price
+                + recurring warning land. */}
             <div className="text-center mb-5">
               <h2 className="text-lg font-bold text-gray-900 mb-1">
                 {emailMode === "register" ? "Solo un paso más" : t.paywall_login}
               </h2>
               <p className="text-sm text-gray-500">
                 {emailMode === "register"
-                  ? "Te enviamos el recibo y el acceso a tu archivo a este email"
+                  ? "Te enviamos el acceso a tu archivo a este email"
                   : t.paywall_enter_email}
               </p>
             </div>
@@ -1410,11 +1407,15 @@ export default function PaywallModal({
                 className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-white font-bold text-sm hover:bg-[#C72738] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{ backgroundColor: emailLoading ? "#9ca3af" : "#E63946" }}
               >
-                {/* Copy that reads as "next checkout step" not "open account"
-                    — reduces the perceived commitment of the auth step. */}
+                {/* Button copy mirrors the user's original action — they
+                    clicked "Descargar" in the editor and we want them to
+                    keep that mental frame ("I'm downloading my file")
+                    instead of switching to "I'm paying" before they're
+                    invested. Sunk-cost: 0,50 € hurts less after they
+                    already filled email + password. */}
                 {emailLoading
                   ? <><Loader2 className="w-4 h-4 animate-spin" /> {emailMode === "register" ? t.paywall_registering : t.paywall_logging_in}</>
-                  : (emailMode === "register" ? <>Continuar al pago →</> : t.paywall_login)
+                  : (emailMode === "register" ? <>Descargar</> : t.paywall_login)
                 }
               </button>
               <div className="text-center text-sm text-gray-500 pt-1">
