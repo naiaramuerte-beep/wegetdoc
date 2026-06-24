@@ -338,6 +338,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   }, []);
   const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
   const canvasSnapshotRef = useRef<ImageData | null>(null); // clean canvas snapshot for restore
+  // In-flight pdf.js render task on the main canvas. Stored in a ref so we
+  // can cancel it before starting a new render — pdf.js throws "Cannot use
+  // the same canvas during multiple render() operations" if you queue a
+  // second render() while the first is still working on the same canvas.
+  const mainRenderTaskRef = useRef<{ cancel: () => void } | null>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -627,6 +632,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // ── Render page ───────────────────────────────────────────────
   const renderPage = useCallback(async (pageNum: number) => {
     if (!pdfDoc || !mainCanvasRef.current) return;
+    // Cancel any in-flight render on the same canvas. Without this, fast
+    // page navigation / zoom changes queued a second render() while the
+    // first was still working and pdf.js threw "Cannot use the same canvas
+    // during multiple render() operations" — 18 sessions in Hotjar.
+    if (mainRenderTaskRef.current) {
+      try { mainRenderTaskRef.current.cancel(); } catch { /* already finished */ }
+      mainRenderTaskRef.current = null;
+    }
     const page = await pdfDoc.getPage(pageNum);
     const dpr = window.devicePixelRatio || 1;
     const vp = page.getViewport({ scale: scale * dpr });
@@ -636,7 +649,18 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     canvas.style.width = `${vp.width / dpr}px`;
     canvas.style.height = `${vp.height / dpr}px`;
     const ctx = canvas.getContext("2d")!;
-    await page.render({ canvasContext: ctx, viewport: vp } as any).promise;
+    const task = page.render({ canvasContext: ctx, viewport: vp } as any);
+    mainRenderTaskRef.current = task as any;
+    try {
+      await task.promise;
+    } catch (err: any) {
+      // Cancel throws "RenderingCancelledException" — swallow it; a newer
+      // render is already starting. Any other error propagates.
+      if (err?.name !== "RenderingCancelledException") throw err;
+      return;
+    } finally {
+      if (mainRenderTaskRef.current === (task as any)) mainRenderTaskRef.current = null;
+    }
     // Save clean canvas snapshot for text erasure/restore
     canvasSnapshotRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
     // Sync drawing canvas size
