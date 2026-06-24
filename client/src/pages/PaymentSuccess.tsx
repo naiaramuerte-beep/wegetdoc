@@ -59,6 +59,12 @@ export default function PaymentSuccess() {
     const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
     const lang = langMatch ? langMatch[1] : "es";
 
+    // `?capture=1` pauses the countdown so we can screenshot the success
+    // page calmly for the Google Pay Web Integration review submission.
+    // Without this flag the user gets bounced to the home page after 5s.
+    const captureMode = new URLSearchParams(window.location.search).get("capture") === "1";
+    if (captureMode) return;
+
     // Auto-redirect to dashboard documents tab after countdown
     const interval = setInterval(() => {
       setCountdown((prev) => {
