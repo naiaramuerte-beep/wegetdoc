@@ -355,12 +355,23 @@ function SipayCheckoutForm({
 
     try {
       if (typeof fp.customize === "function") {
+        // Sipay's customize() just JSON.stringifies whatever we pass and
+        // sends it to their server-side renderer. The brand colours work;
+        // the spacing keys below are best-effort attempts (their docs
+        // don't list spacing options). If their renderer ignores them
+        // the iframe height bump in the CSS below buys some breathing
+        // room either way.
         fp.customize({
           color: "#E63946",
           primaryColor: "#E63946",
           buttonColor: "#E63946",
           accentColor: "#E63946",
           theme: "red",
+          padding: 20,
+          spacing: 16,
+          gap: 16,
+          buttonMarginTop: 16,
+          marginTop: 16,
         });
       }
     } catch (err) { console.error("[Sipay] customize failed:", err); }
@@ -664,19 +675,24 @@ function SipayCheckoutForm({
                 .fastpay-btn + iframe {
                   display: block !important;
                   width: 100% !important;
-                  min-height: 480px !important;
+                  min-height: 520px !important;
                   border: 0 !important;
                   background: #f7f8f9 !important;
                   position: relative !important;
                   top: 0 !important;
                   left: 0 !important;
                   overflow: hidden !important;
+                  /* Slight padding-top so the iframe lifts off the
+                     fields above it visually. This is OUR side of the
+                     iframe — outside Sipay's content — so it adds
+                     breathing room without touching their layout. */
+                  margin-top: 6px !important;
                 }
                 @media (min-height: 700px) {
-                  .fastpay-btn + iframe { min-height: 540px !important; }
+                  .fastpay-btn + iframe { min-height: 580px !important; }
                 }
                 @media (min-width: 768px) {
-                  .fastpay-btn + iframe { min-height: 580px !important; }
+                  .fastpay-btn + iframe { min-height: 620px !important; }
                 }
                 /* Hide the skeleton the instant the real iframe shows up. */
                 .fastpay-shell:has(iframe) .fastpay-skel {
