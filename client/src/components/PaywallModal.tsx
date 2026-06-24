@@ -39,6 +39,14 @@ interface PaywallModalProps {
    * saved card is declined.
    */
   reason?: "trial-limit";
+  /**
+   * When the parent passes this prop and the user is NOT already
+   * authenticated, the modal mounts and immediately triggers the Google
+   * OAuth popup — skipping the visible auth-choice step. Used by the
+   * editor's "Descargar con Google" dropdown so the user lands on the
+   * payment step with one fewer screen of friction.
+   */
+  autoTriggerGoogle?: boolean;
 }
 
 type Step = "auth-choice" | "plans";
@@ -1079,6 +1087,7 @@ export default function PaywallModal({
   buildPdfForUpload,
   converter,
   reason,
+  autoTriggerGoogle,
 }: PaywallModalProps) {
   const { t, lang } = useLanguage();
   const s = getAuthStrings(lang);
@@ -1155,11 +1164,17 @@ export default function PaywallModal({
     if (isOpen) docSavedRef.current = false;
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  // Tracks whether the autoTriggerGoogle effect has already fired in
+  // this modal open-cycle so we don't re-open the OAuth popup on every
+  // re-render. Reset when the modal closes.
+  const googleAutoFiredRef = useRef(false);
+  useEffect(() => {
+    if (!isOpen) googleAutoFiredRef.current = false;
+  }, [isOpen]);
 
-  const currentStep = isAuthenticated ? "plans" : step;
-  const effectivePdfData = pdfData ?? pendingEditedPdf ?? undefined;
-
+  // Define handleGoogleLogin BEFORE the early return so the auto-trigger
+  // useEffect can reference it. It's a plain function (not a hook) so its
+  // position relative to early returns doesn't break React rules.
   const handleGoogleLogin = async () => {
     const returnPath = window.location.pathname + window.location.search;
     const authUrl = `/api/auth/google?origin=${encodeURIComponent(window.location.origin)}&returnPath=${encodeURIComponent(returnPath)}&popup=1`;
@@ -1190,6 +1205,25 @@ export default function PaywallModal({
       window.location.href = authUrl.replace("&popup=1", "");
     }
   };
+
+  // Auto-fire the Google OAuth popup when the parent opens the modal
+  // with autoTriggerGoogle=true (the "Descargar con Google" dropdown
+  // option in the editor). Only fires once per modal open cycle and
+  // only if the user is not already authenticated.
+  useEffect(() => {
+    if (!isOpen || !autoTriggerGoogle || isAuthenticated) return;
+    if (googleAutoFiredRef.current) return;
+    googleAutoFiredRef.current = true;
+    handleGoogleLogin();
+    // handleGoogleLogin is stable for the lifetime of this open cycle —
+    // safe to ignore the lint warning about the dep.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, autoTriggerGoogle, isAuthenticated]);
+
+  if (!isOpen) return null;
+
+  const currentStep = isAuthenticated ? "plans" : step;
+  const effectivePdfData = pdfData ?? pendingEditedPdf ?? undefined;
 
   const handleEmailSubmit = async () => {
     if (!emailInput.trim() || !emailInput.includes("@")) { toast.error(t.paywall_enter_email); return; }
