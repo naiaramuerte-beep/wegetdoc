@@ -621,25 +621,19 @@ function SipayCheckoutForm({
                 data-notab="true"
                 /* Hide cardholder name field — not needed for our flow. */
                 data-cardholdername="false"
-                /* "Recordar datos" toggle hiding — Sipay confirmed it CAN
-                   be deactivated but didn't tell us the exact attribute
-                   name, so we shotgun every plausible naming so whichever
-                   key their JS reads picks it up. If none of these works
-                   they probably toggle it from their backoffice for our
-                   recurso. */
-                data-remember=""
+                /* "Recordar datos" toggle — Sipay's FastPay bundle only
+                   reads 23 specific data-attributes (verified by grepping
+                   fastpay.js: the read list includes "autosave", "remember"
+                   and "remembertext", everything else we tried before was
+                   ignored). The JS does `t[e] && (i[e] = t[e])`, so an
+                   empty string is falsy → not sent → server falls back to
+                   "show toggle" default. We now send explicit string
+                   values so Sipay's server-side renderer gets the override.
+                   If this still shows the toggle, Sipay support has to
+                   disable it on the backoffice for our resource. */
+                data-remember="false"
                 data-autosave="false"
-                data-hideremember="true"
-                data-noremember="true"
-                data-showremember="false"
-                data-rememberme="false"
-                data-saveinfo="false"
-                data-savecard="false"
-                data-savetoken="false"
-                data-store="false"
                 data-tokenization="false"
-                data-disableremember="true"
-                data-disableSaveCard="true"
                 className="fastpay-btn"
                 aria-hidden="true"
                 tabIndex={-1}
