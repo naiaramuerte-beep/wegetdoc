@@ -943,10 +943,10 @@ function GooglePayButton({
         // Clear previous button if remounting
         host.innerHTML = "";
         const button = client.createButton({
-          // Google Pay button colour is constrained by Google's brand to
-          // {black|white|default}. Black competes visually with the now-blue
-          // price card above, so we use white (outlined) to keep contrast.
-          buttonColor: "white",
+          // Google's Web Integration review flagged the button colour as a
+          // brand-compliance issue when set to "white". Keep it on "black"
+          // (the recommended default) so Google approves the integration.
+          buttonColor: "black",
           buttonType: "pay",
           buttonRadius: 10,
           buttonSizeMode: "fill",
