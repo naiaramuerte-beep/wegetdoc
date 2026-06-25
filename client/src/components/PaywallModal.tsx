@@ -493,7 +493,7 @@ function SipayCheckoutForm({
       {/* ── Payment column — pdfe-style: clean heading, total summary,
               wallet buttons, card form, pay button, slim legal text. ── */}
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
-        <div className="px-3 py-4 md:px-6 md:py-5 space-y-4 md:space-y-5">
+        <div className="flex-1 px-3 py-4 md:px-6 md:py-5 space-y-4 md:space-y-5">
           {/* Heading + total row — replaces the previous blue gradient
               card and yellow recurring warning. The price disclosure
               stays only in the legal microcopy below the pay button so
@@ -741,8 +741,13 @@ function SipayCheckoutForm({
 
         {/* Green success-strip footer (pdfe.com pattern). Stays anchored
             at the bottom of the payment column reinforcing the reason
-            the user is here: their PDF is one click away. */}
-        <div className="flex items-center justify-center gap-2 px-4 py-2.5 text-[12px] font-medium" style={{ backgroundColor: "#E8F7EF", color: "#1E9E63", borderTop: "1px solid #C7EAD5" }}>
+            the user is here: their PDF is one click away. `mt-auto` is
+            the belt to the `flex-1` suspenders on the content div above
+            — if the left column (Trustpilot widget + counter) is taller
+            than the payment form, the right column gets stretched and
+            this anchors the strip flush against the modal floor instead
+            of leaving an empty white band below it. */}
+        <div className="mt-auto flex items-center justify-center gap-2 px-4 py-2.5 text-[12px] font-medium" style={{ backgroundColor: "#E8F7EF", color: "#1E9E63", borderTop: "1px solid #C7EAD5" }}>
           <Check className="w-3.5 h-3.5" />
           <span>{t.paywall_bottom_strip}</span>
         </div>
