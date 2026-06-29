@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, like, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, like, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
@@ -198,6 +198,10 @@ export async function cancelSubscriptionDb(userId: number) {
 export async function getAllSubscribedUsers() {
   const db = await getDb();
   if (!db) return [];
+  // Show every paying user, including orphan-recovered subs (sipayToken NULL).
+  // The renewal-cron filter at getSubsDueForRenewal is intentionally stricter —
+  // it only iterates rows that CAN be charged. The admin panel needs broader
+  // visibility so orphan charges remain auditable.
   return db.select({
     id: users.id,
     name: users.name,
@@ -211,9 +215,10 @@ export async function getAllSubscribedUsers() {
     cancelAtPeriodEnd: subscriptions.cancelAtPeriodEnd,
     sipayMaskedCard: subscriptions.sipayMaskedCard,
     sipayProvider: subscriptions.sipayProvider,
+    sipayToken: subscriptions.sipayToken,
   }).from(users)
     .innerJoin(subscriptions, eq(users.id, subscriptions.userId))
-    .where(sql`${subscriptions.sipayToken} IS NOT NULL AND ${subscriptions.sipayToken} <> ''`)
+    .where(sql`${subscriptions.status} IN ('trialing', 'active', 'past_due')`)
     .orderBy(desc(users.createdAt));
 }
 
@@ -1674,6 +1679,113 @@ export async function getWebhookEvents(opts?: { limit?: number; type?: string; s
   if (opts?.type) q = q.where(eq(webhookEvents.eventType, opts.type)) as any;
   if (opts?.status) q = q.where(eq(webhookEvents.status, opts.status)) as any;
   return q.orderBy(desc(webhookEvents.receivedAt)).limit(limit);
+}
+
+/**
+ * Idempotency probe for finalizeFastpayPayment: returns true if we already
+ * wrote a fastpay_intro_charge event for any of the candidate identifiers
+ * (txn id, order, request id). The cron + admin recovery use this to avoid
+ * double-inserting charges/subscriptions when re-running on a request_id
+ * that already completed the redirect path.
+ */
+export async function findIntroChargeForRequest(opts: {
+  order?: string;
+  sipayTxn?: string;
+  requestId?: string;
+}): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const candidates = [opts.sipayTxn, opts.order, opts.requestId].filter(
+    (v): v is string => typeof v === "string" && v.length > 0,
+  );
+  if (candidates.length === 0) return false;
+  const rows = await db
+    .select({ id: webhookEvents.id })
+    .from(webhookEvents)
+    .where(
+      and(
+        eq(webhookEvents.eventType, "fastpay_intro_charge"),
+        inArray(webhookEvents.eventId, candidates),
+      ),
+    )
+    .limit(1);
+  return rows.length > 0;
+}
+
+/**
+ * Returns fastpay_3ds_pending events from the last `hoursBack` hours that
+ * don't have a matching fastpay_intro_charge — these are the orphan
+ * candidates the reconciliation cron should re-confirm with Sipay.
+ */
+export async function findPendingFastpayPayments(opts?: {
+  hoursBack?: number;
+  limit?: number;
+}): Promise<Array<{
+  requestId: string;
+  userId: number;
+  order: string;
+  amountCents: number;
+  receivedAt: Date | null;
+}>> {
+  const db = await getDb();
+  if (!db) return [];
+  const hoursBack = opts?.hoursBack ?? 24;
+  const limit = Math.min(500, opts?.limit ?? 100);
+  const since = new Date(Date.now() - hoursBack * 60 * 60 * 1000);
+
+  const pendings = await db
+    .select({
+      eventId: webhookEvents.eventId,
+      payload: webhookEvents.payload,
+      receivedAt: webhookEvents.receivedAt,
+    })
+    .from(webhookEvents)
+    .where(
+      and(
+        eq(webhookEvents.eventType, "fastpay_3ds_pending"),
+        gte(webhookEvents.receivedAt, since),
+      ),
+    )
+    .orderBy(desc(webhookEvents.receivedAt))
+    .limit(limit);
+
+  if (pendings.length === 0) return [];
+
+  // Look up finalized events in a single round-trip so we can filter the
+  // pendings down to those without a matching success.
+  const finalized = await db
+    .select({ eventId: webhookEvents.eventId })
+    .from(webhookEvents)
+    .where(
+      and(
+        eq(webhookEvents.eventType, "fastpay_intro_charge"),
+        gte(webhookEvents.receivedAt, since),
+      ),
+    );
+  const finalizedKeys = new Set<string>();
+  for (const f of finalized) {
+    if (f.eventId) finalizedKeys.add(f.eventId);
+  }
+
+  const result: Array<{
+    requestId: string;
+    userId: number;
+    order: string;
+    amountCents: number;
+    receivedAt: Date | null;
+  }> = [];
+  for (const p of pendings) {
+    let payload: any = null;
+    try { payload = p.payload ? JSON.parse(p.payload as string) : null; } catch {}
+    const requestId: string = payload?.requestId ?? "";
+    const order: string = p.eventId ?? payload?.order ?? "";
+    const userId: number = Number(payload?.userId ?? 0);
+    const amountCents: number = Number(payload?.amountCents ?? 50);
+    if (!requestId || !userId) continue;
+    if (finalizedKeys.has(order) || finalizedKeys.has(requestId)) continue;
+    result.push({ requestId, userId, order, amountCents, receivedAt: p.receivedAt });
+  }
+  return result;
 }
 
 // ─── Audit log (S1) ──────────────────────────────────────────────

@@ -829,96 +829,13 @@ ${allUrls.map(u => `  <url>
     if (!requestId) return res.redirect("/?sipay=missing_request_id");
     const startedAt = Date.now();
     try {
-      const { confirmPayment } = await import("./sipay");
-      const result = await confirmPayment(requestId);
-      const data = result.data as any;
-      if (!result.ok || data?.code !== "0") {
-        console.error("[Sipay] confirm failed:", data ?? result.raw);
-        const { recordWebhookEvent } = await import("../db");
-        await recordWebhookEvent({
-          provider: "sipay",
-          eventType: "fastpay_confirm_failed",
-          eventId: requestId,
-          status: "error",
-          errorMessage: data?.detail ?? "unknown",
-          durationMs: Date.now() - startedAt,
-          payload: data ?? result.raw,
-        });
-        return res.redirect(`/?sipay=confirm_failed&detail=${encodeURIComponent(data?.detail ?? "unknown")}`);
+      const { finalizeFastpayPayment } = await import("./sipay");
+      const acceptLang = String(req.headers["accept-language"] ?? "");
+      const result = await finalizeFastpayPayment({ requestId, source: "callback", acceptLang });
+      if (!result.ok) {
+        return res.redirect(`/?sipay=confirm_failed&detail=${encodeURIComponent(result.errorMessage ?? "unknown")}`);
       }
-      const sipayTxn = data?.payload?.transaction_id ?? "";
-      const order = data?.payload?.order ?? requestId;
-      const txn = sipayTxn || order;
-      const masked = data?.payload?.masked_card ?? "";
-      // custom_01 is what sipayCheckoutInit passes through with the user id
-      // so we can correlate the 3DS callback back to a user without a session
-      // (the Redsys MPI redirect drops cookies on the floor in some browsers).
-      const customUserId = Number(data?.payload?.custom_01 ?? 0);
-      // FastPay returns `token` (vault tokenization on raw PAN); wallet
-      // flows return `cof_id`. Prefer whichever Sipay actually sent so this
-      // helper works for any future flow that uses the same callback path.
-      const sipayToken = data?.payload?.cof_id ?? data?.payload?.token ?? "";
-      console.log(`[Sipay] auth OK: userId=${customUserId} txn=${sipayTxn || "(empty)"} order=${order} card=${masked}`);
-
-      if (customUserId > 0) {
-        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge } = await import("../db");
-        const now = new Date();
-        // 0,50 € intro buys a 2-day trial. The cron picks the sub up at
-        // currentPeriodEnd and charges the 19,95 € monthly via MIT-R, which
-        // extends the period 30 days. Until that first MIT clears, the user
-        // is on `plan='trial'` / `status='trialing'`.
-        const TRIAL_DAYS = 2;
-        const periodEnd = new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
-        await upsertSubscription({
-          userId: customUserId,
-          sipayToken,
-          sipayOrder: order,
-          sipayTransactionId: sipayTxn,
-          sipayMaskedCard: masked,
-          sipayProvider: "fastpay",
-          plan: "trial",
-          status: "trialing",
-          currentPeriodStart: now,
-          currentPeriodEnd: periodEnd,
-          cancelAtPeriodEnd: false,
-        });
-        await markDocumentsPaid(customUserId);
-        // Intro charge is 0,50 € — the amount we asked Sipay to authorize.
-        // If Sipay echoed back a different amount we use theirs instead.
-        const amountCents = Number(data?.payload?.amount ?? 50);
-        await recordCharge({
-          userId: customUserId,
-          provider: "fastpay",
-          amountCents,
-          sipayTransactionId: sipayTxn,
-          sipayOrder: order,
-          sipayMaskedCard: masked,
-          status: "ok",
-        });
-        await recordWebhookEvent({
-          provider: "sipay",
-          eventType: "fastpay_intro_charge",
-          eventId: sipayTxn || order,
-          status: "ok",
-          durationMs: Date.now() - startedAt,
-          payload: data,
-        });
-
-        // Welcome email — non-blocking, lang detected from Accept-Language.
-        try {
-          const acceptLang = String(req.headers["accept-language"] ?? "").split(",")[0]?.split("-")[0] ?? "es";
-          const { sendTrialWelcomeEmail } = await import("../email");
-          const { getUserById } = await import("../db");
-          const u = await getUserById(customUserId);
-          if (u?.email) {
-            sendTrialWelcomeEmail({ to: u.email, name: u.name ?? u.email, lang: acceptLang, trialEndDate: periodEnd })
-              .catch((err: any) => console.warn("[Sipay] welcome email failed:", err?.message ?? err));
-          }
-        } catch (err: any) {
-          console.warn("[Sipay] welcome email setup failed:", err?.message ?? err);
-        }
-      }
-
+      const txn = result.txn || requestId;
       return res.redirect(`/payment/success?txn=${encodeURIComponent(txn)}&provider=sipay`);
     } catch (err: any) {
       console.error("[Sipay] callback/ok exception:", err?.message ?? err);
@@ -934,6 +851,66 @@ ${allUrls.map(u => `  <url>
         });
       } catch {}
       return res.redirect("/?sipay=server_error");
+    }
+  });
+
+  // Reconciliation cron — recovers orphan FastPay charges where Sipay
+  // collected money but the redirect to /api/sipay/callback/ok never fired
+  // (closed tab during 3DS, network drop, Redsys MPI redirect failure, etc.)
+  // Scans fastpay_3ds_pending events from the last 24h without a matching
+  // fastpay_intro_charge, then re-confirms each with Sipay and writes the
+  // subscription + charge rows. Idempotent via findIntroChargeForRequest.
+  //
+  // Schedule on Railway every 5 minutes:
+  //   curl -X POST https://editorpdf.net/api/cron/sipay-finalize-pending \
+  //        -H "X-Cron-Secret: $CRON_SECRET"
+  app.post("/api/cron/sipay-finalize-pending", async (req, res) => {
+    const secret = String(req.headers["x-cron-secret"] ?? "");
+    const { ENV } = await import("./env");
+    if (!ENV.cronSecret || secret !== ENV.cronSecret) {
+      return res.status(401).json({ error: "unauthorized" });
+    }
+    const dry = String(req.query.dry ?? "") === "1";
+    const hoursBack = Number(req.query.hours ?? 24);
+    try {
+      const { findPendingFastpayPayments } = await import("../db");
+      const { finalizeFastpayPayment } = await import("./sipay");
+      const pending = await findPendingFastpayPayments({ hoursBack, limit: 50 });
+
+      const outcomes: Array<{ requestId: string; userId: number; result: string; error?: string }> = [];
+      if (!dry) {
+        for (const p of pending) {
+          try {
+            const r = await finalizeFastpayPayment({
+              requestId: p.requestId,
+              fallbackUserId: p.userId,
+              source: "cron",
+            });
+            outcomes.push({
+              requestId: p.requestId,
+              userId: p.userId,
+              result: r.alreadyFinalized ? "already_finalized" : r.ok ? "recovered" : "failed",
+              error: r.errorMessage,
+            });
+          } catch (err: any) {
+            outcomes.push({
+              requestId: p.requestId,
+              userId: p.userId,
+              result: "exception",
+              error: err?.message ?? String(err),
+            });
+          }
+        }
+      }
+      return res.json({
+        ok: true,
+        dry,
+        scanned: pending.length,
+        outcomes,
+      });
+    } catch (err: any) {
+      console.error("[Sipay] cron finalize-pending error:", err?.message ?? err);
+      return res.status(500).json({ error: err?.message ?? String(err) });
     }
   });
 

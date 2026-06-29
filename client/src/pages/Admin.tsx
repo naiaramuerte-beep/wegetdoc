@@ -101,6 +101,26 @@ export default function Admin() {
   const recentSubsNoPayQ = trpc.admin.recentSubsWithoutPayment.useQuery({ hours: 24 }, {
     enabled: !!user && user.role === "admin" && tab === "billing",
   });
+  const pendingOrphansQ = trpc.admin.pendingOrphanPayments.useQuery({ hoursBack: 48 }, {
+    enabled: !!user && user.role === "admin" && tab === "billing",
+    refetchInterval: tab === "billing" ? 30000 : false,
+  });
+  const recoverOrphanMut = trpc.admin.recoverOrphanPayment.useMutation({
+    onSuccess: (r) => {
+      if (r.alreadyFinalized) {
+        toast.success("Ya estaba reconciliado — no se ha duplicado nada.");
+      } else if (r.ok) {
+        toast.success(`Pago recuperado: txn=${r.txn} userId=${r.userId}`);
+      } else {
+        toast.error(`No se pudo recuperar: ${r.errorMessage ?? "error desconocido"}`);
+      }
+      utils.admin.pendingOrphanPayments.invalidate();
+      utils.admin.subscribedUsers.invalidate();
+      utils.admin.billingStats.invalidate();
+      utils.admin.stripeRevenue.invalidate();
+    },
+    onError: (err) => toast.error(err.message || "Error reconciliando pago"),
+  });
   const chargesQ = trpc.admin.stripeCharges.useQuery({ limit: 50 }, {
     enabled: !!user && user.role === "admin" && tab === "billing",
   });
@@ -846,6 +866,70 @@ export default function Admin() {
                     )}
                   </div>
 
+                  {/* ── ORPHAN FASTPAY PAYMENTS ── */}
+                  {/* Sipay charged the customer but the redirect to our callback
+                      never fired. Either click "Reconciliar" per row or wait
+                      for the cron at /api/cron/sipay-finalize-pending to do it. */}
+                  <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}>
+                    <div className="px-5 py-3 border-b flex items-center justify-between" style={{ borderColor: "#1e2433" }}>
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle size={14} className="text-orange-500" />
+                        <p className="text-sm font-semibold text-white">Pagos huérfanos — Sipay cobró pero el callback no llegó</p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {pendingOrphansQ.data?.length ?? 0} {pendingOrphansQ.data?.length === 1 ? "pago" : "pagos"} pendiente(s)
+                      </p>
+                    </div>
+                    {pendingOrphansQ.isLoading ? (
+                      <div className="flex items-center justify-center h-16">
+                        <div className="w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    ) : pendingOrphansQ.data && pendingOrphansQ.data.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead style={{ backgroundColor: "#0a0d14" }}>
+                            <tr className="text-left text-gray-400">
+                              <th className="px-4 py-2 font-medium">UserID</th>
+                              <th className="px-4 py-2 font-medium">Order</th>
+                              <th className="px-4 py-2 font-medium">Request ID</th>
+                              <th className="px-4 py-2 font-medium">Importe</th>
+                              <th className="px-4 py-2 font-medium">Iniciado</th>
+                              <th className="px-4 py-2 font-medium">Acciones</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pendingOrphansQ.data.map((o: any) => (
+                              <tr key={`${o.requestId}-${o.userId}`} className="border-t" style={{ borderColor: "#1e2433" }}>
+                                <td className="px-4 py-2 text-gray-300 font-mono">{o.userId}</td>
+                                <td className="px-4 py-2 text-gray-400 font-mono text-[10px]">{o.order}</td>
+                                <td className="px-4 py-2 text-gray-400 font-mono text-[10px]">{o.requestId}</td>
+                                <td className="px-4 py-2 text-gray-300">{(o.amountCents / 100).toFixed(2)} €</td>
+                                <td className="px-4 py-2 text-gray-400 text-[10px]">
+                                  {o.receivedAt ? new Date(o.receivedAt).toLocaleString("es-ES") : "—"}
+                                </td>
+                                <td className="px-4 py-2">
+                                  <button
+                                    onClick={() => recoverOrphanMut.mutate({ requestId: o.requestId, userId: o.userId })}
+                                    disabled={recoverOrphanMut.isPending}
+                                    className="px-2 py-1 rounded text-[10px] font-semibold text-white disabled:opacity-50"
+                                    style={{ backgroundColor: "#E63946" }}
+                                    title="Re-confirmar con Sipay y crear la suscripción"
+                                  >
+                                    {recoverOrphanMut.isPending ? "..." : "Reconciliar"}
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className="px-5 py-6 text-center text-xs text-gray-500">
+                        Ningún pago huérfano pendiente — el cron está al día.
+                      </p>
+                    )}
+                  </div>
+
                   {/* ── PAST-DUE (failed recurring charge) TABLE ── */}
                   <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}>
                     <div className="px-5 py-3 border-b flex items-center justify-between" style={{ borderColor: "#1e2433" }}>
@@ -1310,6 +1394,15 @@ export default function Admin() {
                                   title="El usuario canceló — no se renueva al final del periodo"
                                 >
                                   ⚠ cancela {s.currentPeriodEnd ? new Date(s.currentPeriodEnd).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit" }) : ""}
+                                </span>
+                              )}
+                              {!(s as any).sipayToken && (
+                                <span
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold w-fit"
+                                  style={{ backgroundColor: "#dc262620", color: "#f87171" }}
+                                  title="Sin token de Sipay — no se podrá renovar (recuperación manual de huérfana)"
+                                >
+                                  ⚠ sin renovación
                                 </span>
                               )}
                             </div>

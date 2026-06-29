@@ -683,8 +683,29 @@ export const appRouter = router({
             message: `Sipay rechazó la petición: ${JSON.stringify(data ?? result.raw)}`,
           });
         }
+
+        // Reconciliation marker — we sent this user to Redsys MPI with the
+        // request_id below. If the redirect to /api/sipay/callback/ok never
+        // fires (closed tab, network drop, MPI redirect failure), the cron
+        // at /api/cron/sipay-finalize-pending scans these events and
+        // re-confirms with Sipay so we don't end up with orphan charges.
+        const sipayRequestId: string = data?.payload?.request_id ?? "";
+        await recordWebhookEvent({
+          provider: "sipay",
+          eventType: "fastpay_3ds_pending",
+          eventId: order,
+          status: "ok",
+          durationMs: Date.now() - startedAt,
+          payload: {
+            userId: ctx.user.id,
+            order,
+            requestId: sipayRequestId,
+            amountCents: input.amountCents,
+          },
+        });
+
         return {
-          requestId: data?.payload?.request_id ?? "",
+          requestId: sipayRequestId,
           redirectUrl: data?.payload?.url ?? "",
           order,
         };
@@ -1179,6 +1200,45 @@ export const appRouter = router({
           metadata: { amountEur: result.amountEur, reason: input.reason },
         });
         return result;
+      }),
+
+    // ── Orphan FastPay recovery (manual one-shot) ─────────────
+    // When the redirect callback never fires but Sipay charged the card,
+    // the admin can paste the request_id (from the Sipay dashboard) +
+    // the userId here and we'll re-run finalizeFastpayPayment exactly as
+    // the redirect would. Idempotent so it's safe to run twice.
+    recoverOrphanPayment: adminProcedure
+      .input(z.object({
+        requestId: z.string().min(4),
+        userId: z.number().int().positive(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { finalizeFastpayPayment } = await import("./_core/sipay");
+        const result = await finalizeFastpayPayment({
+          requestId: input.requestId,
+          fallbackUserId: input.userId,
+          source: "admin",
+        });
+        await recordAuditEntry({
+          adminId: ctx.user.id,
+          adminEmail: ctx.user.email ?? null,
+          action: "recover_orphan_payment",
+          targetType: "user",
+          targetId: String(input.userId),
+          metadata: { requestId: input.requestId, result },
+        });
+        return result;
+      }),
+
+    // ── Listado de pagos huérfanos pendientes de reconciliación ─
+    // Returns the same set the cron processes — used to surface an
+    // "N pagos pendientes" badge + a "Reconciliar ahora" button in the
+    // admin panel.
+    pendingOrphanPayments: adminProcedure
+      .input(z.object({ hoursBack: z.number().optional() }).optional())
+      .query(async ({ input }) => {
+        const { findPendingFastpayPayments } = await import("./db");
+        return findPendingFastpayPayments({ hoursBack: input?.hoursBack ?? 24, limit: 100 });
       }),
 
     // ── Webhook event log (F2) ────────────────────────────────

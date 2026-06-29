@@ -154,6 +154,130 @@ export function confirmPayment(requestId: string) {
 }
 
 /**
+ * Idempotent finalize for a FastPay payment. Used by BOTH the /api/sipay/callback/ok
+ * redirect handler and the reconciliation cron. Why two callers: the redirect
+ * fires only if the user makes it back from Redsys MPI with their tab open and
+ * a working network — orphan charges (Sipay collected money, we have no DB row)
+ * happen when that redirect never lands. The cron sweeps pending 3DS events and
+ * re-runs this helper for any request_id whose intro_charge event is missing.
+ *
+ * Idempotency:
+ *  - Reads webhook_events for an existing `fastpay_intro_charge` with the same
+ *    eventId (txn or order). If present, returns early — already done.
+ *  - upsertSubscription updates the latest sub for that userId rather than
+ *    inserting duplicates, so re-running on a manually-recovered orphan
+ *    overwrites placeholder values with the real Sipay token/masked card.
+ */
+export async function finalizeFastpayPayment(opts: {
+  requestId: string;
+  fallbackUserId?: number;
+  source: "callback" | "cron" | "admin";
+  acceptLang?: string;
+}): Promise<{
+  ok: boolean;
+  alreadyFinalized: boolean;
+  userId: number;
+  txn: string;
+  order: string;
+  errorMessage?: string;
+}> {
+  const { requestId, fallbackUserId, source, acceptLang } = opts;
+  const startedAt = Date.now();
+
+  const {
+    upsertSubscription,
+    markDocumentsPaid,
+    recordWebhookEvent,
+    recordCharge,
+    getUserById,
+    findIntroChargeForRequest,
+  } = await import("../db");
+
+  const result = await confirmPayment(requestId);
+  const data = result.data as any;
+
+  if (!result.ok || data?.code !== "0") {
+    await recordWebhookEvent({
+      provider: "sipay",
+      eventType: "fastpay_confirm_failed",
+      eventId: requestId,
+      status: "error",
+      errorMessage: data?.detail ?? data?.description ?? "unknown",
+      durationMs: Date.now() - startedAt,
+      payload: { source, response: data ?? result.raw },
+    });
+    return { ok: false, alreadyFinalized: false, userId: 0, txn: "", order: "", errorMessage: data?.detail ?? "confirm_failed" };
+  }
+
+  const sipayTxn: string = data?.payload?.transaction_id ?? "";
+  const order: string = data?.payload?.order ?? requestId;
+  const masked: string = data?.payload?.masked_card ?? "";
+  const customUserId = Number(data?.payload?.custom_01 ?? fallbackUserId ?? 0);
+  const sipayToken: string = data?.payload?.cof_id ?? data?.payload?.token ?? "";
+  const txn = sipayTxn || order;
+
+  if (customUserId <= 0) {
+    return { ok: true, alreadyFinalized: false, userId: 0, txn, order };
+  }
+
+  const already = await findIntroChargeForRequest({ order, sipayTxn, requestId });
+  if (already) {
+    return { ok: true, alreadyFinalized: true, userId: customUserId, txn, order };
+  }
+
+  const now = new Date();
+  const TRIAL_DAYS = 2;
+  const periodEnd = new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
+
+  await upsertSubscription({
+    userId: customUserId,
+    sipayToken,
+    sipayOrder: order,
+    sipayTransactionId: sipayTxn,
+    sipayMaskedCard: masked,
+    sipayProvider: "fastpay",
+    plan: "trial",
+    status: "trialing",
+    currentPeriodStart: now,
+    currentPeriodEnd: periodEnd,
+    cancelAtPeriodEnd: false,
+  });
+  await markDocumentsPaid(customUserId);
+  const amountCents = Number(data?.payload?.amount ?? 50);
+  await recordCharge({
+    userId: customUserId,
+    provider: "fastpay",
+    amountCents,
+    sipayTransactionId: sipayTxn,
+    sipayOrder: order,
+    sipayMaskedCard: masked,
+    status: "ok",
+  });
+  await recordWebhookEvent({
+    provider: "sipay",
+    eventType: "fastpay_intro_charge",
+    eventId: sipayTxn || order,
+    status: "ok",
+    durationMs: Date.now() - startedAt,
+    payload: { source, response: data },
+  });
+
+  try {
+    const u = await getUserById(customUserId);
+    if (u?.email) {
+      const lang = (acceptLang ?? "").split(",")[0]?.split("-")[0] || "es";
+      const { sendTrialWelcomeEmail } = await import("../email");
+      sendTrialWelcomeEmail({ to: u.email, name: u.name ?? u.email, lang, trialEndDate: periodEnd })
+        .catch((err: any) => console.warn("[Sipay] welcome email failed:", err?.message ?? err));
+    }
+  } catch (err: any) {
+    console.warn("[Sipay] welcome email setup failed:", err?.message ?? err);
+  }
+
+  return { ok: true, alreadyFinalized: false, userId: customUserId, txn, order };
+}
+
+/**
  * Initial payment + tokenization using a FastPay-captured card. The PAN never
  * touches our backend — the customer enters it in the FastPay iframe and we
  * receive a 5-min token (`fastpayRequestId`). This is the path that works
