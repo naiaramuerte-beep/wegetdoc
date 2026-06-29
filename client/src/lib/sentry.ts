@@ -33,12 +33,7 @@ const DENY_URLS = [
 ];
 
 export function initSentry() {
-  if (!DSN) {
-    if (typeof window !== "undefined") {
-      console.log("[Sentry] Skipped: VITE_SENTRY_DSN not set");
-    }
-    return;
-  }
+  if (!DSN) return;
 
   Sentry.init({
     dsn: DSN,
@@ -50,9 +45,6 @@ export function initSentry() {
     tracesSampleRate: 0.05,
     ignoreErrors: IGNORED_ERRORS,
     denyUrls: DENY_URLS,
-    // Verbose logging from the SDK — useful while we're confirming the
-    // pipeline. Once we see events flowing, this can come back out.
-    debug: true,
     beforeSend(event) {
       // Strip cookies: they carry session tokens. Anyone with Sentry
       // read access shouldn't be able to impersonate users via a leaked
@@ -64,14 +56,6 @@ export function initSentry() {
       return event;
     },
   });
-
-  // Expose the SDK on window so we can captureException manually from
-  // the browser console (`window.Sentry.captureException(new Error("x"))`).
-  // Temporary diagnostic only — remove once we've confirmed events flow.
-  if (typeof window !== "undefined") {
-    (window as unknown as { Sentry: typeof Sentry }).Sentry = Sentry;
-    console.log("[Sentry] Initialized — DSN host:", new URL(DSN).host, "env:", ENVIRONMENT);
-  }
 }
 
 export { Sentry };
