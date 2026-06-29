@@ -96,7 +96,10 @@ async function startServer() {
       "base-uri 'self'",
       "frame-src 'self' https://www.googletagmanager.com https://vars.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com",
       "img-src 'self' data: https://www.googletagmanager.com https://www.google.com https://script.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com https://www.gstatic.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.doubleclick.net",
-      "connect-src 'self' data: https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://google.com https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.doubleclick.net https://apple-pay-gateway.apple.com https://apple-pay-gateway-cert.apple.com",
+      // Sentry ingest goes to *.ingest.<region>.sentry.io (we're on de = EU).
+      // Allow both the regional ingest endpoint and sentry.io for the
+      // API/dashboard pings the SDK does for release health.
+      "connect-src 'self' data: https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://google.com https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.doubleclick.net https://apple-pay-gateway.apple.com https://apple-pay-gateway-cert.apple.com https://*.ingest.de.sentry.io https://*.sentry.io",
     ].join("; "));
     next();
   });
