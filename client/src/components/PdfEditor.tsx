@@ -352,6 +352,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // the same canvas during multiple render() operations" if you queue a
   // second render() while the first is still working on the same canvas.
   const mainRenderTaskRef = useRef<{ cancel: () => void } | null>(null);
+  // Generation counter for renderPage invocations. Each call increments it
+  // and captures its own number; after every `await`, the call re-checks
+  // against the latest generation and bails if a newer call has taken over.
+  // Cancellation alone isn't enough because the window between
+  // `cancel(); ref = null;` and the next `task = render()` contains awaits
+  // (getPage), during which a second invocation sees ref=null, finds nothing
+  // to cancel, and races to start a render on the same canvas.
+  const renderGenRef = useRef(0);
   const overlayRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -641,15 +649,27 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // ── Render page ───────────────────────────────────────────────
   const renderPage = useCallback(async (pageNum: number) => {
     if (!pdfDoc || !mainCanvasRef.current) return;
+    // Bump the generation counter and capture our own number. If anyone
+    // else calls renderPage while we're suspended on an await below, ours
+    // becomes stale and we bail at the next check — cancellation alone
+    // isn't enough because the window between `cancel(); ref=null;` and
+    // the next `render()` contains awaits (getPage) during which a second
+    // invocation sees ref=null and races to start a render on the same canvas.
+    const myGen = ++renderGenRef.current;
     // Cancel any in-flight render on the same canvas. Without this, fast
     // page navigation / zoom changes queued a second render() while the
     // first was still working and pdf.js threw "Cannot use the same canvas
-    // during multiple render() operations" — 18 sessions in Hotjar.
+    // during multiple render() operations" — 17 sessions in Hotjar.
     if (mainRenderTaskRef.current) {
       try { mainRenderTaskRef.current.cancel(); } catch { /* already finished */ }
       mainRenderTaskRef.current = null;
     }
     const page = await pdfDoc.getPage(pageNum);
+    // Post-await checks: a newer renderPage may have taken over (stale gen),
+    // OR the component may have unmounted mid-await (canvas ref nulled).
+    // Either path: drop on the floor without touching the canvas.
+    if (myGen !== renderGenRef.current) return;
+    if (!mainCanvasRef.current) return;
     const dpr = window.devicePixelRatio || 1;
     const vp = page.getViewport({ scale: scale * dpr });
     const canvas = mainCanvasRef.current;
@@ -670,6 +690,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     } finally {
       if (mainRenderTaskRef.current === (task as any)) mainRenderTaskRef.current = null;
     }
+    // Post-render checks: even though task.promise resolved successfully,
+    // a newer renderPage could have started while we were waiting on it,
+    // or the component could have unmounted. Guard the side effects below
+    // (snapshot, drawing-canvas resize) the same way as before the render.
+    if (myGen !== renderGenRef.current) return;
+    if (!mainCanvasRef.current) return;
     // Save clean canvas snapshot for text erasure/restore
     canvasSnapshotRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
     // Sync drawing canvas size
@@ -683,14 +709,27 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   }, [pdfDoc, scale]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
-  useEffect(() => { renderPage(currentPage); }, [renderPage, currentPage]);
-
-  // Force render when pdfDoc first becomes available OR when canvas mounts
+  // Primary trigger: re-render when renderPage callback identity changes
+  // (which happens when pdfDoc or scale changes) or when the user navigates
+  // pages. Cleanup cancels the in-flight task so StrictMode double-invoke
+  // and pure unmounts don't leave a render running against a dead canvas.
   useEffect(() => {
-    if (pdfDoc && mainCanvasRef.current) {
-      renderPage(currentPage);
-    }
-    // Listen for canvas mount event (canvas may mount AFTER pdfDoc is set)
+    renderPage(currentPage);
+    return () => {
+      if (mainRenderTaskRef.current) {
+        try { mainRenderTaskRef.current.cancel(); } catch { /* already finished */ }
+        mainRenderTaskRef.current = null;
+      }
+    };
+  }, [renderPage, currentPage]);
+
+  // Late-mount safety net: the canvas DOM element may mount AFTER pdfDoc
+  // is already in state (e.g. modal/viewer opens after upload). We listen
+  // for the custom `pdf-canvas-mounted` event the canvas callback ref
+  // dispatches and re-trigger renderPage. The body no longer calls
+  // renderPage on every effect run — that was redundant with the primary
+  // effect above and contributed to the double-render race we're fixing.
+  useEffect(() => {
     const handleCanvasMounted = () => {
       if (pdfDoc && mainCanvasRef.current) {
         renderPage(currentPage);
