@@ -13,6 +13,8 @@ import { usePdfFile } from "@/contexts/PdfFileContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePricing } from "@/lib/usePricing";
 import { getAuthStrings } from "@/lib/authModalStrings";
+import { trackEvent } from "@/lib/track";
+import { INTRO_CHARGE_EUR, INTRO_CHARGE_CURRENCY } from "@/lib/pricing";
 
 type PdfPayload =
   | { base64: string; name: string; size: number }
@@ -338,6 +340,13 @@ function SipayCheckoutForm({
   useEffect(() => {
     (window as any).__editorpdfFastpayResult = (resp: any) => {
       console.log("[Sipay] FastPay result:", resp);
+      // Honest name: this isn't the "Pagar" button click (that lives
+      // inside Sipay's cross-origin iframe and we can't reach it) — it's
+      // the moment Sipay tells us the user finished the form and
+      // submitted a valid card. The gap between paywall_shown and
+      // card_tokenized = users who opened the card form and abandoned
+      // without filling it.
+      trackEvent("card_tokenized", { method: "card" });
       setFastpayResult(resp);
     };
     return () => { delete (window as any).__editorpdfFastpayResult; };
@@ -414,13 +423,22 @@ function SipayCheckoutForm({
       .mutateAsync({ fastpayRequestId: fpId, amountCents: 50 })
       .then((res) => {
         if (res.redirectUrl) {
+          // User is about to leave our domain for the bank's 3DS page
+          // (Redsys via Sipay). Last reliable signal we can fire from
+          // the client before the redirect.
+          trackEvent("3ds_started", { method: "card" });
           window.location.href = res.redirectUrl;
         } else {
+          trackEvent("payment_failed", { method: "card", decline_reason: "no_3ds_url" });
           setAuthError("Sipay no devolvió URL de 3DS.");
           setRedirecting(false);
         }
       })
       .catch((err) => {
+        trackEvent("payment_failed", {
+          method: "card",
+          decline_reason: String(err?.message ?? "init_failed").slice(0, 200),
+        });
         setAuthError(err?.message ?? "Error autorizando el pago.");
         setRedirecting(false);
       });
@@ -804,6 +822,9 @@ function ApplePayButton({
   if (!ready) return null;
 
   const handleClick = () => {
+    // User pressed the Apple Pay button — real click on our DOM, no
+    // proxy needed (unlike card, where the click lives in Sipay's iframe).
+    trackEvent("pay_clicked", { method: "applepay" });
     setError(null);
     setSubmitting(true);
     // Captured in onvalidatemerchant, used in onpaymentauthorized.
@@ -856,6 +877,10 @@ function ApplePayButton({
           if (!tokenApay) throw new Error("Apple Pay no devolvió token");
           if (!sipayRequestId) throw new Error("Sipay no devolvió request_id en validación de merchant");
           console.log("[ApplePay] payment authorized — charging via Sipay…");
+          // Apple Pay's SCA (Face/Touch ID) just succeeded in the native
+          // sheet — that's the moral equivalent of "3DS done" for the
+          // card path. Fire here so the funnel has a consistent step.
+          trackEvent("3ds_started", { method: "applepay" });
           const res = await chargeMut.mutateAsync({
             tokenApay: {
               paymentData: tokenApay.paymentData,
@@ -872,6 +897,10 @@ function ApplePayButton({
           onSuccess(txnId);
         } catch (err: any) {
           console.warn("[ApplePay] charge failed:", err?.message ?? err);
+          trackEvent("payment_failed", {
+            method: "applepay",
+            decline_reason: String(err?.message ?? "charge_failed").slice(0, 200),
+          });
           session.completePayment(AP.STATUS_FAILURE);
           setError(err?.message ?? "Error con Apple Pay");
           setSubmitting(false);
@@ -880,6 +909,10 @@ function ApplePayButton({
 
       session.oncancel = () => {
         console.log("[ApplePay] session canceled by buyer");
+        // Buyer dismissed the Apple Pay sheet on purpose. Track this
+        // separately from payment_failed so the funnel can distinguish
+        // "got cold feet" from "card declined".
+        trackEvent("pay_canceled", { method: "applepay" });
         setSubmitting(false);
       };
 
@@ -1060,6 +1093,10 @@ function GooglePayButton({
           buttonRadius: 10,
           buttonSizeMode: "fill",
           onClick: async () => {
+            // User pressed Google's standardized GPay button — real
+            // click on our DOM (the button is OURS even though Google
+            // creates it; it's not inside a cross-origin iframe).
+            trackEvent("pay_clicked", { method: "googlepay" });
             setError(null);
             setSubmitting(true);
             try {
@@ -1080,6 +1117,10 @@ function GooglePayButton({
               });
               const token = paymentData?.paymentMethodData?.tokenizationData?.token;
               if (!token) throw new Error("Google Pay no devolvió token");
+              // Google Pay's sheet just authenticated the buyer (saved
+              // card + device auth) — analogous to the card 3DS step
+              // for funnel parity. Fire before the backend charge.
+              trackEvent("3ds_started", { method: "googlepay" });
               const res = await chargeMut.mutateAsync({ token, amountCents });
               // Sandbox doesn't always echo transaction_id; fall back to our
               // own order so Google Ads still has a unique dedup key.
@@ -1095,7 +1136,18 @@ function GooglePayButton({
                 lower.includes("payment request ui") ||
                 lower.includes("aborted") ||
                 lower.includes("dismissed");
-              if (!isUserCancel) setError(msg);
+              // Distinguish buyer cancellations from real failures —
+              // a closed GPay sheet is "cold feet", not a declined
+              // card. Mixing them would inflate the failure rate.
+              if (isUserCancel) {
+                trackEvent("pay_canceled", { method: "googlepay" });
+              } else {
+                trackEvent("payment_failed", {
+                  method: "googlepay",
+                  decline_reason: msg.slice(0, 200),
+                });
+                setError(msg);
+              }
             } finally {
               setSubmitting(false);
             }
@@ -1173,6 +1225,26 @@ export default function PaywallModal({
   // (right after register/login, before payment) or handlePaymentSuccess
   // (for already-authed users who skipped the auth step). Reset on close.
   const docSavedRef = useRef(false);
+
+  // Fire paywall_shown exactly once per open-cycle of the modal. React
+  // re-renders for any reason (auth state change, payment-method
+  // selection, etc.) but the event must reflect one "modal appeared on
+  // screen" per user attempt — so the ref gates it.
+  const paywallShownFiredRef = useRef(false);
+  useEffect(() => {
+    if (isOpen && !paywallShownFiredRef.current) {
+      trackEvent("paywall_shown", {
+        plan: "subscription",
+        amount: INTRO_CHARGE_EUR,
+        currency: INTRO_CHARGE_CURRENCY,
+      });
+      paywallShownFiredRef.current = true;
+    }
+    if (!isOpen) {
+      // Reset on close so the next open fires another event.
+      paywallShownFiredRef.current = false;
+    }
+  }, [isOpen]);
 
   // Saves the current PDF (from a landing's `buildPdfForUpload`) to the
   // user's dashboard. Idempotent via `docSavedRef` so we never create

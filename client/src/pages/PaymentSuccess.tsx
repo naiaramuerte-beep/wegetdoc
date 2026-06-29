@@ -1,15 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircle, ArrowRight, Upload, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { trackEvent } from "@/lib/track";
+import { INTRO_CHARGE_EUR, INTRO_CHARGE_CURRENCY } from "@/lib/pricing";
 
-// The user has only paid the intro 0,50 € at this point; the 39,90 €
-// recurring isn't billed until trial_end fires 7 days later. Show the
-// real charged amount on this page so it matches the bank statement,
-// not the future monthly price.
-const INTRO_CHARGE_EUR = 0.50;
+// The user has only paid the intro 0,50 € at this point; the recurring
+// monthly isn't billed until trial_end. Display the real charged amount
+// here so it matches the bank statement, not the future monthly price.
+// INTRO_CHARGE_EUR is imported from @/lib/pricing so tracking events and
+// the displayed value can't drift apart.
 
 export default function PaymentSuccess() {
   const utils = trpc.useUtils();
@@ -26,6 +28,28 @@ export default function PaymentSuccess() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setTxn(params.get('txn') || '');
+  }, []);
+
+  // Fire the funnel's payment_success event once per page load. This is
+  // SEPARATE from the existing Google Ads `conversion` event below — that
+  // one feeds Ads attribution (AW-...) for ad-spend ROI; this one feeds
+  // GA4/Hotjar custom funnels so we can chart paywall_shown → success
+  // without depending on the Ads conversion pipeline.
+  const successFiredRef = useRef(false);
+  useEffect(() => {
+    if (successFiredRef.current) return;
+    successFiredRef.current = true;
+    const params = new URLSearchParams(window.location.search);
+    const provider = params.get("provider") || ""; // sipay-apay | sipay-gpay | "" (card)
+    const method = provider === "sipay-apay" ? "applepay"
+                 : provider === "sipay-gpay" ? "googlepay"
+                 : "card";
+    trackEvent("payment_success", {
+      plan: "subscription",
+      amount: INTRO_CHARGE_EUR,
+      currency: INTRO_CHARGE_CURRENCY,
+      method,
+    });
   }, []);
 
   // Google Ads conversion tracking (Compra) — gated by flag_ads_tracking.
