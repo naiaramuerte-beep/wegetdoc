@@ -108,11 +108,15 @@ function CardBrands() {
 
 // ── Sipay checkout ─────────────────────────────────────────────────────────────
 // ─── Google Pay kill switch ──────────────────────────────────────────────────
-// Set to true while we capture the screenshots Google requested for the
-// Web Integration review (3 brand-compliance flags at
-// pay.google.com/business/console). Set back to false once the captures
-// are uploaded and we're waiting on approval if needed.
-const GPAY_ENABLED = true;
+// DISABLED — Google approved www.editorpdf.net on 2026-06-29 but every real
+// transaction returns OR_BIBED_11 ("este comercio no puede aceptar tu pago")
+// at the GPay sheet. Most likely root cause: gatewayMerchantId we send is
+// our SIPAY_KEY, but Sipay's GPay integration requires a different ID that
+// they register with Google on our behalf — emailed Sipay support for the
+// correct value. Flip back to true once they reply with the right ID (or
+// after Google's edge propagates the approval, if that's the actual cause).
+// Card + Apple Pay keep working, so users can still pay.
+const GPAY_ENABLED = false;
 
 // FastPay JS captures the card in Sipay's iframe; we forward the resulting
 // request_id to our backend to fire /mdwr/v1/all-in-one and then navigate the
