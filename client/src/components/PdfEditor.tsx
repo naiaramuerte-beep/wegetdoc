@@ -677,7 +677,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     canvas.height = vp.height;
     canvas.style.width = `${vp.width / dpr}px`;
     canvas.style.height = `${vp.height / dpr}px`;
-    const ctx = canvas.getContext("2d")!;
+    // willReadFrequently=true keeps the canvas backing store in CPU
+    // memory instead of GPU, making the getImageData() call below (one
+    // per render, for the snapshot used by text-erasure/restore) ~10x
+    // faster. Without this flag Chrome logs a "Canvas2D: Multiple
+    // readback operations" perf warning. Initial paint is microseconds
+    // slower, but we re-read on every page change so the trade favors
+    // the readback path.
+    const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
     const task = page.render({ canvasContext: ctx, viewport: vp } as any);
     mainRenderTaskRef.current = task as any;
     try {

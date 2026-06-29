@@ -125,8 +125,17 @@ export function ProductTour({
   const { t } = useLanguage();
   const steps = useSteps();
 
-  // Mobile: bypass entirely — no provider, no DOM overhead
-  if (isMobile) return <>{children}</>;
+  // ALWAYS render the TourProvider wrapper, even on mobile. The earlier
+  // `if (isMobile) return <>{children}</>;` short-circuit swapped the
+  // component tree shape between Fragment and TourProvider+TourAutoStart
+  // every time the user crossed the 768px breakpoint by resizing — React
+  // can't reconcile across such different trees, so it unmounted and
+  // remounted the entire children subtree, including <PdfEditor> with
+  // all its state. That triggered loadPdf() to re-run from scratch (visible
+  // as the "Creating thumbnails... 66%" splash reappearing on resize).
+  // We keep the wrapper stable and instead gate the auto-start behavior
+  // via `pdfReady` — on mobile the auto-start effect inside TourAutoStart
+  // simply never fires.
 
   return (
     <TourProvider
@@ -195,7 +204,11 @@ export function ProductTour({
         );
       }}
     >
-      <TourAutoStart pdfReady={pdfReady}>{children}</TourAutoStart>
+      {/* Mobile gets the provider (so the imperative bridge keeps working
+          and the tree stays stable across resize) but the auto-start
+          effect is short-circuited — we never want to render the desktop
+          tour over the narrow mobile layout. */}
+      <TourAutoStart pdfReady={pdfReady && !isMobile}>{children}</TourAutoStart>
     </TourProvider>
   );
 }
