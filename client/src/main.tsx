@@ -5,6 +5,12 @@
 import { initSentry } from "@/lib/sentry";
 initSentry();
 
+// Auto-reload when a lazy() chunk fetch fails after a deploy. Wired
+// before any lazy import so the listener is in place by the time
+// React decides to mount a code-split route.
+import { installChunkErrorRecovery } from "@/lib/chunkReload";
+installChunkErrorRecovery();
+
 import "@/lib/brand"; // Set data-brand attribute early
 import { trpc } from "@/lib/trpc";
 import { UNAUTHED_ERR_MSG } from '@shared/const';

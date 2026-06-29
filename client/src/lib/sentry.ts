@@ -16,11 +16,20 @@ const RELEASE = import.meta.env.VITE_SENTRY_RELEASE;
 //     thrown instead of an Error; there's no stack to act on.
 //   - Browser-extension errors (chrome-extension://, moz-extension://)
 //     are the user's extensions misbehaving, not our code.
+//   - "Failed to fetch dynamically imported module" / "Loading chunk" are
+//     stale-chunk-after-deploy errors. chunkReload.ts auto-recovers them
+//     with a single page reload; reporting them would spam the quota
+//     after every deploy.
 const IGNORED_ERRORS = [
   "ResizeObserver loop limit exceeded",
   "ResizeObserver loop completed with undelivered notifications",
   "RenderingCancelledException",
   "Non-Error promise rejection captured",
+  "Failed to fetch dynamically imported module",
+  "Importing a module script failed",
+  "error loading dynamically imported module",
+  "Loading chunk",
+  "Loading CSS chunk",
 ];
 
 const DENY_URLS = [
