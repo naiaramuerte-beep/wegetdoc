@@ -1,4 +1,11 @@
 import "dotenv/config";
+// Sentry MUST be initialized before any module that could throw — the
+// SDK auto-instruments Node's http module and Express the moment its
+// import is evaluated, so anything that comes later (db, routers,
+// middleware) is automatically traced. If SENTRY_DSN is missing, init
+// is a no-op and the rest of the app boots normally.
+import { initSentry, Sentry } from "./sentry";
+initSentry();
 console.log("SESSION_SECRET presente:", !!process.env.SESSION_SECRET, "longitud:", process.env.SESSION_SECRET?.length ?? 0);
 import express from "express";
 import { createServer } from "http";
@@ -1154,6 +1161,12 @@ ${allUrls.map(u => `  <url>
   } else {
     serveStatic(app);
   }
+
+  // Sentry's Express error handler must run AFTER every route has had
+  // a chance to register but BEFORE the response is sent, so it can
+  // capture errors thrown from any route/middleware above it. The SDK
+  // is a no-op when SENTRY_DSN isn't set.
+  Sentry.setupExpressErrorHandler(app);
 
   const PORT = parseInt(process.env.PORT || "8080", 10);
   const port = await findAvailablePort(PORT);

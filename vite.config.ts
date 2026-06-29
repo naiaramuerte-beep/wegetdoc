@@ -1,10 +1,48 @@
 import { jsxLocPlugin } from "@builder.io/vite-plugin-jsx-loc";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
 import { defineConfig } from "vite";
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin()];
+// Sentry source-map upload only runs when all three env vars are
+// present — keeps `npm run dev` and local builds without Sentry env
+// vars working. SENTRY_AUTH_TOKEN is the only true secret here; the
+// org and project slugs are public identifiers.
+const SENTRY_AUTH_TOKEN = process.env.SENTRY_AUTH_TOKEN;
+const SENTRY_ORG = process.env.SENTRY_ORG;
+const SENTRY_PROJECT = process.env.SENTRY_PROJECT;
+const sentryPluginEnabled = !!(SENTRY_AUTH_TOKEN && SENTRY_ORG && SENTRY_PROJECT);
+
+const plugins = [
+  react(),
+  tailwindcss(),
+  jsxLocPlugin(),
+  // Plugin must be added LAST so it sees the final emitted assets.
+  // When disabled (no env vars) it's not added at all so Vite doesn't
+  // even import the Sentry CLI binary.
+  ...(sentryPluginEnabled
+    ? [
+        sentryVitePlugin({
+          authToken: SENTRY_AUTH_TOKEN,
+          org: SENTRY_ORG,
+          project: SENTRY_PROJECT,
+          // The Sentry project lives in the EU datacenter (de.sentry.io).
+          url: "https://sentry.io/",
+          // Tie this build to a release version so error reports can
+          // link back to the exact commit. Railway exposes the SHA.
+          release: {
+            name: process.env.SENTRY_RELEASE || process.env.RAILWAY_GIT_COMMIT_SHA,
+          },
+          // Source maps are deleted from the build output after upload
+          // so we don't expose them to the public via the CDN.
+          sourcemaps: {
+            filesToDeleteAfterUpload: ["**/*.map"],
+          },
+        }),
+      ]
+    : []),
+];
 
 export default defineConfig({
   plugins,
@@ -21,6 +59,10 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    // Source maps are required for Sentry to symbolicate minified
+    // stack traces back to original code. The vite plugin uploads
+    // them to Sentry and then deletes them from the dist folder.
+    sourcemap: true,
   },
   server: {
     host: true,

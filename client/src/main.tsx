@@ -1,3 +1,10 @@
+// Initialize Sentry before anything else so it can capture init-time
+// errors (failed dynamic imports, top-level throws in brand.ts, etc.)
+// from the very first paint. The init is a no-op when VITE_SENTRY_DSN
+// is not set, so local dev without env vars still works.
+import { initSentry } from "@/lib/sentry";
+initSentry();
+
 import "@/lib/brand"; // Set data-brand attribute early
 import { trpc } from "@/lib/trpc";
 import { UNAUTHED_ERR_MSG } from '@shared/const';
