@@ -191,6 +191,7 @@ export async function finalizeFastpayPayment(opts: {
     recordCharge,
     getUserById,
     findIntroChargeForRequest,
+    findUserIdFromPendingEvent,
   } = await import("../db");
 
   const result = await confirmPayment(requestId);
@@ -212,12 +213,36 @@ export async function finalizeFastpayPayment(opts: {
   const sipayTxn: string = data?.payload?.transaction_id ?? "";
   const order: string = data?.payload?.order ?? requestId;
   const masked: string = data?.payload?.masked_card ?? "";
-  const customUserId = Number(data?.payload?.custom_01 ?? fallbackUserId ?? 0);
   const sipayToken: string = data?.payload?.cof_id ?? data?.payload?.token ?? "";
   const txn = sipayTxn || order;
 
+  // userId resolution waterfall: Sipay's custom_01 → caller's fallback →
+  // lookup in our fastpay_3ds_pending log by order/requestId. Earlier
+  // orphans happened because we only trusted custom_01 and bailed silently
+  // when Sipay didn't echo it back. The lookup-from-pending-event branch
+  // catches that case using data we ALREADY wrote at init time.
+  let customUserId = Number(data?.payload?.custom_01 ?? 0);
+  if (customUserId <= 0 && fallbackUserId && fallbackUserId > 0) {
+    customUserId = fallbackUserId;
+  }
   if (customUserId <= 0) {
-    return { ok: true, alreadyFinalized: false, userId: 0, txn, order };
+    const fromPending = await findUserIdFromPendingEvent({ order, requestId });
+    if (fromPending > 0) customUserId = fromPending;
+  }
+
+  if (customUserId <= 0) {
+    // Loud failure — silent skip caused the huzinafranciska orphan. Log
+    // explicitly so the admin Webhooks tab + cron retries surface it.
+    await recordWebhookEvent({
+      provider: "sipay",
+      eventType: "fastpay_userid_missing",
+      eventId: sipayTxn || order,
+      status: "error",
+      errorMessage: `Sipay confirm ok but no userId found (custom_01 empty, no fallback, no pending event)`,
+      durationMs: Date.now() - startedAt,
+      payload: { source, order, requestId, sipayTxn, raw: data },
+    });
+    return { ok: false, alreadyFinalized: false, userId: 0, txn, order, errorMessage: "userid_missing" };
   }
 
   const already = await findIntroChargeForRequest({ order, sipayTxn, requestId });

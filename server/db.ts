@@ -1713,6 +1713,48 @@ export async function findIntroChargeForRequest(opts: {
 }
 
 /**
+ * Recovery lookup for the case where Sipay's confirm response doesn't echo
+ * back custom_01 (the userId we injected at init time). Reads the matching
+ * fastpay_3ds_pending event we logged in sipayCheckoutInit and returns the
+ * userId from its payload. Returns 0 if nothing matches.
+ */
+export async function findUserIdFromPendingEvent(opts: {
+  order?: string;
+  requestId?: string;
+}): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const candidates = [opts.order, opts.requestId].filter(
+    (v): v is string => typeof v === "string" && v.length > 0,
+  );
+  if (candidates.length === 0) return 0;
+  // Most matches happen against `order` (which is what we put in eventId);
+  // also try the requestId in case the event was logged with a different
+  // shape. Limit to events from the last 7 days to keep the scan small.
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const rows = await db
+    .select({ payload: webhookEvents.payload })
+    .from(webhookEvents)
+    .where(
+      and(
+        eq(webhookEvents.eventType, "fastpay_3ds_pending"),
+        gte(webhookEvents.receivedAt, since),
+        inArray(webhookEvents.eventId, candidates),
+      ),
+    )
+    .orderBy(desc(webhookEvents.receivedAt))
+    .limit(1);
+  if (rows.length === 0) return 0;
+  try {
+    const p: any = rows[0].payload ? JSON.parse(rows[0].payload as string) : null;
+    const uid = Number(p?.userId ?? 0);
+    return uid > 0 ? uid : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
  * Returns fastpay_3ds_pending events from the last `hoursBack` hours that
  * don't have a matching fastpay_intro_charge — these are the orphan
  * candidates the reconciliation cron should re-confirm with Sipay.
