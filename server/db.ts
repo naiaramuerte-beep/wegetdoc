@@ -1584,7 +1584,11 @@ export async function upgradeTrialImmediately(userId: number) {
     });
     const data = result.data as any;
     const code = data?.payload?.code ?? data?.code;
-    if (!result.ok || code !== "0") {
+    const txn = data?.payload?.transaction_id ?? "";
+    // Require a real transaction_id — code:"0" alone can be the MIT init's
+    // "authentication_started" with no capture. createMITRecurring chains the
+    // confirm, so a true success always carries a transaction_id.
+    if (!result.ok || code !== "0" || !txn) {
       const detail = data?.payload?.detail ?? data?.detail ?? "unknown";
       await recordCharge({
         userId,

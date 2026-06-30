@@ -213,7 +213,13 @@ export async function finalizeFastpayPayment(opts: {
   const sipayTxn: string = data?.payload?.transaction_id ?? "";
   const order: string = data?.payload?.order ?? requestId;
   const masked: string = data?.payload?.masked_card ?? "";
-  const sipayToken: string = data?.payload?.cof_id ?? data?.payload?.token ?? "";
+  // The reusable card token Sipay charges for MIT-R is the MERCHANT token we
+  // set at tokenization (`usr-<userId>`), echoed back here as `payload.token`.
+  // The `cof_id` is NOT a chargeable card token (Sipay /mdwr/v1/card rejects
+  // it), so the old `cof_id ?? token` order broke every renewal. Prefer the
+  // merchant token; a deterministic `usr-<userId>` fallback is set below once
+  // we've resolved the userId, in case Sipay didn't echo it.
+  let sipayToken: string = data?.payload?.token ?? "";
   const txn = sipayTxn || order;
 
   // userId resolution waterfall: Sipay's custom_01 → caller's fallback →
@@ -244,6 +250,11 @@ export async function finalizeFastpayPayment(opts: {
     });
     return { ok: false, alreadyFinalized: false, userId: 0, txn, order, errorMessage: "userid_missing" };
   }
+
+  // Deterministic fallback: if Sipay didn't echo the merchant token, rebuild
+  // it from the userId — it's exactly what sipayCheckoutInit set at tokenization
+  // (`usr-<userId>`), and what /mdwr/v1/card resolves to the stored card.
+  if (!sipayToken && customUserId > 0) sipayToken = `usr-${customUserId}`;
 
   const already = await findIntroChargeForRequest({ order, sipayTxn, requestId });
   if (already) {
@@ -339,15 +350,15 @@ export function createCheckoutFastpay(opts: {
  * Recurring charge against a previously tokenized card. MIT (no customer
  * present), reason "R" = recurring. Used by the monthly cron.
  */
-export function createMITRecurring(opts: {
+export async function createMITRecurring(opts: {
   amountCents: number;
   currency?: string;
   token: string;
   order: string;
   custom_01?: string;
   custom_02?: string;
-}) {
-  return sipayPost("/mdwr/v1/all-in-one", {
+}): Promise<SipayResult> {
+  const init = await sipayPost("/mdwr/v1/all-in-one", {
     amount: String(opts.amountCents),
     currency: opts.currency ?? "EUR",
     operation: "all-in-one",
@@ -358,6 +369,19 @@ export function createMITRecurring(opts: {
     ...(opts.custom_01 ? { custom_01: opts.custom_01 } : {}),
     ...(opts.custom_02 ? { custom_02: opts.custom_02 } : {}),
   });
+  // Sipay's MIT-R is a TWO-step flow. The all-in-one above does NOT capture —
+  // it returns detail:"authentication_started" + a request_id. The actual
+  // authorization only happens when we confirm that request_id. Because it's a
+  // merchant-initiated transaction (sca_exemptions:"MIT") no real 3DS/customer
+  // interaction is needed — confirm completes server-to-server. Skipping this
+  // step made the cron see code:"0" and record a phantom charge while taking
+  // no money. We chain the confirm here so callers get the final result.
+  const initData = init.data as any;
+  const requestId = initData?.payload?.request_id;
+  if (init.ok && initData?.code === "0" && requestId) {
+    return await confirmPayment(requestId);
+  }
+  return init;
 }
 
 export function refundPayment(opts: {

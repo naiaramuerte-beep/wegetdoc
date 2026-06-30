@@ -966,8 +966,12 @@ ${allUrls.map(u => `  <url>
           });
           const data = result.data as any;
           const code = data?.payload?.code ?? data?.code;
-          const ok = result.ok && code === "0";
           const txn = data?.payload?.transaction_id ?? "";
+          // Require a real transaction_id, not just code:"0". The MIT init step
+          // returns code:"0" detail:"authentication_started" with NO txn — that
+          // is NOT a captured charge. createMITRecurring now chains the confirm
+          // so a genuine success carries a transaction_id; demand it here.
+          const ok = result.ok && code === "0" && !!txn;
           const masked = data?.payload?.masked_card ?? sub.sipayMaskedCard ?? "";
           if (ok) {
             // Extend the period 30 days and bump status -> active. Past-due
