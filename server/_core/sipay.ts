@@ -442,6 +442,7 @@ export function chargeApplePay(opts: {
   };
   requestId: string;
   order: string;
+  token?: string;
   custom_01?: string;
   custom_02?: string;
 }) {
@@ -454,6 +455,11 @@ export function chargeApplePay(opts: {
       request_id: opts.requestId,
     },
     order: opts.order,
+    // Vault the card under our merchant token (`usr-<userId>`) so the monthly
+    // MIT-R cron can charge it later — same mechanism the card all-in-one uses.
+    // Without this, wallet subs store only a cof_id, which Sipay rejects for
+    // recurring charges ("no_card_from_token"), so they never renew.
+    ...(opts.token ? { token: opts.token } : {}),
     ...(opts.custom_01 ? { custom_01: opts.custom_01 } : {}),
     ...(opts.custom_02 ? { custom_02: opts.custom_02 } : {}),
   });
@@ -470,6 +476,7 @@ export function chargeGpay(opts: {
   currency?: string;
   tokenGpay: string; // raw JSON string from Google Pay PaymentData
   order: string;
+  token?: string;
   custom_01?: string;
   custom_02?: string;
 }) {
@@ -481,6 +488,9 @@ export function chargeGpay(opts: {
       token_gpay: opts.tokenGpay,
     },
     order: opts.order,
+    // Vault the card under our merchant token (`usr-<userId>`) so the monthly
+    // MIT-R cron can charge it later — see chargeApplePay for the rationale.
+    ...(opts.token ? { token: opts.token } : {}),
     ...(opts.custom_01 ? { custom_01: opts.custom_01 } : {}),
     ...(opts.custom_02 ? { custom_02: opts.custom_02 } : {}),
   });
