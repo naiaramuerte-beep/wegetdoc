@@ -5848,6 +5848,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         }}
         reason={paywallReason}
         autoTriggerGoogle={paywallAutoGoogle}
+        editorAlreadySaved={!!savedDocId}
         pdfData={pdfDataForPaywall}
         thumbnailUrl={paywallThumbnail ?? thumbnails[0]}
         buildPdfForUpload={async () => {

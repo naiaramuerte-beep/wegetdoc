@@ -20,6 +20,57 @@ export default function PaymentSuccess() {
   const { adsTrackingEnabled } = useFeatureFlags();
   const { t } = useLanguage();
 
+  // ── Post-payment download ────────────────────────────────────────────────
+  // Every Sipay flow (card 3DS, Apple Pay, Google Pay) lands here via a
+  // full-page redirect, so the editor's in-memory PDF + its onPaymentSuccess
+  // download handler are gone. We recover the document the user just paid for
+  // by fetching their most recent saved doc and downloading it here. The doc
+  // was auto-saved before payment and marked paid server-side by
+  // finalizeFastpayPayment → markDocumentsPaid, so it's ready by the time the
+  // success page loads.
+  const { data: docs } = trpc.documents.list.useQuery(undefined, { staleTime: 0 });
+  const latestDoc = docs && docs.length > 0 ? docs[0] : null;
+  const hasDocRef = useRef(false);
+  useEffect(() => { hasDocRef.current = !!latestDoc; }, [latestDoc]);
+  const [downloading, setDownloading] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
+  const autoTriedRef = useRef(false);
+
+  const handleDownloadDoc = async () => {
+    if (!latestDoc?.id) return;
+    try {
+      setDownloading(true);
+      const res = await fetch(`/api/documents/download/${latestDoc.id}`, { credentials: "include" });
+      if (!res.ok) throw new Error(`download failed: ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = (latestDoc as any).name || "document.pdf";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      // WebKit cancels the download if the blob URL is revoked too early.
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setDownloaded(true);
+    } catch (err) {
+      console.warn("[PaymentSuccess] auto-download failed", err);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  // Best-effort auto-download once the doc list resolves. Browsers may block a
+  // programmatic download without a user gesture — the button below is the
+  // reliable fallback.
+  useEffect(() => {
+    if (latestDoc && !autoTriedRef.current) {
+      autoTriedRef.current = true;
+      handleDownloadDoc();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [latestDoc]);
+
   // Read txn id from URL once on mount so we can render it into the DOM
   // (Google Ads's review process scrapes the page and verifies the
   // transaction_id + value are present in DOM elements with the
@@ -89,12 +140,14 @@ export default function PaymentSuccess() {
     const captureMode = new URLSearchParams(window.location.search).get("capture") === "1";
     if (captureMode) return;
 
-    // Auto-redirect to dashboard documents tab after countdown
+    // Auto-redirect to home after countdown — but ONLY if there's no document
+    // to download. If the user has a paid doc waiting, we keep them on this
+    // page so they can grab it (auto-download may have been blocked).
     const interval = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
-          navigate(`/${lang}`);
+          if (!hasDocRef.current) navigate(`/${lang}`);
           return 0;
         }
         return prev - 1;
@@ -136,21 +189,23 @@ export default function PaymentSuccess() {
         {t.payment_success_subtitle || "Tu suscripción está activa. Tu documento está guardado en tu panel y listo para descargar."}
       </p>
 
-      {/* Countdown redirect notice */}
-      <div
-        className="flex items-center gap-2 mb-6 px-4 py-3 rounded-xl"
-        style={{
-          backgroundColor: "rgba(10, 10, 11, 0.04)",
-          border: "1px solid rgba(10, 10, 11, 0.12)",
-        }}
-      >
-        <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" style={{ color: "#E63946" }} />
-        <span className="text-sm font-medium" style={{ color: "#0A0A0B" }}>
-          {t.payment_success_redirecting_pre || "Redirigiendo en "}
-          <strong>{countdown}</strong>
-          {t.payment_success_redirecting_post || "s..."}
-        </span>
-      </div>
+      {/* Countdown redirect notice — only when there's nothing to download. */}
+      {!latestDoc && (
+        <div
+          className="flex items-center gap-2 mb-6 px-4 py-3 rounded-xl"
+          style={{
+            backgroundColor: "rgba(10, 10, 11, 0.04)",
+            border: "1px solid rgba(10, 10, 11, 0.12)",
+          }}
+        >
+          <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" style={{ color: "#E63946" }} />
+          <span className="text-sm font-medium" style={{ color: "#0A0A0B" }}>
+            {t.payment_success_redirecting_pre || "Redirigiendo en "}
+            <strong>{countdown}</strong>
+            {t.payment_success_redirecting_post || "s..."}
+          </span>
+        </div>
+      )}
 
       {/* Transaction summary — REQUIRED by Google Ads review (case 0-6026000040625).
           The .transaction and .value classes are read by the gtag
@@ -175,12 +230,33 @@ export default function PaymentSuccess() {
 
       {/* Action buttons */}
       <div className="flex flex-col sm:flex-row gap-3 mb-10">
+        {latestDoc && (
+          <button
+            onClick={handleDownloadDoc}
+            disabled={downloading}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-white font-semibold text-sm transition-all duration-200 hover:opacity-90 disabled:opacity-60"
+            style={{ backgroundColor: "#16a34a" }}
+          >
+            {downloading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <CheckCircle className="w-4 h-4" />
+            )}
+            {downloading
+              ? ((t as any).payment_success_downloading || "Descargando...")
+              : downloaded
+              ? ((t as any).payment_success_download_again || "Descargar de nuevo")
+              : ((t as any).payment_success_download_cta || "Descargar tu PDF")}
+          </button>
+        )}
         <button
           onClick={handleGoNow}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-white font-semibold text-sm transition-all duration-200 hover:opacity-90"
-          style={{
-            backgroundColor: "#E63946",
-          }}
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 hover:opacity-90"
+          style={
+            latestDoc
+              ? { backgroundColor: "#FFFFFF", color: "#0f172a", border: "1px solid #e2e8f0" }
+              : { backgroundColor: "#E63946", color: "#FFFFFF" }
+          }
         >
           <Upload className="w-4 h-4" />
           {t.payment_success_cta_edit_another || "Editar otro PDF"}

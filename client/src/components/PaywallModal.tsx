@@ -49,6 +49,14 @@ interface PaywallModalProps {
    * payment step with one fewer screen of friction.
    */
   autoTriggerGoogle?: boolean;
+  /**
+   * The editor sets this true once it has already persisted the document
+   * (its own autoSaveDocument ran). When true the modal skips its own
+   * auto-save to avoid a duplicate row. When false/absent (e.g. an anonymous
+   * user who registers by EMAIL inside the modal — the editor never got a
+   * chance to save), the modal saves the doc so it lands in the dashboard.
+   */
+  editorAlreadySaved?: boolean;
 }
 
 type Step = "auth-choice" | "plans";
@@ -1191,6 +1199,7 @@ export default function PaywallModal({
   converter,
   reason,
   autoTriggerGoogle,
+  editorAlreadySaved,
 }: PaywallModalProps) {
   const { t, lang } = useLanguage();
   const s = getAuthStrings(lang);
@@ -1262,8 +1271,14 @@ export default function PaywallModal({
   // NOTE: declared BEFORE the early return so React's hook order stays stable.
   const saveDocToDashboard = useCallback(async (): Promise<void> => {
     if (docSavedRef.current) return;
-    if (pdfData) return; // editor handles its own save
-    const docToSave = buildPdfForUpload ? await buildPdfForUpload() : null;
+    // The editor already persisted it (its autoSaveDocument ran) → skip to
+    // avoid a duplicate. Otherwise (landing flow, OR an editor user who
+    // registered by EMAIL inside the modal and never triggered the editor's
+    // own save) we MUST save here, or the paid doc never reaches the panel.
+    if (editorAlreadySaved) return;
+    const docToSave = buildPdfForUpload
+      ? await buildPdfForUpload()
+      : (pdfData ?? null);
     if (!docToSave || !("base64" in docToSave)) return;
     try {
       const binaryStr = atob(docToSave.base64);
@@ -1279,7 +1294,7 @@ export default function PaywallModal({
     } catch (err) {
       console.warn("[PaywallModal] auto-save error", err);
     }
-  }, [pdfData, buildPdfForUpload]);
+  }, [editorAlreadySaved, buildPdfForUpload, pdfData]);
 
   // Reset the saved flag whenever the modal re-opens, so a user who
   // closes mid-flow and re-opens with new content gets their new doc saved.
