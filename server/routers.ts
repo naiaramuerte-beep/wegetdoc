@@ -444,7 +444,6 @@ export const appRouter = router({
           tokenApay: input.tokenApay,
           requestId: input.requestId,
           order,
-          token: `usr-${ctx.user.id}`,
           custom_01: String(ctx.user.id),
         });
         const data = result.data as any;
@@ -474,11 +473,10 @@ export const appRouter = router({
         const periodEnd = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
         await upsertSubscription({
           userId: ctx.user.id,
-          // Store the merchant token we vaulted the card under (`usr-<userId>`),
-          // NOT the cof_id — Sipay charges MIT-R against the merchant token, and
-          // rejects the cof_id with "no_card_from_token". Prefer the echoed
-          // token, fall back to the deterministic usr-<userId>.
-          sipayToken: data?.payload?.token ?? `usr-${ctx.user.id}`,
+          // Wallet flows (Apple Pay / Google Pay) return `cof_id` (Credentials
+          // on File ID) instead of `token` — same role for MIT-R, different
+          // field name. Read either, prefer whichever Sipay returned.
+          sipayToken: data?.payload?.cof_id ?? data?.payload?.token ?? "",
           sipayOrder: order,
           sipayTransactionId: txn,
           sipayMaskedCard: masked,
@@ -554,7 +552,6 @@ export const appRouter = router({
           amountCents: input.amountCents,
           tokenGpay: input.token,
           order,
-          token: `usr-${ctx.user.id}`,
           custom_01: String(ctx.user.id),
         });
         const data = result.data as any;
@@ -584,11 +581,10 @@ export const appRouter = router({
         const periodEnd = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
         await upsertSubscription({
           userId: ctx.user.id,
-          // Store the merchant token we vaulted the card under (`usr-<userId>`),
-          // NOT the cof_id — Sipay charges MIT-R against the merchant token, and
-          // rejects the cof_id with "no_card_from_token". Prefer the echoed
-          // token, fall back to the deterministic usr-<userId>.
-          sipayToken: data?.payload?.token ?? `usr-${ctx.user.id}`,
+          // Wallet flows (Apple Pay / Google Pay) return `cof_id` (Credentials
+          // on File ID) instead of `token` — same role for MIT-R, different
+          // field name. Read either, prefer whichever Sipay returned.
+          sipayToken: data?.payload?.cof_id ?? data?.payload?.token ?? "",
           sipayOrder: order,
           sipayTransactionId: txn,
           sipayMaskedCard: masked,
