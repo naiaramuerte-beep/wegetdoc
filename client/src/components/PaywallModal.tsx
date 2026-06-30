@@ -108,15 +108,13 @@ function CardBrands() {
 
 // ── Sipay checkout ─────────────────────────────────────────────────────────────
 // ─── Google Pay kill switch ──────────────────────────────────────────────────
-// DISABLED — Google approved www.editorpdf.net on 2026-06-29 but every real
-// transaction returns OR_BIBED_11 ("este comercio no puede aceptar tu pago")
-// at the GPay sheet. Most likely root cause: gatewayMerchantId we send is
-// our SIPAY_KEY, but Sipay's GPay integration requires a different ID that
-// they register with Google on our behalf — emailed Sipay support for the
-// correct value. Flip back to true once they reply with the right ID (or
-// after Google's edge propagates the approval, if that's the actual cause).
-// Card + Apple Pay keep working, so users can still pay.
-const GPAY_ENABLED = false;
+// RE-ENABLED — Sipay confirmed on 2026-06-30 that Google Pay is now active on
+// our existing SIPAY_KEY, so `gatewayMerchantId: sipayMerchantKey` is the
+// correct value (no dedicated ID needed). This resolves the OR_BIBED_11
+// ("este comercio no puede aceptar tu pago") that blocked real transactions
+// on the 2026-06-29 go-live. The button renders again alongside Card + Apple
+// Pay. Flip back to false if OR_BIBED_11 reappears in production.
+const GPAY_ENABLED = true;
 
 // FastPay JS captures the card in Sipay's iframe; we forward the resulting
 // request_id to our backend to fire /mdwr/v1/all-in-one and then navigate the
@@ -550,11 +548,10 @@ function SipayCheckoutForm({
                 }}
               />
 
-              {/* Google Pay button — hidden until Google approves our Web
-                  Integration (3 brand-compliance flags pending in pay.google.com/
-                  business/console). Flip `GPAY_ENABLED` to true once approved.
-                  The button code is kept mounted via the flag so we don't lose
-                  the integration; the gate is the cheapest possible kill switch. */}
+              {/* Google Pay button — active. `GPAY_ENABLED` is the kill switch
+                  (flip to false to hide instantly if OR_BIBED_11 returns). Uses
+                  the SIPAY_KEY as gatewayMerchantId per Sipay's 2026-06-30
+                  confirmation. */}
               {GPAY_ENABLED && (
                 <GooglePayButton
                   sipayMerchantKey={sipayConfigQ.data.key}
