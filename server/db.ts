@@ -1796,7 +1796,7 @@ export async function findPendingFastpayPayments(opts?: {
   // Look up finalized events in a single round-trip so we can filter the
   // pendings down to those without a matching success.
   const finalized = await db
-    .select({ eventId: webhookEvents.eventId })
+    .select({ eventId: webhookEvents.eventId, payload: webhookEvents.payload })
     .from(webhookEvents)
     .where(
       and(
@@ -1804,9 +1804,22 @@ export async function findPendingFastpayPayments(opts?: {
         gte(webhookEvents.receivedAt, since),
       ),
     );
+  // A pending event is keyed by `order` (= eventId) and carries the sipay
+  // request_id in its payload. But finalize writes the intro_charge under
+  // `eventId = sipayTxn || order` — so when Sipay returns a transaction_id
+  // the success event's eventId is the txn, which matches NEITHER the
+  // pending order NOR the requestId. We must therefore also pull the
+  // echoed `order` (and txn) out of the intro_charge payload so finalized
+  // charges stop showing up as orphans forever.
   const finalizedKeys = new Set<string>();
   for (const f of finalized) {
     if (f.eventId) finalizedKeys.add(f.eventId);
+    try {
+      const fp: any = f.payload ? JSON.parse(f.payload as string) : null;
+      const echoed = fp?.response?.payload ?? {};
+      if (echoed.order) finalizedKeys.add(String(echoed.order));
+      if (echoed.transaction_id) finalizedKeys.add(String(echoed.transaction_id));
+    } catch {}
   }
 
   const result: Array<{

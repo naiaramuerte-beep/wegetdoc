@@ -820,12 +820,15 @@ ${allUrls.map(u => `  <url>
   });
 
   // Sipay 3DS callbacks. After the customer authenticates in Redsys MPI,
-  // Sipay redirects them back here with ?request_id=… (plus ?error=… on KO).
-  // We confirm the auth server-side and bounce the user to /payment/success
-  // or to the homepage with a banner on failure. No DB writes yet — that
-  // comes in Fase 2 when we wire the cron + subscription row.
-  app.get("/api/sipay/callback/ok", async (req, res) => {
-    const requestId = String(req.query.request_id ?? "");
+  // Sipay redirects them back here with request_id=… (plus error=… on KO).
+  // CRITICAL: Redsys/Sipay returns to url_ok via an auto-submitted FORM POST
+  // (application/x-www-form-urlencoded), NOT a GET — so request_id arrives in
+  // the BODY, not the query string. We register BOTH verbs and read from both
+  // places. Registering GET-only was leaving every card payment as an orphan
+  // (Sipay collected the 0,50 €, the POST 404'd, the sub was never created),
+  // while Apple Pay / Google Pay worked because they never 3DS-redirect.
+  const handleSipayCallbackOk = async (req: any, res: any) => {
+    const requestId = String(req.query.request_id ?? req.body?.request_id ?? "");
     if (!requestId) return res.redirect("/?sipay=missing_request_id");
     const startedAt = Date.now();
     try {
@@ -852,7 +855,9 @@ ${allUrls.map(u => `  <url>
       } catch {}
       return res.redirect("/?sipay=server_error");
     }
-  });
+  };
+  app.get("/api/sipay/callback/ok", handleSipayCallbackOk);
+  app.post("/api/sipay/callback/ok", handleSipayCallbackOk);
 
   // Reconciliation cron — recovers orphan FastPay charges where Sipay
   // collected money but the redirect to /api/sipay/callback/ok never fired
@@ -914,11 +919,13 @@ ${allUrls.map(u => `  <url>
     }
   });
 
-  app.get("/api/sipay/callback/ko", (req, res) => {
-    const error = String(req.query.error ?? "unknown");
-    console.warn("[Sipay] callback ko:", req.query);
+  const handleSipayCallbackKo = (req: any, res: any) => {
+    const error = String(req.query.error ?? req.body?.error ?? "unknown");
+    console.warn("[Sipay] callback ko:", { query: req.query, body: req.body });
     return res.redirect(`/?sipay_error=${encodeURIComponent(error)}`);
-  });
+  };
+  app.get("/api/sipay/callback/ko", handleSipayCallbackKo);
+  app.post("/api/sipay/callback/ko", handleSipayCallbackKo);
 
   // ── Sipay MIT-R recurring billing cron ─────────────────────────────────
   // Called by an external scheduler (Railway cron, Pingdom, etc.) once a day.
