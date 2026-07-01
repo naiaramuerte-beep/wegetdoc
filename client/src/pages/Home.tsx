@@ -434,6 +434,19 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
               <>{t.hero_title_1} <SquiggleUnderline>{t.hero_title_2}</SquiggleUnderline></>
             )}
           </h1>
+          {/* Ad-compliance reassurance. This is the SINGLE explicit "web app —
+              no download/installation" signal on the page, kept above the fold
+              for the Google Ads human reviewer. Every other landing string was
+              rewritten to positive, keyword-free copy so the classifier bot
+              stops scoring the page as downloadable desktop software. */}
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 mb-4 text-[13px] md:text-sm font-semibold">
+            <span className="inline-flex items-center gap-1.5 text-[#0A0A0B]">
+              <span className="text-[#16a34a]">✓</span> {t.hero_no_download}
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-[#0A0A0B]">
+              <span className="text-[#16a34a]">✓</span> {t.hero_browser}
+            </span>
+          </div>
           <p className="text-base md:text-[17px] text-[#5A5A62] mb-8 max-w-xl mx-auto leading-relaxed">
             {overrides?.heroSubtitle ?? (isFastDoc ? t.fastdoc_hero_subtitle : t.hero_subtitle)}
           </p>
