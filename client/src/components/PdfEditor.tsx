@@ -1496,11 +1496,17 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             ex => ex.str === newBlock.str && Math.abs(ex.x - newBlock.x) < 2 && Math.abs(ex.y - newBlock.y) < 2
           );
           if (!match) return newBlock;
-          // Preserve user edits and manual resize/move
+          // Preserve user edits and manual resize/move.
           return {
             ...newBlock,
             editedStr: match.editedStr,
-            fontColor: match.fontColor,
+            // Keep the OLD colour ONLY when the user actually edited this block
+            // (they may have picked a colour manually). For untouched blocks we
+            // MUST use the freshly-detected colour: the first detection can run
+            // before the canvas has painted coloured backgrounds and mis-reads
+            // the ink (e.g. white text → undefined/black), and keeping that
+            // stale value here blocked the corrected re-detection.
+            fontColor: match.editedStr !== undefined ? match.fontColor : newBlock.fontColor,
             // If user manually resized/moved, keep those dimensions
             ...(match.origX !== undefined ? { x: match.x, y: match.y, width: match.width, height: match.height, origX: match.origX, origY: match.origY, origWidth: match.origWidth, origHeight: match.origHeight } : {}),
           };
