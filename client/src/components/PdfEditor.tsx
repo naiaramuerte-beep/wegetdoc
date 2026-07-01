@@ -1158,7 +1158,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         const fontChanged = line.pdfFontName !== prev.pdfFontName;
         const refSize = Math.min(line.fontSize, prev.fontSize);
         const sameLine = Math.abs(line.canvasY - prev.canvasY) < refSize * 0.5;
-        if (!sameLine || sizeChanged || fontChanged) {
+        // Column split: two runs on the SAME visual line separated by a WIDE
+        // horizontal gap are different fields (a table/form column gutter,
+        // e.g. "Nombre        Juan Perez Garcia"). Without this we merged
+        // label+value into one block and collapsed the gutter to a single
+        // space. Normal inter-word spacing (even justified) stays well under
+        // 2× the font height, so this only fires on real column gutters.
+        const hGap = line.canvasX - (prev.canvasX + prev.canvasW);
+        const columnGap = sameLine && hGap > refSize * 2;
+        if (!sameLine || sizeChanged || fontChanged || columnGap) {
           paragraphs.push(currentPara);
           currentPara = [];
         }
