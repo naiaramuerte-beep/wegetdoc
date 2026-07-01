@@ -532,8 +532,36 @@ function SipayCheckoutForm({
                 ? t.paywall_download_instant.replace("PDF", converter.label)
                 : t.paywall_download_instant}
             </h3>
+
+            {/* Order summary — the item + what's included. Builds desire and
+                justifies the price without mentioning the recurring plan (that
+                stays only in the legal microcopy under the pay button). */}
+            <div className="rounded-xl border overflow-hidden mb-4" style={{ borderColor: "#e5e7eb" }}>
+              <div className="px-4 py-2.5" style={{ background: "#f8fafc", borderBottom: "1px solid #eef2f7" }}>
+                <p className="text-[11px] font-bold tracking-wide uppercase text-slate-500">{t.paywall_order_summary}</p>
+              </div>
+              <div className="px-4 py-3 flex items-center justify-between gap-2" style={{ borderBottom: "1px solid #f1f5f9" }}>
+                <span className="flex items-center gap-2.5 min-w-0">
+                  <span className="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0" style={{ background: "#FEE7EA" }}>
+                    <FileText className="w-4 h-4" style={{ color: "#E63946" }} />
+                  </span>
+                  <span className="text-sm font-semibold text-slate-900 truncate">{converter ? converter.label : t.paywall_your_doc}</span>
+                </span>
+                <span className="text-sm font-extrabold text-slate-900 flex-shrink-0">{converter ? converter.price : "0,50 €"}</span>
+              </div>
+              {[t.paywall_feat_edit, t.paywall_feat_organize, t.paywall_feat_secure].map((feat, i) => (
+                <div key={i} className="px-4 py-2 flex items-center justify-between gap-2 text-[13px]" style={i < 2 ? { borderBottom: "1px solid #f1f5f9" } : undefined}>
+                  <span className="flex items-center gap-2 text-slate-600 min-w-0">
+                    <Check className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#16a34a" }} />
+                    <span className="truncate">{feat}</span>
+                  </span>
+                  <span className="font-semibold flex-shrink-0" style={{ color: "#16a34a" }}>{t.paywall_incl}</span>
+                </div>
+              ))}
+            </div>
+
             <div className="flex items-baseline justify-between pt-3 border-t" style={{ borderColor: "#e5e7eb" }}>
-              <p className="text-sm text-slate-600">{t.paywall_total_today}</p>
+              <p className="text-sm font-semibold text-slate-700">{t.paywall_total_today}</p>
               <p className="text-2xl font-extrabold text-slate-900 tracking-tight">
                 {converter ? converter.price : "0,50 €"}
               </p>
@@ -546,6 +574,7 @@ function SipayCheckoutForm({
           )}
           {sipayConfigQ.data?.key && (
             <div className="flex flex-col items-stretch gap-3">
+              <p className="text-[11px] font-bold tracking-wide uppercase text-slate-500 -mb-0.5">{t.paywall_choose_method}</p>
               {/* Apple Pay button — only shown on Safari iOS/macOS where the
                   PassKit JS API exists AND the buyer has at least one Apple
                   Pay-enabled card linked to the device. */}
