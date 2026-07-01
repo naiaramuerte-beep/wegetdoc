@@ -104,6 +104,28 @@ type ToolName =
   | "convert-jpg" | "convert-png" | "convert-word" | "convert-excel" | "convert-ppt" | "convert-html"
   | "word-to-pdf" | "excel-to-pdf" | "ppt-to-pdf" | "jpg-to-pdf" | "png-to-pdf" | "merge" | "split";
 
+// Maps a landing/route-supplied tool id to the editor's active tool. Landings can
+// preselect a tool — e.g. the Sign landing (editorTool: "sign") opens the editor
+// straight into signature mode. Unknown/absent → default: edit-text on desktop,
+// pointer on mobile (so the tool sheet doesn't auto-cover the PDF on phones).
+const INITIAL_TOOL_MAP: Record<string, ToolName> = {
+  "text": "text", "sign": "sign", "notes": "notes",
+  "image": "image", "protect": "protect", "compress": "compress",
+  "highlight": "highlight", "eraser": "eraser", "brush": "brush",
+  "shapes": "shapes", "find": "find", "move": "move",
+  "convert-jpg": "convert-jpg", "convert-png": "convert-png",
+  "convert-word": "convert-word", "convert-excel": "convert-excel",
+  "convert-ppt": "convert-ppt", "convert-html": "convert-html",
+  "jpg-to-pdf": "jpg-to-pdf", "png-to-pdf": "png-to-pdf",
+  "merge": "merge", "split": "split",
+};
+function resolveInitialTool(initialTool?: string | null): ToolName {
+  const fallback: ToolName =
+    typeof window !== "undefined" && window.innerWidth < 768 ? "pointer" : "edit-text";
+  if (!initialTool) return fallback;
+  return INITIAL_TOOL_MAP[initialTool] ?? fallback;
+}
+
 interface NativeTextBlock {
   id: string;
   str: string;
@@ -206,9 +228,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [scale, setScale] = useState(1.2);
-  const [activeTool, setActiveTool] = useState<ToolName>(() =>
-    typeof window !== "undefined" && window.innerWidth < 768 ? "pointer" : "edit-text"
-  );
+  const [activeTool, setActiveTool] = useState<ToolName>(() => resolveInitialTool(initialTool));
+  // Keep the latest initialTool reachable inside loadPdf (which resets the tool
+  // on every PDF load) without stale closures.
+  const initialToolRef = useRef(initialTool);
+  useEffect(() => { initialToolRef.current = initialTool; }, [initialTool]);
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -599,7 +623,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       setAllNativeTextBlocks(new Map());
       setHistory([{ annotations: [], textBlocks: new Map() }]);
       setHistoryIndex(0);
-      setActiveTool(window.innerWidth < 768 ? "pointer" : "edit-text");
+      setActiveTool(resolveInitialTool(initialToolRef.current));
       // Generate thumbnails
       setPdfLoadProgress(60);
       const thumbs: string[] = [];
@@ -3323,22 +3347,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // ── Apply initialTool when PDF is loaded (default to "edit-text") ──
   useEffect(() => {
     if (!pdfDoc) return;
-    const fallback: ToolName = typeof window !== "undefined" && window.innerWidth < 768 ? "pointer" : "edit-text";
-    if (!initialTool) { setActiveTool(fallback); return; }
-    const toolMap: Record<string, ToolName> = {
-      "text": "text", "sign": "sign", "notes": "notes",
-      "image": "image", "protect": "protect", "compress": "compress",
-      "highlight": "highlight", "eraser": "eraser", "brush": "brush",
-      "shapes": "shapes", "find": "find", "move": "move",
-      // Conversion tools
-      "convert-jpg": "convert-jpg", "convert-png": "convert-png",
-      "convert-word": "convert-word", "convert-excel": "convert-excel",
-      "convert-ppt": "convert-ppt", "convert-html": "convert-html",
-      "jpg-to-pdf": "jpg-to-pdf", "png-to-pdf": "png-to-pdf",
-      "merge": "merge", "split": "split",
-    };
-    const mapped = toolMap[initialTool];
-    setActiveTool(mapped ?? fallback);
+    setActiveTool(resolveInitialTool(initialTool));
   }, [initialTool, pdfDoc]);
 
   // ── Auto-save draft to localStorage (unregistered users) ─────
