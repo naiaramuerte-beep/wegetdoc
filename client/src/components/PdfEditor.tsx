@@ -4775,12 +4775,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       <div className="hidden md:flex items-center gap-1 px-3 py-1.5 border-b min-w-0" style={{ backgroundColor: "#FFFFFF", borderColor: "#f1f5f9" }}>
         {/* Undo / Redo */}
         <div data-tour="history" className="flex items-center gap-0 shrink-0">
-          <button title={t.editor_undo + " (Ctrl+Z)"} onClick={undo} disabled={historyIndex <= 0} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
-            <Undo2 className="w-4 h-4" style={{ color: "#0A0A0B" }} />
-          </button>
-          <button title={t.editor_redo + " (Ctrl+Y)"} onClick={redo} disabled={historyIndex >= history.length - 1} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors shrink-0">
-            <Redo2 className="w-4 h-4" style={{ color: "#0A0A0B" }} />
-          </button>
+          <ToolBtn icon={Undo2} label={t.editor_undo} onClick={undo} disabled={historyIndex <= 0} />
+          <ToolBtn icon={Redo2} label={t.editor_redo} onClick={redo} disabled={historyIndex >= history.length - 1} />
         </div>
         <div className="w-px h-5 mx-1 shrink-0" style={{ backgroundColor: "#f1f5f9" }} />
         {/* Tool buttons — centered */}
