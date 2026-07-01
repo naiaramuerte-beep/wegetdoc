@@ -1243,6 +1243,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 Math.round(ink.b / ink.count),
               ];
             }
+            // TEMP diagnostic — remove after tuning colour detection.
+            console.log(
+              "[colorDbg]", JSON.stringify(first.str.slice(0, 20)),
+              "sample", `${sampleX},${sampleY} ${sampleW}x${sampleH}`,
+              "canvas", `${canvas.width}x${canvas.height}`,
+              "bg", `${Math.round(bgR)},${Math.round(bgG)},${Math.round(bgB)}(${bg.count})`,
+              "ink", first.sampledColor ? first.sampledColor.join(",") : "NONE",
+            );
           }
           // Underline detection — scan rows just below baseline for a
           // solid horizontal line in the line's ink color.
