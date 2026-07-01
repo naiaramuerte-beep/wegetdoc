@@ -13,6 +13,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { renderPdfThumbnail } from "@/lib/pdfThumbnail";
 import {
   Upload, Layers, Loader2, CheckCircle2, RefreshCw, ArrowRight,
   X as XIcon, ArrowUp, ArrowDown, Cloud, Download as DownloadIcon,
@@ -121,6 +122,7 @@ export default function MergeLandingPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [mergedBytes, setMergedBytes] = useState<Uint8Array | null>(null);
   const [mergedName, setMergedName] = useState<string>("merged.pdf");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
 
   // Localized copy with English fallbacks so the page never shows blanks
@@ -146,6 +148,7 @@ export default function MergeLandingPage() {
     setFiles([]);
     setPhase("idle");
     setMergedBytes(null);
+    setPreviewUrl(null);
     setShowPaywall(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -209,7 +212,9 @@ export default function MergeLandingPage() {
         pages.forEach((p) => merged.addPage(p));
       }
       const out = await merged.save();
-      setMergedBytes(new Uint8Array(out));
+      const outBytes = new Uint8Array(out);
+      setMergedBytes(outBytes);
+      renderPdfThumbnail(outBytes).then(setPreviewUrl).catch(() => {});
       const base = files[0].name.replace(/\.pdf$/i, "");
       setMergedName(`${base}-merged.pdf`);
       setPhase("ready");
@@ -431,12 +436,16 @@ export default function MergeLandingPage() {
                       <span className="text-[10px] font-extrabold tracking-[0.12em] text-white">PDF</span>
                       <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                     </div>
-                    <div className="relative flex flex-col items-center justify-center gap-2 py-8" style={{ background: "#FEF6F7", aspectRatio: "0.707" }}>
-                      <Layers className="w-12 h-12" style={{ color: ACCENT }} />
-                      <span className="text-[11px] font-semibold" style={{ color: ACCENT }}>
-                        {files.length} {tr("landing_merge_card_label", "PDFs · merged")}
-                      </span>
-                    </div>
+                    {previewUrl ? (
+                      <img src={previewUrl} alt="" className="w-full block" style={{ aspectRatio: "0.707", objectFit: "cover", objectPosition: "top", background: "#FFFFFF" }} />
+                    ) : (
+                      <div className="relative flex flex-col items-center justify-center gap-2 py-8" style={{ background: "#FEF6F7", aspectRatio: "0.707" }}>
+                        <Layers className="w-12 h-12" style={{ color: ACCENT }} />
+                        <span className="text-[11px] font-semibold" style={{ color: ACCENT }}>
+                          {files.length} {tr("landing_merge_card_label", "PDFs · merged")}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="text-center px-2">
@@ -458,9 +467,6 @@ export default function MergeLandingPage() {
                     <DownloadIcon className="w-4 h-4" />
                     {tr("landing_merge_download_button", "Download merged PDF")}
                   </button>
-                  <p className="text-[11px]" style={{ color: MUTED }}>
-                    {tr("landing_common_unlock_price", "Only 0,50 € to unlock the download.")}
-                  </p>
                 </div>
               )}
 

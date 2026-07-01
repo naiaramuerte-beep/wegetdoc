@@ -18,6 +18,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { renderPdfThumbnail } from "@/lib/pdfThumbnail";
 import {
   Upload, Minimize2, Loader2, CheckCircle2, RefreshCw, ArrowRight,
   Cloud, Download as DownloadIcon,
@@ -115,6 +116,7 @@ export default function CompressLandingPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [compressedBytes, setCompressedBytes] = useState<Uint8Array | null>(null);
   const [compressedName, setCompressedName] = useState("compressed.pdf");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
 
   const tr = (key: string, fallback: string, vars?: Record<string, string | number>): string => {
@@ -135,6 +137,7 @@ export default function CompressLandingPage() {
     setFile(null);
     setOriginalSize(0);
     setCompressedBytes(null);
+    setPreviewUrl(null);
     setShowPaywall(false);
     setPhase("idle");
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -159,6 +162,7 @@ export default function CompressLandingPage() {
       // just hand back the original bytes so the user isn't punished.
       const finalBytes = newSize < bytes.byteLength ? new Uint8Array(out) : bytes;
       setCompressedBytes(finalBytes);
+      renderPdfThumbnail(finalBytes).then(setPreviewUrl).catch(() => {});
       const base = incoming.name.replace(/\.pdf$/i, "");
       setCompressedName(`${base}-compressed.pdf`);
       setPhase("ready");
@@ -315,12 +319,16 @@ export default function CompressLandingPage() {
                       <span className="text-[10px] font-extrabold tracking-[0.12em] text-white">PDF</span>
                       <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                     </div>
-                    <div className="relative flex flex-col items-center justify-center gap-2 py-8" style={{ background: "#FEF6F7", aspectRatio: "0.707" }}>
-                      <Minimize2 className="w-12 h-12" style={{ color: ACCENT }} />
-                      <span className="text-[11px] font-semibold" style={{ color: ACCENT }}>
-                        {savedPct > 0 ? `−${savedPct}%` : tr("landing_compress_no_savings", "Optimized")}
-                      </span>
-                    </div>
+                    {previewUrl ? (
+                      <img src={previewUrl} alt="" className="w-full block" style={{ aspectRatio: "0.707", objectFit: "cover", objectPosition: "top", background: "#FFFFFF" }} />
+                    ) : (
+                      <div className="relative flex flex-col items-center justify-center gap-2 py-8" style={{ background: "#FEF6F7", aspectRatio: "0.707" }}>
+                        <Minimize2 className="w-12 h-12" style={{ color: ACCENT }} />
+                        <span className="text-[11px] font-semibold" style={{ color: ACCENT }}>
+                          {savedPct > 0 ? `−${savedPct}%` : tr("landing_compress_no_savings", "Optimized")}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="text-center px-2">
@@ -351,9 +359,6 @@ export default function CompressLandingPage() {
                     <DownloadIcon className="w-4 h-4" />
                     {tr("landing_compress_download_button", "Download compressed PDF")}
                   </button>
-                  <p className="text-[11px]" style={{ color: MUTED }}>
-                    {tr("landing_common_unlock_price", "Only 0,50 € to unlock the download.")}
-                  </p>
                 </div>
               )}
 
