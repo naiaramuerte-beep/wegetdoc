@@ -1384,7 +1384,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         id: Math.random().toString(36).slice(2),
         str: combinedStr,
         x: minX, y: minY,
-        width: Math.max(maxR - minX, 20),
+        // +8% slack absorbs the tiny width difference between the original PDF
+        // font and our metric-substitute web font (e.g. Helvetica → Arimo), so
+        // the last word doesn't wrap to a second line in a tight column block.
+        // The column-split guarantees ≥2× font-height of gutter to the next
+        // block, so this slack never overlaps the neighbouring column.
+        width: Math.max(Math.ceil((maxR - minX) * 1.08) + 2, 20),
         height: Math.max(maxB - minY, 14),
         fontSize: first.fontSize,
         pdfX: first.pdfX, pdfY: last.pdfY,
