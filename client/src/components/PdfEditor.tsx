@@ -1226,15 +1226,20 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             let bg = list[0];
             for (const v of list) if (v.count > bg.count) bg = v;
             const bgR = bg.r / bg.count, bgG = bg.g / bg.count, bgB = bg.b / bg.count;
+            // Ink = the highest-CONTRAST colour (max distance from bg) among
+            // buckets with a meaningful pixel count. Picking by CONTRAST rather
+            // than area means a large mid-tone highlight (e.g. a yellow marker
+            // behind one word) can't out-vote the real, darker/lighter text
+            // colour — that was turning highlighted text orange.
+            const minCount = Math.max(3, bg.count * 0.03);
             let ink: Bucket | null = null;
-            let bestScore = -1;
+            let bestDist = -1;
             for (const v of list) {
-              if (v === bg) continue;
+              if (v === bg || v.count < minCount) continue;
               const ar = v.r / v.count, ag = v.g / v.count, ab = v.b / v.count;
               const dist = Math.abs(ar - bgR) + Math.abs(ag - bgG) + Math.abs(ab - bgB);
               if (dist < 80) continue; // too close to bg → antialiasing, not ink
-              const score = v.count * Math.min(dist, 400); // favour populous AND high-contrast
-              if (score > bestScore) { bestScore = score; ink = v; }
+              if (dist > bestDist) { bestDist = dist; ink = v; }
             }
             if (ink) {
               first.sampledColor = [
@@ -1243,14 +1248,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 Math.round(ink.b / ink.count),
               ];
             }
-            // TEMP diagnostic — remove after tuning colour detection.
-            console.log(
-              "[colorDbg]", JSON.stringify(first.str.slice(0, 20)),
-              "sample", `${sampleX},${sampleY} ${sampleW}x${sampleH}`,
-              "canvas", `${canvas.width}x${canvas.height}`,
-              "bg", `${Math.round(bgR)},${Math.round(bgG)},${Math.round(bgB)}(${bg.count})`,
-              "ink", first.sampledColor ? first.sampledColor.join(",") : "NONE",
-            );
           }
           // Underline detection — scan rows just below baseline for a
           // solid horizontal line in the line's ink color.
