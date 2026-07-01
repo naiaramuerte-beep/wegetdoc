@@ -12,6 +12,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { renderPdfThumbnail } from "@/lib/pdfThumbnail";
 import {
   Upload, RotateCw, Loader2, CheckCircle2, RefreshCw, ArrowRight,
   Cloud, Download as DownloadIcon,
@@ -137,6 +138,7 @@ export default function RotateLandingPage() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [isDragging, setIsDragging] = useState(false);
   const [rotatedBytes, setRotatedBytes] = useState<Uint8Array | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [rotatedName, setRotatedName] = useState("rotated.pdf");
   const [showPaywall, setShowPaywall] = useState(false);
 
@@ -164,6 +166,7 @@ export default function RotateLandingPage() {
     setAngle(90);
     setPageRange("");
     setRotatedBytes(null);
+    setPreviewUrl(null);
     setShowPaywall(false);
     setPhase("idle");
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -218,7 +221,9 @@ export default function RotateLandingPage() {
         page.setRotation(degrees((current + angle) % 360));
       }
       const saved = await doc.save();
-      setRotatedBytes(new Uint8Array(saved));
+      const outBytes = new Uint8Array(saved);
+      setRotatedBytes(outBytes);
+      renderPdfThumbnail(outBytes).then(setPreviewUrl).catch(() => {});
       const base = file.name.replace(/\.pdf$/i, "");
       setRotatedName(`${base}-rotated-${angle}.pdf`);
       setPhase("ready");
@@ -435,12 +440,16 @@ export default function RotateLandingPage() {
                       <span className="text-[10px] font-extrabold tracking-[0.12em] text-white">PDF</span>
                       <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                     </div>
-                    <div className="relative flex flex-col items-center justify-center gap-2 py-8" style={{ background: "#FEF6F7", aspectRatio: "0.707" }}>
-                      <RotateCw className="w-12 h-12" style={{ color: ACCENT, transform: `rotate(${angle === 90 ? 0 : angle === 180 ? 90 : 180}deg)` }} />
-                      <span className="text-[11px] font-semibold" style={{ color: ACCENT }}>
-                        {tr("landing_rotate_card_label", "Rotated")} {angle}°
-                      </span>
-                    </div>
+                    {previewUrl ? (
+                      <img src={previewUrl} alt="" className="w-full block" style={{ aspectRatio: "0.707", objectFit: "cover", objectPosition: "top", background: "#FFFFFF" }} />
+                    ) : (
+                      <div className="relative flex flex-col items-center justify-center gap-2 py-8" style={{ background: "#FEF6F7", aspectRatio: "0.707" }}>
+                        <RotateCw className="w-12 h-12" style={{ color: ACCENT, transform: `rotate(${angle === 90 ? 0 : angle === 180 ? 90 : 180}deg)` }} />
+                        <span className="text-[11px] font-semibold" style={{ color: ACCENT }}>
+                          {tr("landing_rotate_card_label", "Rotated")} {angle}°
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="text-center px-2">
@@ -462,9 +471,6 @@ export default function RotateLandingPage() {
                     <DownloadIcon className="w-4 h-4" />
                     {tr("landing_common_download", "Download")}
                   </button>
-                  <p className="text-[11px]" style={{ color: MUTED }}>
-                    {tr("landing_common_unlock_price", "Only 0,50 € to unlock the download.")}
-                  </p>
                 </div>
               )}
 

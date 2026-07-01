@@ -12,6 +12,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { renderPdfThumbnail } from "@/lib/pdfThumbnail";
 import {
   Upload, Droplet, Loader2, CheckCircle2, RefreshCw, ArrowRight,
   Cloud, Download as DownloadIcon,
@@ -114,6 +115,7 @@ export default function WatermarkLandingPage() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [isDragging, setIsDragging] = useState(false);
   const [stampedBytes, setStampedBytes] = useState<Uint8Array | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [stampedName, setStampedName] = useState("watermarked.pdf");
   const [showPaywall, setShowPaywall] = useState(false);
 
@@ -142,6 +144,7 @@ export default function WatermarkLandingPage() {
     setOpacity(30);
     setPosition("diagonal");
     setStampedBytes(null);
+    setPreviewUrl(null);
     setShowPaywall(false);
     setPhase("idle");
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -244,7 +247,9 @@ export default function WatermarkLandingPage() {
         }
       }
       const saved = await doc.save();
-      setStampedBytes(new Uint8Array(saved));
+      const outBytes = new Uint8Array(saved);
+      setStampedBytes(outBytes);
+      renderPdfThumbnail(outBytes).then(setPreviewUrl).catch(() => {});
       const base = file.name.replace(/\.pdf$/i, "");
       setStampedName(`${base}-watermarked.pdf`);
       setPhase("ready");
@@ -470,20 +475,24 @@ export default function WatermarkLandingPage() {
                       <span className="text-[10px] font-extrabold tracking-[0.12em] text-white">PDF</span>
                       <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                     </div>
-                    <div className="relative flex flex-col items-center justify-center gap-2 py-8 overflow-hidden" style={{ background: "#FEF6F7", aspectRatio: "0.707" }}>
-                      <span
-                        className="absolute font-extrabold text-[14px] uppercase whitespace-nowrap"
-                        style={{
-                          color: ACCENT,
-                          opacity: opacity / 100,
-                          transform: position === "diagonal" ? "rotate(-30deg)" : position === "footer" ? "translateY(50px)" : "translateY(0)",
-                          letterSpacing: "0.1em",
-                        }}
-                      >
-                        {text || "WATERMARK"}
-                      </span>
-                      <Droplet className="w-12 h-12 opacity-30" style={{ color: ACCENT }} />
-                    </div>
+                    {previewUrl ? (
+                      <img src={previewUrl} alt="" className="w-full block" style={{ aspectRatio: "0.707", objectFit: "cover", objectPosition: "top", background: "#FFFFFF" }} />
+                    ) : (
+                      <div className="relative flex flex-col items-center justify-center gap-2 py-8 overflow-hidden" style={{ background: "#FEF6F7", aspectRatio: "0.707" }}>
+                        <span
+                          className="absolute font-extrabold text-[14px] uppercase whitespace-nowrap"
+                          style={{
+                            color: ACCENT,
+                            opacity: opacity / 100,
+                            transform: position === "diagonal" ? "rotate(-30deg)" : position === "footer" ? "translateY(50px)" : "translateY(0)",
+                            letterSpacing: "0.1em",
+                          }}
+                        >
+                          {text || "WATERMARK"}
+                        </span>
+                        <Droplet className="w-12 h-12 opacity-30" style={{ color: ACCENT }} />
+                      </div>
+                    )}
                   </div>
 
                   <div className="text-center px-2">
@@ -505,9 +514,6 @@ export default function WatermarkLandingPage() {
                     <DownloadIcon className="w-4 h-4" />
                     {tr("landing_common_download", "Download")}
                   </button>
-                  <p className="text-[11px]" style={{ color: MUTED }}>
-                    {tr("landing_common_unlock_price", "Only 0,50 € to unlock the download.")}
-                  </p>
                 </div>
               )}
 

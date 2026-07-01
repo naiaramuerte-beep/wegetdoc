@@ -11,6 +11,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { renderPdfThumbnail } from "@/lib/pdfThumbnail";
 import {
   Upload, Scissors, Loader2, CheckCircle2, RefreshCw, ArrowRight,
   Cloud, Download as DownloadIcon,
@@ -138,6 +139,7 @@ export default function SplitLandingPage() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [isDragging, setIsDragging] = useState(false);
   const [splitBytes, setSplitBytes] = useState<Uint8Array | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [splitName, setSplitName] = useState("split.pdf");
   const [showPaywall, setShowPaywall] = useState(false);
 
@@ -160,6 +162,7 @@ export default function SplitLandingPage() {
     setPageCount(0);
     setRange("");
     setSplitBytes(null);
+    setPreviewUrl(null);
     setShowPaywall(false);
     setPhase("idle");
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -210,7 +213,9 @@ export default function SplitLandingPage() {
       const copied = await out.copyPages(original, indices);
       copied.forEach(p => out.addPage(p));
       const saved = await out.save();
-      setSplitBytes(new Uint8Array(saved));
+      const outBytes = new Uint8Array(saved);
+      setSplitBytes(outBytes);
+      renderPdfThumbnail(outBytes).then(setPreviewUrl).catch(() => {});
       const base = file.name.replace(/\.pdf$/i, "");
       setSplitName(`${base}-pages-${range.replace(/\s+/g, "")}.pdf`);
       setPhase("ready");
@@ -396,12 +401,16 @@ export default function SplitLandingPage() {
                       <span className="text-[10px] font-extrabold tracking-[0.12em] text-white">PDF</span>
                       <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                     </div>
-                    <div className="relative flex flex-col items-center justify-center gap-2 py-8" style={{ background: "#FEF6F7", aspectRatio: "0.707" }}>
-                      <Scissors className="w-12 h-12" style={{ color: ACCENT }} />
-                      <span className="text-[11px] font-semibold" style={{ color: ACCENT }}>
-                        {tr("landing_split_card_label", "pages")} {range}
-                      </span>
-                    </div>
+                    {previewUrl ? (
+                      <img src={previewUrl} alt="" className="w-full block" style={{ aspectRatio: "0.707", objectFit: "cover", objectPosition: "top", background: "#FFFFFF" }} />
+                    ) : (
+                      <div className="relative flex flex-col items-center justify-center gap-2 py-8" style={{ background: "#FEF6F7", aspectRatio: "0.707" }}>
+                        <Scissors className="w-12 h-12" style={{ color: ACCENT }} />
+                        <span className="text-[11px] font-semibold" style={{ color: ACCENT }}>
+                          {tr("landing_split_card_label", "pages")} {range}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="text-center px-2">
@@ -423,9 +432,6 @@ export default function SplitLandingPage() {
                     <DownloadIcon className="w-4 h-4" />
                     {tr("landing_split_download_button", "Download")}
                   </button>
-                  <p className="text-[11px]" style={{ color: MUTED }}>
-                    {tr("landing_common_unlock_price", "Only 0,50 € to unlock the download.")}
-                  </p>
                 </div>
               )}
 
