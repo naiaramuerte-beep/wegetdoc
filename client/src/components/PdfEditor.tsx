@@ -1204,28 +1204,43 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           const data = imageData.data;
           // Histogram on quantized colors (4-bit per channel = 4096 buckets)
           // — picks the MODE of ink pixels, immune to AA transition shades.
+          // Histogram EVERY sampled pixel (quantized to 4-bit/channel). The
+          // BACKGROUND is the most populous bucket (it fills the line's area);
+          // the INK is the most populous bucket that's clearly different from
+          // it. This correctly handles white/light text on a colored band —
+          // the old code rejected all light pixels as "background", so it
+          // dropped the white glyphs and mis-sampled the band colour as ink
+          // (turning white text black on edit, and false-triggering underline).
           const buckets = new Map<number, { r: number; g: number; b: number; count: number }>();
           const step = Math.max(4, Math.floor(data.length / 4 / 400) * 4);
           for (let i = 0; i < data.length; i += step) {
             const r = data[i], g = data[i + 1], b = data[i + 2];
-            if (r > 230 && g > 230 && b > 230) continue; // background
-            // Reject very-light pixels (antialiased edges blending with bg)
-            const brightness = (r + g + b) / 3;
-            if (brightness > 200) continue;
             const key = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
             const cur = buckets.get(key);
             if (cur) { cur.r += r; cur.g += g; cur.b += b; cur.count++; }
             else buckets.set(key, { r, g, b, count: 1 });
           }
           if (buckets.size > 0) {
-            let best: { r: number; g: number; b: number; count: number } | null = null;
-            buckets.forEach((v) => { if (!best || v.count > best.count) best = v; });
-            if (best) {
-              const b = best as { r: number; g: number; b: number; count: number };
+            type Bucket = { r: number; g: number; b: number; count: number };
+            const list: Bucket[] = Array.from(buckets.values());
+            let bg = list[0];
+            for (const v of list) if (v.count > bg.count) bg = v;
+            const bgR = bg.r / bg.count, bgG = bg.g / bg.count, bgB = bg.b / bg.count;
+            let ink: Bucket | null = null;
+            let bestScore = -1;
+            for (const v of list) {
+              if (v === bg) continue;
+              const ar = v.r / v.count, ag = v.g / v.count, ab = v.b / v.count;
+              const dist = Math.abs(ar - bgR) + Math.abs(ag - bgG) + Math.abs(ab - bgB);
+              if (dist < 80) continue; // too close to bg → antialiasing, not ink
+              const score = v.count * Math.min(dist, 400); // favour populous AND high-contrast
+              if (score > bestScore) { bestScore = score; ink = v; }
+            }
+            if (ink) {
               first.sampledColor = [
-                Math.round(b.r / b.count),
-                Math.round(b.g / b.count),
-                Math.round(b.b / b.count),
+                Math.round(ink.r / ink.count),
+                Math.round(ink.g / ink.count),
+                Math.round(ink.b / ink.count),
               ];
             }
           }
