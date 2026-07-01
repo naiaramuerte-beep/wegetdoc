@@ -87,6 +87,13 @@ async function startServer() {
     // Strict Transport Security (HSTS) — force HTTPS for 1 year
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
     // Content Security Policy
+    // Google Ads fires its conversion ping to the buyer's LOCAL Google domain
+    // (www.google.<tld>), which varies by locale. CSP can't wildcard the TLD,
+    // so we enumerate the country domains for our supported languages + the
+    // main Spanish-speaking markets. Without these, the conversion ping is
+    // blocked by connect-src (seen as OR_BIBED-style console errors on
+    // /payment/success) and Google Ads never records the sale.
+    const googleAds = "https://www.google.es https://www.google.co.uk https://www.google.fr https://www.google.de https://www.google.pt https://www.google.it https://www.google.nl https://www.google.pl https://www.google.ru https://www.google.com.ua https://www.google.ro https://www.google.com.br https://www.google.com.mx https://www.google.com.ar https://www.google.cl https://www.google.com.co";
     res.setHeader("Content-Security-Policy", [
       "frame-ancestors 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://www.gstatic.com https://translate.googleapis.com https://static.hotjar.com https://script.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com",
@@ -95,11 +102,11 @@ async function startServer() {
       "object-src 'none'",
       "base-uri 'self'",
       "frame-src 'self' https://www.googletagmanager.com https://vars.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com",
-      "img-src 'self' data: https://www.googletagmanager.com https://www.google.com https://script.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com https://www.gstatic.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.doubleclick.net",
+      `img-src 'self' data: https://www.googletagmanager.com https://www.google.com ${googleAds} https://script.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com https://www.gstatic.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.doubleclick.net`,
       // Sentry ingest goes to *.ingest.<region>.sentry.io (we're on de = EU).
       // Allow both the regional ingest endpoint and sentry.io for the
       // API/dashboard pings the SDK does for release health.
-      "connect-src 'self' data: https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://google.com https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.doubleclick.net https://apple-pay-gateway.apple.com https://apple-pay-gateway-cert.apple.com https://*.ingest.de.sentry.io https://*.sentry.io",
+      `connect-src 'self' data: https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://google.com ${googleAds} https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com https://sandbox.sipay.es https://live.sipay.es https://pay.google.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.doubleclick.net https://apple-pay-gateway.apple.com https://apple-pay-gateway-cert.apple.com https://*.ingest.de.sentry.io https://*.sentry.io`,
     ].join("; "));
     next();
   });
