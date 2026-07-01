@@ -172,6 +172,13 @@ export const appRouter = router({
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      // Also clear any LEGACY host-only cookie (set before the shared
+      // .editorpdf.net domain existed). clearCookie only matches by name +
+      // domain + path, so without this the old host-only cookie survives and
+      // the user gets silently re-authenticated right after logging out.
+      const hostOnlyOpts = { ...cookieOptions };
+      delete (hostOnlyOpts as any).domain;
+      ctx.res.clearCookie(COOKIE_NAME, { ...hostOnlyOpts, maxAge: -1 });
       return { success: true } as const;
     }),
 
@@ -315,6 +322,13 @@ export const appRouter = router({
       await deleteUserById(ctx.user.id);
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      // Also clear any LEGACY host-only cookie (set before the shared
+      // .editorpdf.net domain existed). clearCookie only matches by name +
+      // domain + path, so without this the old host-only cookie survives and
+      // the user gets silently re-authenticated right after logging out.
+      const hostOnlyOpts = { ...cookieOptions };
+      delete (hostOnlyOpts as any).domain;
+      ctx.res.clearCookie(COOKIE_NAME, { ...hostOnlyOpts, maxAge: -1 });
       return { success: true };
     }),
   }),
