@@ -24,25 +24,25 @@ function isSecureRequest(req: Request) {
 export function getSessionCookieOptions(
   req: Request
 ): Pick<CookieOptions, "domain" | "httpOnly" | "path" | "sameSite" | "secure"> {
-  // const hostname = req.hostname;
-  // const shouldSetDomain =
-  //   hostname &&
-  //   !LOCAL_HOSTS.has(hostname) &&
-  //   !isIpAddress(hostname) &&
-  //   hostname !== "127.0.0.1" &&
-  //   hostname !== "::1";
-
-  // const domain =
-  //   shouldSetDomain && !hostname.startsWith(".")
-  //     ? `.${hostname}`
-  //     : shouldSetDomain
-  //       ? hostname
-  //       : undefined;
+  const host = (req.hostname || "").toLowerCase();
+  // Share the session cookie across the apex AND www with a leading-dot domain.
+  // Google OAuth's redirect_uri is always the apex (editorpdf.net) — the only
+  // host registered in Google Cloud Console — so the session cookie gets set on
+  // editorpdf.net. When the user started on www.editorpdf.net (where the ads now
+  // point, so Google Pay works) they're bounced back to www afterwards, and a
+  // host-only apex cookie is NOT sent on www → the user looked logged out and
+  // registration "did nothing". `.editorpdf.net` covers both hosts. Skip it for
+  // localhost / Railway previews / IPs (where a dotted apex domain is invalid).
+  const isProdHost =
+    !LOCAL_HOSTS.has(host) &&
+    !isIpAddress(host) &&
+    (host === "editorpdf.net" || host.endsWith(".editorpdf.net"));
 
   return {
     httpOnly: true,
     path: "/",
     sameSite: "lax",
     secure: isSecureRequest(req),
+    ...(isProdHost ? { domain: ".editorpdf.net" } : {}),
   };
 }
