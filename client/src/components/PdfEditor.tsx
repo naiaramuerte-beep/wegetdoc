@@ -2053,21 +2053,36 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     }
   }, [activeTool, getCanvasPos, getCanvasToCssRatios, currentBrushPoints, dragPreview, currentPage, brushColor, brushSize, highlightColor, pushHistory]);
 
+  // Repaint the main canvas from the clean snapshot and reset the erase tracking.
+  // The erase/restore effect covers native-text regions incrementally; on undo/redo
+  // that incremental state can go stale (edits/moves being reverted leave covered
+  // or half-restored pixels), which shows as ghosted / doubled native text. Wiping
+  // to the clean snapshot forces the effect to recompute every cover region from
+  // scratch for the reverted state.
+  const resetCanvasForHistory = useCallback(() => {
+    const canvas = mainCanvasRef.current;
+    const snap = canvasSnapshotRef.current;
+    if (canvas && snap) canvas.getContext("2d")?.putImageData(snap, 0, 0);
+    prevErasedBlocksRef.current = new Set();
+  }, []);
+
   const undo = useCallback(() => {
     if (historyIndex <= 0) return;
     const target = history[historyIndex - 1];
+    resetCanvasForHistory();
     setAnnotations(target.annotations);
     setAllNativeTextBlocks(target.textBlocks);
     setHistoryIndex(i => i - 1);
-  }, [history, historyIndex]);
+  }, [history, historyIndex, resetCanvasForHistory]);
 
   const redo = useCallback(() => {
     if (historyIndex >= history.length - 1) return;
     const target = history[historyIndex + 1];
+    resetCanvasForHistory();
     setAnnotations(target.annotations);
     setAllNativeTextBlocks(target.textBlocks);
     setHistoryIndex(i => i + 1);
-  }, [history, historyIndex]);
+  }, [history, historyIndex, resetCanvasForHistory]);
 
   // ── Add annotation ────────────────────────────────────────────
   const addAnnotation = useCallback((ann: Omit<Annotation, "id">) => {
