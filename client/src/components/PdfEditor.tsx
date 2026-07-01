@@ -1012,6 +1012,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       // lines in the phase-2 grouping (e.g. heading vs orange link).
       sampledColor?: [number, number, number];
       sampledUnderline?: boolean;
+      sampledStrike?: boolean;
     }
     // Defensive: on some Safari versions pdfjs returns a TextContent object
     // whose `items` key is missing or undefined (internal crash swallowed
@@ -1249,31 +1250,42 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               ];
             }
           }
-          // Underline detection — scan rows just below baseline for a
-          // solid horizontal line in the line's ink color.
+          // Underline + strikethrough detection. Scan a horizontal band for a
+          // CONTINUOUS run of ink-coloured pixels. Keying on the longest run
+          // (not total coverage) is what makes this robust: glyph strokes have
+          // gaps between letters, so only a real decoration line — continuous
+          // across the whole text — reaches the run threshold. That kills the
+          // false positives the old coverage-based scan produced on bold text
+          // and coloured bands.
           if (first.sampledColor) {
             const [tr, tg, tb] = first.sampledColor;
-            const ulStart = Math.round((first.canvasY + first.fontSize * 0.95) * dpr);
-            const ulEnd = Math.round((first.canvasY + first.fontSize * 1.35) * dpr);
-            if (ulStart < canvas.height && ulEnd > ulStart && ulEnd < canvas.height) {
-              try {
-                const ulData = ctx.getImageData(sampleX, ulStart, sampleW, ulEnd - ulStart).data;
-                const rows = (ulData.length / 4) / sampleW;
-                outer: for (let row = 0; row < rows; row++) {
-                  let match = 0;
-                  for (let col = 0; col < sampleW; col++) {
-                    const idx = (row * sampleW + col) * 4;
-                    const r = ulData[idx], g = ulData[idx + 1], b = ulData[idx + 2];
-                    if (r > 230 && g > 230 && b > 230) continue;
-                    if (Math.abs(r - tr) + Math.abs(g - tg) + Math.abs(b - tb) < 90) match++;
-                  }
-                  if (match / sampleW >= 0.55) {
-                    first.sampledUnderline = true;
-                    break outer;
-                  }
+            const scanBandForLine = (topFrac: number, botFrac: number): boolean => {
+              const yTop = Math.round((first.canvasY + first.fontSize * topFrac) * dpr);
+              const yBot = Math.round((first.canvasY + first.fontSize * botFrac) * dpr);
+              if (yTop < 0 || yBot <= yTop || yBot >= canvas.height) return false;
+              let data: Uint8ClampedArray;
+              try { data = ctx.getImageData(sampleX, yTop, sampleW, yBot - yTop).data; }
+              catch { return false; }
+              const rows = (data.length / 4) / sampleW;
+              const minRun = Math.max(14, Math.round(sampleW * 0.58));
+              for (let row = 0; row < rows; row++) {
+                let run = 0, best = 0, gap = 0;
+                for (let col = 0; col < sampleW; col++) {
+                  const idx = (row * sampleW + col) * 4;
+                  const r = data[idx], g = data[idx + 1], b = data[idx + 2];
+                  const isInk = !(r > 230 && g > 230 && b > 230) &&
+                    Math.abs(r - tr) + Math.abs(g - tg) + Math.abs(b - tb) < 100;
+                  if (isInk) { run += gap + 1; gap = 0; if (run > best) best = run; }
+                  else if (++gap > 2) { run = 0; gap = 0; } // bridge ≤2px AA gaps
                 }
-              } catch {}
-            }
+                if (best >= minRun) return true;
+              }
+              return false;
+            };
+            // Underline sits just below the baseline; strikethrough runs through
+            // the x-height middle of the text.
+            if (scanBandForLine(0.80, 1.18)) first.sampledUnderline = true;
+            if (scanBandForLine(0.40, 0.60)) first.sampledStrike = true;
           }
         }
       }
@@ -1422,7 +1434,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         fontStyle: first.fontStyle,
         pdfFontName: first.pdfFontName,
         fontColor: colorHex,
-        textDecoration: first.sampledUnderline ? "underline" : undefined,
+        textDecoration: [
+          first.sampledUnderline ? "underline" : null,
+          first.sampledStrike ? "line-through" : null,
+        ].filter(Boolean).join(" ") || undefined,
       });
     }
     // Step 3: Sample BACKGROUND color around each block edge. fontColor +
@@ -2972,7 +2987,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         const defaultColor = block.fontColor && block.fontColor.length === 7 ? block.fontColor : "#000000";
         const defaultBold = block.fontWeight === "bold";
         const defaultItalic = block.fontStyle === "italic";
-        const defaultUnderline = block.textDecoration === "underline";
+        const defaultUnderline = !!block.textDecoration?.includes("underline");
+        const defaultStrike = !!block.textDecoration?.includes("line-through");
 
         const parseHtmlToRuns = (html: string): TextRun[] => {
           const runs: TextRun[] = [];
@@ -3008,12 +3024,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             if (el.style.textDecoration?.includes("line-through")) s = true;
             for (const child of Array.from(node.childNodes)) walk(child, b, i, u, s, c);
           };
-          walk(div, defaultBold, defaultItalic, defaultUnderline, false, defaultColor);
+          walk(div, defaultBold, defaultItalic, defaultUnderline, defaultStrike, defaultColor);
           return runs;
         };
 
         const htmlContent = block.editedHtml || block.editedStr || block.str;
-        const runs = block.editedHtml ? parseHtmlToRuns(htmlContent) : [{ text: htmlContent, bold: defaultBold, italic: defaultItalic, underline: defaultUnderline, strike: false, color: defaultColor }];
+        const runs = block.editedHtml ? parseHtmlToRuns(htmlContent) : [{ text: htmlContent, bold: defaultBold, italic: defaultItalic, underline: defaultUnderline, strike: defaultStrike, color: defaultColor }];
 
         // Pick metric-compatible family from the block's CSS stack, embed its 4 variants.
         // This makes the exported PDF wrap identically to the editor overlay.
