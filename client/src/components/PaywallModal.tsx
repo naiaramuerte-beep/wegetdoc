@@ -1320,8 +1320,23 @@ export default function PaywallModal({
     // Persist the in-progress work and switch to a FULL-PAGE redirect. Used on
     // mobile (always) and as the popup-blocked fallback on desktop.
     const goRedirect = async () => {
-      if (pendingFile) { try { await savePdfToSession(pendingFile); } catch {} }
-      if (pdfData) { try { await saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size); } catch {} }
+      if (pdfData) {
+        // Restore the EDITED (annotated) PDF so the editor reopens showing the
+        // user's work — a mobile redirect can't preserve the live annotation
+        // layer, so persist the flattened result as the file to reload. We also
+        // keep an S3 temp copy (used for the paywall preview + auto-save, and as
+        // the source when the base64 is too big for sessionStorage).
+        try {
+          const bin = atob(pdfData.base64);
+          const bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          const editedFile = new File([bytes], pdfData.name, { type: "application/pdf" });
+          await savePdfToSession(editedFile);
+        } catch {}
+        try { await saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size); } catch {}
+      } else if (pendingFile) {
+        try { await savePdfToSession(pendingFile); } catch {}
+      }
       setPendingPaywall(true);
       sessionStorage.setItem("cloudpdf_pending_action", "download");
       window.location.href = authUrl.replace("&popup=1", "");
