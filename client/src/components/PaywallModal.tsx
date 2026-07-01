@@ -1317,7 +1317,27 @@ export default function PaywallModal({
     const returnPath = window.location.pathname + window.location.search;
     const authUrl = `/api/auth/google?origin=${encodeURIComponent(window.location.origin)}&returnPath=${encodeURIComponent(returnPath)}&popup=1`;
 
-    // Open Google OAuth in a popup — the editor stays open and keeps all annotations
+    // Persist the in-progress work and switch to a FULL-PAGE redirect. Used on
+    // mobile (always) and as the popup-blocked fallback on desktop.
+    const goRedirect = async () => {
+      if (pendingFile) { try { await savePdfToSession(pendingFile); } catch {} }
+      if (pdfData) { try { await saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size); } catch {} }
+      setPendingPaywall(true);
+      sessionStorage.setItem("cloudpdf_pending_action", "download");
+      window.location.href = authUrl.replace("&popup=1", "");
+    };
+
+    // Mobile browsers open window.open() as a NEW TAB with no window.opener, so
+    // the popup's postMessage never reaches us and the modal hangs forever on
+    // the register step (the login actually completes in the other tab). Always
+    // use the full-page redirect on mobile.
+    const isMobile =
+      window.innerWidth < 768 ||
+      /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+    if (isMobile) { await goRedirect(); return; }
+
+    // Desktop: open Google OAuth in a popup so the editor stays open with all
+    // annotations intact.
     const w = 500, h = 600;
     const left = window.screenX + (window.outerWidth - w) / 2;
     const top = window.screenY + (window.outerHeight - h) / 2;
@@ -1333,14 +1353,10 @@ export default function PaywallModal({
     };
     window.addEventListener("message", onMessage);
 
-    // Fallback: if popup was blocked, fall back to redirect
+    // Fallback: if the popup was blocked, redirect instead.
     if (!popup || popup.closed) {
       window.removeEventListener("message", onMessage);
-      if (pendingFile) { try { await savePdfToSession(pendingFile); } catch {} }
-      if (pdfData) { try { await saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size); } catch {} }
-      setPendingPaywall(true);
-      sessionStorage.setItem("cloudpdf_pending_action", "download");
-      window.location.href = authUrl.replace("&popup=1", "");
+      await goRedirect();
     }
   };
 
