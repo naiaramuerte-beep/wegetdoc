@@ -1826,6 +1826,23 @@ export async function findPendingFastpayPayments(opts?: {
     } catch {}
   }
 
+  // Skip pendings that already FAILED confirmation (3DS never authenticated).
+  // confirmPayment logs fastpay_confirm_failed with eventId = requestId; once a
+  // pending fails it won't recover, so excluding it stops the cron re-confirming
+  // the same abandoned payment every 15 min (that produced ~88 "Operation not
+  // authenticated" noise events for a single abandoned 3DS).
+  const failed = await db
+    .select({ eventId: webhookEvents.eventId })
+    .from(webhookEvents)
+    .where(
+      and(
+        eq(webhookEvents.eventType, "fastpay_confirm_failed"),
+        gte(webhookEvents.receivedAt, since),
+      ),
+    );
+  const failedKeys = new Set<string>();
+  for (const f of failed) if (f.eventId) failedKeys.add(f.eventId);
+
   const result: Array<{
     requestId: string;
     userId: number;
@@ -1842,6 +1859,7 @@ export async function findPendingFastpayPayments(opts?: {
     const amountCents: number = Number(payload?.amountCents ?? 50);
     if (!requestId || !userId) continue;
     if (finalizedKeys.has(order) || finalizedKeys.has(requestId)) continue;
+    if (failedKeys.has(requestId)) continue; // already failed 3DS — don't retry forever
     result.push({ requestId, userId, order, amountCents, receivedAt: p.receivedAt });
   }
   return result;
