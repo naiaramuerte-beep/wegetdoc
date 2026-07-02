@@ -5909,11 +5909,11 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           <button
             onClick={savePdf}
             disabled={isSaving || !pdfBytes}
-            className="flex items-center justify-center gap-1.5 w-14 h-12 rounded-xl border shrink-0 transition-all text-xs font-semibold"
+            className="flex flex-col items-center justify-center gap-0.5 w-14 h-12 rounded-xl border shrink-0 transition-all text-[10px] font-semibold leading-none disabled:opacity-50"
             style={{ borderColor: "#94a3b8", color: "#0A0A0B", backgroundColor: "white" }}
           >
             <Save className="w-4 h-4" />
-            {isSaving ? "..." : t.editor_save_btn}
+            <span className="whitespace-nowrap">{isSaving ? "..." : t.editor_save_btn}</span>
           </button>
           {/* Download button */}
           <button
