@@ -899,7 +899,10 @@ function ApplePayButton({
         } catch (err: any) {
           console.warn("[ApplePay] validate-merchant failed:", err?.message ?? err);
           setError("No pudimos validar Apple Pay. Inténtalo con tarjeta.");
-          session.abort();
+          // abort() throws InvalidAccessError if the session already ended
+          // (validation failed / sheet dismissed) — guard it so it doesn't
+          // become an unhandled promise rejection.
+          try { session.abort(); } catch {}
           setSubmitting(false);
         }
       };
@@ -934,7 +937,7 @@ function ApplePayButton({
             method: "applepay",
             decline_reason: String(err?.message ?? "charge_failed").slice(0, 200),
           });
-          session.completePayment(AP.STATUS_FAILURE);
+          try { session.completePayment(AP.STATUS_FAILURE); } catch {}
           setError(err?.message ?? "Error con Apple Pay");
           setSubmitting(false);
         }
