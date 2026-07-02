@@ -5810,6 +5810,25 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           className="flex items-center overflow-x-auto gap-0 px-1 py-1"
           style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
         >
+          {/* Undo / Redo — first on mobile, mirroring the desktop toolbar */}
+          <button
+            onClick={undo}
+            disabled={historyIndex <= 0}
+            className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg shrink-0 transition-all disabled:opacity-30"
+            style={{ color: "#0A0A0B", minWidth: 56 }}
+          >
+            <Undo2 className="w-5 h-5" />
+            <span style={{ fontSize: 10, whiteSpace: "nowrap" }}>{t.editor_undo}</span>
+          </button>
+          <button
+            onClick={redo}
+            disabled={historyIndex >= history.length - 1}
+            className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg shrink-0 transition-all disabled:opacity-30"
+            style={{ color: "#0A0A0B", minWidth: 56 }}
+          >
+            <Redo2 className="w-5 h-5" />
+            <span style={{ fontSize: 10, whiteSpace: "nowrap" }}>{t.editor_redo}</span>
+          </button>
           {/* Rotate page button — first position on mobile */}
           <button
             onClick={rotatePage}
