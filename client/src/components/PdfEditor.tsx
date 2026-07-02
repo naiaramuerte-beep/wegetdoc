@@ -2684,10 +2684,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         pages.forEach(p => merged.addPage(p));
       }
       const out = await merged.save();
-      // Swap the current PDF for the merged one — annotations on the original
-      // are discarded (their page coordinates wouldn't match the new doc).
-      setPdfBytes(new Uint8Array(out));
+      // Load the merged doc back into the editor via loadPdf so the canvas
+      // actually re-renders — setPdfBytes alone doesn't rebuild the pdf.js
+      // document, so the merge looked like "nothing happened". Annotations on
+      // the original are discarded (their page coords wouldn't match).
+      const mergedBlob = new Blob([new Uint8Array(out)], { type: "application/pdf" });
+      const mergedFile = new File([mergedBlob], file?.name ?? "document.pdf", { type: "application/pdf" });
+      await loadPdf(mergedFile);
       setAnnotations([]);
+      setAllNativeTextBlocks(new Map());
       toast.success(
         files.length === 1 ? "PDF añadido. Pulsa Descargar para guardar." : `${files.length} PDFs añadidos. Pulsa Descargar para guardar.`,
         { id: "merge" }
