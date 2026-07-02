@@ -300,6 +300,8 @@ function SipayCheckoutForm({
 }) {
   const { t, lang } = useLanguage();
   const s = SIPAY_STRINGS[lang] ?? SIPAY_STRINGS.en;
+  const authS = getAuthStrings(lang);
+  const { withPrice } = usePricing();
   const fpLang = fastpayLang(lang);
   const sipayConfigQ = trpc.subscription.sipayConfig.useQuery();
   const initMut = trpc.subscription.sipayCheckoutInit.useMutation();
@@ -768,6 +770,19 @@ function SipayCheckoutForm({
               )}
             </div>
           )}
+
+          {/* Recurring-price disclosure — legally required and shown legibly
+              (not tiny hidden print) BEFORE the user pays. Replaces the notice
+              that used to live on the (removed) register screen. withPrice()
+              fills the {price} placeholder (19,95 €) from the live config. */}
+          <div className="text-[13px] leading-relaxed text-slate-600 text-center px-2 space-y-1.5 pt-3 mt-1 border-t" style={{ borderColor: "#e5e7eb" }}>
+            <p>{withPrice(t.paywall_legal_text)}</p>
+            <p>
+              <a href={`/${lang}/terms`} target="_blank" rel="noreferrer" className="underline font-medium text-[#E63946] hover:opacity-80">{authS.termsLinkLabel}</a>
+              {" · "}
+              <a href={`/${lang}/privacy`} target="_blank" rel="noreferrer" className="underline font-medium text-[#E63946] hover:opacity-80">{authS.privacyLinkLabel}</a>
+            </p>
+          </div>
 
           {/* Compact trust badges — kept slim, no border */}
           <div className="flex items-center justify-center gap-3 text-[10px] text-gray-400 flex-wrap">
