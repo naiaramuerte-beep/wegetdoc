@@ -202,7 +202,7 @@ export async function getAllSubscribedUsers() {
   // The renewal-cron filter at getSubsDueForRenewal is intentionally stricter —
   // it only iterates rows that CAN be charged. The admin panel needs broader
   // visibility so orphan charges remain auditable.
-  return db.select({
+  const rows = await db.select({
     id: users.id,
     name: users.name,
     email: users.email,
@@ -220,6 +220,25 @@ export async function getAllSubscribedUsers() {
     .innerJoin(subscriptions, eq(users.id, subscriptions.userId))
     .where(sql`${subscriptions.status} IN ('trialing', 'active', 'past_due')`)
     .orderBy(desc(users.createdAt));
+
+  // Attach each subscriber's most recent charge so the admin sees at a glance
+  // whether/when they were billed and if it succeeded (ok / failed / refunded).
+  type LastCharge = { amountCents: number; status: string; provider: string; createdAt: Date | null };
+  if (rows.length === 0) return rows.map(r => ({ ...r, lastCharge: null as LastCharge | null }));
+  const chargeRows = await db.select({
+    userId: charges.userId,
+    amountCents: charges.amountCents,
+    status: charges.status,
+    provider: charges.provider,
+    createdAt: charges.createdAt,
+  }).from(charges).where(inArray(charges.userId, rows.map(r => r.id))).orderBy(desc(charges.createdAt));
+  const lastByUser = new Map<number, LastCharge>();
+  for (const c of chargeRows) {
+    if (!lastByUser.has(c.userId)) {
+      lastByUser.set(c.userId, { amountCents: c.amountCents, status: c.status, provider: c.provider, createdAt: c.createdAt });
+    }
+  }
+  return rows.map(r => ({ ...r, lastCharge: lastByUser.get(r.id) ?? null }));
 }
 
 export async function deactivateUser(userId: number) {

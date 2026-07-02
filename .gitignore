@@ -117,3 +117,6 @@ client/public/webviewer/
 
 # Local test PDFs
 client/public/test.pdf
+
+test-results/
+playwright-report/

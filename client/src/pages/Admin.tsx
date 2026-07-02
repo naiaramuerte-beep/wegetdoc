@@ -1362,7 +1362,8 @@ export default function Admin() {
                         <th className="px-4 py-2 font-medium">Nombre</th>
                         <th className="px-4 py-2 font-medium">Plan</th>
                         <th className="px-4 py-2 font-medium">Estado</th>
-                        <th className="px-4 py-2 font-medium">Fin periodo</th>
+                        <th className="px-4 py-2 font-medium">Próximo cobro</th>
+                        <th className="px-4 py-2 font-medium">Último cargo</th>
                         <th className="px-4 py-2 font-medium">País</th>
                         <th className="px-4 py-2 font-medium">Tarjeta</th>
                       </tr>
@@ -1414,6 +1415,23 @@ export default function Admin() {
                           </td>
                           <td className="px-4 py-2 text-gray-300">
                             {s.currentPeriodEnd ? new Date(s.currentPeriodEnd).toLocaleDateString("es-ES") : "—"}
+                          </td>
+                          <td className="px-4 py-2">
+                            {s.lastCharge ? (
+                              <div className="flex flex-col">
+                                <span className="text-gray-200">
+                                  {(s.lastCharge.amountCents / 100).toFixed(2).replace(".", ",")} € ·{" "}
+                                  <span style={{ color: s.lastCharge.status === "ok" ? "#10b981" : s.lastCharge.status === "refunded" ? "#fbbf24" : "#f87171" }}>
+                                    {s.lastCharge.status === "ok" ? "cobrado" : s.lastCharge.status === "refunded" ? "reembolsado" : "fallido"}
+                                  </span>
+                                </span>
+                                <span className="text-gray-500 text-[10px]">
+                                  {s.lastCharge.provider} · {s.lastCharge.createdAt ? new Date(s.lastCharge.createdAt).toLocaleString("es-ES", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : ""}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-gray-500">— sin cargo</span>
+                            )}
                           </td>
                           <td className="px-4 py-2 text-gray-400">{s.country ?? "—"}</td>
                           <td className="px-4 py-2 text-gray-400 font-mono text-xs">
