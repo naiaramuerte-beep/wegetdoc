@@ -727,8 +727,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     // (snapshot, drawing-canvas resize) the same way as before the render.
     if (myGen !== renderGenRef.current) return;
     if (!mainCanvasRef.current) return;
-    // Save clean canvas snapshot for text erasure/restore
-    canvasSnapshotRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    // Save clean canvas snapshot for text erasure/restore. A 0-sized canvas
+    // (render raced / produced no dimensions) makes getImageData throw
+    // IndexSizeError ("source height is 0"); skip until it's actually sized.
+    if (canvas.width > 0 && canvas.height > 0) {
+      canvasSnapshotRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    }
     // Sync drawing canvas size
     if (drawingCanvasRef.current) {
       drawingCanvasRef.current.width = vp.width;
