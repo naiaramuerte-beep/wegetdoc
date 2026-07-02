@@ -14,7 +14,7 @@ import {
   Minimize2, Move, StickyNote, FileText, Trash2, RotateCw,
   Plus, Scissors, Layers, X, Upload, Check, Eye, EyeOff,
   AlignLeft, Bold, Italic, Underline, ChevronDown, ChevronUp, Lock, Unlock,
-  Save, CheckCircle, Info, Mail,
+  Save, CheckCircle, Info, Mail, Share2, Printer,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -4842,6 +4842,26 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         >
           <Save className="w-4 h-4" />{isSaving ? t.editor_saving : t.editor_save_btn}
         </button>
+        {/* "Get my file" secondary actions (desktop) — Share / Print / Done.
+            Every one funnels through the same download → paywall flow, catching
+            the user's intent to keep their result whichever verb they reach for. */}
+        {([
+          { icon: Share2, label: t.editor_share },
+          { icon: Printer, label: t.editor_print },
+          { icon: CheckCircle, label: t.editor_done },
+        ] as const).map(({ icon: Icon, label }) => (
+          <button
+            key={label}
+            onClick={() => downloadPdf()}
+            disabled={!pdfBytes}
+            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all shrink-0 border disabled:opacity-40"
+            style={{ borderColor: "#94a3b8", color: "#0A0A0B", backgroundColor: "white" }}
+            onMouseEnter={e => { e.currentTarget.style.backgroundColor = "#F6F6F7"; }}
+            onMouseLeave={e => { e.currentTarget.style.backgroundColor = "white"; }}
+          >
+            <Icon className="w-4 h-4" />{label}
+          </button>
+        ))}
         {/* Download — for unauthenticated users we show a dropdown
             ("Descargar con Google" / "Descargar con Email") that matches
             the pdfe.com UX, so the user picks the auth method before
