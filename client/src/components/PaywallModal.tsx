@@ -5,7 +5,7 @@
  */
 import { useState, useEffect, useCallback, useRef } from "react";
 import { colors } from "@/lib/brand";
-import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield, FileText, ChevronDown } from "lucide-react";
+import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield, FileText, ChevronDown, PenLine, Layers, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -527,7 +527,7 @@ function SipayCheckoutForm({
               stays only in the legal microcopy below the pay button so
               the visual hierarchy reads clean (matches pdfe.com). */}
           <div>
-            <h3 className="text-[17px] font-bold text-slate-900 leading-snug mb-3">
+            <h3 className="text-[22px] md:text-[26px] font-extrabold text-slate-900 leading-tight tracking-tight mb-4">
               {converter
                 ? t.paywall_download_instant.replace("PDF", converter.label)
                 : t.paywall_download_instant}
@@ -549,13 +549,19 @@ function SipayCheckoutForm({
                 </span>
                 <span className="text-sm font-extrabold text-slate-900 flex-shrink-0">{converter ? converter.price : "0,50 €"}</span>
               </div>
-              {[t.paywall_feat_edit, t.paywall_feat_organize, t.paywall_feat_secure].map((feat, i) => (
-                <div key={i} className="px-4 py-2 flex items-center justify-between gap-2 text-[13px]" style={i < 2 ? { borderBottom: "1px solid #f1f5f9" } : undefined}>
-                  <span className="flex items-center gap-2 text-slate-600 min-w-0">
-                    <Check className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#16a34a" }} />
-                    <span className="truncate">{feat}</span>
+              {[
+                { icon: PenLine, label: t.paywall_feat_edit },
+                { icon: Layers, label: t.paywall_feat_organize },
+                { icon: ShieldCheck, label: t.paywall_feat_secure },
+              ].map(({ icon: FIcon, label }, i) => (
+                <div key={i} className="px-4 py-2.5 flex items-center justify-between gap-2 text-[13px]" style={i < 2 ? { borderBottom: "1px solid #f1f5f9" } : undefined}>
+                  <span className="flex items-center gap-2.5 text-slate-700 min-w-0">
+                    <FIcon className="w-4 h-4 flex-shrink-0 text-slate-400" />
+                    <span className="truncate font-medium">{label}</span>
                   </span>
-                  <span className="font-semibold flex-shrink-0" style={{ color: "#16a34a" }}>{t.paywall_incl}</span>
+                  <span className="flex items-center gap-1 font-bold flex-shrink-0" style={{ color: "#16a34a" }}>
+                    <Check className="w-3.5 h-3.5" />{t.paywall_incl}
+                  </span>
                 </div>
               ))}
             </div>
@@ -605,22 +611,11 @@ function SipayCheckoutForm({
               <button
                 type="button"
                 onClick={() => setCardExpanded((v) => !v)}
-                className="group flex items-center justify-between gap-2 w-full px-3 sm:px-4 py-3.5 rounded-xl border bg-white hover:border-gray-300 hover:shadow-sm transition-all"
-                style={{
-                  borderColor: cardExpanded ? "#0A0A0B" : "#e5e7eb",
-                  boxShadow: cardExpanded ? "0 0 0 1px #0A0A0B" : undefined,
-                }}
+                className="flex items-center justify-between gap-2 w-full px-4 rounded-xl text-white transition-all hover:brightness-95"
+                style={{ height: 52, background: "#1E66C9", boxShadow: "0 6px 16px -8px rgba(30,102,201,0.6)" }}
               >
-                <span className="flex items-center gap-3 text-sm font-medium text-gray-900 min-w-0 flex-1">
-                  <span
-                    className="flex items-center justify-center w-9 h-9 rounded-lg flex-shrink-0"
-                    style={{ background: cardExpanded ? "#0A0A0B" : "#f3f4f6" }}
-                  >
-                    <CreditCard
-                      className="w-4 h-4"
-                      style={{ color: cardExpanded ? "#fff" : "#6b7280" }}
-                    />
-                  </span>
+                <span className="flex items-center gap-2.5 text-[15px] font-semibold min-w-0 flex-1">
+                  <CreditCard className="w-5 h-5 flex-shrink-0" />
                   <span className="truncate text-left">{s.cardOption}</span>
                 </span>
                 <span className="flex items-center gap-2 flex-shrink-0">
@@ -630,7 +625,7 @@ function SipayCheckoutForm({
                     <CardBrands />
                   </span>
                   <ChevronDown
-                    className="w-4 h-4 text-gray-400 transition-transform"
+                    className="w-4 h-4 opacity-90 transition-transform"
                     style={{ transform: cardExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
                   />
                 </span>
@@ -974,10 +969,10 @@ function ApplePayButton({
           -webkit-appearance: -apple-pay-button;
           -apple-pay-button-type: plain;
           -apple-pay-button-style: black;
-          height: 44px;
+          height: 52px;
           width: 100%;
           border: 0;
-          border-radius: 10px;
+          border-radius: 12px;
         }
         .editorpdf-apple-pay-btn[disabled] {
           opacity: 0.6;
@@ -1128,7 +1123,7 @@ function GooglePayButton({
           // (the recommended default) so Google approves the integration.
           buttonColor: "black",
           buttonType: "pay",
-          buttonRadius: 10,
+          buttonRadius: 12,
           buttonSizeMode: "fill",
           onClick: async () => {
             // User pressed Google's standardized GPay button — real
@@ -1202,7 +1197,7 @@ function GooglePayButton({
   // official Google Pay button into the host.
   return (
     <div className="flex flex-col gap-2" style={ready ? {} : { display: "none" }}>
-      <div ref={hostRef} style={{ minHeight: 44 }} />
+      <div ref={hostRef} style={{ height: 52 }} />
       {submitting && (
         <div className="flex items-center justify-center gap-2 py-1 text-xs text-gray-500">
           <Loader2 className="w-3 h-3 animate-spin text-[#E63946]" />
