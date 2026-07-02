@@ -209,6 +209,54 @@ export const appRouter = router({
         return { success: true, user: { id: user.id, email: user.email, name: user.name, role: user.role } };
       }),
 
+    // Guest checkout: ensure an account exists for this email so the charge can
+    // attach to a userId WITHOUT the separate register screen.
+    //   • email NOT found → create a passwordless "guest" account and SET the
+    //     session cookie, so the (protected) charge mutations run as this user.
+    //   • email EXISTS → do NOT set a session. Auto-sessioning an existing
+    //     account from just an email would be account takeover (anyone pays with
+    //     a stranger's email and gets in). Instead we email a magic-link (reuse
+    //     the password-reset link) so the real owner can access, and return
+    //     existed:true so the client asks them to log in to pay.
+    //
+    // NOTE — the spec also wants to *charge* an existing account here (no
+    // session, just a magic-link). Doing that securely needs a single-use,
+    // short-TTL SIGNED "charge grant" that the charge mutations accept in place
+    // of ctx.user (so account access is never granted from an email alone).
+    // That adds a bypass token to the payment path, so it's intentionally left
+    // as a reviewed follow-up: this first pass keeps existing-email as
+    // magic-link + login, and never lets a stranger charge someone else's
+    // account. New emails (the common guest case) work end-to-end.
+    guestEnsureAccount: publicProcedure
+      .input(z.object({ email: z.string().email() }))
+      .mutation(async ({ ctx, input }) => {
+        const existing = await getUserByEmail(input.email);
+        if (existing) {
+          const token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+          await setResetToken(existing.id, token, new Date(Date.now() + 1000 * 60 * 60));
+          const proto = (ctx.req.headers["x-forwarded-proto"] as string)?.split(",")[0] ?? ctx.req.protocol ?? "https";
+          const host = (ctx.req.headers["x-forwarded-host"] as string) ?? ctx.req.headers.host ?? "editorpdf.net";
+          const link = `${proto}://${host}/reset-password?token=${encodeURIComponent(token)}`;
+          try {
+            const { sendPasswordResetEmail } = await import("./email");
+            await sendPasswordResetEmail({ to: input.email, name: existing.name ?? null, resetUrl: link });
+          } catch {}
+          return { existed: true as const };
+        }
+        const user = await createOwnUser({
+          email: input.email,
+          name: input.email.split("@")[0],
+          loginMethod: "guest",
+          role: "user",
+        });
+        if (!user) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Error al crear la cuenta" });
+        const { sdk } = await import("./_core/sdk");
+        const token = await sdk.createSessionToken(user.openId, { name: user.name ?? "", expiresInMs: ONE_YEAR_MS });
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+        return { existed: false as const, user: { id: user.id, email: user.email } };
+      }),
+
     // Own auth: login with email+password
     login: publicProcedure
       .input(z.object({

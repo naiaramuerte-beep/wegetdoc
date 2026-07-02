@@ -88,6 +88,9 @@ export function registerGoogleOAuthRoutes(app: Express) {
     const ALLOWED_ORIGINS: Record<string, string> = {
       "https://editorpdf.net": "https://editorpdf.net/api/auth/google/callback",
       "https://www.editorpdf.net": "https://editorpdf.net/api/auth/google/callback",
+      // Staging preview (branch testing) — its OWN callback so Google returns to
+      // staging, not prod. Must also be registered in Google Cloud Console.
+      "https://staging.editorpdf.net": "https://staging.editorpdf.net/api/auth/google/callback",
     };
     const redirectUri = ALLOWED_ORIGINS[origin] || "https://editorpdf.net/api/auth/google/callback";
     const authUrl = buildGoogleAuthUrl(redirectUri, state);
@@ -129,6 +132,7 @@ export function registerGoogleOAuthRoutes(app: Express) {
       const ALLOWED_ORIGINS: Record<string, string> = {
         "https://editorpdf.net": "https://editorpdf.net/api/auth/google/callback",
         "https://www.editorpdf.net": "https://editorpdf.net/api/auth/google/callback",
+        "https://staging.editorpdf.net": "https://staging.editorpdf.net/api/auth/google/callback",
       };
       const redirectUri = ALLOWED_ORIGINS[origin] || "https://editorpdf.net/api/auth/google/callback";
 
