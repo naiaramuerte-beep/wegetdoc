@@ -290,6 +290,7 @@ function SipayCheckoutForm({
   thumbnailUrl,
   buildPdfForUpload: _buildPdfForUpload,
   converter,
+  onWantLogin,
 }: {
   onSuccess: (transactionId?: string) => void;
   onClose: () => void;
@@ -297,12 +298,43 @@ function SipayCheckoutForm({
   thumbnailUrl?: string;
   buildPdfForUpload?: () => Promise<{ base64: string; name: string; size: number } | null>;
   converter?: { label: string; price: string };
+  onWantLogin?: () => void;
 }) {
   const { t, lang } = useLanguage();
   const s = SIPAY_STRINGS[lang] ?? SIPAY_STRINGS.en;
   const authS = getAuthStrings(lang);
   const { withPrice } = usePricing();
   const fpLang = fastpayLang(lang);
+  // ── Guest checkout ────────────────────────────────────────────────────────
+  // New users pay WITHOUT the separate register screen: they enter one email
+  // here and guestEnsureAccount creates a passwordless account + session BEFORE
+  // the (protected) charge runs. The pay buttons stay gated behind `canPay` so a
+  // charge never fires without a userId. Wallets currently also need this email
+  // field; reading the email straight from the Apple/Google Pay callback (to
+  // make wallets zero-field again) is a documented follow-up.
+  const { isAuthenticated, refresh: refreshAuth } = useAuth();
+  const guestMut = trpc.auth.guestEnsureAccount.useMutation();
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestReady, setGuestReady] = useState(false);
+  const [guestExisted, setGuestExisted] = useState(false);
+  const [guestErr, setGuestErr] = useState<string | null>(null);
+  const canPay = isAuthenticated || guestReady;
+  const submitGuest = async () => {
+    setGuestErr(null);
+    setGuestExisted(false);
+    const email = guestEmail.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setGuestErr(t.paywall_enter_email ?? "Introduce un email válido"); return; }
+    try {
+      const r = await guestMut.mutateAsync({ email });
+      // Existing account → guestEnsureAccount sent a magic-link and did NOT set a
+      // session (never grant account access from an email alone). Ask them to log in.
+      if (r.existed) { setGuestExisted(true); return; }
+      setGuestReady(true);
+      try { await refreshAuth(); } catch {}
+    } catch {
+      setGuestErr("No pudimos continuar. Inténtalo de nuevo.");
+    }
+  };
   const sipayConfigQ = trpc.subscription.sipayConfig.useQuery();
   const initMut = trpc.subscription.sipayCheckoutInit.useMutation();
   const [scriptReady, setScriptReady] = useState(false);
@@ -576,11 +608,53 @@ function SipayCheckoutForm({
             </div>
           </div>
 
+          {/* Guest email gate — one field, no password, no separate screen.
+              guestEnsureAccount creates a passwordless account (new email) or
+              emails a magic-link (existing email) before the charge runs. Pay
+              buttons stay hidden until canPay so a charge never fires without a
+              userId/session. */}
+          {!canPay && (
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-700 block">{(t as any).paywall_enter_email ?? "Email"}</label>
+              <input
+                type="email"
+                value={guestEmail}
+                onChange={(e) => { setGuestEmail(e.target.value); setGuestExisted(false); setGuestErr(null); }}
+                onKeyDown={(e) => e.key === "Enter" && submitGuest()}
+                placeholder="tu@email.com"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A0A0B]"
+              />
+              {guestErr && <p className="text-xs text-red-600">{guestErr}</p>}
+              {guestExisted ? (
+                <p className="text-xs text-slate-700 bg-amber-50 border border-amber-200 rounded-lg p-2.5 leading-relaxed">
+                  {(t as any).paywall_auth_have_account ?? "Este email ya tiene cuenta."}{" "}
+                  {(t as any).paywall_magic_link_sent ?? "Te hemos enviado un enlace para acceder."}{" "}
+                  <button type="button" onClick={onWantLogin} className="underline font-semibold text-[#E63946]">{(t as any).paywall_login ?? "Iniciar sesión"}</button>
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={submitGuest}
+                  disabled={guestMut.isPending}
+                  className="w-full py-3.5 rounded-xl text-white font-bold text-sm disabled:opacity-60 hover:bg-[#C72738] transition-colors"
+                  style={{ backgroundColor: "#E63946" }}
+                >
+                  {guestMut.isPending ? "…" : ((t as any).paywall_continue ?? "Continuar")}
+                </button>
+              )}
+              {onWantLogin && !guestExisted && (
+                <p className="text-center text-xs text-slate-500 pt-1">
+                  <button type="button" onClick={onWantLogin} className="underline hover:text-[#E63946]">{(t as any).paywall_login_prompt ?? "¿Ya tienes cuenta? Inicia sesión"}</button>
+                </p>
+              )}
+            </div>
+          )}
+
           {/* FastPay button + loading + redirect overlay */}
-          {!sipayConfigQ.data?.key && (
+          {canPay && !sipayConfigQ.data?.key && (
             <p className="text-sm text-gray-500 text-center">Cargando configuración…</p>
           )}
-          {sipayConfigQ.data?.key && (
+          {canPay && sipayConfigQ.data?.key && (
             <div className="flex flex-col items-stretch gap-3">
               <p className="text-[11px] font-bold tracking-wide uppercase text-slate-500 -mb-0.5">{t.paywall_choose_method}</p>
               {/* Apple Pay button — only shown on Safari iOS/macOS where the
@@ -1253,7 +1327,11 @@ export default function PaywallModal({
   // that paid through Stripe before the migration.
   const paymentProvider: "sipay" = "sipay";
   const { savePdfToSession, setPendingPaywall, pendingFile, pendingEditedPdf, clearPendingEditedPdf, saveEditedPdfToSession } = usePdfFile();
-  const [step, setStep] = useState<Step>(isAuthenticated ? "plans" : "auth-choice");
+  // Guest checkout: everyone (logged-in OR not) lands on the payment step. The
+  // register/login screen ("auth-choice") is now opt-in — reached only via the
+  // "¿Ya tienes cuenta?" link. New users create a passwordless account inline
+  // from the single email field in the payment step (guestEnsureAccount).
+  const [step, setStep] = useState<Step>("plans");
   const [emailInput, setEmailInput] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
   const [nameInput, setNameInput] = useState("");
@@ -1701,6 +1779,7 @@ export default function PaywallModal({
             thumbnailUrl={thumbnailUrl}
             buildPdfForUpload={buildPdfForUpload}
             converter={converter}
+            onWantLogin={() => { setEmailMode("login"); setStep("auth-choice"); }}
           />
         )}
       </div>
