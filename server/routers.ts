@@ -966,6 +966,23 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    // Admin-initiated subscription cancellation: stops the MIT-R renewal
+    // (cancelAtPeriodEnd = true) while the user keeps service until the period
+    // ends — same behaviour as the user cancelling from their dashboard.
+    cancelUserSubscription: adminProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await cancelSubscriptionDb(input.userId);
+        await recordAuditEntry({
+          adminId: ctx.user.id,
+          adminEmail: ctx.user.email ?? null,
+          action: "cancel_subscription",
+          targetType: "user",
+          targetId: String(input.userId),
+        });
+        return { success: true };
+      }),
+
     contactMessages: adminProcedure.query(async () => {
       return getAllContactMessages();
     }),

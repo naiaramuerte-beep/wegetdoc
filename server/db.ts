@@ -120,10 +120,10 @@ export async function getAllUsers(search?: string) {
       .select(cols)
       .from(users)
       .leftJoin(subscriptions, eq(users.id, subscriptions.userId))
-      .where(like(users.email, `%${search}%`))
+      .where(and(like(users.email, `%${search}%`), isNull(users.deletedAt)))
       .orderBy(desc(users.createdAt));
   }
-  return db.select(cols).from(users).leftJoin(subscriptions, eq(users.id, subscriptions.userId)).orderBy(desc(users.createdAt));
+  return db.select(cols).from(users).leftJoin(subscriptions, eq(users.id, subscriptions.userId)).where(isNull(users.deletedAt)).orderBy(desc(users.createdAt));
 }
 
 // ─── Subscriptions ────────────────────────────────────────────

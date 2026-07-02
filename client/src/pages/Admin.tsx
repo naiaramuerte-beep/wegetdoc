@@ -198,6 +198,11 @@ export default function Admin() {
     onError: () => toast.error("Error al eliminar usuario"),
   });
 
+  const cancelSubMut = trpc.admin.cancelUserSubscription.useMutation({
+    onSuccess: () => { toast.success("Suscripción cancelada — no renovará"); utils.admin.users.invalidate(); },
+    onError: () => toast.error("Error al cancelar la suscripción"),
+  });
+
   const promoteUserMut = trpc.admin.promoteUser.useMutation({
     onSuccess: () => { toast.success("Rol actualizado"); utils.admin.users.invalidate(); },
     onError: () => toast.error("Error al actualizar rol"),
@@ -1750,10 +1755,22 @@ export default function Admin() {
                             </button>
                             <button
                               onClick={() => {
+                                if (confirm(`¿Cancelar la suscripción de ${u.email}?\nDejará de renovar; mantiene acceso hasta fin de periodo.`)) {
+                                  cancelSubMut.mutate({ userId: u.id });
+                                }
+                              }}
+                              title="Cancelar suscripción (no renovará)"
+                              className="p-1.5 rounded transition-colors hover:bg-gray-700 text-gray-400 hover:text-amber-400"
+                            >
+                              <UserX size={14} />
+                            </button>
+                            <button
+                              onClick={() => {
                                 if (confirm(`¿Eliminar usuario ${u.email}?`)) {
                                   deleteUserMut.mutate({ userId: u.id });
                                 }
                               }}
+                              title="Eliminar usuario"
                               className="p-1.5 rounded transition-colors hover:bg-gray-700 text-gray-400 hover:text-red-400"
                             >
                               <Trash2 size={14} />
