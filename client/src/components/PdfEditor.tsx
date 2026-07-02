@@ -4848,7 +4848,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         {([
           { icon: Share2, label: t.editor_share },
           { icon: Printer, label: t.editor_print },
-          { icon: CheckCircle, label: t.editor_done },
         ] as const).map(({ icon: Icon, label }) => (
           <button
             key={label}
