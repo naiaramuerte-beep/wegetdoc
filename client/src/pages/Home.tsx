@@ -447,9 +447,11 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
               <span className="text-[#16a34a]">✓</span> {t.hero_browser}
             </span>
           </div>
-          <p className="text-base md:text-[17px] text-[#5A5A62] mb-8 max-w-xl mx-auto leading-relaxed">
-            {overrides?.heroSubtitle ?? (isFastDoc ? t.fastdoc_hero_subtitle : t.hero_subtitle)}
-          </p>
+          {(overrides?.heroSubtitle || isFastDoc) && (
+            <p className="text-base md:text-[17px] text-[#5A5A62] mb-8 max-w-xl mx-auto leading-relaxed">
+              {overrides?.heroSubtitle ?? t.fastdoc_hero_subtitle}
+            </p>
+          )}
 
           <div className="relative max-w-[720px] mx-auto">
             <UploadBox withTabs withHandNote />
