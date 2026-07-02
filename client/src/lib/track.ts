@@ -9,6 +9,7 @@
 // the only events the payment funnel emits.
 export type EventName =
   | "paywall_shown"
+  | "register_completed"
   | "pay_clicked"
   | "card_tokenized"
   | "3ds_started"

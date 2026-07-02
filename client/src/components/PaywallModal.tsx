@@ -1268,8 +1268,15 @@ export default function PaywallModal({
   // selection, etc.) but the event must reflect one "modal appeared on
   // screen" per user attempt — so the ref gates it.
   const paywallShownFiredRef = useRef(false);
+  // Whether the modal opened with the user NOT logged in (so they must clear
+  // the register/login gate before paying) + whether we've logged that they
+  // cleared it. Lets GA4 chart paywall_shown → register_completed → pay_clicked
+  // and isolate the registration drop-off.
+  const startedUnauthedRef = useRef(false);
+  const registerFiredRef = useRef(false);
   useEffect(() => {
     if (isOpen && !paywallShownFiredRef.current) {
+      startedUnauthedRef.current = !isAuthenticated;
       trackEvent("paywall_shown", {
         plan: "subscription",
         amount: INTRO_CHARGE_EUR,
@@ -1280,8 +1287,18 @@ export default function PaywallModal({
     if (!isOpen) {
       // Reset on close so the next open fires another event.
       paywallShownFiredRef.current = false;
+      registerFiredRef.current = false;
     }
   }, [isOpen]);
+
+  // Fire register_completed once when a user who opened the paywall
+  // unauthenticated becomes authenticated (they cleared the register gate).
+  useEffect(() => {
+    if (isOpen && isAuthenticated && startedUnauthedRef.current && !registerFiredRef.current) {
+      trackEvent("register_completed", { method: "paywall" });
+      registerFiredRef.current = true;
+    }
+  }, [isOpen, isAuthenticated]);
 
   // Saves the current PDF (from a landing's `buildPdfForUpload`) to the
   // user's dashboard. Idempotent via `docSavedRef` so we never create
