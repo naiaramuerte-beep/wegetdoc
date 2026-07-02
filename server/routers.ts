@@ -907,6 +907,27 @@ export const appRouter = router({
       };
     }),
 
+    // Diagnostic — verify a user's stored token resolves to a chargeable card
+    // (i.e. whether their subscription will renew via MIT-R). NO charge.
+    checkWalletToken: adminProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ input }) => {
+        const { checkCardToken } = await import("./_core/sipay");
+        const { getActiveSubscription } = await import("./db");
+        const sub = await getActiveSubscription(input.userId);
+        const token = sub?.sipayToken ?? "";
+        if (!token) return { token: "", resolved: false, detail: "sub sin token o sin sub activa", raw: "" };
+        const result = await checkCardToken(token);
+        const data: any = result.data;
+        const resolved = !!result.ok && data?.code === "0";
+        return {
+          token,
+          resolved,
+          detail: data?.detail ?? data?.description ?? "",
+          raw: (result.raw ?? "").slice(0, 300),
+        };
+      }),
+
     users: adminProcedure
       .input(z.object({ search: z.string().optional() }))
       .query(async ({ input }) => {

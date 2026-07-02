@@ -2537,6 +2537,7 @@ export default function Admin() {
               </div>
 
               <SipayProbeCard />
+              <WalletTokenCard />
               <SipayCheckoutCard />
 
               {/* Site settings */}
@@ -3083,6 +3084,61 @@ function SettingRow({
       >
         {saved ? "✓ Guardado" : "Guardar"}
       </button>
+    </div>
+  );
+}
+
+// ─── WalletTokenCard — verify a user's stored token renews (no charge) ──────────
+function WalletTokenCard() {
+  const [userId, setUserId] = useState("");
+  const mut = trpc.admin.checkWalletToken.useMutation();
+  const r = mut.data;
+  return (
+    <div className="rounded-xl border p-5 space-y-4" style={{ backgroundColor: "#131720", borderColor: "#1E9E63" }}>
+      <div>
+        <p className="text-sm font-semibold text-white flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#1E9E63" }} />
+          Verificar renovación de wallet (sin cobrar)
+        </p>
+        <p className="text-xs text-gray-500 mt-1">
+          Comprueba si el token guardado de un usuario resuelve a una tarjeta cobrable vía{" "}
+          <code className="font-mono">/mdwr/v1/card</code>. Si resuelve, su suscripción renovará por MIT-R.{" "}
+          <strong>No mueve dinero.</strong>
+        </p>
+      </div>
+      <div className="flex gap-2">
+        <input
+          value={userId}
+          onChange={(e) => setUserId(e.target.value.replace(/\D/g, ""))}
+          placeholder="userId (ej. 53660)"
+          className="flex-1 px-3 py-2 rounded-lg text-sm text-white border"
+          style={{ backgroundColor: "#0B0E14", borderColor: "#334155" }}
+        />
+        <button
+          onClick={() => userId && mut.mutate({ userId: Number(userId) })}
+          disabled={mut.isPending || !userId}
+          className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50"
+          style={{ backgroundColor: "#1E9E63" }}
+        >
+          {mut.isPending ? "Comprobando…" : "Verificar"}
+        </button>
+      </div>
+      {mut.error && <p className="text-xs text-red-400">Error: {mut.error.message}</p>}
+      {r && (
+        <div className="text-xs space-y-1">
+          <p className={r.resolved ? "text-green-400 font-semibold" : "text-red-400 font-semibold"}>
+            {r.resolved ? "✅ Token válido — la sub renovará" : "❌ El token NO resuelve — NO renovará"}
+          </p>
+          <p className="text-gray-400">token: <code className="font-mono">{r.token || "(vacío)"}</code></p>
+          {r.detail && <p className="text-gray-400">detalle: {r.detail}</p>}
+          {r.raw && (
+            <details>
+              <summary className="text-gray-500 cursor-pointer">respuesta cruda</summary>
+              <pre className="mt-1 p-2 rounded bg-black/40 text-gray-400 overflow-x-auto text-[10px]">{r.raw}</pre>
+            </details>
+          )}
+        </div>
+      )}
     </div>
   );
 }

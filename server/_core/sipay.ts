@@ -106,6 +106,17 @@ async function sipayPost<T = Record<string, unknown>>(
 }
 
 /**
+ * Diagnostic — does a stored token resolve to a saved, chargeable card?
+ * Calls /mdwr/v1/card, which does NOT move money. Use it to confirm a wallet
+ * sub's `usr-<userId>` token is valid for MIT-R renewal WITHOUT charging.
+ * Sipay returns code "0" + card detail when the token resolves; an error like
+ * `no_card_from_token` when it doesn't (e.g. legacy cof_id tokens).
+ */
+export async function checkCardToken(token: string): Promise<SipayResult> {
+  return sipayPost("/mdwr/v1/card", { token });
+}
+
+/**
  * Initial payment + card tokenization (intro 0,50 € flow).
  * Returns a redirect URL for 3DS authentication; the customer must visit it,
  * Redsys MPI runs the challenge, and they bounce back to url_ok / url_ko.
