@@ -5721,7 +5721,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         )}
         {/* Desktop sidebar */}
         <div
-          className="hidden md:flex border-l overflow-y-auto flex-col md:w-[260px]"
+          className="hidden md:flex border-l overflow-y-auto flex-col md:w-[260px] shrink-0"
           style={{ backgroundColor: "#FFFFFF", borderColor: "#f1f5f9" }}
         >
           {renderToolPanel()}
