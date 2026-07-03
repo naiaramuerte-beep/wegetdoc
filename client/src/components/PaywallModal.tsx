@@ -1342,7 +1342,15 @@ export default function PaywallModal({
       const fd = new FormData();
       fd.append("file", blob, docToSave.name);
       fd.append("name", docToSave.name);
-      const res = await fetch("/api/documents/auto-save", { method: "POST", credentials: "include", body: fd });
+      const doPost = () => fetch("/api/documents/auto-save", { method: "POST", credentials: "include", body: fd });
+      let res = await doPost();
+      // Right after an email registration the session cookie can race this
+      // request → 401. Wait a beat for it to settle and retry once so the paid
+      // document still lands in the dashboard.
+      if (res.status === 401) {
+        await new Promise((r) => setTimeout(r, 1200));
+        res = await doPost();
+      }
       if (res.ok) docSavedRef.current = true;
       else console.warn("[PaywallModal] auto-save failed", res.status);
     } catch (err) {
