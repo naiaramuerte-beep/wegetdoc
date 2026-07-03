@@ -7,6 +7,7 @@
    ============================================================= */
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { flushSync } from "react-dom";
 import { useLocation } from "wouter";
 import {
   FileText, PenTool, MessageSquare, Type, Image, Lock,
@@ -238,8 +239,14 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
-    setPendingFile(file);
-    if (tool) setPendingTool(tool);
+    // flushSync guarantees the context state is committed BEFORE we navigate,
+    // so EditorPage mounts with pendingFile already set. Without this, the
+    // state update and the route change can land in different renders and the
+    // editor opens empty on the first click (worked on the 2nd click).
+    flushSync(() => {
+      setPendingFile(file);
+      if (tool) setPendingTool(tool);
+    });
     navigate(`/${lang}/editor`);
   }, [setPendingFile, setPendingTool, navigate, lang]);
 
