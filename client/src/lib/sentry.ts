@@ -39,6 +39,12 @@ const DENY_URLS = [
   /googletagmanager\.com/,
   /google-analytics\.com/,
   /hotjar\.com/,
+  // Sipay's FastPay bundle throws internally (e.g. "Cannot read properties of
+  // undefined (reading 'data')" in its message handler on Opera). It's their
+  // third-party code — not fixable by us — so drop errors originating from it.
+  /fastpay\.js/,
+  /\/fpay\//,
+  /sipay\.es/,
 ];
 
 export function initSentry() {
