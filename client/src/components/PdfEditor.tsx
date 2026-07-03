@@ -2418,6 +2418,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       setEditingTextId(newId);
       setTextInput("");
       setClickToPlaceText(false);
+      // Deactivate the text tool after placing ONE box (like other editors):
+      // clicking elsewhere then just deselects instead of spawning another text
+      // box. To add more text, the user re-selects the tool.
+      setActiveTool("pointer");
     }
   };
 
