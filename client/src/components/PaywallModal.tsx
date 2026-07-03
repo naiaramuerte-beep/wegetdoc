@@ -442,7 +442,7 @@ function SipayCheckoutForm({
           window.location.href = res.redirectUrl;
         } else {
           trackEvent("payment_failed", { method: "card", decline_reason: "no_3ds_url" });
-          setAuthError("Sipay no devolvió URL de 3DS.");
+          setAuthError(s.authFailedBody); // localized; raw reason kept in the event
           setRedirecting(false);
         }
       })
@@ -451,7 +451,7 @@ function SipayCheckoutForm({
           method: "card",
           decline_reason: String(err?.message ?? "init_failed").slice(0, 200),
         });
-        setAuthError(err?.message ?? "Error autorizando el pago.");
+        setAuthError(s.authFailedBody); // localized user message; raw error only in analytics
         setRedirecting(false);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -831,6 +831,8 @@ function ApplePayButton({
   amountCents: number;
   onSuccess: (transactionId: string) => void;
 }) {
+  const { lang } = useLanguage();
+  const s = SIPAY_STRINGS[lang] ?? SIPAY_STRINGS.en;
   const [ready, setReady] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -900,7 +902,7 @@ function ApplePayButton({
           session.completeMerchantValidation(merchantSession);
         } catch (err: any) {
           console.warn("[ApplePay] validate-merchant failed:", err?.message ?? err);
-          setError("No pudimos validar Apple Pay. Inténtalo con tarjeta.");
+          setError(s.authFailedBody);
           // abort() throws InvalidAccessError if the session already ended
           // (validation failed / sheet dismissed) — guard it so it doesn't
           // become an unhandled promise rejection.
@@ -943,7 +945,7 @@ function ApplePayButton({
             decline_reason: String(err?.message ?? "charge_failed").slice(0, 200),
           });
           try { session.completePayment(AP.STATUS_FAILURE); } catch {}
-          setError(err?.message ?? "Error con Apple Pay");
+          setError(s.authFailedBody);
           setSubmitting(false);
         }
       };
@@ -960,7 +962,7 @@ function ApplePayButton({
       session.begin();
     } catch (err: any) {
       console.warn("[ApplePay] failed to start session:", err?.message ?? err);
-      setError(err?.message ?? "Error al abrir Apple Pay");
+      setError(s.authFailedBody);
       setSubmitting(false);
     }
   };
@@ -1021,6 +1023,8 @@ function GooglePayButton({
   amountCents: number;
   onSuccess: (transactionId: string) => void;
 }) {
+  const { lang } = useLanguage();
+  const s = SIPAY_STRINGS[lang] ?? SIPAY_STRINGS.en;
   const [scriptReady, setScriptReady] = useState(false);
   const [ready, setReady] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -1188,7 +1192,7 @@ function GooglePayButton({
                   method: "googlepay",
                   decline_reason: msg.slice(0, 200),
                 });
-                setError(msg);
+                setError(s.authFailedBody); // localized user message; raw reason in the event
               }
             } finally {
               setSubmitting(false);
