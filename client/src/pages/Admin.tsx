@@ -380,7 +380,7 @@ export default function Admin() {
   // exact format Google expects: a Parameters line with the timezone, then the
   // fixed column headers. The conversion NAME must match your Google Ads
   // conversion action EXACTLY (it has commas, so it's quoted).
-  const GOOGLE_ADS_CONVERSION_NAME = "Trial 0,50 - Carga Success";
+  const GOOGLE_ADS_CONVERSION_NAME = "sin conexión (subida)";
   const downloadGoogleAdsConversions = () => {
     const all = gclidConvQ.data ?? [];
     const rows = all.filter((r) => r.gclidType === "gclid");
