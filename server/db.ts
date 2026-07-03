@@ -923,7 +923,10 @@ export async function getGclidConversions(opts?: { days?: number }) {
     gclidType: charges.gclidType,
     amountCents: charges.amountCents,
     currency: charges.currency,
-    createdAt: charges.createdAt,
+    // UNIX_TIMESTAMP sidesteps a mysql2 timezone quirk that otherwise reads the
+    // stored time ~2h behind real UTC — which would put the conversion BEFORE
+    // the ad click and get the whole CSV rejected by Google Ads.
+    createdAtEpoch: sql<number>`UNIX_TIMESTAMP(${charges.createdAt})`,
     provider: charges.provider,
   }).from(charges)
     .where(and(isNotNull(charges.gclid), eq(charges.status, "ok"), gte(charges.createdAt, since)))
@@ -933,7 +936,7 @@ export async function getGclidConversions(opts?: { days?: number }) {
     gclidType: r.gclidType ?? "gclid",
     valueEur: r.amountCents / 100,
     currency: r.currency ?? "EUR",
-    createdAt: r.createdAt,
+    createdAt: new Date(Number(r.createdAtEpoch) * 1000),
     provider: r.provider,
   }));
 }
