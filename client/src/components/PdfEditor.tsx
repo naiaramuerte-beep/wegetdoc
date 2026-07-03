@@ -4843,18 +4843,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           </button>
         )}
         <div className="w-px h-5 mx-1 shrink-0" style={{ backgroundColor: "#f1f5f9" }} />
-        {/* Save */}
-        <button
-          data-tour="save-btn"
-          onClick={savePdf}
-          disabled={isSaving || !pdfBytes}
-          className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all shrink-0 border"
-          style={{ borderColor: "#94a3b8", color: "#0A0A0B", backgroundColor: "white" }}
-          onMouseEnter={e => { e.currentTarget.style.backgroundColor = "#ffffff"; }}
-          onMouseLeave={e => { e.currentTarget.style.backgroundColor = "white"; }}
-        >
-          <Save className="w-4 h-4" />{isSaving ? t.editor_saving : t.editor_save_btn}
-        </button>
+        {/* Save button removed to free toolbar space on laptops — the doc still
+            auto-saves on mount and on download. Share/Print are icon-only for
+            the same reason. */}
         {/* "Get my file" secondary actions (desktop) — Share / Print / Done.
             Every one funnels through the same download → paywall flow, catching
             the user's intent to keep their result whichever verb they reach for. */}
@@ -4864,14 +4855,16 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         ] as const).map(({ icon: Icon, label }) => (
           <button
             key={label}
+            title={label}
+            aria-label={label}
             onClick={() => downloadPdf()}
             disabled={!pdfBytes}
-            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all shrink-0 border disabled:opacity-40"
+            className="hidden md:flex items-center justify-center px-2.5 py-1.5 rounded-lg transition-all shrink-0 border disabled:opacity-40"
             style={{ borderColor: "#94a3b8", color: "#0A0A0B", backgroundColor: "white" }}
             onMouseEnter={e => { e.currentTarget.style.backgroundColor = "#F6F6F7"; }}
             onMouseLeave={e => { e.currentTarget.style.backgroundColor = "white"; }}
           >
-            <Icon className="w-4 h-4" />{label}
+            <Icon className="w-4 h-4" />
           </button>
         ))}
         {/* Download — for unauthenticated users we show a dropdown

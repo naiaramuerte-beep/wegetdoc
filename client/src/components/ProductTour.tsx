@@ -69,8 +69,6 @@ function useSteps(): StepType[] {
       content: <TourCard title={t.tour_step5_title} body={t.tour_step5_body} />, ...common },
     { selector: "[data-tour='thumbnails']", position: "right" as any,
       content: <TourCard title={t.tour_step6_title} body={t.tour_step6_body} />, ...common },
-    { selector: "[data-tour='save-btn']", position: "left" as any,
-      content: <TourCard title={t.tour_step9_title} body={t.tour_step9_body} />, ...common },
     { selector: "[data-tour='download-btn']", position: "left" as any,
       content: <TourCard title={t.tour_step7_title} body={t.tour_step7_body} />, ...common },
   ];
