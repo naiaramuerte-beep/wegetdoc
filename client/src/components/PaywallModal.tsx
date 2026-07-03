@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { colors } from "@/lib/brand";
 import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield, FileText, ChevronDown, PenLine, Layers, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { getStoredGclid } from "@/lib/gclid";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { usePdfFile } from "@/contexts/PdfFileContext";
@@ -917,6 +918,7 @@ function ApplePayButton({
           // sheet — that's the moral equivalent of "3DS done" for the
           // card path. Fire here so the funnel has a consistent step.
           trackEvent("3ds_started", { method: "applepay" });
+          const apayGc = getStoredGclid();
           const res = await chargeMut.mutateAsync({
             tokenApay: {
               paymentData: tokenApay.paymentData,
@@ -925,6 +927,8 @@ function ApplePayButton({
             },
             requestId: sipayRequestId,
             amountCents,
+            gclid: apayGc?.id,
+            gclidType: apayGc?.type,
           });
           // Sandbox occasionally returns an empty transaction_id; fall back
           // to our own order so /payment/success always has a unique key.
@@ -1157,7 +1161,8 @@ function GooglePayButton({
               // card + device auth) — analogous to the card 3DS step
               // for funnel parity. Fire before the backend charge.
               trackEvent("3ds_started", { method: "googlepay" });
-              const res = await chargeMut.mutateAsync({ token, amountCents });
+              const gpayGc = getStoredGclid();
+              const res = await chargeMut.mutateAsync({ token, amountCents, gclid: gpayGc?.id, gclidType: gpayGc?.type });
               // Sandbox doesn't always echo transaction_id; fall back to our
               // own order so Google Ads still has a unique dedup key.
               const txnId = res.transactionId || res.order || `gpay-${Date.now()}`;

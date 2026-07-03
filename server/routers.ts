@@ -437,6 +437,8 @@ export const appRouter = router({
         }),
         requestId: z.string().min(1),
         amountCents: z.number().int().positive(),
+        gclid: z.string().max(512).optional(),
+        gclidType: z.string().max(16).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const { chargeApplePay } = await import("./_core/sipay");
@@ -512,6 +514,8 @@ export const appRouter = router({
           sipayOrder: order,
           sipayMaskedCard: masked,
           status: "ok",
+          gclid: input.gclid,
+          gclidType: input.gclidType,
         });
         await recordWebhookEvent({
           provider: "sipay",
@@ -550,6 +554,8 @@ export const appRouter = router({
       .input(z.object({
         token: z.string().min(50),
         amountCents: z.number().int().positive(),
+        gclid: z.string().max(512).optional(),
+        gclidType: z.string().max(16).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const { chargeGpay } = await import("./_core/sipay");
@@ -622,6 +628,8 @@ export const appRouter = router({
           sipayOrder: order,
           sipayMaskedCard: masked,
           status: "ok",
+          gclid: input.gclid,
+          gclidType: input.gclidType,
         });
         await recordWebhookEvent({
           provider: "sipay",

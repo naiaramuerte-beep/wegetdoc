@@ -877,6 +877,8 @@ export async function recordCharge(opts: {
   status?: "ok" | "failed" | "refunded";
   errorDetail?: string;
   currency?: string;
+  gclid?: string;
+  gclidType?: string;
 }) {
   const db = await getDb();
   if (!db) return null;
@@ -891,6 +893,8 @@ export async function recordCharge(opts: {
       sipayMaskedCard: opts.sipayMaskedCard ?? null,
       status: opts.status ?? "ok",
       errorDetail: opts.errorDetail ?? null,
+      gclid: opts.gclid ?? null,
+      gclidType: opts.gclidType ?? null,
     });
   } catch (err) {
     console.error("[recordCharge] failed:", err);

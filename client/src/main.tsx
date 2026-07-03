@@ -11,6 +11,12 @@ initSentry();
 import { installChunkErrorRecovery } from "@/lib/chunkReload";
 installChunkErrorRecovery();
 
+// Capture the Google Ads click ID (gclid/gbraid/wbraid) from the landing URL
+// ASAP, before any client-side redirect can strip the query, so we can report
+// the conversion server-side later (survives Safari/ITP + adblockers).
+import { captureGclid } from "@/lib/gclid";
+captureGclid();
+
 import "@/lib/brand"; // Set data-brand attribute early
 import { trpc } from "@/lib/trpc";
 import { UNAUTHED_ERR_MSG } from '@shared/const';

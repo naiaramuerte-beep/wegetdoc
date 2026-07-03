@@ -255,6 +255,10 @@ export const charges = mysqlTable("charges", {
   sipayMaskedCard: varchar("sipayMaskedCard", { length: 32 }),
   status: mysqlEnum("status", ["ok", "failed", "refunded"]).default("ok").notNull(),
   errorDetail: varchar("errorDetail", { length: 512 }),
+  // Google Ads click ID captured on landing, for server-side (offline)
+  // conversion import — bypasses Safari/ITP + adblockers that eat gtag.
+  gclid: varchar("gclid", { length: 512 }),
+  gclidType: varchar("gclidType", { length: 16 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
