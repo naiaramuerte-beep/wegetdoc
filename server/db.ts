@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, isNull, like, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull, isNull, like, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
@@ -907,6 +907,37 @@ export async function recordCharge(opts: {
  * (charges table) — no Sipay API call needed because we log every charge
  * locally at write time. Returns the last N charges with owner email.
  */
+/**
+ * Charges that carry a Google Ads click ID, for offline conversion import.
+ * Only successful charges within Google's 90-day click-through window are
+ * eligible. Returns exactly what the admin CSV export needs to build a
+ * Google-Ads-formatted upload file.
+ */
+export async function getGclidConversions(opts?: { days?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  const days = opts?.days ?? 90;
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const rows = await db.select({
+    gclid: charges.gclid,
+    gclidType: charges.gclidType,
+    amountCents: charges.amountCents,
+    currency: charges.currency,
+    createdAt: charges.createdAt,
+    provider: charges.provider,
+  }).from(charges)
+    .where(and(isNotNull(charges.gclid), eq(charges.status, "ok"), gte(charges.createdAt, since)))
+    .orderBy(desc(charges.createdAt));
+  return rows.map((r) => ({
+    gclid: r.gclid as string,
+    gclidType: r.gclidType ?? "gclid",
+    valueEur: r.amountCents / 100,
+    currency: r.currency ?? "EUR",
+    createdAt: r.createdAt,
+    provider: r.provider,
+  }));
+}
+
 export async function getStripeChargesList(opts?: { limit?: number }) {
   const db = await getDb();
   if (!db) return [];

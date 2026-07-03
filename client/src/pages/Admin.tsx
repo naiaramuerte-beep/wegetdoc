@@ -124,6 +124,9 @@ export default function Admin() {
   const chargesQ = trpc.admin.stripeCharges.useQuery({ limit: 50 }, {
     enabled: !!user && user.role === "admin" && tab === "billing",
   });
+  const gclidConvQ = trpc.admin.gclidConversions.useQuery(undefined, {
+    enabled: !!user && user.role === "admin" && tab === "billing",
+  });
   const refundMut = trpc.admin.refundCharge.useMutation({
     onSuccess: (r) => {
       toast.success(`Reembolso OK: ${formatEur(r.amountEur)} (${r.id})`);
@@ -373,6 +376,44 @@ export default function Admin() {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
+  // Google Ads "offline conversion import (from clicks)" CSV. Must match the
+  // exact format Google expects: a Parameters line with the timezone, then the
+  // fixed column headers. The conversion NAME must match your Google Ads
+  // conversion action EXACTLY (it has commas, so it's quoted).
+  const GOOGLE_ADS_CONVERSION_NAME = "Trial 0,50 - Carga Success";
+  const downloadGoogleAdsConversions = () => {
+    const all = gclidConvQ.data ?? [];
+    const rows = all.filter((r) => r.gclidType === "gclid");
+    const skipped = all.length - rows.length; // gbraid/wbraid need a separate format
+    if (!rows.length) {
+      toast.error("Todavía no hay pagos con gclid para exportar.");
+      return;
+    }
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const fmtTime = (d: string | Date) => {
+      const dt = new Date(d);
+      return `${dt.getUTCFullYear()}-${pad(dt.getUTCMonth() + 1)}-${pad(dt.getUTCDate())} ${pad(dt.getUTCHours())}:${pad(dt.getUTCMinutes())}:${pad(dt.getUTCSeconds())}`;
+    };
+    const q = (s: string) => `"${String(s).replace(/"/g, '""')}"`;
+    const lines = [
+      "Parameters:TimeZone=+0000",
+      "Google Click ID,Conversion Name,Conversion Time,Conversion Value,Conversion Currency",
+      ...rows.map((r) =>
+        [r.gclid, q(GOOGLE_ADS_CONVERSION_NAME), fmtTime(r.createdAt), r.valueEur.toFixed(2), r.currency].join(","),
+      ),
+    ];
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "editorpdf-google-ads-conversions.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast.success(`${rows.length} conversiones exportadas${skipped ? ` (${skipped} gbraid/wbraid omitidas — formato aparte)` : ""}.`);
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#0f1117", color: "#e2e8f0" }}>
       {/* Header */}
@@ -577,6 +618,28 @@ export default function Admin() {
                   <p className="text-xs text-gray-400 mt-0.5">
                     Datos del rango: <span className="text-gray-200 font-medium">{range.label}</span> · {range.from.toLocaleString("es-ES")} → {range.to.toLocaleString("es-ES")}
                   </p>
+                </div>
+              </div>
+
+              {/* Google Ads server-side conversion export */}
+              <div className="rounded-xl p-4 border" style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}>
+                <div className="flex items-start justify-between flex-wrap gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-white">Conversiones Google Ads (server-side)</p>
+                    <p className="text-xs text-gray-400 mt-0.5 max-w-xl">
+                      {gclidConvQ.data?.filter((r) => r.gclidType === "gclid").length ?? 0} pagos con gclid (últimos 90 días).
+                      Descarga el CSV y súbelo en Google Ads → Objetivos → Conversiones → Importar → Desde clics.
+                      Evita que Safari/adblockers te tumben conversiones de wallets.
+                    </p>
+                  </div>
+                  <button
+                    onClick={downloadGoogleAdsConversions}
+                    disabled={!gclidConvQ.data?.some((r) => r.gclidType === "gclid")}
+                    className="text-xs px-3 py-2 rounded-lg font-semibold text-white disabled:opacity-40 shrink-0"
+                    style={{ backgroundColor: "#E63946" }}
+                  >
+                    Exportar CSV Google Ads
+                  </button>
                 </div>
               </div>
 

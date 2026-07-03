@@ -63,6 +63,7 @@ import {
   getRevenueByCountry,
   getStorageByUser,
   getStripeChargesList,
+  getGclidConversions,
   getStripeRevenue,
   getSubsAboutToCancel,
   getUserTimeline,
@@ -1246,6 +1247,11 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return getStripeChargesList({ limit: input?.limit });
       }),
+
+    // Charges carrying a Google Ads click ID → offline conversion CSV export.
+    gclidConversions: adminProcedure.query(async () => {
+      return getGclidConversions({ days: 90 });
+    }),
 
     refundCharge: adminProcedure
       .input(z.object({
