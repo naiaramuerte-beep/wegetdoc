@@ -12225,7 +12225,7 @@ export function detectLangFromPath(pathname: string): LangCode {
 export function detectLangFromBrowser(): LangCode {
   const nav = navigator.language?.slice(0, 2).toLowerCase() as LangCode;
   if (LANGUAGES.find(l => l.code === nav)) return nav;
-  return "es";
+  return "en";
 }
 
 /** Build a URL with the given language prefix */

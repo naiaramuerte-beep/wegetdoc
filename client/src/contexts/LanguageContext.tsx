@@ -26,22 +26,23 @@ const LanguageContext = createContext<LanguageContextValue | null>(null);
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useLocation();
 
-  // Detect initial language from URL path
-  const getInitialLang = (): LangCode => {
-    const fromPath = detectLangFromPath(window.location.pathname);
-    // If URL has no lang prefix, try browser language
-    if (window.location.pathname === "/" || window.location.pathname === "") {
-      return detectLangFromBrowser();
-    }
-    return fromPath;
+  // Resolve language: an explicit /xx/ prefix wins; otherwise fall back to the
+  // browser language. This is what makes Ukrainian/Russian/Polish/etc. ad
+  // traffic that lands on a NON-prefixed URL see their own language instead of
+  // Spanish. Previously the effect below reset every navigation to "es" for any
+  // path without a prefix, which is why UA traffic saw Spanish and never
+  // engaged with the paywall.
+  const langFromPathOrBrowser = (): LangCode => {
+    const m = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
+    if (m && LANGUAGES.find((l) => l.code === m[1])) return m[1] as LangCode;
+    return detectLangFromBrowser();
   };
 
-  const [lang, setLangState] = useState<LangCode>(getInitialLang);
+  const [lang, setLangState] = useState<LangCode>(langFromPathOrBrowser);
 
-  // Update lang when URL changes
+  // Update lang when URL changes — same rule (prefix wins, else browser).
   useEffect(() => {
-    const fromPath = detectLangFromPath(window.location.pathname);
-    setLangState(fromPath);
+    setLangState(langFromPathOrBrowser());
   }, [location]);
 
   const setLang = useCallback((code: LangCode) => {
