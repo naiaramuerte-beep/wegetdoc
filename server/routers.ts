@@ -670,6 +670,8 @@ export const appRouter = router({
       .input(z.object({
         fastpayRequestId: z.string().min(8),
         amountCents: z.number().int().positive(),
+        gclid: z.string().max(512).optional(),
+        gclidType: z.string().max(16).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const { createCheckoutFastpay } = await import("./_core/sipay");
@@ -728,6 +730,7 @@ export const appRouter = router({
             order,
             requestId: sipayRequestId,
             amountCents: input.amountCents,
+            ...(input.gclid ? { gclid: input.gclid, gclidType: input.gclidType ?? "gclid" } : {}),
           },
         });
 

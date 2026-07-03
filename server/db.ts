@@ -1816,6 +1816,46 @@ export async function findUserIdFromPendingEvent(opts: {
 }
 
 /**
+ * Twin of findUserIdFromPendingEvent: pulls the Google Ads click ID out of the
+ * fastpay_3ds_pending event so card (FastPay) conversions get their gclid too.
+ * The gclid is stashed at init time (sipayCheckoutInit) and read back here after
+ * the 3DS redirect, since the charge is finalized in a separate request.
+ */
+export async function findGclidFromPendingEvent(opts: {
+  order?: string;
+  requestId?: string;
+}): Promise<{ gclid: string; gclidType: string } | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const candidates = [opts.order, opts.requestId].filter(
+    (v): v is string => typeof v === "string" && v.length > 0,
+  );
+  if (candidates.length === 0) return null;
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const rows = await db
+    .select({ payload: webhookEvents.payload })
+    .from(webhookEvents)
+    .where(
+      and(
+        eq(webhookEvents.eventType, "fastpay_3ds_pending"),
+        gte(webhookEvents.receivedAt, since),
+        inArray(webhookEvents.eventId, candidates),
+      ),
+    )
+    .orderBy(desc(webhookEvents.receivedAt))
+    .limit(1);
+  if (rows.length === 0) return null;
+  try {
+    const p: any = rows[0].payload ? JSON.parse(rows[0].payload as string) : null;
+    const gclid = typeof p?.gclid === "string" ? p.gclid : "";
+    if (!gclid) return null;
+    return { gclid, gclidType: typeof p?.gclidType === "string" ? p.gclidType : "gclid" };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Returns fastpay_3ds_pending events from the last `hoursBack` hours that
  * don't have a matching fastpay_intro_charge — these are the orphan
  * candidates the reconciliation cron should re-confirm with Sipay.

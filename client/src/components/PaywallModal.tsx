@@ -430,8 +430,9 @@ function SipayCheckoutForm({
     triedFastpayIdRef.current = fpId;
     setRedirecting(true);
     setAuthError(null);
+    const cardGc = getStoredGclid();
     initMut
-      .mutateAsync({ fastpayRequestId: fpId, amountCents: 50 })
+      .mutateAsync({ fastpayRequestId: fpId, amountCents: 50, gclid: cardGc?.id, gclidType: cardGc?.type })
       .then((res) => {
         if (res.redirectUrl) {
           // User is about to leave our domain for the bank's 3DS page

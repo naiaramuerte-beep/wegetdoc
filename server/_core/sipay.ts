@@ -203,6 +203,7 @@ export async function finalizeFastpayPayment(opts: {
     getUserById,
     findIntroChargeForRequest,
     findUserIdFromPendingEvent,
+    findGclidFromPendingEvent,
   } = await import("../db");
 
   const result = await confirmPayment(requestId);
@@ -291,6 +292,9 @@ export async function finalizeFastpayPayment(opts: {
   });
   await markDocumentsPaid(customUserId);
   const amountCents = Number(data?.payload?.amount ?? 50);
+  // Google Ads click ID for server-side conversion import — stashed in the
+  // fastpay_3ds_pending event at init time (survives the 3DS redirect).
+  const pendingGclid = await findGclidFromPendingEvent({ order, requestId });
   await recordCharge({
     userId: customUserId,
     provider: "fastpay",
@@ -299,6 +303,8 @@ export async function finalizeFastpayPayment(opts: {
     sipayOrder: order,
     sipayMaskedCard: masked,
     status: "ok",
+    gclid: pendingGclid?.gclid,
+    gclidType: pendingGclid?.gclidType,
   });
   await recordWebhookEvent({
     provider: "sipay",
