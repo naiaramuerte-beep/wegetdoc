@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { trackEvent } from "@/lib/track";
+import { trackEvent, isInternalTest } from "@/lib/track";
 import { INTRO_CHARGE_EUR, INTRO_CHARGE_CURRENCY } from "@/lib/pricing";
 
 // The user has only paid the intro 0,50 € at this point; the recurring
@@ -109,6 +109,7 @@ export default function PaymentSuccess() {
   // what the user actually sees on the page.
   useEffect(() => {
     if (!adsTrackingEnabled) return;
+    if (isInternalTest()) return; // don't fire the Ads conversion during our own QA
     if (typeof window !== 'undefined' && (window as any).gtag) {
       const valueEl = document.querySelector(".value") as HTMLElement | null;
       const txnEl = document.querySelector(".transaction") as HTMLElement | null;

@@ -28,6 +28,7 @@ const Tools = lazy(() => import("./pages/Tools"));
 const Login = lazy(() => import("./pages/Login"));
 const Signup = lazy(() => import("./pages/Signup"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
+const InternalTest = lazy(() => import("./pages/InternalTest"));
 const LegalPage = lazy(() => import("./pages/LegalPage"));
 const CancelSubscription = lazy(() => import("./pages/CancelSubscription"));
 const CookieBanner = lazy(() => import("./components/CookieBanner"));
@@ -241,6 +242,7 @@ function Router() {
       <Route path="/refund" component={() => <Redirect to="/es/refund" />} />
       <Route path="/payment/success" component={() => <Redirect to="/es/payment/success" />} />
       <Route path="/cancelar-suscripcion" component={() => <Redirect to="/es/cancelar-suscripcion" />} />
+      <Route path="/internal-test" component={InternalTest} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/reset-password" component={ResetPassword} />

@@ -19,7 +19,21 @@ export type EventName =
 
 export type EventParams = Record<string, string | number | undefined>;
 
+/**
+ * Internal-test flag. When localStorage.internal_test === "1", ALL analytics are
+ * suppressed so our own QA/testing never pollutes GA4 or Hotjar (or the Google
+ * Ads conversion). Toggle it via the hidden /internal-test route.
+ */
+export function isInternalTest(): boolean {
+  try {
+    return localStorage.getItem("internal_test") === "1";
+  } catch {
+    return false;
+  }
+}
+
 export function trackEvent(name: EventName, params?: EventParams): void {
+  if (isInternalTest()) return;
   // GA4 — full event with params object.
   try {
     const w = window as unknown as { gtag?: (...args: unknown[]) => void };
