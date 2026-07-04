@@ -191,7 +191,7 @@ ${allUrls.map(u => `  <url>
   // Stores the edited PDF in S3 under a temp key. The key is returned and stored
   // in sessionStorage (small string, no quota issues). After login + payment,
   // the server moves it to the user's permanent folder.
-  const tempUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
+  const tempUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
   app.post("/api/documents/temp-upload", tempUpload.single("file"), async (req, res) => {
     try {
       const file = req.file;
@@ -363,8 +363,24 @@ ${allUrls.map(u => `  <url>
   });
 
   // ── REST endpoint for PDF upload (avoids tRPC base64 size limits) ─────────────
-  const pdfUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
-  app.post("/api/documents/upload", pdfUpload.single("file"), async (req, res) => {
+  const pdfUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
+  // Wrap a multer middleware so a too-large file returns a clean 413 instead of
+  // an unhandled MulterError (which 500s the request + spams Sentry). 100 MB
+  // matches the cap advertised on the site.
+  const handleUpload = (mw: any) => (req: any, res: any, next: any) => {
+    mw(req, res, (err: any) => {
+      if (err) {
+        if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
+          res.status(413).json({ error: "file-too-large", maxMb: 100 });
+          return;
+        }
+        res.status(400).json({ error: "upload-error" });
+        return;
+      }
+      next();
+    });
+  };
+  app.post("/api/documents/upload", handleUpload(pdfUpload.single("file")), async (req, res) => {
     try {
       // Authenticate via session cookie using the same SDK as tRPC
       let userId: number;
@@ -400,7 +416,7 @@ ${allUrls.map(u => `  <url>
   // ── REST endpoint for auto-saving document on first download click ────────────
   // This saves the document to the user's panel with paymentStatus=pending
   // Called when authenticated user clicks download and doc is not yet saved
-  app.post("/api/documents/auto-save", pdfUpload.single("file"), async (req, res) => {
+  app.post("/api/documents/auto-save", handleUpload(pdfUpload.single("file")), async (req, res) => {
     try {
       let userId: number;
       try {
