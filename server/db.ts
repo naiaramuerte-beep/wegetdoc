@@ -161,6 +161,8 @@ export async function upsertSubscription(data: {
   currentPeriodStart?: Date;
   currentPeriodEnd?: Date;
   cancelAtPeriodEnd?: boolean;
+  renewalAttempts?: number;
+  nextRenewalAt?: Date | null;
 }) {
   const db = await getDb();
   if (!db) return;
@@ -857,6 +859,7 @@ export async function getSubsDueForRenewal(now: Date = new Date()) {
     status: subscriptions.status,
     currentPeriodEnd: subscriptions.currentPeriodEnd,
     cancelAtPeriodEnd: subscriptions.cancelAtPeriodEnd,
+    renewalAttempts: subscriptions.renewalAttempts,
   }).from(subscriptions)
     .where(sql`
       ${subscriptions.sipayToken} IS NOT NULL
@@ -864,6 +867,7 @@ export async function getSubsDueForRenewal(now: Date = new Date()) {
       AND ${subscriptions.cancelAtPeriodEnd} = false
       AND ${subscriptions.status} IN ('trialing', 'active', 'past_due')
       AND ${subscriptions.currentPeriodEnd} <= ${now}
+      AND (${subscriptions.nextRenewalAt} IS NULL OR ${subscriptions.nextRenewalAt} <= ${now})
     `);
 }
 

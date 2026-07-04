@@ -1010,6 +1010,8 @@ ${allUrls.map(u => `  <url>
               sipayTransactionId: txn,
               sipayOrder: order,
               sipayMaskedCard: masked,
+              renewalAttempts: 0,
+              nextRenewalAt: null,
             });
             await db.recordCharge({
               userId: sub.userId,
@@ -1062,12 +1064,31 @@ ${allUrls.map(u => `  <url>
                 rawTail: typeof result.raw === "string" ? result.raw.slice(0, 2000) : null,
               }),
             );
-            // Mark sub past_due so admin sees it in the panel.
-            await db.upsertSubscription({
-              userId: sub.userId,
-              status: "past_due",
-              currentPeriodEnd: sub.currentPeriodEnd ?? new Date(),
-            });
+            // Dunning: space the retries (+5 → +7 → +9 days) instead of
+            // hammering the bank every day (which risks the merchant being
+            // flagged for card-testing), and GIVE UP after the schedule is
+            // exhausted so a permanently-dead token (e.g. a wallet cof_id that
+            // returns no_card_from_token) doesn't retry forever.
+            const RETRY_GAPS_DAYS = [5, 7, 9];
+            const attempts = (sub.renewalAttempts ?? 0) + 1;
+            if (attempts > RETRY_GAPS_DAYS.length) {
+              // Exhausted every retry — stop and cancel.
+              await db.upsertSubscription({
+                userId: sub.userId,
+                status: "canceled",
+                renewalAttempts: attempts,
+                nextRenewalAt: null,
+              });
+            } else {
+              const gapDays = RETRY_GAPS_DAYS[attempts - 1];
+              await db.upsertSubscription({
+                userId: sub.userId,
+                status: "past_due",
+                currentPeriodEnd: sub.currentPeriodEnd ?? new Date(),
+                renewalAttempts: attempts,
+                nextRenewalAt: new Date(Date.now() + gapDays * 24 * 60 * 60 * 1000),
+              });
+            }
             const detail = data?.payload?.detail ?? data?.detail ?? "unknown";
             await db.recordCharge({
               userId: sub.userId,

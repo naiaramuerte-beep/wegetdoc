@@ -60,6 +60,11 @@ export const subscriptions = mysqlTable("subscriptions", {
   currentPeriodStart: timestamp("currentPeriodStart"),
   currentPeriodEnd: timestamp("currentPeriodEnd"),
   cancelAtPeriodEnd: boolean("cancelAtPeriodEnd").default(false).notNull(),
+  // Dunning: number of consecutive failed renewal attempts + when the next
+  // spaced retry is due. Lets us retry at +5/+7/+9 days (instead of hammering
+  // the bank daily, which risks getting the merchant flagged) and give up after.
+  renewalAttempts: int("renewalAttempts").default(0).notNull(),
+  nextRenewalAt: timestamp("nextRenewalAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   // Reason captured from the user when they cancel — powers churn analysis.
