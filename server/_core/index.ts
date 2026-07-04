@@ -1069,7 +1069,10 @@ ${allUrls.map(u => `  <url>
             // flagged for card-testing), and GIVE UP after the schedule is
             // exhausted so a permanently-dead token (e.g. a wallet cof_id that
             // returns no_card_from_token) doesn't retry forever.
-            const RETRY_GAPS_DAYS = [5, 7, 9];
+            // 4 spaced retries across the month: day 3 → 10 → 19 → 29, then
+            // give up. Gaps between attempts (a quick first retry catches
+            // transient declines; the rest spread out so we never hammer daily).
+            const RETRY_GAPS_DAYS = [3, 7, 9, 10];
             const attempts = (sub.renewalAttempts ?? 0) + 1;
             if (attempts > RETRY_GAPS_DAYS.length) {
               // Exhausted every retry — stop and cancel.
