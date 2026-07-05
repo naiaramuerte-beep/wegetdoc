@@ -47,6 +47,7 @@ const CONVERSIONS: Conv[] = [
   { id: "heic-jpg",  label: "HEIC → JPG",       fromExts: ["heic", "heif"], toExt: "jpg",  backend: "image-server", imgServerTo: "jpg", icon: ImageIcon, tint: "#0EA5E9" },
   { id: "webp-jpg",  label: "WEBP → JPG",       fromExts: ["webp"],         toExt: "jpg",  backend: "image-server", imgServerTo: "jpg", icon: ImageIcon, tint: "#0EA5E9" },
   { id: "html-pdf",  label: "HTML → PDF",       fromExts: ["html", "htm"],  toExt: "pdf",  backend: "to-pdf", icon: FileText,     tint: "#F59E0B" },
+  { id: "csv-pdf",   label: "CSV → PDF",        fromExts: ["csv"],          toExt: "pdf",  backend: "to-pdf", icon: FileSpreadsheet, tint: "#1E9E63" },
 ];
 
 const extOf = (name: string) => (name.split(".").pop() || "").toLowerCase();
@@ -221,16 +222,25 @@ export default function ConverterHubPage() {
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={(e) => { e.preventDefault(); setIsDragging(false); onPickFile(e.dataTransfer.files?.[0] ?? null); }}
-            onClick={() => inputRef.current?.click()}
             style={{
               border: `2px dashed ${isDragging ? ACCENT : "#e5e7eb"}`,
               background: isDragging ? "#FEF2F3" : "#F8FAFC",
-              borderRadius: 18, padding: "48px 20px", textAlign: "center", cursor: "pointer", marginTop: 24, transition: "all .15s",
+              borderRadius: 18, padding: "44px 20px", textAlign: "center", marginTop: 24, transition: "all .15s",
             }}
           >
             <UploadCloud style={{ width: 46, height: 46, color: ACCENT, margin: "0 auto" }} />
-            <p style={{ fontWeight: 800, color: "#0A0A0B", marginTop: 12, fontSize: 17 }}>Arrastra tu archivo o haz clic para subir</p>
-            <p style={{ color: "#94a3b8", fontSize: 13, marginTop: 4 }}>Cualquier formato · hasta 100 MB</p>
+            <p style={{ fontWeight: 800, color: "#0A0A0B", marginTop: 12, fontSize: 17 }}>Arrastra tu archivo aquí</p>
+            <button
+              onClick={() => inputRef.current?.click()}
+              style={{
+                marginTop: 14, padding: "12px 26px", borderRadius: 12, border: "none",
+                background: ACCENT, color: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer",
+                display: "inline-flex", alignItems: "center", gap: 8, boxShadow: "0 8px 20px -8px rgba(230,57,70,.6)",
+              }}
+            >
+              <UploadCloud style={{ width: 18, height: 18 }} /> Seleccionar archivo
+            </button>
+            <p style={{ color: "#94a3b8", fontSize: 13, marginTop: 14 }}>Cualquier formato · hasta 100 MB</p>
           </div>
         ) : (
           <div style={{
