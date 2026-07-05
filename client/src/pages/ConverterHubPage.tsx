@@ -8,6 +8,8 @@
    ============================================================= */
 import { useMemo, useRef, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
 import { FileText, Image as ImageIcon, FileSpreadsheet, Presentation, UploadCloud, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
@@ -173,6 +175,7 @@ export default function ConverterHubPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#fff" }}>
+      <Navbar />
       <div style={{ maxWidth: 960, margin: "0 auto", padding: "48px 20px 80px" }}>
         <div style={{ textAlign: "center", marginBottom: 8 }}>
           <p style={{ color: ACCENT, fontWeight: 800, letterSpacing: 1, fontSize: 12, textTransform: "uppercase" }}>Conversor de archivos</p>
@@ -269,6 +272,8 @@ export default function ConverterHubPage() {
           </div>
         </div>
       </div>
+
+      <Footer />
 
       <PaywallModal
         isOpen={showPaywall}
