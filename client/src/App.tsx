@@ -38,6 +38,7 @@ const BlogPost = lazy(() => import("./pages/BlogPost"));
 const ToolLanding = lazy(() => import("./pages/ToolLanding"));
 const ConverterPage = lazy(() => import("./pages/ConverterPage"));
 const PdfConverterHub = lazy(() => import("./pages/PdfConverterHub"));
+const ConverterHubPage = lazy(() => import("./pages/ConverterHubPage"));
 const MergeLandingPage = lazy(() => import("./pages/MergeLandingPage"));
 const SplitLandingPage = lazy(() => import("./pages/SplitLandingPage"));
 const CompressLandingPage = lazy(() => import("./pages/CompressLandingPage"));
@@ -198,6 +199,12 @@ function Router() {
         <Route key={`${code}-watermark-pdf`} path={`/${code}/watermark-pdf`} component={WatermarkLandingPage} />
       ))}
       <Route path="/watermark-pdf" component={() => <Redirect to="/en/watermark-pdf" />} />
+
+      {/* Unified converter hub — upload + auto-detect + all conversions */}
+      {LANGUAGES.map(({ code }) => (
+        <Route key={`${code}-convert`} path={`/${code}/convert`} component={ConverterHubPage} />
+      ))}
+      <Route path="/convert" component={() => <Redirect to="/en/convert" />} />
 
       {/* Tool landing pages — language-prefixed (skips slugs handled by ConverterPage / hub / dedicated utility landings above) */}
       {LANGUAGES.map(({ code }) =>
