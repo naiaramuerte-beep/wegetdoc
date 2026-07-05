@@ -6,11 +6,12 @@
    backends (/api/convert/pdf-to/:format for PDF→X, /api/documents/
    convert-upload for X→PDF) + client-side canvas for JPG↔PNG.
    ============================================================= */
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
+import { hubT } from "./hubStrings";
 import { FileText, Image as ImageIcon, FileSpreadsheet, Presentation, UploadCloud, ArrowRight, Star, Check, ShieldCheck, Smartphone, MousePointerClick, Download } from "lucide-react";
 import { toast } from "sonner";
 
@@ -134,7 +135,14 @@ async function runConversion(conv: Conv, file: File): Promise<{ blob: Blob; name
 }
 
 export default function ConverterHubPage() {
-  useLanguage(); // keeps the page reactive to language (copy is minimal here)
+  const { lang } = useLanguage();
+  const s = hubT(lang);
+  useEffect(() => {
+    document.title = `${s.h1} · EditorPDF`;
+    const desc = document.querySelector('meta[name="description"]');
+    if (desc) desc.setAttribute("content", s.sub);
+    window.scrollTo(0, 0);
+  }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
   const [file, setFile] = useState<File | null>(null);
   const [selected, setSelected] = useState<Conv | null>(null);
   const [phase, setPhase] = useState<"idle" | "converting" | "ready">("idle");
@@ -187,13 +195,13 @@ export default function ConverterHubPage() {
     setShowPaywall(false);
     if (!file || !selected) return;
     setBusy(true);
-    toast.loading("Convirtiendo…", { id: "conv" });
+    toast.loading(s.toastConverting, { id: "conv" });
     try {
       const { blob, name } = await runConversion(selected, file);
       triggerBlobDownload(blob, name);
-      toast.success("¡Listo! Descarga iniciada.", { id: "conv" });
+      toast.success(s.toastDone, { id: "conv" });
     } catch (err) {
-      toast.error((err as Error).message || "No se pudo convertir el archivo.", { id: "conv" });
+      toast.error((err as Error).message || s.toastError, { id: "conv" });
     } finally {
       setBusy(false);
     }
@@ -208,9 +216,9 @@ export default function ConverterHubPage() {
       `}</style>
       <div style={{ maxWidth: 960, margin: "0 auto", padding: "48px 20px 80px" }}>
         <div style={{ textAlign: "center", marginBottom: 8 }}>
-          <p style={{ color: ACCENT, fontWeight: 800, letterSpacing: 1, fontSize: 12, textTransform: "uppercase" }}>Conversor de archivos</p>
-          <h1 style={{ fontSize: 34, fontWeight: 800, color: "#0A0A0B", margin: "6px 0" }}>Convierte cualquier archivo</h1>
-          <p style={{ color: "#64748b" }}>Sube tu archivo y te decimos a qué puedes convertirlo. O elige abajo.</p>
+          <p style={{ color: ACCENT, fontWeight: 800, letterSpacing: 1, fontSize: 12, textTransform: "uppercase" }}>{s.eyebrow}</p>
+          <h1 style={{ fontSize: 34, fontWeight: 800, color: "#0A0A0B", margin: "6px 0" }}>{s.h1}</h1>
+          <p style={{ color: "#64748b" }}>{s.sub}</p>
         </div>
 
         {/* Always-mounted file input */}
@@ -229,7 +237,7 @@ export default function ConverterHubPage() {
             }}
           >
             <UploadCloud style={{ width: 46, height: 46, color: ACCENT, margin: "0 auto" }} />
-            <p style={{ fontWeight: 800, color: "#0A0A0B", marginTop: 12, fontSize: 17 }}>Arrastra tu archivo aquí</p>
+            <p style={{ fontWeight: 800, color: "#0A0A0B", marginTop: 12, fontSize: 17 }}>{s.drag}</p>
             <button
               onClick={() => inputRef.current?.click()}
               style={{
@@ -238,9 +246,9 @@ export default function ConverterHubPage() {
                 display: "inline-flex", alignItems: "center", gap: 8, boxShadow: "0 8px 20px -8px rgba(230,57,70,.6)",
               }}
             >
-              <UploadCloud style={{ width: 18, height: 18 }} /> Seleccionar archivo
+              <UploadCloud style={{ width: 18, height: 18 }} /> {s.selectBtn}
             </button>
-            <p style={{ color: "#94a3b8", fontSize: 13, marginTop: 14 }}>Cualquier formato · hasta 100 MB</p>
+            <p style={{ color: "#94a3b8", fontSize: 13, marginTop: 14 }}>{s.anyFormat}</p>
           </div>
         ) : (
           <div style={{
@@ -253,13 +261,13 @@ export default function ConverterHubPage() {
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontWeight: 800, color: "#0A0A0B", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{file.name}</p>
-              <p style={{ color: "#16a34a", fontSize: 13, fontWeight: 700, marginTop: 2 }}>✓ Archivo subido · {fmtSize(file.size)}</p>
+              <p style={{ color: "#16a34a", fontSize: 13, fontWeight: 700, marginTop: 2 }}>✓ {s.uploaded} · {fmtSize(file.size)}</p>
             </div>
             <button
               onClick={() => inputRef.current?.click()}
               style={{ flexShrink: 0, padding: "8px 14px", borderRadius: 10, border: "1px solid #cbd5e1", background: "#fff", color: "#334155", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
             >
-              Cambiar
+              {s.change}
             </button>
           </div>
         )}
@@ -269,7 +277,7 @@ export default function ConverterHubPage() {
           <div style={{ marginTop: 24 }}>
             {suggestions.length > 0 ? (
               <>
-                <p style={{ fontWeight: 800, color: "#0A0A0B", marginBottom: 12, fontSize: 15 }}>¿A qué formato lo convertimos?</p>
+                <p style={{ fontWeight: 800, color: "#0A0A0B", marginBottom: 12, fontSize: 15 }}>{s.whichFormat}</p>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
                   {suggestions.map((c) => {
                     const Icon = c.icon;
@@ -298,7 +306,7 @@ export default function ConverterHubPage() {
               </>
             ) : (
               <div style={{ padding: 16, borderRadius: 14, background: "#FEF2F3", border: "1px solid #F2C1C6", color: "#C72738", fontWeight: 600, textAlign: "center" }}>
-                Todavía no podemos convertir este tipo de archivo.
+                {s.unsupported}
               </div>
             )}
           </div>
@@ -315,14 +323,14 @@ export default function ConverterHubPage() {
               boxShadow: "0 10px 24px -10px rgba(230,57,70,.6)",
             }}
           >
-            Convertir a {selected!.label.split("→")[1]?.trim()} <ArrowRight style={{ width: 18, height: 18 }} />
+            {s.convertTo.replace("{f}", selected!.label.split("→")[1]?.trim() || "")} <ArrowRight style={{ width: 18, height: 18 }} />
           </button>
         )}
 
         {/* Converting progress */}
         {phase === "converting" && (
           <div style={{ marginTop: 24, padding: "28px 24px", borderRadius: 18, border: "1px solid #eef2f7", background: "#F8FAFC", textAlign: "center" }}>
-            <p style={{ fontWeight: 800, color: "#0A0A0B", fontSize: 16 }}>Convirtiendo tu archivo…</p>
+            <p style={{ fontWeight: 800, color: "#0A0A0B", fontSize: 16 }}>{s.converting}</p>
             <div style={{ marginTop: 16, height: 10, borderRadius: 999, background: "#e5e7eb", overflow: "hidden" }}>
               <div style={{ height: "100%", width: `${progress}%`, background: ACCENT, borderRadius: 999, transition: "width .2s ease" }} />
             </div>
@@ -340,7 +348,7 @@ export default function ConverterHubPage() {
                 (() => { const Ic = selected.icon; return <Ic style={{ width: 48, height: 48, color: selected.tint }} />; })()
               )}
             </div>
-            <p style={{ fontWeight: 800, color: "#0A0A0B", fontSize: 18, marginTop: 16 }}>¡Tu archivo está listo!</p>
+            <p style={{ fontWeight: 800, color: "#0A0A0B", fontSize: 18, marginTop: 16 }}>{s.ready}</p>
             <p style={{ color: "#16a34a", fontWeight: 700, fontSize: 14, marginTop: 2 }}>{selected.label}</p>
             <button
               onClick={() => setShowPaywall(true)}
@@ -352,11 +360,11 @@ export default function ConverterHubPage() {
                 boxShadow: "0 10px 24px -10px rgba(230,57,70,.6)",
               }}
             >
-              {busy ? "Preparando…" : <>Descargar <Download style={{ width: 18, height: 18 }} /></>}
+              {busy ? s.preparing : <>{s.download} <Download style={{ width: 18, height: 18 }} /></>}
             </button>
             <div>
               <button onClick={() => { setPhase("idle"); setSelected(null); }} style={{ marginTop: 12, background: "none", border: "none", color: "#64748b", fontWeight: 600, fontSize: 13, cursor: "pointer", textDecoration: "underline" }}>
-                Convertir a otro formato
+                {s.convertAnother}
               </button>
             </div>
           </div>
@@ -364,7 +372,7 @@ export default function ConverterHubPage() {
 
         {/* Full grid */}
         <div style={{ marginTop: 48 }}>
-          <p style={{ color: ACCENT, fontWeight: 800, letterSpacing: 1, fontSize: 12, textTransform: "uppercase", textAlign: "center" }}>Todas las conversiones</p>
+          <p style={{ color: ACCENT, fontWeight: 800, letterSpacing: 1, fontSize: 12, textTransform: "uppercase", textAlign: "center" }}>{s.allConversions}</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12, marginTop: 16 }}>
             {CONVERSIONS.map((c) => {
               const Icon = c.icon;
@@ -394,7 +402,7 @@ export default function ConverterHubPage() {
 
         {/* Trust strip */}
         <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 24, marginTop: 36, color: "#64748b", fontSize: 14 }}>
-          {([[ShieldCheck, "Privado y seguro"], [Smartphone, "Cualquier dispositivo"], [Check, "Sin instalación"]] as const).map(([Ic, txt], i) => (
+          {([[ShieldCheck, s.trustPrivate], [Smartphone, s.trustDevice], [Check, s.trustNoInstall]] as const).map(([Ic, txt], i) => (
             <span key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <Ic style={{ width: 16, height: 16, color: "#16a34a" }} /> {txt}
             </span>
@@ -403,22 +411,22 @@ export default function ConverterHubPage() {
 
         {/* How it works */}
         <div style={{ marginTop: 64 }}>
-          <p style={{ color: ACCENT, fontWeight: 800, letterSpacing: 1, fontSize: 12, textTransform: "uppercase", textAlign: "center" }}>Cómo funciona</p>
-          <h2 style={{ fontSize: 26, fontWeight: 800, color: "#0A0A0B", textAlign: "center", margin: "8px 0 28px" }}>Convierte en 3 pasos</h2>
+          <p style={{ color: ACCENT, fontWeight: 800, letterSpacing: 1, fontSize: 12, textTransform: "uppercase", textAlign: "center" }}>{s.howKicker}</p>
+          <h2 style={{ fontSize: 26, fontWeight: 800, color: "#0A0A0B", textAlign: "center", margin: "8px 0 28px" }}>{s.howTitle}</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
             {([
-              { icon: UploadCloud, title: "1. Sube tu archivo", desc: "Arrastra o selecciona cualquier archivo. Detectamos el tipo automáticamente." },
-              { icon: MousePointerClick, title: "2. Elige el formato", desc: "Te mostramos a qué puedes convertirlo. Pulsa el que quieras." },
-              { icon: Download, title: "3. Descarga al instante", desc: "Convertimos tu archivo y lo descargas en segundos." },
-            ] as const).map((s, i) => {
-              const Ic = s.icon;
+              { icon: UploadCloud, title: s.step1Title, desc: s.step1Desc },
+              { icon: MousePointerClick, title: s.step2Title, desc: s.step2Desc },
+              { icon: Download, title: s.step3Title, desc: s.step3Desc },
+            ] as const).map((step, i) => {
+              const Ic = step.icon;
               return (
                 <div key={i} style={{ padding: 20, borderRadius: 16, border: "1px solid #eef2f7", background: "#fff" }}>
                   <span style={{ width: 44, height: 44, borderRadius: 12, background: "#FEE7EA", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Ic style={{ width: 22, height: 22, color: ACCENT }} />
                   </span>
-                  <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0A0A0B", margin: "12px 0 6px" }}>{s.title}</h3>
-                  <p style={{ color: "#64748b", fontSize: 14, lineHeight: 1.5 }}>{s.desc}</p>
+                  <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0A0A0B", margin: "12px 0 6px" }}>{step.title}</h3>
+                  <p style={{ color: "#64748b", fontSize: 14, lineHeight: 1.5 }}>{step.desc}</p>
                 </div>
               );
             })}
@@ -427,17 +435,17 @@ export default function ConverterHubPage() {
 
         {/* Reviews */}
         <div style={{ marginTop: 64 }}>
-          <p style={{ color: ACCENT, fontWeight: 800, letterSpacing: 1, fontSize: 12, textTransform: "uppercase", textAlign: "center" }}>Lo que dicen</p>
-          <h2 style={{ fontSize: 26, fontWeight: 800, color: "#0A0A0B", textAlign: "center", margin: "8px 0 28px" }}>Miles de archivos convertidos</h2>
+          <p style={{ color: ACCENT, fontWeight: 800, letterSpacing: 1, fontSize: 12, textTransform: "uppercase", textAlign: "center" }}>{s.reviewsKicker}</p>
+          <h2 style={{ fontSize: 26, fontWeight: 800, color: "#0A0A0B", textAlign: "center", margin: "8px 0 28px" }}>{s.reviewsTitle}</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
             {([
-              { name: "María G.", text: "Convertí un PDF a Word en segundos y respetó todo el formato. Perfecto." },
-              { name: "Andrei P.", text: "Por fin pude pasar las fotos HEIC de mi iPhone a JPG. Rapidísimo." },
-              { name: "Thomas K.", text: "Sin instalar nada: subo el archivo y descargo. Muy fácil." },
+              { name: "María G.", text: s.review1 },
+              { name: "Andrei P.", text: s.review2 },
+              { name: "Thomas K.", text: s.review3 },
             ] as const).map((r, i) => (
               <div key={i} style={{ padding: 20, borderRadius: 16, border: "1px solid #eef2f7", background: "#fff" }}>
                 <div style={{ display: "flex", gap: 2, marginBottom: 8 }}>
-                  {[0, 1, 2, 3, 4].map((s) => <Star key={s} style={{ width: 16, height: 16, color: "#F5B301", fill: "#F5B301" }} />)}
+                  {[0, 1, 2, 3, 4].map((n) => <Star key={n} style={{ width: 16, height: 16, color: "#F5B301", fill: "#F5B301" }} />)}
                 </div>
                 <p style={{ color: "#334155", fontSize: 14, lineHeight: 1.6 }}>"{r.text}"</p>
                 <p style={{ fontWeight: 700, color: "#0A0A0B", fontSize: 13, marginTop: 10 }}>{r.name}</p>
@@ -448,13 +456,13 @@ export default function ConverterHubPage() {
 
         {/* FAQ */}
         <div style={{ marginTop: 64 }}>
-          <p style={{ color: ACCENT, fontWeight: 800, letterSpacing: 1, fontSize: 12, textTransform: "uppercase", textAlign: "center" }}>Preguntas frecuentes</p>
+          <p style={{ color: ACCENT, fontWeight: 800, letterSpacing: 1, fontSize: 12, textTransform: "uppercase", textAlign: "center" }}>{s.faqKicker}</p>
           <div style={{ maxWidth: 640, margin: "24px auto 0" }}>
             {([
-              { q: "¿Es seguro subir mis archivos?", a: "Sí. Los archivos se procesan de forma segura y no se comparten con terceros." },
-              { q: "¿Qué formatos puedo convertir?", a: "PDF ↔ Word, Excel, PowerPoint, JPG y PNG, además de HEIC→JPG, WEBP→JPG y HTML→PDF." },
-              { q: "¿Necesito instalar algo?", a: "No. Todo funciona en el navegador, en cualquier dispositivo." },
-              { q: "¿Cuánto cuesta?", a: "0,50 € por conversión." },
+              { q: s.faq1Q, a: s.faq1A },
+              { q: s.faq2Q, a: s.faq2A },
+              { q: s.faq3Q, a: s.faq3A },
+              { q: s.faq4Q, a: s.faq4A },
             ] as const).map((f, i) => (
               <div key={i} style={{ padding: "16px 0", borderBottom: "1px solid #eef2f7" }}>
                 <p style={{ fontWeight: 700, color: "#0A0A0B", fontSize: 15 }}>{f.q}</p>
