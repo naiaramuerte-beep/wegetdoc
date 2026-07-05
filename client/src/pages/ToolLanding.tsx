@@ -30,6 +30,7 @@ export const TOOL_LANDINGS: ToolDef[] = [
   { slug: "png-to-pdf",    i18nPrefix: "landing_png2pdf",    highlight: "PDF" },
   { slug: "jpeg-to-pdf",   i18nPrefix: "landing_jpeg2pdf",   highlight: "PDF" },
   { slug: "docx-to-pdf",   i18nPrefix: "landing_docx2pdf",   highlight: "PDF" },
+  { slug: "sign-pdf",      i18nPrefix: "landing_sign",       highlight: "PDF", editorTool: "sign" },
 ];
 
 // ── Component ───────────────────────────────────────────────────

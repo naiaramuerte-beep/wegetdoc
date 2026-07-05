@@ -1851,6 +1851,10 @@ export const translations: Translations = {
 
     // ── PNG to PDF ──
     landing_png2pdf_h1: "Convierte PNG a PDF",
+    landing_sign_h1: "Firma PDF online",
+    landing_sign_subtitle: "Firma tus documentos PDF en segundos, sin instalar nada.",
+    landing_sign_meta_title: "Firmar PDF online gratis | EditorPDF",
+    landing_sign_meta_desc: "Firma documentos PDF online en segundos. Dibuja o escribe tu firma y descarga el PDF firmado. Sin instalación.",
     landing_png2pdf_subtitle: "Transforma tus archivos PNG en documentos PDF con calidad perfecta",
     landing_png2pdf_cta: "Subir PNG",
     landing_png2pdf_drag: "o arrastra tu archivo PNG aquí",
@@ -2997,6 +3001,10 @@ export const translations: Translations = {
 
     // ── PNG to PDF ──
     landing_png2pdf_h1: "PNG to PDF Converter",
+    landing_sign_h1: "Sign PDF online",
+    landing_sign_subtitle: "Sign your PDF documents in seconds - no installation.",
+    landing_sign_meta_title: "Sign PDF Online | EditorPDF",
+    landing_sign_meta_desc: "Sign PDF documents online in seconds. Draw or type your signature and download the signed PDF. No installation.",
     landing_png2pdf_subtitle: "Turn your PNG files into PDF documents with perfect quality",
     landing_png2pdf_cta: "Upload PNG",
     landing_png2pdf_drag: "or drag your PNG file here",
@@ -11292,6 +11300,10 @@ export const translations: Translations = {
 
     // ── PNG to PDF ──
     landing_png2pdf_h1: "Convertor PNG în PDF",
+    landing_sign_h1: "Semnează PDF online",
+    landing_sign_subtitle: "Semnează documentele PDF în câteva secunde, fără instalare.",
+    landing_sign_meta_title: "Semnătură PDF Online | EditorPDF",
+    landing_sign_meta_desc: "Semnează documente PDF online în câteva secunde. Desenează sau scrie semnătura și descarcă PDF-ul semnat. Fără instalare.",
     landing_png2pdf_subtitle: "Transformă fișierele PNG în documente PDF cu calitate perfectă",
     landing_png2pdf_cta: "Încarcă PNG",
     landing_png2pdf_drag: "sau trage fișierul PNG aici",
