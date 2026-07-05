@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { translations } from "@/lib/i18n";
 import { brandName } from "@/lib/brand";
 import Home from "./Home";
 
@@ -34,7 +35,13 @@ export const TOOL_LANDINGS: ToolDef[] = [
 // ── Component ───────────────────────────────────────────────────
 export default function ToolLanding({ tool }: { tool: ToolDef }) {
   const { lang, t } = useLanguage();
-  const tr = (key: string) => (t as any)[`${tool.i18nPrefix}_${key}`] ?? "";
+  // Fall back to English when a language is missing this landing's strings, so
+  // the page shows a RELEVANT tool landing (in English) instead of the generic
+  // home hero. Prevents /de/jpg-to-pdf etc. from looking like the homepage.
+  const tr = (key: string) => {
+    const full = `${tool.i18nPrefix}_${key}`;
+    return (t as any)[full] || (translations.en as any)[full] || "";
+  };
 
   useEffect(() => {
     document.title = tr("meta_title") || `${tr("h1")} | ${brandName}`;
