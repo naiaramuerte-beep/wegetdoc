@@ -12,6 +12,42 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
 import { hubT } from "./hubStrings";
+import { pdfjsCompatOpts } from "@/lib/pdfjs-safe";
+
+// Configure pdfjs worker once per module (guards re-init on hot-reload).
+let pdfjsReady: Promise<typeof import("pdfjs-dist/legacy/build/pdf.mjs")> | null = null;
+function loadPdfjs() {
+  if (!pdfjsReady) {
+    pdfjsReady = import("pdfjs-dist/legacy/build/pdf.mjs").then((mod) => {
+      mod.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/legacy/build/pdf.worker.min.mjs", import.meta.url).href;
+      return mod;
+    });
+  }
+  return pdfjsReady;
+}
+
+// Render page 1 of a PDF to a small preview JPEG (data URL).
+async function renderPdfThumbnail(file: File, maxWidth = 240): Promise<string | null> {
+  try {
+    const pdfjsLib = await loadPdfjs();
+    const arr = await file.arrayBuffer();
+    const doc = await pdfjsLib.getDocument({ data: new Uint8Array(arr), ...pdfjsCompatOpts() }).promise;
+    const page = await doc.getPage(1);
+    const baseViewport = page.getViewport({ scale: 1 });
+    const scale = Math.min(2, maxWidth / baseViewport.width);
+    const viewport = page.getViewport({ scale });
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.ceil(viewport.width);
+    canvas.height = Math.ceil(viewport.height);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    await page.render({ canvasContext: ctx, viewport } as any).promise;
+    return canvas.toDataURL("image/jpeg", 0.85);
+  } catch (err) {
+    console.warn("[ConverterHub] PDF preview failed:", err);
+    return null;
+  }
+}
 import { FileText, Image as ImageIcon, FileSpreadsheet, Presentation, UploadCloud, ArrowRight, Star, Check, ShieldCheck, Smartphone, MousePointerClick, Download } from "lucide-react";
 import { toast } from "sonner";
 
@@ -168,9 +204,13 @@ export default function ConverterHubPage() {
     setProgress(0);
     if (selected && !selected.fromExts.includes(extOf(f.name))) setSelected(null);
     setPreviewUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
+      if (prev && prev.startsWith("blob:")) URL.revokeObjectURL(prev);
       return f.type.startsWith("image/") ? URL.createObjectURL(f) : null;
     });
+    // PDFs: render page 1 as a real thumbnail (async, replaces the icon).
+    if (extOf(f.name) === "pdf") {
+      renderPdfThumbnail(f).then((url) => { if (url) setPreviewUrl(url); });
+    }
   };
 
   const pickFormat = (c: Conv) => { setSelected(c); setPhase("idle"); setProgress(0); };
