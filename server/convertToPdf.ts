@@ -23,7 +23,8 @@ export type SupportedMimeType =
   | "application/vnd.ms-powerpoint"
   | "application/vnd.openxmlformats-officedocument.presentationml.presentation"
   | "text/html"
-  | "text/plain";
+  | "text/plain"
+  | "text/csv";
 
 const IMAGE_TYPES = new Set([
   "image/jpeg",
@@ -44,6 +45,7 @@ const OFFICE_TYPES = new Set([
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   "text/html",
   "text/plain",
+  "text/csv",
 ]);
 
 /**
@@ -156,4 +158,4 @@ export const ACCEPTED_MIME_TYPES = [
 ];
 
 export const ACCEPTED_EXTENSIONS =
-  ".pdf,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.html,.txt";
+  ".pdf,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.html,.txt,.csv";

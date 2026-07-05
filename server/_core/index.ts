@@ -281,9 +281,14 @@ ${allUrls.map(u => `  <url>
         pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
         jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png",
         gif: "image/gif", webp: "image/webp", bmp: "image/bmp", tiff: "image/tiff",
-        html: "text/html", txt: "text/plain",
+        html: "text/html", txt: "text/plain", csv: "text/csv",
       };
-      const resolvedMime = (mimeType === "application/octet-stream" && extMimeMap[ext]) ? extMimeMap[ext] : mimeType;
+      // CSV often arrives labelled as Excel (or octet-stream); normalise by
+      // extension so LibreOffice opens it as a spreadsheet, not a broken xls.
+      const csvExt = ext === "csv";
+      const resolvedMime = csvExt
+        ? "text/csv"
+        : (mimeType === "application/octet-stream" && extMimeMap[ext]) ? extMimeMap[ext] : mimeType;
       if (!isConvertibleType(resolvedMime)) {
         res.status(415).json({ error: `Unsupported file type: ${resolvedMime}` }); return;
       }
