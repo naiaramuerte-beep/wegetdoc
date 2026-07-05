@@ -11,7 +11,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
-import { FileText, Image as ImageIcon, FileSpreadsheet, Presentation, UploadCloud, ArrowRight } from "lucide-react";
+import { FileText, Image as ImageIcon, FileSpreadsheet, Presentation, UploadCloud, ArrowRight, Star, Check, ShieldCheck, Smartphone, MousePointerClick, Download } from "lucide-react";
 import { toast } from "sonner";
 
 const ACCENT = "#E63946";
@@ -50,6 +50,7 @@ const CONVERSIONS: Conv[] = [
 ];
 
 const extOf = (name: string) => (name.split(".").pop() || "").toLowerCase();
+const fmtSize = (b: number) => (b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / (1024 * 1024)).toFixed(1)} MB`);
 
 function triggerBlobDownload(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob);
@@ -135,6 +136,9 @@ export default function ConverterHubPage() {
   useLanguage(); // keeps the page reactive to language (copy is minimal here)
   const [file, setFile] = useState<File | null>(null);
   const [selected, setSelected] = useState<Conv | null>(null);
+  const [phase, setPhase] = useState<"idle" | "converting" | "ready">("idle");
+  const [progress, setProgress] = useState(0);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
   const [busy, setBusy] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -151,11 +155,32 @@ export default function ConverterHubPage() {
   const onPickFile = (f: File | null) => {
     if (!f) return;
     setFile(f);
-    // If a tile was already selected and the file doesn't match it, clear it.
+    setPhase("idle");
+    setProgress(0);
     if (selected && !selected.fromExts.includes(extOf(f.name))) setSelected(null);
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return f.type.startsWith("image/") ? URL.createObjectURL(f) : null;
+    });
   };
 
+  const pickFormat = (c: Conv) => { setSelected(c); setPhase("idle"); setProgress(0); };
+
   const canConvert = !!file && !!selected && selected.fromExts.includes(extOf(file.name));
+
+  // Step 3: "Convertir" runs a short progress animation, then shows the preview
+  // + Download. The REAL conversion only happens after payment (handlePaymentSuccess).
+  const handleConvert = () => {
+    if (!canConvert) return;
+    setPhase("converting");
+    setProgress(0);
+    let p = 0;
+    const iv = setInterval(() => {
+      p += Math.random() * 14 + 8;
+      if (p >= 100) { p = 100; clearInterval(iv); setProgress(100); setTimeout(() => setPhase("ready"), 350); }
+      else setProgress(Math.round(p));
+    }, 220);
+  };
 
   const handlePaymentSuccess = async () => {
     setShowPaywall(false);
@@ -176,6 +201,10 @@ export default function ConverterHubPage() {
   return (
     <div style={{ minHeight: "100vh", background: "#fff" }}>
       <Navbar />
+      <style>{`
+        @keyframes convPop { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
+        @keyframes convPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(22,163,74,.35); } 50% { box-shadow: 0 0 0 8px rgba(22,163,74,0); } }
+      `}</style>
       <div style={{ maxWidth: 960, margin: "0 auto", padding: "48px 20px 80px" }}>
         <div style={{ textAlign: "center", marginBottom: 8 }}>
           <p style={{ color: ACCENT, fontWeight: 800, letterSpacing: 1, fontSize: 12, textTransform: "uppercase" }}>Conversor de archivos</p>
@@ -183,67 +212,144 @@ export default function ConverterHubPage() {
           <p style={{ color: "#64748b" }}>Sube tu archivo y te decimos a qué puedes convertirlo. O elige abajo.</p>
         </div>
 
-        {/* Upload zone */}
-        <div
-          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-          onDragLeave={() => setIsDragging(false)}
-          onDrop={(e) => { e.preventDefault(); setIsDragging(false); onPickFile(e.dataTransfer.files?.[0] ?? null); }}
-          onClick={() => inputRef.current?.click()}
-          style={{
-            border: `2px dashed ${isDragging ? ACCENT : "#e5e7eb"}`,
-            background: isDragging ? "#FEF2F3" : "#F8FAFC",
-            borderRadius: 18, padding: "40px 20px", textAlign: "center", cursor: "pointer", marginTop: 24,
-          }}
-        >
-          <input ref={inputRef} type="file" hidden onChange={(e) => onPickFile(e.target.files?.[0] ?? null)} />
-          <UploadCloud style={{ width: 40, height: 40, color: ACCENT, margin: "0 auto" }} />
-          <p style={{ fontWeight: 700, color: "#0A0A0B", marginTop: 10 }}>
-            {file ? file.name : "Arrastra tu archivo o haz clic para subir"}
-          </p>
-          <p style={{ color: "#94a3b8", fontSize: 13, marginTop: 4 }}>Archivos de hasta 100 MB</p>
-        </div>
+        {/* Always-mounted file input */}
+        <input ref={inputRef} type="file" hidden onChange={(e) => onPickFile(e.target.files?.[0] ?? null)} />
 
-        {/* Suggestions after upload */}
-        {file && (
-          <div style={{ marginTop: 20 }}>
+        {/* Upload zone OR uploaded state */}
+        {!file ? (
+          <div
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={(e) => { e.preventDefault(); setIsDragging(false); onPickFile(e.dataTransfer.files?.[0] ?? null); }}
+            onClick={() => inputRef.current?.click()}
+            style={{
+              border: `2px dashed ${isDragging ? ACCENT : "#e5e7eb"}`,
+              background: isDragging ? "#FEF2F3" : "#F8FAFC",
+              borderRadius: 18, padding: "48px 20px", textAlign: "center", cursor: "pointer", marginTop: 24, transition: "all .15s",
+            }}
+          >
+            <UploadCloud style={{ width: 46, height: 46, color: ACCENT, margin: "0 auto" }} />
+            <p style={{ fontWeight: 800, color: "#0A0A0B", marginTop: 12, fontSize: 17 }}>Arrastra tu archivo o haz clic para subir</p>
+            <p style={{ color: "#94a3b8", fontSize: 13, marginTop: 4 }}>Cualquier formato · hasta 100 MB</p>
+          </div>
+        ) : (
+          <div style={{
+            marginTop: 24, borderRadius: 18, padding: "18px 20px",
+            border: "2px solid #16a34a", background: "#F0FDF4",
+            display: "flex", alignItems: "center", gap: 14, animation: "convPop .35s ease",
+          }}>
+            <span style={{ width: 46, height: 46, borderRadius: 12, background: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, animation: "convPulse 1.8s ease-out infinite" }}>
+              <Check style={{ width: 26, height: 26, color: "#fff" }} strokeWidth={3} />
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontWeight: 800, color: "#0A0A0B", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{file.name}</p>
+              <p style={{ color: "#16a34a", fontSize: 13, fontWeight: 700, marginTop: 2 }}>✓ Archivo subido · {fmtSize(file.size)}</p>
+            </div>
+            <button
+              onClick={() => inputRef.current?.click()}
+              style={{ flexShrink: 0, padding: "8px 14px", borderRadius: 10, border: "1px solid #cbd5e1", background: "#fff", color: "#334155", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+            >
+              Cambiar
+            </button>
+          </div>
+        )}
+
+        {/* Suggestions after upload (only while choosing) */}
+        {file && phase === "idle" && (
+          <div style={{ marginTop: 24 }}>
             {suggestions.length > 0 ? (
               <>
-                <p style={{ fontWeight: 700, color: "#0A0A0B", marginBottom: 10 }}>Convertir a:</p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                  {suggestions.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => setSelected(c)}
-                      style={{
-                        padding: "10px 16px", borderRadius: 12, fontWeight: 700, cursor: "pointer",
-                        border: `2px solid ${selected?.id === c.id ? ACCENT : "#e5e7eb"}`,
-                        background: selected?.id === c.id ? "#FEF2F3" : "#fff", color: "#0A0A0B",
-                      }}
-                    >
-                      {c.label.split("→")[1]?.trim() || c.label}
-                    </button>
-                  ))}
+                <p style={{ fontWeight: 800, color: "#0A0A0B", marginBottom: 12, fontSize: 15 }}>¿A qué formato lo convertimos?</p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
+                  {suggestions.map((c) => {
+                    const Icon = c.icon;
+                    const active = selected?.id === c.id;
+                    const target = c.label.split("→")[1]?.trim() || c.label;
+                    return (
+                      <button
+                        key={c.id}
+                        onClick={() => pickFormat(c)}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 14, cursor: "pointer",
+                          border: `2px solid ${active ? ACCENT : "#e5e7eb"}`,
+                          background: active ? "#FEF2F3" : "#fff", textAlign: "left",
+                          boxShadow: active ? "0 6px 16px -8px rgba(230,57,70,.5)" : "none", transition: "all .12s",
+                        }}
+                      >
+                        <span style={{ width: 34, height: 34, borderRadius: 9, background: c.tint + "22", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Icon style={{ width: 17, height: 17, color: c.tint }} />
+                        </span>
+                        <span style={{ fontWeight: 800, color: "#0A0A0B", fontSize: 14, flex: 1 }}>{target}</span>
+                        {active && <Check style={{ width: 16, height: 16, color: ACCENT }} strokeWidth={3} />}
+                      </button>
+                    );
+                  })}
                 </div>
               </>
             ) : (
-              <p style={{ color: "#E63946", fontWeight: 600 }}>No podemos convertir este tipo de archivo todavía.</p>
+              <div style={{ padding: 16, borderRadius: 14, background: "#FEF2F3", border: "1px solid #F2C1C6", color: "#C72738", fontWeight: 600, textAlign: "center" }}>
+                Todavía no podemos convertir este tipo de archivo.
+              </div>
             )}
           </div>
         )}
 
-        {/* Convert CTA */}
-        {canConvert && (
+        {/* Step 3: Convert (no price shown here) */}
+        {canConvert && phase === "idle" && (
           <button
-            onClick={() => setShowPaywall(true)}
-            disabled={busy}
+            onClick={handleConvert}
             style={{
-              marginTop: 22, width: "100%", padding: "14px", borderRadius: 14, border: "none",
-              background: ACCENT, color: "#fff", fontWeight: 800, fontSize: 16, cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: busy ? 0.6 : 1,
+              marginTop: 24, width: "100%", padding: "16px", borderRadius: 14, border: "none",
+              background: ACCENT, color: "#fff", fontWeight: 800, fontSize: 17, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              boxShadow: "0 10px 24px -10px rgba(230,57,70,.6)",
             }}
           >
-            {busy ? "Convirtiendo…" : <>Convertir y descargar por 0,50 € <ArrowRight style={{ width: 18, height: 18 }} /></>}
+            Convertir a {selected!.label.split("→")[1]?.trim()} <ArrowRight style={{ width: 18, height: 18 }} />
           </button>
+        )}
+
+        {/* Converting progress */}
+        {phase === "converting" && (
+          <div style={{ marginTop: 24, padding: "28px 24px", borderRadius: 18, border: "1px solid #eef2f7", background: "#F8FAFC", textAlign: "center" }}>
+            <p style={{ fontWeight: 800, color: "#0A0A0B", fontSize: 16 }}>Convirtiendo tu archivo…</p>
+            <div style={{ marginTop: 16, height: 10, borderRadius: 999, background: "#e5e7eb", overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${progress}%`, background: ACCENT, borderRadius: 999, transition: "width .2s ease" }} />
+            </div>
+            <p style={{ marginTop: 8, color: "#64748b", fontWeight: 700, fontSize: 14 }}>{progress}%</p>
+          </div>
+        )}
+
+        {/* Ready: preview + download */}
+        {phase === "ready" && selected && (
+          <div style={{ marginTop: 24, padding: "28px 24px", borderRadius: 18, border: "2px solid #16a34a", background: "#F0FDF4", textAlign: "center", animation: "convPop .35s ease" }}>
+            <div style={{ margin: "0 auto", width: 120, height: 150, borderRadius: 12, overflow: "hidden", border: "1px solid #d1fae5", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {previewUrl ? (
+                <img src={previewUrl} alt="preview" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+              ) : (
+                (() => { const Ic = selected.icon; return <Ic style={{ width: 48, height: 48, color: selected.tint }} />; })()
+              )}
+            </div>
+            <p style={{ fontWeight: 800, color: "#0A0A0B", fontSize: 18, marginTop: 16 }}>¡Tu archivo está listo!</p>
+            <p style={{ color: "#16a34a", fontWeight: 700, fontSize: 14, marginTop: 2 }}>{selected.label}</p>
+            <button
+              onClick={() => setShowPaywall(true)}
+              disabled={busy}
+              style={{
+                marginTop: 18, width: "100%", maxWidth: 320, padding: "15px", borderRadius: 14, border: "none",
+                background: ACCENT, color: "#fff", fontWeight: 800, fontSize: 16, cursor: "pointer",
+                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: busy ? 0.6 : 1,
+                boxShadow: "0 10px 24px -10px rgba(230,57,70,.6)",
+              }}
+            >
+              {busy ? "Preparando…" : <>Descargar <Download style={{ width: 18, height: 18 }} /></>}
+            </button>
+            <div>
+              <button onClick={() => { setPhase("idle"); setSelected(null); }} style={{ marginTop: 12, background: "none", border: "none", color: "#64748b", fontWeight: 600, fontSize: 13, cursor: "pointer", textDecoration: "underline" }}>
+                Convertir a otro formato
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Full grid */}
@@ -256,7 +362,11 @@ export default function ConverterHubPage() {
               return (
                 <button
                   key={c.id}
-                  onClick={() => { setSelected(c); if (file && !c.fromExts.includes(extOf(file.name))) setFile(null); inputRef.current?.click(); }}
+                  onClick={() => {
+                    pickFormat(c);
+                    if (!file || !c.fromExts.includes(extOf(file.name))) { setFile(null); setPreviewUrl(null); inputRef.current?.click(); }
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
                   style={{
                     display: "flex", alignItems: "center", gap: 10, padding: "14px", borderRadius: 14, textAlign: "left",
                     border: `2px solid ${active ? ACCENT : "#eef2f7"}`, background: "#fff", cursor: "pointer",
@@ -269,6 +379,78 @@ export default function ConverterHubPage() {
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        {/* Trust strip */}
+        <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 24, marginTop: 36, color: "#64748b", fontSize: 14 }}>
+          {([[ShieldCheck, "Privado y seguro"], [Smartphone, "Cualquier dispositivo"], [Check, "Sin instalación"]] as const).map(([Ic, txt], i) => (
+            <span key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Ic style={{ width: 16, height: 16, color: "#16a34a" }} /> {txt}
+            </span>
+          ))}
+        </div>
+
+        {/* How it works */}
+        <div style={{ marginTop: 64 }}>
+          <p style={{ color: ACCENT, fontWeight: 800, letterSpacing: 1, fontSize: 12, textTransform: "uppercase", textAlign: "center" }}>Cómo funciona</p>
+          <h2 style={{ fontSize: 26, fontWeight: 800, color: "#0A0A0B", textAlign: "center", margin: "8px 0 28px" }}>Convierte en 3 pasos</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
+            {([
+              { icon: UploadCloud, title: "1. Sube tu archivo", desc: "Arrastra o selecciona cualquier archivo. Detectamos el tipo automáticamente." },
+              { icon: MousePointerClick, title: "2. Elige el formato", desc: "Te mostramos a qué puedes convertirlo. Pulsa el que quieras." },
+              { icon: Download, title: "3. Descarga al instante", desc: "Convertimos tu archivo y lo descargas en segundos." },
+            ] as const).map((s, i) => {
+              const Ic = s.icon;
+              return (
+                <div key={i} style={{ padding: 20, borderRadius: 16, border: "1px solid #eef2f7", background: "#fff" }}>
+                  <span style={{ width: 44, height: 44, borderRadius: 12, background: "#FEE7EA", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Ic style={{ width: 22, height: 22, color: ACCENT }} />
+                  </span>
+                  <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0A0A0B", margin: "12px 0 6px" }}>{s.title}</h3>
+                  <p style={{ color: "#64748b", fontSize: 14, lineHeight: 1.5 }}>{s.desc}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Reviews */}
+        <div style={{ marginTop: 64 }}>
+          <p style={{ color: ACCENT, fontWeight: 800, letterSpacing: 1, fontSize: 12, textTransform: "uppercase", textAlign: "center" }}>Lo que dicen</p>
+          <h2 style={{ fontSize: 26, fontWeight: 800, color: "#0A0A0B", textAlign: "center", margin: "8px 0 28px" }}>Miles de archivos convertidos</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
+            {([
+              { name: "María G.", text: "Convertí un PDF a Word en segundos y respetó todo el formato. Perfecto." },
+              { name: "Andrei P.", text: "Por fin pude pasar las fotos HEIC de mi iPhone a JPG. Rapidísimo." },
+              { name: "Thomas K.", text: "Sin instalar nada: subo el archivo y descargo. Muy fácil." },
+            ] as const).map((r, i) => (
+              <div key={i} style={{ padding: 20, borderRadius: 16, border: "1px solid #eef2f7", background: "#fff" }}>
+                <div style={{ display: "flex", gap: 2, marginBottom: 8 }}>
+                  {[0, 1, 2, 3, 4].map((s) => <Star key={s} style={{ width: 16, height: 16, color: "#F5B301", fill: "#F5B301" }} />)}
+                </div>
+                <p style={{ color: "#334155", fontSize: 14, lineHeight: 1.6 }}>"{r.text}"</p>
+                <p style={{ fontWeight: 700, color: "#0A0A0B", fontSize: 13, marginTop: 10 }}>{r.name}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* FAQ */}
+        <div style={{ marginTop: 64 }}>
+          <p style={{ color: ACCENT, fontWeight: 800, letterSpacing: 1, fontSize: 12, textTransform: "uppercase", textAlign: "center" }}>Preguntas frecuentes</p>
+          <div style={{ maxWidth: 640, margin: "24px auto 0" }}>
+            {([
+              { q: "¿Es seguro subir mis archivos?", a: "Sí. Los archivos se procesan de forma segura y no se comparten con terceros." },
+              { q: "¿Qué formatos puedo convertir?", a: "PDF ↔ Word, Excel, PowerPoint, JPG y PNG, además de HEIC→JPG, WEBP→JPG y HTML→PDF." },
+              { q: "¿Necesito instalar algo?", a: "No. Todo funciona en el navegador, en cualquier dispositivo." },
+              { q: "¿Cuánto cuesta?", a: "0,50 € por conversión." },
+            ] as const).map((f, i) => (
+              <div key={i} style={{ padding: "16px 0", borderBottom: "1px solid #eef2f7" }}>
+                <p style={{ fontWeight: 700, color: "#0A0A0B", fontSize: 15 }}>{f.q}</p>
+                <p style={{ color: "#64748b", fontSize: 14, marginTop: 4, lineHeight: 1.5 }}>{f.a}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
