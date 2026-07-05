@@ -14,15 +14,16 @@ import { toast } from "sonner";
 
 const ACCENT = "#E63946";
 
-type Backend = "pdf-to" | "to-pdf" | "image";
+type Backend = "pdf-to" | "to-pdf" | "image" | "image-server";
 interface Conv {
   id: string;
   label: string;        // "PDF → Word"
   fromExts: string[];   // extensions this conversion accepts (no dot)
   toExt: string;        // output extension
   backend: Backend;
-  pdfToFormat?: "docx" | "xlsx" | "pptx" | "jpg"; // for backend "pdf-to"
-  imageTo?: "png" | "jpg";                        // for backend "image"
+  pdfToFormat?: "docx" | "xlsx" | "pptx" | "jpg" | "png"; // for backend "pdf-to"
+  imageTo?: "png" | "jpg";                        // for backend "image" (client canvas)
+  imgServerTo?: "png" | "jpg";                    // for backend "image-server" (CloudConvert)
   icon: any;
   tint: string;
 }
@@ -40,6 +41,10 @@ const CONVERSIONS: Conv[] = [
   { id: "png-pdf",   label: "PNG → PDF",        fromExts: ["png"],          toExt: "pdf",  backend: "to-pdf", icon: FileText,     tint: "#E63946" },
   { id: "jpg-png",   label: "JPG → PNG",        fromExts: ["jpg", "jpeg"],  toExt: "png",  backend: "image", imageTo: "png",      icon: ImageIcon,    tint: "#00838F" },
   { id: "png-jpg",   label: "PNG → JPG",        fromExts: ["png"],          toExt: "jpg",  backend: "image", imageTo: "jpg",      icon: ImageIcon,    tint: "#00838F" },
+  { id: "pdf-png",   label: "PDF → PNG",        fromExts: ["pdf"],          toExt: "png",  backend: "pdf-to", pdfToFormat: "png",  icon: ImageIcon,    tint: "#8E24AA" },
+  { id: "heic-jpg",  label: "HEIC → JPG",       fromExts: ["heic", "heif"], toExt: "jpg",  backend: "image-server", imgServerTo: "jpg", icon: ImageIcon, tint: "#0EA5E9" },
+  { id: "webp-jpg",  label: "WEBP → JPG",       fromExts: ["webp"],         toExt: "jpg",  backend: "image-server", imgServerTo: "jpg", icon: ImageIcon, tint: "#0EA5E9" },
+  { id: "html-pdf",  label: "HTML → PDF",       fromExts: ["html", "htm"],  toExt: "pdf",  backend: "to-pdf", icon: FileText,     tint: "#F59E0B" },
 ];
 
 const extOf = (name: string) => (name.split(".").pop() || "").toLowerCase();
@@ -110,7 +115,16 @@ async function runConversion(conv: Conv, file: File): Promise<{ blob: Blob; name
     if (!resp.ok) throw new Error(`Error de conversión (${resp.status})`);
     return { blob: await resp.blob(), name: `${base}.pdf` };
   }
-  // image (client-side)
+  if (conv.backend === "image-server") {
+    const fd = new FormData();
+    fd.append("file", file, file.name);
+    const resp = await fetch(`/api/convert/image-to/${conv.imgServerTo}`, { method: "POST", body: fd, credentials: "include" });
+    if (!resp.ok) throw new Error(`Error de conversión (${resp.status})`);
+    const blob = await resp.blob();
+    const hn = resp.headers.get("X-Converted-Name");
+    return { blob, name: hn ? decodeURIComponent(hn) : `${base}.${conv.toExt}` };
+  }
+  // image (client-side canvas)
   const blob = await imageConvert(file, conv.imageTo!);
   return { blob, name: `${base}.${conv.toExt}` };
 }
