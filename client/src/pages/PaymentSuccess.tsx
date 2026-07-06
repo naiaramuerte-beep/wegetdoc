@@ -187,7 +187,7 @@ export default function PaymentSuccess() {
         className="text-base mb-4 max-w-md"
         style={{ color: "#64748b" }}
       >
-        {t.payment_success_subtitle || "Tu suscripción está activa. Tu documento está guardado en tu panel y listo para descargar."}
+        {t.payment_success_subtitle || "Tu documento está guardado en tu panel y listo para descargar."}
       </p>
 
       {/* Countdown redirect notice — only when there's nothing to download. */}
