@@ -54,10 +54,14 @@ export function initSentry() {
     dsn: DSN,
     environment: ENVIRONMENT,
     release: RELEASE,
-    integrations: [Sentry.browserTracingIntegration()],
-    // Sample 5% of transactions to stay within the 10k/month free-tier
-    // quota. Errors are 100% — they're the signal we actually care about.
-    tracesSampleRate: 0.05,
+    // NO browserTracingIntegration on purpose. Its automatic instrumentation
+    // monkeypatches history.pushState/replaceState and fetch. Inside the
+    // Google app's in-app browser (GSA) on iOS, the host ALSO wraps those
+    // globals; the two wrappers call each other and the first navigation on a
+    // landing (e.g. an ad click to /ro) overflows the stack —
+    // "RangeError: Maximum call stack size exceeded" — which breaks wouter's
+    // pushState-based routing for that traffic. We only need error monitoring,
+    // not performance tracing, so we drop the integration entirely.
     ignoreErrors: IGNORED_ERRORS,
     denyUrls: DENY_URLS,
     beforeSend(event) {
