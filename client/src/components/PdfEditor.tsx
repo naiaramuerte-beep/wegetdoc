@@ -2302,7 +2302,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const activateTextPlace = () => {
     if (!textInput.trim()) { toast.error(t.editor_toast_text_required ?? "Type the text first"); return; }
     setClickToPlaceText(true);
-    toast.info("Haz clic en el PDF donde quieres colocar el texto");
+    toast.info(t.editor_place_toast);
   };
 
   // ── Add note ──────────────────────────────────────────────────
@@ -3832,7 +3832,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 <div className="flex flex-col gap-3">
                   {/* Font */}
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs" style={{ color: "#64748b" }}>Font</span>
+                    <span className="text-xs" style={{ color: "#64748b" }}>{t.editor_font_label}</span>
                     <select value={curFont.split(",")[0]?.trim() || "Arial"} onChange={e => setVal({ _font: e.target.value + ", sans-serif" })}
                       className="w-full border rounded px-2 py-1.5 text-xs" style={{ borderColor: "#cbd5e1", fontFamily: curFont }}>
                       {addFonts.map(f => <option key={f} value={f} style={{ fontFamily: f }}>{f}</option>)}
@@ -3840,7 +3840,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   </div>
                   {/* Size */}
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs" style={{ color: "#64748b" }}>Size (pt)</span>
+                    <span className="text-xs" style={{ color: "#64748b" }}>{t.editor_size_label}</span>
                     <div className="flex items-center gap-1">
                       <button onClick={() => setVal({ _size: Math.max(6, curSize - 1) })} className="w-7 h-7 flex items-center justify-center border rounded text-sm" style={{ borderColor: "#cbd5e1" }}>−</button>
                       <input type="number" value={curSize} onChange={e => setVal({ _size: Number(e.target.value) })}
@@ -3871,7 +3871,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                     };
                     return (<>
                       <div className="flex flex-col gap-1">
-                        <span className="text-xs" style={{ color: "#64748b" }}>Style</span>
+                        <span className="text-xs" style={{ color: "#64748b" }}>{t.editor_style_label}</span>
                         <div className="flex gap-1">
                           <button onClick={toggleWeight} className="flex-1 py-1.5 rounded text-xs border" style={abtn(curWeight === "bold")}><span style={{ fontWeight: "bold" }}>B</span></button>
                           <button onClick={toggleStyle} className="flex-1 py-1.5 rounded text-xs border" style={abtn(curStyle === "italic")}><span style={{ fontStyle: "italic" }}>I</span></button>
@@ -3881,7 +3881,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                       </div>
                       {/* Align */}
                       <div className="flex flex-col gap-1">
-                        <span className="text-xs" style={{ color: "#64748b" }}>Align</span>
+                        <span className="text-xs" style={{ color: "#64748b" }}>{t.editor_align_label}</span>
                         <div className="flex gap-1">
                           <button onClick={() => setAlign("left")} className="flex-1 py-1.5 rounded border flex items-center justify-center" style={abtn(curAlign === "left")}>
                             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2h14v1.5H1zm0 3.5h10v1.5H1zm0 3.5h14v1.5H1zm0 3.5h10v1.5H1z"/></svg>
@@ -3898,7 +3898,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   })()}
                   {/* Color */}
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-xs" style={{ color: "#64748b" }}>Color</span>
+                    <span className="text-xs" style={{ color: "#64748b" }}>{t.editor_color_label}</span>
                     <div className="flex items-center gap-2">
                       <div className="relative">
                         <div className="w-9 h-9 rounded-lg border-2" style={{ borderColor: "#cbd5e1", backgroundColor: curColor }} />
@@ -3939,7 +3939,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               </div>
             ) : (
               <div className="p-2 rounded text-center text-xs" style={{ backgroundColor: "rgba(10, 10, 11, 0.08)", color: "#E63946" }}>
-                Haz clic en el PDF para colocar texto
+                {t.editor_place_hint}
               </div>
             )}
             </div>
@@ -4032,7 +4032,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               </div>
             )}
             <div className="flex gap-2 items-center">
-              <label className="text-xs" style={{ color: "#64748b" }}>Color</label>
+              <label className="text-xs" style={{ color: "#64748b" }}>{t.editor_color_label}</label>
               <input type="color" value={shapeColor} onChange={e => setShapeColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0" />
               {/* Preview */}
               <div style={{ width: 40, height: 28, border: `2px solid ${shapeColor}`, borderRadius: shapeType === "circle" ? "50%" : 3, backgroundColor: shapeFilled ? shapeColor : "transparent", flexShrink: 0 }} />
@@ -4314,7 +4314,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             <h3 className="font-semibold text-sm" style={{ color: "#0f172a" }}>{t.editor_panel_brush}</h3>
             <p className="text-xs" style={{ color: "#64748b" }}>{t.editor_brush_hint}</p>
             <div className="flex gap-2 items-center">
-              <label className="text-xs" style={{ color: "#64748b" }}>Color</label>
+              <label className="text-xs" style={{ color: "#64748b" }}>{t.editor_color_label}</label>
               <input type="color" value={brushColor} onChange={e => setBrushColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0" />
             </div>
             <div>
@@ -4401,7 +4401,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   <div className="font-medium" style={{ color: "#E63946" }}>Text formatting</div>
                   {/* Font family */}
                   <div className="flex flex-col gap-1">
-                    <span style={{ color: "#64748b" }}>Font</span>
+                    <span style={{ color: "#64748b" }}>{t.editor_font_label}</span>
                     <select
                       value={(() => {
                         const first = block.fontFamily?.split(",")[0]?.trim() || "Arial";
@@ -4433,7 +4433,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   </div>
                   {/* Font size */}
                   <div className="flex flex-col gap-1">
-                    <span style={{ color: "#64748b" }}>Size (pt)</span>
+                    <span style={{ color: "#64748b" }}>{t.editor_size_label}</span>
                     <div className="flex items-center gap-1">
                       <button onMouseDown={e => e.preventDefault()} onClick={() => {
                         const ns = Math.max(4, block.pdfFontSize - 1); const r = ns / block.pdfFontSize;
@@ -4451,7 +4451,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   </div>
                   {/* Style buttons — B I U S */}
                   <div className="flex flex-col gap-1">
-                    <span style={{ color: "#64748b" }}>Style</span>
+                    <span style={{ color: "#64748b" }}>{t.editor_style_label}</span>
                     <div className="flex gap-1">
                       <button onMouseDown={e => e.preventDefault()} onClick={() => { if (typingBlockId === block.id) exec("bold"); else updateBlock({ fontWeight: block.fontWeight === "bold" ? "normal" : "bold" }); }}
                         className="flex-1 py-1.5 rounded text-xs border" style={btn(isBold)}>
@@ -4473,7 +4473,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   </div>
                   {/* Alignment — 3 icons */}
                   <div className="flex flex-col gap-1">
-                    <span style={{ color: "#64748b" }}>Align</span>
+                    <span style={{ color: "#64748b" }}>{t.editor_align_label}</span>
                     <div className="flex gap-1">
                       <button onMouseDown={e => e.preventDefault()} onClick={() => { exec("justifyLeft"); updateBlock({ textAlign: "left" }); }}
                         className="flex-1 py-1.5 rounded border flex items-center justify-center" style={btn(block.textAlign === "left" || !block.textAlign)}>{AlignLeft}</button>
@@ -4485,7 +4485,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   </div>
                   {/* Color */}
                   <div className="flex flex-col gap-1.5">
-                    <span style={{ color: "#64748b" }}>Color</span>
+                    <span style={{ color: "#64748b" }}>{t.editor_color_label}</span>
                     <div className="flex items-center gap-2">
                       <div className="relative">
                         <div className="w-9 h-9 rounded-lg border-2" style={{ borderColor: "#cbd5e1", backgroundColor: block.fontColor || "#000" }} />
@@ -4578,8 +4578,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               <div className="mt-1">
                 <p className="text-xs font-medium mb-2" style={{ color: "#0A0A0B" }}>
                   {movePageAnns.length > 0
-                    ? `${movePageAnns.length} ${movePageAnns.length === 1 ? "elemento" : "elementos"} (pág. ${currentPage})`
-                    : "Sin elementos en esta página"}
+                    ? `${movePageAnns.length} ${t.editor_elements_word} (${t.editor_page_word} ${currentPage})`
+                    : t.editor_no_elements}
                 </p>
                 <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
                   {movePageAnns.map((ann, idx) => (
@@ -4948,7 +4948,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         <div data-tour="thumbnails" className="hidden md:flex w-[150px] border-r overflow-y-auto flex-col gap-2 py-3 px-2" style={{ backgroundColor: "#ffffff", borderColor: "#f1f5f9" }}>
           {/* Page count */}
           <div className="flex items-center justify-between px-1 mb-1">
-            <span className="text-[10px] font-semibold" style={{ color: "#64748b" }}>{totalPages} {totalPages === 1 ? "page" : "pages"}</span>
+            <span className="text-[10px] font-semibold" style={{ color: "#64748b" }}>{totalPages} {totalPages === 1 ? t.editor_page_word : t.editor_pages_word}</span>
           </div>
           {(thumbnails.length > 0 ? thumbnails : Array.from({ length: totalPages }, () => "")).map((thumb, i) => {
             const isActive = currentPage === i + 1;
@@ -5034,7 +5034,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               >
                 <option value={0.75}>75%</option>
                 <option value={1.0}>100%</option>
-                <option value={1.2}>Auto Size</option>
+                <option value={1.2}>{t.editor_autosize_label}</option>
                 <option value={1.5}>150%</option>
                 <option value={2.0}>200%</option>
               </select>
@@ -5043,7 +5043,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
               <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 transition-colors">
                 <ChevronLeft className="w-4 h-4" style={{ color: "#64748b" }} />
               </button>
-              <span className="text-xs" style={{ color: "#64748b" }}>{currentPage} of {totalPages}</span>
+              <span className="text-xs" style={{ color: "#64748b" }}>{currentPage} / {totalPages}</span>
               <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 transition-colors">
                 <ChevronRight className="w-4 h-4" style={{ color: "#64748b" }} />
               </button>
