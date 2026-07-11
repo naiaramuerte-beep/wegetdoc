@@ -30,9 +30,27 @@ export function initSentry() {
     // burning the 10k/month free-tier quota.
     tracesSampleRate: 0.05,
     // ECONNRESET / ETIMEDOUT are clients hanging up — routine on the
-    // public internet, not bugs in our code.
-    ignoreErrors: ["ECONNRESET", "ETIMEDOUT", "EPIPE"],
-    beforeSend(event) {
+    // public internet, not bugs in our code. "request aborted" is raw-body/
+    // busboy when the client closes the connection mid-upload (closed tab,
+    // dropped wifi, cancelled file picker) — expected on a file-upload app,
+    // not actionable.
+    ignoreErrors: ["ECONNRESET", "ETIMEDOUT", "EPIPE", "request aborted"],
+    beforeSend(event, hint) {
+      // Drop client-abort errors regardless of how the message is worded.
+      // raw-body throws these with code ECONNABORTED / type "request.aborted"
+      // when an upload stream ends early. They're ~99% of our node events and
+      // there's nothing to fix — the client just went away mid-request.
+      const err = hint?.originalException as
+        | { code?: string; type?: string; message?: string }
+        | undefined;
+      if (
+        err &&
+        (err.code === "ECONNABORTED" ||
+          err.type === "request.aborted" ||
+          (typeof err.message === "string" && /request aborted/i.test(err.message)))
+      ) {
+        return null;
+      }
       const headers = event.request?.headers;
       if (headers && typeof headers === "object") {
         for (const k of SENSITIVE_HEADERS) {
