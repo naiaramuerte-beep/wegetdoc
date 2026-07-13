@@ -1074,6 +1074,28 @@ export async function getStripeRevenue(opts: { from: Date; to: Date }) {
 }
 
 /**
+ * Per-day count of the €0,50 intro charges (new-trial conversions) in a range.
+ * The intro payment is the small up-front charge (0,50 €) that opens a trial —
+ * distinct from the ~19,95 € MIT-R recurring renewal. We match by amount
+ * (<= 100 cents, leaving headroom if the intro is ever A/B'd to 0,99) and
+ * exclude failed attempts. Returns newest day first: [{ day, count, eur }].
+ */
+export async function getDailyIntroCharges(opts: { from: Date; to: Date }) {
+  const db = await getDb();
+  if (!db) return [] as { day: string; count: number; eur: number }[];
+  const rows = await db.select({
+    day: sql<string>`DATE_FORMAT(${charges.createdAt}, '%Y-%m-%d')`,
+    count: sql<number>`COUNT(*)`,
+    eur: sql<number>`ROUND(SUM(${charges.amountCents}) / 100, 2)`,
+  }).from(charges)
+    .where(sql`${charges.createdAt} >= ${opts.from} AND ${charges.createdAt} <= ${opts.to} AND ${charges.status} <> 'failed' AND ${charges.amountCents} <= 100`)
+    .groupBy(sql`DATE_FORMAT(${charges.createdAt}, '%Y-%m-%d')`)
+    .orderBy(sql`DATE_FORMAT(${charges.createdAt}, '%Y-%m-%d') DESC`);
+  // COUNT/SUM come back as strings from the driver — coerce to numbers.
+  return rows.map((r) => ({ day: r.day, count: Number(r.count), eur: Number(r.eur) }));
+}
+
+/**
  * Admin doc listing: every document joined with its owner. Supports a simple
  * search over filename/user email. Ordered by most recent first, capped at
  * 500 rows by default — the admin rarely needs more at once and pulling the

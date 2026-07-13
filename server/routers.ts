@@ -65,6 +65,7 @@ import {
   getStripeChargesList,
   getGclidConversions,
   getStripeRevenue,
+  getDailyIntroCharges,
   getSubsAboutToCancel,
   getUserTimeline,
   getWebhookEvents,
@@ -1215,6 +1216,18 @@ export const appRouter = router({
           console.error(`[admin.stripeRevenue] FAILED after ${Date.now() - t0}ms:`, err);
           throw err;
         }
+      }),
+
+    dailyIntroCharges: adminProcedure
+      .input(z.object({
+        from: z.string().datetime(),
+        to: z.string().datetime(),
+      }))
+      .query(async ({ input }) => {
+        return getDailyIntroCharges({
+          from: new Date(input.from),
+          to: new Date(input.to),
+        });
       }),
 
     canceledSubscriptions: adminProcedure.query(async () => {

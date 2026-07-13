@@ -92,6 +92,10 @@ export default function Admin() {
     { from: rangeFromISO, to: rangeToISO },
     { enabled: !!user && user.role === "admin" && tab === "billing", staleTime: 60 * 1000 }
   );
+  const dailyIntroQ = trpc.admin.dailyIntroCharges.useQuery(
+    { from: rangeFromISO, to: rangeToISO },
+    { enabled: !!user && user.role === "admin" && tab === "billing", staleTime: 60 * 1000 }
+  );
   const subsAboutToCancelQ = trpc.admin.subsAboutToCancel.useQuery(undefined, {
     enabled: !!user && user.role === "admin" && tab === "billing",
   });
@@ -768,6 +772,51 @@ export default function Admin() {
                           <p className="text-xs text-gray-500 mt-1">{card.sub}</p>
                         </div>
                       ))}
+                    </div>
+                  </div>
+
+                  {/* ── €0,50 INTRO PAYMENTS PER DAY (range-aware) ── */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                        Pagos de 0,50 € por día (altas)
+                      </p>
+                      {dailyIntroQ.data && dailyIntroQ.data.length > 0 && (
+                        <p className="text-xs text-gray-500">
+                          {dailyIntroQ.data.reduce((s, d) => s + d.count, 0)} pagos ·{" "}
+                          {formatEur(dailyIntroQ.data.reduce((s, d) => s + d.eur, 0))} en el rango
+                        </p>
+                      )}
+                    </div>
+                    <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "#131720", borderColor: "#1e2433" }}>
+                      {dailyIntroQ.isLoading ? (
+                        <div className="p-4 text-xs text-gray-500 inline-flex items-center gap-1">
+                          <RefreshCw size={12} className="animate-spin" /> cargando…
+                        </div>
+                      ) : !dailyIntroQ.data || dailyIntroQ.data.length === 0 ? (
+                        <div className="p-4 text-xs text-gray-500">Sin pagos de 0,50 € en este rango.</div>
+                      ) : (
+                        <div className="divide-y" style={{ borderColor: "#1e2433" }}>
+                          {(() => {
+                            const maxCount = Math.max(...dailyIntroQ.data.map((d) => d.count), 1);
+                            return dailyIntroQ.data.map((d) => (
+                              <div key={d.day} className="flex items-center gap-3 px-4 py-2">
+                                <span className="text-xs font-mono text-gray-400 w-24 shrink-0">
+                                  {new Date(d.day + "T00:00:00").toLocaleDateString("es-ES", { weekday: "short", day: "2-digit", month: "short" })}
+                                </span>
+                                <div className="flex-1 h-4 rounded-sm overflow-hidden" style={{ backgroundColor: "#0d1017" }}>
+                                  <div
+                                    className="h-full rounded-sm"
+                                    style={{ width: `${(d.count / maxCount) * 100}%`, backgroundColor: "#8b5cf6", minWidth: d.count > 0 ? "2px" : 0 }}
+                                  />
+                                </div>
+                                <span className="text-sm font-bold text-white w-10 text-right shrink-0">{d.count}</span>
+                                <span className="text-xs text-gray-500 w-16 text-right shrink-0">{formatEur(d.eur)}</span>
+                              </div>
+                            ));
+                          })()}
+                        </div>
+                      )}
                     </div>
                   </div>
 
