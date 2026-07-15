@@ -1023,6 +1023,31 @@ ${allUrls.map(u => `  <url>
       const priceEur = Number(priceStr ?? "19.95");
       const amountCents = Math.round(priceEur * 100);
       const results: { userId: number; ok: boolean; reason?: string }[] = [];
+      // Dunning policy (Sipay recommendation 2026-07): stop after 2-3
+      // consecutive failures. Visa/MC cap retries on a declined authorization
+      // (~15 in 30 days) and excess retries incur acquirer fees + card-testing
+      // flags. 2 spaced retries after the first failure = 3 total attempts
+      // (day 0 → +3 → +7), then give up and cancel. Shared by BOTH the decline
+      // path and the exception path — the latter previously left nextRenewalAt
+      // untouched, so a card that made Sipay throw got re-selected every daily
+      // run and retried forever.
+      const RETRY_GAPS_DAYS = [3, 7];
+      const applyDunning = async (sub: { userId: number; renewalAttempts: number | null; currentPeriodEnd: Date | null }) => {
+        const attempts = (sub.renewalAttempts ?? 0) + 1;
+        if (attempts > RETRY_GAPS_DAYS.length) {
+          await db.upsertSubscription({ userId: sub.userId, status: "canceled", renewalAttempts: attempts, nextRenewalAt: null });
+          return { canceled: true, attempts };
+        }
+        const gapDays = RETRY_GAPS_DAYS[attempts - 1];
+        await db.upsertSubscription({
+          userId: sub.userId,
+          status: "past_due",
+          currentPeriodEnd: sub.currentPeriodEnd ?? new Date(),
+          renewalAttempts: attempts,
+          nextRenewalAt: new Date(Date.now() + gapDays * 24 * 60 * 60 * 1000),
+        });
+        return { canceled: false, attempts, gapDays };
+      };
       for (const sub of due) {
         if (dryRun) {
           results.push({ userId: sub.userId, ok: true, reason: "dry-run" });
@@ -1114,34 +1139,8 @@ ${allUrls.map(u => `  <url>
                 rawTail: typeof result.raw === "string" ? result.raw.slice(0, 2000) : null,
               }),
             );
-            // Dunning: space the retries (+5 → +7 → +9 days) instead of
-            // hammering the bank every day (which risks the merchant being
-            // flagged for card-testing), and GIVE UP after the schedule is
-            // exhausted so a permanently-dead token (e.g. a wallet cof_id that
-            // returns no_card_from_token) doesn't retry forever.
-            // 4 spaced retries across the month: day 3 → 10 → 19 → 29, then
-            // give up. Gaps between attempts (a quick first retry catches
-            // transient declines; the rest spread out so we never hammer daily).
-            const RETRY_GAPS_DAYS = [3, 7, 9, 10];
-            const attempts = (sub.renewalAttempts ?? 0) + 1;
-            if (attempts > RETRY_GAPS_DAYS.length) {
-              // Exhausted every retry — stop and cancel.
-              await db.upsertSubscription({
-                userId: sub.userId,
-                status: "canceled",
-                renewalAttempts: attempts,
-                nextRenewalAt: null,
-              });
-            } else {
-              const gapDays = RETRY_GAPS_DAYS[attempts - 1];
-              await db.upsertSubscription({
-                userId: sub.userId,
-                status: "past_due",
-                currentPeriodEnd: sub.currentPeriodEnd ?? new Date(),
-                renewalAttempts: attempts,
-                nextRenewalAt: new Date(Date.now() + gapDays * 24 * 60 * 60 * 1000),
-              });
-            }
+            // Space + cap the retries via the shared dunning policy above.
+            await applyDunning(sub);
             const detail = data?.payload?.detail ?? data?.detail ?? "unknown";
             await db.recordCharge({
               userId: sub.userId,
@@ -1164,6 +1163,10 @@ ${allUrls.map(u => `  <url>
           }
         } catch (err: any) {
           const msg = err?.message ?? String(err);
+          // Advance the dunning schedule on exceptions too. Without this the
+          // sub keeps nextRenewalAt <= now and gets re-charged on every daily
+          // run — the infinite-daily-retry pattern Sipay flagged.
+          try { await applyDunning(sub); } catch { /* best-effort */ }
           await db.recordWebhookEvent({
             provider: "sipay",
             eventType: "mit_cron_exception",
