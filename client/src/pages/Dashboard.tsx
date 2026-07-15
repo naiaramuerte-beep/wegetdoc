@@ -846,25 +846,6 @@ function BillingTab() {
         </div>
       </div>
 
-      {/* Manage subscription — cancel button (only if active and NOT already canceling) */}
-      {isPremium && !sub?.cancelAtPeriodEnd && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-          <h3 className="font-semibold text-slate-800 mb-1">{t.dash_manage_subscription}</h3>
-          <p className="text-sm text-slate-500 mb-4">
-            {t.dash_cancel_keep_access}{" "}
-            <strong>{expiryDateStr ?? t.dash_end_of_period}</strong>.
-            {" "}{t.dash_no_more_charges}
-          </p>
-          <Button
-            variant="outline"
-            onClick={() => setShowCancelModal(true)}
-            className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-400 transition-colors"
-          >
-            {t.dash_cancel_subscription}
-          </Button>
-        </div>
-      )}
-
       {/* Already canceled — info banner */}
       {isPremium && sub?.cancelAtPeriodEnd && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-start gap-3">
@@ -915,6 +896,19 @@ function BillingTab() {
               {showPaywall ? t.dash_payment_form_open : t.dash_subscribe_now}
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* Cancel subscription — kept accessible in Billing but intentionally
+          low-key: a small muted link at the very bottom, not a prominent card. */}
+      {isPremium && !sub?.cancelAtPeriodEnd && (
+        <div className="pt-4 mt-2 border-t border-slate-100 text-center">
+          <button
+            onClick={() => setShowCancelModal(true)}
+            className="text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2 transition-colors"
+          >
+            {t.dash_cancel_subscription}
+          </button>
         </div>
       )}
 
