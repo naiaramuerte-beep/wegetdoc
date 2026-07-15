@@ -18,7 +18,7 @@ export default function PaymentSuccess() {
   const [, navigate] = useLocation();
   const [countdown, setCountdown] = useState(5);
   const { adsTrackingEnabled } = useFeatureFlags();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   // ── Post-payment download ────────────────────────────────────────────────
   // Every Sipay flow (card 3DS, Apple Pay, Google Pay) lands here via a
@@ -34,14 +34,32 @@ export default function PaymentSuccess() {
   useEffect(() => { hasDocRef.current = !!latestDoc; }, [latestDoc]);
   const [downloading, setDownloading] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
+  // "trial-limit" when the user has used up their trial downloads (they still
+  // paid, but the 3rd distinct file is gated); "error" for any other failure.
+  const [downloadError, setDownloadError] = useState<"trial-limit" | "error" | null>(null);
   const autoTriedRef = useRef(false);
 
   const handleDownloadDoc = async () => {
     if (!latestDoc?.id) return;
     try {
       setDownloading(true);
+      setDownloadError(null);
       const res = await fetch(`/api/documents/download/${latestDoc.id}`, { credentials: "include" });
-      if (!res.ok) throw new Error(`download failed: ${res.status}`);
+      if (!res.ok) {
+        // Surface the trial-download limit distinctly instead of a generic
+        // failure — otherwise a paying user who re-downloads sees "could not
+        // download" with no explanation (support ticket magnet).
+        if (res.status === 403) {
+          let body: any = null;
+          try { body = await res.json(); } catch {}
+          if (body?.error === "trial-limit") {
+            setDownloadError("trial-limit");
+            return;
+          }
+        }
+        setDownloadError("error");
+        throw new Error(`download failed: ${res.status}`);
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -264,6 +282,40 @@ export default function PaymentSuccess() {
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>
+
+      {/* Download-error notice — trial-limit gets a clear explanation + CTA,
+          any other failure gets a generic retry hint. */}
+      {downloadError && (
+        <div
+          className="p-4 rounded-xl max-w-sm w-full text-left mb-8 text-sm"
+          style={{ backgroundColor: "#FFF7ED", border: "1px solid #fed7aa", color: "#9a3412" }}
+        >
+          {downloadError === "trial-limit" ? (
+            <>
+              <p className="font-semibold mb-1">
+                {(t as any).payment_success_trial_limit_title || "Has usado tus descargas de prueba"}
+              </p>
+              <p style={{ color: "#b45309" }}>
+                {(t as any).payment_success_trial_limit_body ||
+                  "Tu prueba incluye un número limitado de descargas y ya las has usado. Puedes descargar de nuevo cualquier archivo que ya bajaste desde tu panel, o mejorar tu plan para descargas ilimitadas."}
+              </p>
+              <button
+                onClick={() => navigate(`/${lang}/dashboard`)}
+                className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-white font-semibold text-xs"
+                style={{ backgroundColor: "#E63946" }}
+              >
+                {(t as any).payment_success_go_dashboard || "Ir a mi panel"}
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </>
+          ) : (
+            <p>
+              {(t as any).payment_success_download_error ||
+                "No se pudo descargar el archivo en este momento. Tu documento está guardado en tu panel — inténtalo de nuevo desde ahí."}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* What you can do now */}
       <div

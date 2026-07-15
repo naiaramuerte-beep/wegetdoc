@@ -1586,7 +1586,10 @@ export async function getTrialUsageCount(userId: number) {
   if (!periodStart) {
     return { count: 0, limit: await readTrialLimit(), periodStart: null, isTrialing: true };
   }
-  const [row] = await db.select({ count: sql<number>`count(*)` })
+  // Count DISTINCT files (name + size), not doc rows: re-uploading the same
+  // PDF as a new document must not burn a second trial slot. Two rows with the
+  // same name and byte size are treated as the same file.
+  const [row] = await db.select({ count: sql<number>`COUNT(DISTINCT ${documents.name}, ${documents.fileSize})` })
     .from(documents)
     .where(and(
       eq(documents.userId, userId),
@@ -1618,14 +1621,31 @@ export async function canDownloadForUser(userId: number, docId: number) {
   if (!sub) return { allowed: true as const };
   // Trial sub: check re-download + usage.
   if (sub.plan === "trial") {
-    const [doc] = await db.select({ id: documents.id, firstDownloadedAt: documents.firstDownloadedAt })
+    const [doc] = await db.select({ id: documents.id, name: documents.name, fileSize: documents.fileSize, firstDownloadedAt: documents.firstDownloadedAt })
       .from(documents)
       .where(and(eq(documents.id, docId), eq(documents.userId, userId)))
       .limit(1);
     if (!doc) return { allowed: false, reason: "doc-not-found" as const };
-    // Re-download of an already-counted doc — free.
-    if (doc.firstDownloadedAt && sub.currentPeriodStart && doc.firstDownloadedAt >= sub.currentPeriodStart) {
+    const periodStart = sub.currentPeriodStart;
+    // Re-download of an already-counted doc row — free.
+    if (doc.firstDownloadedAt && periodStart && doc.firstDownloadedAt >= periodStart) {
       return { allowed: true as const };
+    }
+    // Same FILE (name + size) already downloaded this period — free. Covers
+    // users who re-upload the identical PDF as a new document row; it must not
+    // consume a second trial slot.
+    if (periodStart && doc.name != null && doc.fileSize != null) {
+      const [sameFile] = await db.select({ id: documents.id })
+        .from(documents)
+        .where(and(
+          eq(documents.userId, userId),
+          eq(documents.name, doc.name),
+          eq(documents.fileSize, doc.fileSize),
+          sql`${documents.firstDownloadedAt} IS NOT NULL`,
+          sql`${documents.firstDownloadedAt} >= ${periodStart}`,
+        ))
+        .limit(1);
+      if (sameFile) return { allowed: true as const };
     }
     const usage = await getTrialUsageCount(userId);
     if (usage.limit !== null && usage.count >= usage.limit) {
