@@ -7,6 +7,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { brandName, isFastDoc } from "@/lib/brand";
+import { detectLanguage } from "@/lib/detectLang";
 import { toast } from "sonner";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -2130,6 +2131,10 @@ export default function Admin() {
                         borderLeftColor: !msg.read ? "#3b82f6" : (msg as any).repliedAt ? "#10b981" : "#475569",
                       }}
                       onClick={() => {
+                        // Don't collapse when the admin is selecting text (e.g.
+                        // highlighting the message to translate it) — the mouseup
+                        // of a drag-select ends as a click on this card.
+                        if (window.getSelection()?.toString()) return;
                         setExpandedMsg(expandedMsg === msg.id ? null : msg.id);
                         if (!msg.read) markReadMut.mutate({ id: msg.id });
                       }}
@@ -2151,6 +2156,14 @@ export default function Admin() {
                               </p>
                               <StatusBadge read={msg.read} repliedAt={(msg as any).repliedAt ?? null} />
                               {msg.reason && <ReasonBadge reason={msg.reason} />}
+                              {(() => {
+                                const g = detectLanguage(`${msg.subject ?? ""} ${msg.message ?? ""}`);
+                                return g ? (
+                                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ backgroundColor: "#1e293b", color: "#cbd5e1" }} title={`Idioma detectado: ${g.name}`}>
+                                    {g.flag} {g.name}
+                                  </span>
+                                ) : null;
+                              })()}
                               {(messagesByEmail[msg.email.toLowerCase()]?.length ?? 0) > 1 && (
                                 <RecurrentBadge count={messagesByEmail[msg.email.toLowerCase()].length} />
                               )}
@@ -2190,7 +2203,10 @@ export default function Admin() {
                       </div>
                       {expandedMsg === msg.id && (
                         <div className="mt-3 pt-3 border-t" style={{ borderColor: "#1e2433" }}>
-                          <p className="text-sm text-gray-300 whitespace-pre-wrap">{msg.message}</p>
+                          {/* Select the text and use the browser's right-click
+                              "Translate selection" — it shows a popup without
+                              mutating the DOM (safe with the app-root notranslate). */}
+                          <p className="text-sm text-gray-300 whitespace-pre-wrap select-text">{msg.message}</p>
 
                           {/* Prior messages from the same email (oldest first, excluding current). */}
                           {(() => {
