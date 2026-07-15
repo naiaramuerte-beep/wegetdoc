@@ -292,7 +292,7 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
     { id: "merge",     labelKey: "hero_pill_merge",    icon: Merge,           tint: "#2B579A", iconBg: "#E8F0FA", landingSlug: "merge-pdf" },
     { id: "split",     labelKey: "hero_pill_split",    icon: Scissors,        tint: "#1F7244", iconBg: "#E8F5EC", landingSlug: "split-pdf" },
     { id: "compress",  labelKey: "hero_pill_compress", icon: Minimize2,       tint: "#D04423", iconBg: "#FBEBE5", landingSlug: "compress-pdf" },
-    { id: "convert",   labelKey: "hero_pill_convert",  icon: RefreshCw,       tint: "#8A57DC", iconBg: "#F1EAFB", landingSlug: "pdf-converter" },
+    { id: "convert",   labelKey: "hero_pill_convert",  icon: RefreshCw,       tint: "#8A57DC", iconBg: "#F1EAFB", landingSlug: "convert" },
     { id: "sign",      labelKey: "hero_pill_sign",     icon: PenTool,         tint: "#0A0A0B", iconBg: "#F0F0F2", toolForUpload: "sign" },
     // Row 2 — organize/convert specifics, each goes to its landing
     { id: "rotate",    labelKey: "tool_rotate",        icon: RotateCcw,       tint: "#8A57DC", iconBg: "#F1EAFB", landingSlug: "rotate-pdf" },

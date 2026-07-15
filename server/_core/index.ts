@@ -375,6 +375,9 @@ ${allUrls.map(u => `  <url>
     const OUT: Record<string, { ext: string; mime: string }> = {
       jpg: { ext: "jpg", mime: "image/jpeg" },
       png: { ext: "png", mime: "image/png" },
+      // HEIC→PDF: CloudConvert decodes iPhone HEIC (Sharp's build can't) and
+      // outputs a PDF directly.
+      pdf: { ext: "pdf", mime: "application/pdf" },
     };
     const cfg = OUT[target];
     if (!cfg) { res.status(400).json({ error: `Unsupported target format: ${target}` }); return; }

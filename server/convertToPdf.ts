@@ -35,6 +35,10 @@ const IMAGE_TYPES = new Set([
   "image/bmp",
   "image/tiff",
 ]);
+// NOTE: HEIC/HEIF are intentionally NOT here — this deployment's Sharp build
+// ships only the AVIF decoder (sharp.format.heif.fileSuffix = [".avif"]), so
+// real iPhone HEVC-encoded HEIC files fail. HEIC→PDF goes through CloudConvert
+// (/api/convert/image-to/pdf), the same proven path as HEIC→JPG.
 
 const OFFICE_TYPES = new Set([
   "application/msword",

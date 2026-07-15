@@ -62,7 +62,7 @@ interface Conv {
   backend: Backend;
   pdfToFormat?: "docx" | "xlsx" | "pptx" | "jpg" | "png"; // for backend "pdf-to"
   imageTo?: "png" | "jpg";                        // for backend "image" (client canvas)
-  imgServerTo?: "png" | "jpg";                    // for backend "image-server" (CloudConvert)
+  imgServerTo?: "png" | "jpg" | "pdf";            // for backend "image-server" (CloudConvert)
   icon: any;
   tint: string;
 }
@@ -82,6 +82,7 @@ const CONVERSIONS: Conv[] = [
   { id: "png-jpg",   label: "PNG → JPG",        fromExts: ["png"],          toExt: "jpg",  backend: "image", imageTo: "jpg",      icon: ImageIcon,    tint: "#00838F" },
   { id: "pdf-png",   label: "PDF → PNG",        fromExts: ["pdf"],          toExt: "png",  backend: "pdf-to", pdfToFormat: "png",  icon: ImageIcon,    tint: "#8E24AA" },
   { id: "heic-jpg",  label: "HEIC → JPG",       fromExts: ["heic", "heif"], toExt: "jpg",  backend: "image-server", imgServerTo: "jpg", icon: ImageIcon, tint: "#0EA5E9" },
+  { id: "heic-pdf",  label: "HEIC → PDF",       fromExts: ["heic", "heif"], toExt: "pdf",  backend: "image-server", imgServerTo: "pdf", icon: FileText, tint: "#E63946" },
   { id: "webp-jpg",  label: "WEBP → JPG",       fromExts: ["webp"],         toExt: "jpg",  backend: "image-server", imgServerTo: "jpg", icon: ImageIcon, tint: "#0EA5E9" },
   { id: "html-pdf",  label: "HTML → PDF",       fromExts: ["html", "htm"],  toExt: "pdf",  backend: "to-pdf", icon: FileText,     tint: "#F59E0B" },
   { id: "csv-pdf",   label: "CSV → PDF",        fromExts: ["csv"],          toExt: "pdf",  backend: "to-pdf", icon: FileSpreadsheet, tint: "#1E9E63" },
@@ -205,7 +206,11 @@ export default function ConverterHubPage() {
     if (selected && !selected.fromExts.includes(extOf(f.name))) setSelected(null);
     setPreviewUrl((prev) => {
       if (prev && prev.startsWith("blob:")) URL.revokeObjectURL(prev);
-      return f.type.startsWith("image/") ? URL.createObjectURL(f) : null;
+      // HEIC/HEIF can't be rendered by non-Safari browsers — skip the preview
+      // (it'd show a broken image); the conversion still runs server-side.
+      const ext = extOf(f.name);
+      const previewable = f.type.startsWith("image/") && ext !== "heic" && ext !== "heif";
+      return previewable ? URL.createObjectURL(f) : null;
     });
     // PDFs: render page 1 as a real thumbnail (async, replaces the icon).
     if (extOf(f.name) === "pdf") {
