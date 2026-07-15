@@ -485,7 +485,7 @@ export const appRouter = router({
         }
         const txn = data?.payload?.transaction_id ?? "";
         const masked = data?.payload?.masked_card ?? "";
-        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge } = await import("./db");
+        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge, setUserCountryIfEmpty } = await import("./db");
         const now = new Date();
         // 0,50 € intro buys a 2-day trial. After it expires the cron picks
         // the sub up and charges 19,95 € MIT-R, which extends 30 days.
@@ -508,6 +508,9 @@ export const appRouter = router({
           cancelAtPeriodEnd: false,
         });
         await markDocumentsPaid(ctx.user.id);
+        // Persist payer country (Cloudflare geo) for revenue-by-country, first
+        // payment wins.
+        await setUserCountryIfEmpty(ctx.user.id, String(ctx.req?.headers?.["cf-ipcountry"] ?? ""));
         await recordCharge({
           userId: ctx.user.id,
           provider: "apay",
@@ -599,7 +602,7 @@ export const appRouter = router({
         }
         const txn = data?.payload?.transaction_id ?? "";
         const masked = data?.payload?.masked_card ?? "";
-        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge } = await import("./db");
+        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge, setUserCountryIfEmpty } = await import("./db");
         const now = new Date();
         // 0,50 € intro buys a 2-day trial. After it expires the cron picks
         // the sub up and charges 19,95 € MIT-R, which extends 30 days.
@@ -622,6 +625,9 @@ export const appRouter = router({
           cancelAtPeriodEnd: false,
         });
         await markDocumentsPaid(ctx.user.id);
+        // Persist payer country (Cloudflare geo) for revenue-by-country, first
+        // payment wins.
+        await setUserCountryIfEmpty(ctx.user.id, String(ctx.req?.headers?.["cf-ipcountry"] ?? ""));
         await recordCharge({
           userId: ctx.user.id,
           provider: "gpay",
@@ -676,7 +682,10 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const { createCheckoutFastpay } = await import("./_core/sipay");
-        const { recordWebhookEvent } = await import("./db");
+        const { recordWebhookEvent, setUserCountryIfEmpty } = await import("./db");
+        // Capture payer country here (direct browser request → reliable geo)
+        // for revenue-by-country; the 3DS callback also backfills it.
+        await setUserCountryIfEmpty(ctx.user.id, String(ctx.req?.headers?.["cf-ipcountry"] ?? ""));
         const order = `sipay-${ctx.user.id}-${Date.now()}`;
         const token = `usr-${ctx.user.id}`;
         const startedAt = Date.now();

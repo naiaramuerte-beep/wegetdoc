@@ -146,6 +146,23 @@ export async function userHasActiveSubscription(userId: number): Promise<boolean
   return sub !== null;
 }
 
+/**
+ * Persist the payer's country (ISO-3166 alpha-2 from Cloudflare's cf-ipcountry
+ * header) on the user, but only if we don't already have one — first payment
+ * wins, so we never overwrite a real value with a later VPN/roaming hit.
+ * Powers revenue-by-country in the admin. Skips empty values and Cloudflare's
+ * placeholders (XX = unknown, T1 = Tor).
+ */
+export async function setUserCountryIfEmpty(userId: number, country: string) {
+  const db = await getDb();
+  if (!db) return;
+  const cc = (country || "").trim().toUpperCase();
+  if (cc.length !== 2 || cc === "XX" || cc === "T1") return;
+  await db.update(users)
+    .set({ country: cc })
+    .where(and(eq(users.id, userId), sql`(${users.country} IS NULL OR ${users.country} = '')`));
+}
+
 export async function upsertSubscription(data: {
   userId: number;
   stripeCustomerId?: string;

@@ -911,6 +911,14 @@ ${allUrls.map(u => `  <url>
       if (!result.ok) {
         return res.redirect(`/?sipay=confirm_failed&detail=${encodeURIComponent(result.errorMessage ?? "unknown")}`);
       }
+      // Capture the payer's country from Cloudflare's geo header for
+      // revenue-by-country analytics (first payment wins).
+      if (result.userId) {
+        try {
+          const { setUserCountryIfEmpty } = await import("../db");
+          await setUserCountryIfEmpty(result.userId, String(req.headers["cf-ipcountry"] ?? ""));
+        } catch {}
+      }
       const txn = result.txn || requestId;
       return res.redirect(`/payment/success?txn=${encodeURIComponent(txn)}&provider=sipay`);
     } catch (err: any) {
