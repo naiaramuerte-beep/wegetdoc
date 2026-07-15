@@ -1023,15 +1023,16 @@ ${allUrls.map(u => `  <url>
       const priceEur = Number(priceStr ?? "19.95");
       const amountCents = Math.round(priceEur * 100);
       const results: { userId: number; ok: boolean; reason?: string }[] = [];
-      // Dunning policy (Sipay recommendation 2026-07): stop after 2-3
-      // consecutive failures. Visa/MC cap retries on a declined authorization
-      // (~15 in 30 days) and excess retries incur acquirer fees + card-testing
-      // flags. 2 spaced retries after the first failure = 3 total attempts
-      // (day 0 → +3 → +7), then give up and cancel. Shared by BOTH the decline
-      // path and the exception path — the latter previously left nextRenewalAt
-      // untouched, so a card that made Sipay throw got re-selected every daily
-      // run and retried forever.
-      const RETRY_GAPS_DAYS = [3, 7];
+      // Dunning policy: retry a few times spread across ~2 months, then cancel.
+      // Visa/MC cap retries on a declined authorization (~15 in 30 days) and
+      // excess/daily retries incur acquirer fees + card-testing flags, so we
+      // space them out generously: day 0 → +10 → +30 → +60 = 4 total attempts
+      // over ~2 months, then give up and cancel. Well under the 30-day cap
+      // (3 attempts in the first 30 days). Shared by BOTH the decline path and
+      // the exception path — the latter previously left nextRenewalAt untouched,
+      // so a card that made Sipay throw got re-selected every daily run and
+      // retried forever (the pattern Sipay flagged 2026-07).
+      const RETRY_GAPS_DAYS = [10, 20, 30];
       const applyDunning = async (sub: { userId: number; renewalAttempts: number | null; currentPeriodEnd: Date | null }) => {
         const attempts = (sub.renewalAttempts ?? 0) + 1;
         if (attempts > RETRY_GAPS_DAYS.length) {
