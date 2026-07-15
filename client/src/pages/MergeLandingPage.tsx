@@ -13,6 +13,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useLandingEntitlement } from "@/lib/useLandingEntitlement";
 import { renderPdfThumbnail } from "@/lib/pdfThumbnail";
 import {
   Upload, Layers, Loader2, CheckCircle2, RefreshCw, ArrowRight,
@@ -124,6 +125,7 @@ export default function MergeLandingPage() {
   const [mergedName, setMergedName] = useState<string>("merged.pdf");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
+  const { claim } = useLandingEntitlement();
 
   // Localized copy with English fallbacks so the page never shows blanks
   // while the language context resolves. Supports {var} interpolation.
@@ -226,7 +228,16 @@ export default function MergeLandingPage() {
     }
   };
 
-  const handleDownloadClick = () => {
+  const handleDownloadClick = async () => {
+    if (!mergedBytes) return;
+    // Premium (unlimited) or trial-within-limit (<2, counted server-side)
+    // download for free; everyone else hits the paywall.
+    const r = await claim(mergedBytes, mergedName);
+    if (r === "free") {
+      triggerBlobDownload(new Blob([mergedBytes as unknown as ArrayBuffer], { type: "application/pdf" }), mergedName);
+      setPhase("done");
+      return;
+    }
     setPhase("awaiting-payment");
     setShowPaywall(true);
   };

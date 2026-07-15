@@ -8,6 +8,7 @@
    ============================================================= */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useLandingEntitlement } from "@/lib/useLandingEntitlement";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
@@ -187,6 +188,7 @@ export default function ConverterHubPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
   const [busy, setBusy] = useState(false);
+  const { isTrulyPremium } = useLandingEntitlement();
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -234,6 +236,13 @@ export default function ConverterHubPage() {
       if (p >= 100) { p = 100; clearInterval(iv); setProgress(100); setTimeout(() => setPhase("ready"), 350); }
       else setProgress(Math.round(p));
     }, 220);
+  };
+
+  // Download button: premium users convert + download for free; everyone else
+  // hits the paywall. (Trial users still pay per conversion on this funnel.)
+  const handleDownloadClick = async () => {
+    if (isTrulyPremium) { await handlePaymentSuccess(); return; }
+    setShowPaywall(true);
   };
 
   const handlePaymentSuccess = async () => {
@@ -396,7 +405,7 @@ export default function ConverterHubPage() {
             <p style={{ fontWeight: 800, color: "#0A0A0B", fontSize: 18, marginTop: 16 }}>{s.ready}</p>
             <p style={{ color: "#16a34a", fontWeight: 700, fontSize: 14, marginTop: 2 }}>{selected.label}</p>
             <button
-              onClick={() => setShowPaywall(true)}
+              onClick={handleDownloadClick}
               disabled={busy}
               style={{
                 marginTop: 18, width: "100%", maxWidth: 320, padding: "15px", borderRadius: 14, border: "none",

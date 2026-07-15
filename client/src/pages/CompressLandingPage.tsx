@@ -18,6 +18,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useLandingEntitlement } from "@/lib/useLandingEntitlement";
 import { renderPdfThumbnail } from "@/lib/pdfThumbnail";
 import {
   Upload, Minimize2, Loader2, CheckCircle2, RefreshCw, ArrowRight,
@@ -118,6 +119,7 @@ export default function CompressLandingPage() {
   const [compressedName, setCompressedName] = useState("compressed.pdf");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
+  const { claim } = useLandingEntitlement();
 
   const tr = (key: string, fallback: string, vars?: Record<string, string | number>): string => {
     let s = ((t as any)[key] as string | undefined) || fallback;
@@ -192,7 +194,16 @@ export default function CompressLandingPage() {
     if (f) startCompression(f);
   };
 
-  const handleDownloadClick = () => {
+  const handleDownloadClick = async () => {
+    if (!compressedBytes) return;
+    // Premium (unlimited) or trial-within-limit (<2, counted server-side)
+    // download for free; everyone else hits the paywall.
+    const r = await claim(compressedBytes, compressedName);
+    if (r === "free") {
+      triggerBlobDownload(new Blob([compressedBytes as unknown as ArrayBuffer], { type: "application/pdf" }), compressedName);
+      setPhase("done");
+      return;
+    }
     setPhase("awaiting-payment");
     setShowPaywall(true);
   };
