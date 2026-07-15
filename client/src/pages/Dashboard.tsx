@@ -350,7 +350,21 @@ function DocumentsTab() {
     try {
       toast.loading(t.dash_loading_doc, { id: "load-doc" });
       const response = await fetch(`/api/documents/download/${doc.id}`, { credentials: "include" });
-      if (!response.ok) throw new Error(t.dash_download_error);
+      if (!response.ok) {
+        // Same as the download path: a trial-limit block should open the
+        // upgrade paywall, not surface a generic "couldn't load" error.
+        if (response.status === 403) {
+          let body: any = null;
+          try { body = await response.json(); } catch {}
+          if (body?.error === "trial-limit") {
+            toast.dismiss("load-doc");
+            setPaywallReason("trial-limit");
+            setShowPaywall(true);
+            return;
+          }
+        }
+        throw new Error(t.dash_download_error);
+      }
       const blob = await response.blob();
       const file = new File([blob], doc.name, { type: "application/pdf" });
       setPendingFile(file);
