@@ -943,7 +943,7 @@ export async function sendPaymentConfirmationEmail({
                 ✅ ¡Pago confirmado!
               </h1>
               <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">
-                Hola <strong>${name}</strong>, tu período de prueba de 7 días ha comenzado. Ya tienes acceso completo a todas las funciones de ${brandName}.
+                Hola <strong>${name}</strong>, tu período de prueba de 48 horas ha comenzado. Ya tienes acceso completo a todas las funciones de ${brandName}.
               </p>
 
               <!-- Summary box -->
@@ -953,7 +953,7 @@ export async function sendPaymentConfirmationEmail({
                     <p style="margin:0 0 12px;font-size:13px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;">Resumen de tu suscripción</p>
                     <table width="100%" cellpadding="0" cellspacing="0">
                       <tr>
-                        <td style="padding:6px 0;color:#475569;font-size:14px;">Cargo inicial (prueba 7 días)</td>
+                        <td style="padding:6px 0;color:#475569;font-size:14px;">Cargo inicial (prueba 48 horas)</td>
                         <td align="right" style="padding:6px 0;color:#1a3c6e;font-size:14px;font-weight:600;">${trialPrice}</td>
                       </tr>
                       <tr>
@@ -1033,7 +1033,7 @@ export async function sendPaymentConfirmationEmail({
       from: FROM_ADDRESS,
       to,
       replyTo: REPLY_TO_ADDRESS,
-      subject: `✅ Confirmación de pago — ${brandName} (prueba 7 días)`,
+      subject: `✅ Confirmación de pago — ${brandName} (prueba 48 horas)`,
       html,
       text: htmlToText(html),
       headers: TRANSACTIONAL_HEADERS,

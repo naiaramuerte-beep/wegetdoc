@@ -86,7 +86,7 @@ The data controller is **EditorPDF**, with digital headquarters at editorpdf.net
 
 ### 2.1 Information provided by the user
 - **Registration data:** full name, email address and authentication credentials.
-- **Billing information:** payment method data, managed securely via Stripe.
+- **Billing information:** payment method data, managed securely via Sipay (a Spanish payment service provider).
 - **Communications:** information provided through contact forms.
 
 ### 2.2 Automatically collected information
@@ -107,7 +107,7 @@ EditorPDF uses personal data to: manage user accounts, process payments, send op
 
 ## 5. Third-Party Data Sharing
 
-Data may be shared with: **Stripe** (payment processing), **infrastructure providers** (hosting), and **analytics tools** (Platform usage measurement). EditorPDF does not sell personal data.
+Data may be shared with: **Sipay** (payment processing, Spain/EU), **infrastructure providers** (hosting), and **analytics tools** (Platform usage measurement). EditorPDF does not sell personal data.
 
 ## 6. International Data Transfers
 
@@ -153,7 +153,7 @@ Allow counting visits, identifying traffic sources and measuring Platform perfor
 Enable advanced personalization features such as language selection and visual theme configuration.
 
 ### 2.4 Third-party cookies
-EditorPDF integrates services from third parties that may set their own cookies: **Stripe** (payment processing) and **Google Analytics** (statistical analysis).
+EditorPDF integrates services from third parties that may set their own cookies: **Sipay** (payment processing) and **Google Analytics** (statistical analysis).
 
 ## 3. Managing Cookies
 

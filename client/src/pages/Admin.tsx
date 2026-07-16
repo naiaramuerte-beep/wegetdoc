@@ -198,6 +198,9 @@ export default function Admin() {
   const emailTemplatesQ = trpc.admin.emailTemplates.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "messages" });
   const legalQ = trpc.admin.legalPages.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "legal" });
   const settingsQ = trpc.admin.settings.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "settings" });
+  // Live monthly price — always fetched (public, cached) so template replies on
+  // the Mensajes tab can substitute {{price}} even though settingsQ is settings-only.
+  const pricingQ = trpc.site.pricing.useQuery();
 
   const utils = trpc.useUtils();
 
@@ -290,12 +293,16 @@ export default function Admin() {
     onError: (err) => toast.error(err.message || "Error"),
   });
 
-  /** Replace {{name}}/{{email}}/{{subject}} with the message's data. */
+  /** Replace {{name}}/{{email}}/{{subject}}/{{price}} with live data. `{{price}}`
+   *  reads the current monthly price from site_settings so anti-chargeback
+   *  replies always quote the amount actually charged, even after a price change. */
   function applyTemplate(body: string, msg: { name: string; email: string; subject: string }) {
+    const priceStr = pricingQ.data?.priceFormattedEs ?? "19,95€";
     return body
       .replace(/\{\{name\}\}/g, msg.name)
       .replace(/\{\{email\}\}/g, msg.email)
-      .replace(/\{\{subject\}\}/g, msg.subject);
+      .replace(/\{\{subject\}\}/g, msg.subject)
+      .replace(/\{\{price\}\}/g, priceStr);
   }
 
   const saveLegalMut = trpc.admin.saveLegalPage.useMutation({
@@ -2324,7 +2331,7 @@ export default function Admin() {
                   <div>
                     <p className="text-sm font-semibold text-white">Plantillas de email</p>
                     <p className="text-[11px] text-gray-500 mt-0.5">
-                      Respuestas pre-hechas con variables <code className="font-mono">{"{{name}}"}</code>, <code className="font-mono">{"{{email}}"}</code>, <code className="font-mono">{"{{subject}}"}</code>.
+                      Respuestas pre-hechas con variables <code className="font-mono">{"{{name}}"}</code>, <code className="font-mono">{"{{email}}"}</code>, <code className="font-mono">{"{{subject}}"}</code>, <code className="font-mono">{"{{price}}"}</code>.
                     </p>
                   </div>
                   {showTemplateManager ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
@@ -3127,7 +3134,7 @@ function TemplateForm({ initial, onSubmit, submitting, submitLabel = "Crear plan
       <textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
-        placeholder="Cuerpo de la plantilla. Variables: {{name}}, {{email}}, {{subject}}"
+        placeholder="Cuerpo de la plantilla. Variables: {{name}}, {{email}}, {{subject}}, {{price}}"
         rows={5}
         className="w-full px-3 py-2 rounded-lg text-sm border bg-transparent focus:outline-none focus:ring-1 focus:ring-[#E63946]"
         style={{ borderColor: "#1e2433", color: "#e2e8f0" }}

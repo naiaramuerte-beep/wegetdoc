@@ -22,11 +22,11 @@ Gracias por escribir. Sentimos las molestias.
 
 Te confirmamos que el cargo que has visto en tu cuenta es completamente legítimo y corresponde a la suscripción que activaste en EditorPDF. Para que puedas ver el flujo exacto que aceptaste:
 
-1) Página de precios con el plan mensual de 39,90€:
+1) Página de precios con el plan mensual de {{price}}:
 https://editorpdf.net/es/pricing
 
 2) En el momento de descargar el PDF editado, el "paywall" indica de forma clara y obligatoria, JUSTO ENCIMA del botón de pago, el texto siguiente:
-"Al pulsar 'Descargar', aceptas que, si no cancelas antes de que concluya la prueba de 48 horas (0,50€), se facturarán 39,90€/mes de forma automática hasta que canceles."
+"Al pulsar 'Descargar', aceptas que, si no cancelas antes de que concluya la prueba de 48 horas (0,50€), se facturarán {{price}}/mes de forma automática hasta que canceles."
 
 3) Esto está además recogido en nuestros Términos y Condiciones (apartado 4 — "Modelo de suscripción y precios"):
 https://editorpdf.net/es/terms
@@ -52,11 +52,11 @@ Thanks for reaching out. Sorry for the confusion.
 
 The charge you noticed on your card is entirely legitimate and corresponds to the EditorPDF subscription you activated. So you can review the exact flow you accepted:
 
-1) Pricing page with the monthly plan at €39.90:
+1) Pricing page with the monthly plan at {{price}}:
 https://editorpdf.net/en/pricing
 
 2) Right above the "Download" button on the paywall, the following message is shown clearly and unavoidably:
-"By pressing 'Download', you acknowledge that if the 48-hour trial (€0.50) is not cancelled beforehand, a recurring charge of €39.90/month will apply until you cancel."
+"By pressing 'Download', you acknowledge that if the 48-hour trial (€0.50) is not cancelled beforehand, a recurring charge of {{price}}/month will apply until you cancel."
 
 3) This is also covered in our Terms & Conditions (section 4 — "Subscription model and pricing"):
 https://editorpdf.net/en/terms
@@ -82,11 +82,11 @@ Merci de nous avoir contactés. Nous comprenons votre inquiétude.
 
 Le prélèvement constaté sur votre compte est parfaitement légitime et correspond à l'abonnement EditorPDF que vous avez activé. Voici le flux exact que vous avez accepté :
 
-1) Page de tarifs avec le plan mensuel à 39,90€ :
+1) Page de tarifs avec le plan mensuel à {{price}} :
 https://editorpdf.net/fr/pricing
 
 2) Juste au-dessus du bouton de paiement sur le paywall, le message suivant apparaît de manière claire et obligatoire :
-"En cliquant sur 'Télécharger', vous acceptez que si vous n'annulez pas avant la fin de l'essai de 48 heures (0,50€), vous serez automatiquement facturé 39,90€/mois jusqu'à l'annulation."
+"En cliquant sur 'Télécharger', vous acceptez que si vous n'annulez pas avant la fin de l'essai de 48 heures (0,50€), vous serez automatiquement facturé {{price}}/mois jusqu'à l'annulation."
 
 3) Cela figure également dans nos Conditions Générales (section 4 — "Modèle d'abonnement et tarifs") :
 https://editorpdf.net/fr/terms
@@ -112,11 +112,11 @@ Gracias por escribirnos.
 
 Entendemos tu situación. Como gesto de buena voluntad, vamos a:
 1) Cancelar inmediatamente tu suscripción para que no recibas más cargos.
-2) Procesar el reembolso del último cargo de 39,90€ a la misma tarjeta. Tardará entre 5 y 10 días laborables en aparecer.
+2) Procesar el reembolso del último cargo de {{price}} a la misma tarjeta. Tardará entre 5 y 10 días laborables en aparecer.
 
 El cargo inicial de 0,50€ del periodo de prueba no es reembolsable, conforme a nuestras Condiciones (https://editorpdf.net/es/refund).
 
-Confirmaremos por email cuando el reembolso esté procesado en Stripe. No es necesario que hagas nada más.
+Confirmaremos por email cuando el reembolso esté procesado. No es necesario que hagas nada más.
 
 Lamentamos las molestias y gracias por habernos dado la oportunidad de explicarte el funcionamiento del servicio.
 
@@ -127,7 +127,7 @@ Equipo EditorPDF`,
     name: "ES — Aviso pre-chargeback (último intento)",
     body: `Hola {{name}},
 
-Hemos visto que has iniciado un proceso de chargeback con tu banco por el cargo de 39,90€.
+Hemos visto que has iniciado un proceso de chargeback con tu banco por el cargo de {{price}}.
 
 Antes de que tu banco resuelva, queremos darte una opción más rápida: **podemos reembolsarte directamente nosotros, hoy mismo**, sin necesidad de chargeback.
 
@@ -137,7 +137,7 @@ Sin embargo, queremos también compartirte la documentación que enviaremos al b
 
 • Página de precios visible: https://editorpdf.net/es/pricing
 • Términos aceptados con el cargo: https://editorpdf.net/es/terms (apartado 4)
-• Texto del paywall que aceptaste antes de pagar: "Al pulsar 'Descargar', aceptas que se facturarán 39,90€/mes…"
+• Texto del paywall que aceptaste antes de pagar: "Al pulsar 'Descargar', aceptas que se facturarán {{price}}/mes…"
 • Validación 3D-Secure de tu banco al pagar (doble confirmación)
 • Logs del navegador con timestamp de aceptación
 

@@ -116,7 +116,7 @@ El responsable del tratamiento de los datos personales es:
 ### 2.1 Información facilitada voluntariamente por el usuario
 
 - **Datos de alta:** nombre completo, dirección de correo electrónico y credenciales generadas a través del sistema de autenticación.
-- **Información de facturación:** datos relativos al medio de pago, gestionados de forma segura mediante Stripe. EditorPDF no almacena en sus sistemas números completos de tarjeta ni datos financieros sensibles.
+- **Información de facturación:** datos relativos al medio de pago, gestionados de forma segura mediante Sipay (proveedor de servicios de pago español). EditorPDF no almacena en sus sistemas números completos de tarjeta ni datos financieros sensibles.
 - **Comunicaciones:** cualquier información que el usuario facilite voluntariamente a través de formularios de contacto o solicitudes de soporte técnico.
 
 ### 2.2 Información recogida de forma automatizada
@@ -154,7 +154,7 @@ EditorPDF utiliza los datos personales del usuario para los siguientes fines:
 
 EditorPDF podrá compartir datos personales con los terceros que se indican, exclusivamente para los fines señalados:
 
-- **Stripe:** procesamiento de transacciones de pago (EE. UU., al amparo de cláusulas contractuales tipo).
+- **Sipay:** procesamiento de transacciones de pago (España, Unión Europea).
 - **Proveedores de infraestructura:** alojamiento y procesamiento de datos (UE / EE. UU.).
 - **Herramientas analíticas:** medición del uso y rendimiento de la Plataforma (UE / EE. UU.).
 
@@ -246,7 +246,7 @@ Posibilitan funciones avanzadas de personalización, como el almacenamiento del 
 
 EditorPDF integra servicios de terceros que pueden establecer sus propias cookies:
 
-- **Stripe:** gestión segura de procesos de pago. Más información en [stripe.com/privacy](https://stripe.com/privacy).
+- **Sipay:** gestión segura de procesos de pago. Más información en [sipay.es](https://www.sipay.es).
 - **Google Analytics:** análisis estadístico de uso de la Plataforma. Más información en [policies.google.com/privacy](https://policies.google.com/privacy).
 
 ## 3. Administración de las Cookies por el Usuario
@@ -380,7 +380,7 @@ EditorPDF aplica las siguientes medidas para garantizar un nivel de seguridad ad
 
 - Cifrado de las comunicaciones mediante protocolo SSL/TLS de 256 bits.
 - Cifrado de datos sensibles en estado de reposo.
-- Procesamiento de pagos a través de Stripe, entidad certificada PCI DSS Nivel 1.
+- Procesamiento de pagos a través de Sipay, entidad conforme a la normativa PCI DSS.
 - Supresión automática de archivos temporales tras la finalización de su procesamiento.
 - Realización de copias de respaldo periódicas con cifrado.
 

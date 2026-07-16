@@ -25,7 +25,7 @@ const termsContent = `
 </ul>
 
 <h2>5. Condiciones de pago</h2>
-<p>Todos los pagos se procesan de forma segura a traves de <strong>Stripe</strong>, un proveedor de pagos certificado PCI DSS. editorpdf.net no almacena directamente los datos de tarjetas de credito o debito del usuario. Al suscribirse, el usuario autoriza el cargo recurrente en el metodo de pago proporcionado hasta que cancele la suscripcion.</p>
+<p>Todos los pagos se procesan de forma segura a traves de <strong>Sipay</strong>, un proveedor de servicios de pago espanol conforme a la normativa PCI DSS. editorpdf.net no almacena directamente los datos de tarjetas de credito o debito del usuario. Al suscribirse, el usuario autoriza el cargo recurrente en el metodo de pago proporcionado hasta que cancele la suscripcion.</p>
 <p>Los precios indicados incluyen los impuestos aplicables salvo que se indique expresamente lo contrario.</p>
 
 <h2>6. Propiedad intelectual sobre los archivos del usuario</h2>
@@ -99,7 +99,7 @@ const privacyContent = `
 </ul>
 
 <h3>2.3. Datos de pago</h3>
-<p>Los datos de pago (numero de tarjeta, fecha de caducidad, CVC) son gestionados exclusivamente por <strong>Stripe</strong> y nunca se almacenan en nuestros servidores. Unicamente recibimos de Stripe un identificador de cliente y el estado de la suscripcion.</p>
+<p>Los datos de pago (numero de tarjeta, fecha de caducidad, CVC) son gestionados exclusivamente por <strong>Sipay</strong> y nunca se almacenan en nuestros servidores. Unicamente recibimos de Sipay un identificador de la transaccion y el estado de la suscripcion.</p>
 
 <h2>3. Finalidad y base juridica del tratamiento</h2>
 <table>
@@ -127,7 +127,7 @@ const privacyContent = `
 <h2>5. Terceros encargados del tratamiento</h2>
 <p>Para la prestacion del servicio, compartimos datos con los siguientes proveedores, todos ellos con garantias adecuadas de proteccion de datos:</p>
 <ul>
-  <li><strong>Stripe, Inc.</strong> (Estados Unidos) — Procesamiento de pagos. Adherido al Marco de Privacidad de Datos UE-EE.UU. (<a href="https://stripe.com/privacy" target="_blank" rel="noopener">Politica de privacidad de Stripe</a>).</li>
+  <li><strong>Sipay</strong> (Espana, Union Europea) — Procesamiento de pagos (<a href="https://www.sipay.es" target="_blank" rel="noopener">sitio de Sipay</a>).</li>
   <li><strong>Cloudflare, Inc.</strong> (Estados Unidos) — Almacenamiento temporal de archivos mediante Cloudflare R2 y servicios de red. Opera bajo Clausulas Contractuales Tipo de la UE.</li>
   <li><strong>Resend, Inc.</strong> (Estados Unidos) — Envio de correos electronicos transaccionales. Opera bajo Clausulas Contractuales Tipo de la UE.</li>
 </ul>
@@ -201,7 +201,7 @@ const cookiesContent = `
 </table>
 
 <h3>2.3. Cookies de terceros vinculadas al pago</h3>
-<p>Durante el proceso de pago, <strong>Stripe</strong> puede establecer sus propias cookies para gestionar la transaccion de forma segura. Estas cookies son gestionadas directamente por Stripe y estan sujetas a su propia <a href="https://stripe.com/cookies-policy/legal" target="_blank" rel="noopener">Politica de Cookies</a>.</p>
+<p>Durante el proceso de pago, <strong>Sipay</strong> puede establecer sus propias cookies para gestionar la transaccion de forma segura. Estas cookies son gestionadas directamente por Sipay y estan sujetas a su propia politica de privacidad.</p>
 
 <h2>3. Como gestionar las cookies</h2>
 <p>El usuario puede configurar su navegador para bloquear o eliminar cookies en cualquier momento. A continuacion se incluyen enlaces a las instrucciones de los navegadores mas comunes:</p>
