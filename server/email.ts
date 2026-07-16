@@ -77,7 +77,7 @@ type WelcomeStrings = {
   helpLine: string;
   helpReply: string;
   signoff: string;
-  disclaimer: (trialEndDate: string, cancelUrl: string) => string;
+  disclaimer: (trialEndDate: string, cancelUrl: string, price: string) => string;
   manageBtn: string;
 };
 
@@ -116,8 +116,8 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpReply: "Responde a este email — te respondemos en menos de 24 horas.",
     signoff: "Un saludo,\nEquipo EditorPDF",
     manageBtn: "Gestionar suscripción",
-    disclaimer: (date, url) =>
-      `Has activado un período de prueba de 48 horas por 0,50€. Si no cancelas antes del ${date}, tu suscripción se renovará automáticamente al plan mensual. Puedes cancelar en cualquier momento desde tu panel de Facturación: ${url}`,
+    disclaimer: (date, url, price) =>
+      `Has activado un período de prueba de 48 horas por 0,50€. Si no cancelas antes del ${date}, tu suscripción se renovará automáticamente al plan mensual de ${price}/mes. Puedes cancelar en cualquier momento desde tu panel de Facturación: ${url}`,
   },
   en: {
     subject: `Welcome to ${brandName}! Here's everything you can do`,
@@ -153,8 +153,8 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpReply: "Just reply to this email — we respond within 24 hours.",
     signoff: "Best regards,\nEditorPDF Team",
     manageBtn: "Manage subscription",
-    disclaimer: (date, url) =>
-      `You've activated a 48-hour trial for €0.50. If you don't cancel before ${date}, your subscription will automatically renew at the monthly plan. You can cancel anytime from your Billing dashboard: ${url}`,
+    disclaimer: (date, url, price) =>
+      `You've activated a 48-hour trial for €0.50. If you don't cancel before ${date}, your subscription will automatically renew at the monthly plan of ${price}/month. You can cancel anytime from your Billing dashboard: ${url}`,
   },
   fr: {
     subject: `Bienvenue chez ${brandName} ! Voici tout ce que vous pouvez faire`,
@@ -190,8 +190,8 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpReply: "Répondez simplement à cet email — réponse sous 24 heures.",
     signoff: "Cordialement,\nL'équipe EditorPDF",
     manageBtn: "Gérer l'abonnement",
-    disclaimer: (date, url) =>
-      `Vous avez activé une période d'essai de 48 heures pour 0,50€. Si vous n'annulez pas avant le ${date}, votre abonnement sera automatiquement renouvelé au tarif mensuel. Vous pouvez annuler à tout moment depuis votre tableau de Facturation : ${url}`,
+    disclaimer: (date, url, price) =>
+      `Vous avez activé une période d'essai de 48 heures pour 0,50€. Si vous n'annulez pas avant le ${date}, votre abonnement sera automatiquement renouvelé au tarif mensuel de ${price}/mois. Vous pouvez annuler à tout moment depuis votre tableau de Facturation : ${url}`,
   },
   de: {
     subject: `Willkommen bei ${brandName}! Hier ist alles, was Sie tun können`,
@@ -227,8 +227,8 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpReply: "Antworten Sie einfach auf diese E-Mail — Antwort innerhalb von 24 Stunden.",
     signoff: "Mit freundlichen Grüßen,\nDas EditorPDF-Team",
     manageBtn: "Abonnement verwalten",
-    disclaimer: (date, url) =>
-      `Sie haben eine 48-Stunden-Testphase für 0,50€ aktiviert. Wenn Sie nicht vor dem ${date} kündigen, wird Ihr Abonnement automatisch zum Monatsplan verlängert. Sie können jederzeit über Ihr Abrechnungs-Dashboard kündigen: ${url}`,
+    disclaimer: (date, url, price) =>
+      `Sie haben eine 48-Stunden-Testphase für 0,50€ aktiviert. Wenn Sie nicht vor dem ${date} kündigen, wird Ihr Abonnement automatisch zum Monatsplan von ${price}/Monat verlängert. Sie können jederzeit über Ihr Abrechnungs-Dashboard kündigen: ${url}`,
   },
   pt: {
     subject: `Bem-vindo ao ${brandName}! Aqui está tudo o que pode fazer`,
@@ -264,8 +264,8 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpReply: "Basta responder a este email — respondemos em menos de 24 horas.",
     signoff: "Com os melhores cumprimentos,\nEquipa EditorPDF",
     manageBtn: "Gerir subscrição",
-    disclaimer: (date, url) =>
-      `Ativou um período de teste de 48 horas por 0,50€. Se não cancelar antes de ${date}, a sua subscrição será renovada automaticamente para o plano mensal. Pode cancelar a qualquer momento no seu painel de Faturação: ${url}`,
+    disclaimer: (date, url, price) =>
+      `Ativou um período de teste de 48 horas por 0,50€. Se não cancelar antes de ${date}, a sua subscrição será renovada automaticamente para o plano mensal de ${price}/mês. Pode cancelar a qualquer momento no seu painel de Faturação: ${url}`,
   },
   it: {
     subject: `Benvenuto in ${brandName}! Ecco tutto quello che puoi fare`,
@@ -301,8 +301,8 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpReply: "Rispondi a questa email — ti rispondiamo entro 24 ore.",
     signoff: "Cordiali saluti,\nIl team EditorPDF",
     manageBtn: "Gestisci abbonamento",
-    disclaimer: (date, url) =>
-      `Hai attivato un periodo di prova di 48 ore per 0,50€. Se non annulli prima del ${date}, il tuo abbonamento si rinnoverà automaticamente al piano mensile. Puoi annullare in qualsiasi momento dalla dashboard Fatturazione: ${url}`,
+    disclaimer: (date, url, price) =>
+      `Hai attivato un periodo di prova di 48 ore per 0,50€. Se non annulli prima del ${date}, il tuo abbonamento si rinnoverà automaticamente al piano mensile di ${price}/mese. Puoi annullare in qualsiasi momento dalla dashboard Fatturazione: ${url}`,
   },
   nl: {
     subject: `Welkom bij ${brandName}! Hier is alles wat u kunt doen`,
@@ -338,8 +338,8 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpReply: "Reageer gewoon op deze e-mail — antwoord binnen 24 uur.",
     signoff: "Met vriendelijke groet,\nHet EditorPDF-team",
     manageBtn: "Abonnement beheren",
-    disclaimer: (date, url) =>
-      `U heeft een proefperiode van 48 uur geactiveerd voor €0,50. Als u niet voor ${date} opzegt, wordt uw abonnement automatisch verlengd naar het maandabonnement. U kunt op elk moment opzeggen via uw Facturering-dashboard: ${url}`,
+    disclaimer: (date, url, price) =>
+      `U heeft een proefperiode van 48 uur geactiveerd voor €0,50. Als u niet voor ${date} opzegt, wordt uw abonnement automatisch verlengd naar het maandabonnement van ${price}/maand. U kunt op elk moment opzeggen via uw Facturering-dashboard: ${url}`,
   },
   pl: {
     subject: `Witaj w ${brandName}! Oto co możesz zrobić`,
@@ -375,8 +375,8 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpReply: "Po prostu odpowiedz na tę wiadomość — odpowiadamy w mniej niż 24 godziny.",
     signoff: "Pozdrawiamy,\nZespół EditorPDF",
     manageBtn: "Zarządzaj subskrypcją",
-    disclaimer: (date, url) =>
-      `Aktywowałeś 48-godzinny okres próbny za 0,50€. Jeśli nie anulujesz przed ${date}, Twoja subskrypcja zostanie automatycznie odnowiona w planie miesięcznym. Możesz anulować w dowolnym momencie z panelu Płatności: ${url}`,
+    disclaimer: (date, url, price) =>
+      `Aktywowałeś 48-godzinny okres próbny za 0,50€. Jeśli nie anulujesz przed ${date}, Twoja subskrypcja zostanie automatycznie odnowiona w planie miesięcznym za ${price}/mies. Możesz anulować w dowolnym momencie z panelu Płatności: ${url}`,
   },
   ru: {
     subject: `Добро пожаловать в ${brandName}! Вот что вы можете делать`,
@@ -412,8 +412,8 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpReply: "Просто ответьте на это письмо — мы отвечаем менее чем за 24 часа.",
     signoff: "С уважением,\nКоманда EditorPDF",
     manageBtn: "Управление подпиской",
-    disclaimer: (date, url) =>
-      `Вы активировали 48-часовой пробный период за 0,50€. Если вы не отмените до ${date}, ваша подписка автоматически продлится на месячный план. Вы можете отменить в любое время в панели Оплаты: ${url}`,
+    disclaimer: (date, url, price) =>
+      `Вы активировали 48-часовой пробный период за 0,50€. Если вы не отмените до ${date}, ваша подписка автоматически продлится на месячный план ${price}/мес. Вы можете отменить в любое время в панели Оплаты: ${url}`,
   },
   uk: {
     subject: `Ласкаво просимо до ${brandName}! Ось що ви можете робити`,
@@ -449,8 +449,8 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpReply: "Просто дайте відповідь на цей лист — ми відповідаємо менш ніж за 24 години.",
     signoff: "З повагою,\nКоманда EditorPDF",
     manageBtn: "Керування підпискою",
-    disclaimer: (date, url) =>
-      `Ви активували 48-годинний пробний період за 0,50€. Якщо ви не скасуєте до ${date}, ваша підписка автоматично подовжиться на місячний план. Ви можете скасувати будь-коли в панелі Оплати: ${url}`,
+    disclaimer: (date, url, price) =>
+      `Ви активували 48-годинний пробний період за 0,50€. Якщо ви не скасуєте до ${date}, ваша підписка автоматично подовжиться на місячний план ${price}/міс. Ви можете скасувати будь-коли в панелі Оплати: ${url}`,
   },
   ro: {
     subject: `Bun venit la ${brandName}! Iată tot ce poți face`,
@@ -486,8 +486,8 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpReply: "Răspunde la acest e-mail — îți răspundem în mai puțin de 24 de ore.",
     signoff: "Cu stimă,\nEchipa EditorPDF",
     manageBtn: "Gestionează abonamentul",
-    disclaimer: (date, url) =>
-      `Ai activat o perioadă de probă de 48 de ore pentru 0,50€. Dacă nu anulezi înainte de ${date}, abonamentul se va reînnoi automat la planul lunar. Poți anula oricând din panoul Facturare: ${url}`,
+    disclaimer: (date, url, price) =>
+      `Ai activat o perioadă de probă de 48 de ore pentru 0,50€. Dacă nu anulezi înainte de ${date}, abonamentul se va reînnoi automat la planul lunar de ${price}/lună. Poți anula oricând din panoul Facturare: ${url}`,
   },
   zh: {
     subject: `欢迎使用 ${brandName}！这是您可以做的一切`,
@@ -523,8 +523,8 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpReply: "直接回复此邮件——我们将在 24 小时内回复您。",
     signoff: "此致敬礼，\nEditorPDF 团队",
     manageBtn: "管理订阅",
-    disclaimer: (date, url) =>
-      `您已激活 48 小时试用期，费用为 0.50€。如果您未在 ${date} 之前取消，您的订阅将自动续订为月度计划。您可以随时从账单面板取消：${url}`,
+    disclaimer: (date, url, price) =>
+      `您已激活 48 小时试用期，费用为 0.50€。如果您未在 ${date} 之前取消，您的订阅将自动续订为月度计划 ${price}/月。您可以随时从账单面板取消：${url}`,
   },
 };
 
@@ -561,6 +561,10 @@ export async function sendTrialWelcomeEmail({
   });
   const editorUrl = `https://editorpdf.net/${langCode}/`;
   const cancelUrl = `https://editorpdf.net/${langCode}/dashboard?tab=billing`;
+  // Live monthly price so the auto-renew disclaimer states the exact amount
+  // the customer will be charged (anti-chargeback transparency).
+  const { getActiveMonthlyPrice } = await import("./db");
+  const priceFormatted = (await getActiveMonthlyPrice()).formatted;
 
   const ink = "#0A0A0B";
   const accent = "#E63946";
@@ -665,7 +669,7 @@ export async function sendTrialWelcomeEmail({
         <!-- Footer with low-contrast trial disclaimer -->
         <tr><td style="background:#fafafa;padding:18px 40px;border-top:1px solid #e2e8f0;">
           <p style="margin:0;color:${muted};font-size:10px;line-height:1.55;">
-            ${s.disclaimer(formattedDate, cancelUrl)}
+            ${s.disclaimer(formattedDate, cancelUrl, priceFormatted)}
           </p>
           <p style="margin:10px 0 0;color:${muted};font-size:10px;">
             © 2026 ${brandName} — <a href="${cancelUrl}" style="color:${muted};text-decoration:underline;">${s.manageBtn}</a>
