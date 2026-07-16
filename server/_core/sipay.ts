@@ -204,6 +204,7 @@ export async function finalizeFastpayPayment(opts: {
     findIntroChargeForRequest,
     findUserIdFromPendingEvent,
     findGclidFromPendingEvent,
+    findLangFromPendingEvent,
   } = await import("../db");
 
   const result = await confirmPayment(requestId);
@@ -318,7 +319,10 @@ export async function finalizeFastpayPayment(opts: {
   try {
     const u = await getUserById(customUserId);
     if (u?.email) {
-      const lang = (acceptLang ?? "").split(",")[0]?.split("-")[0] || "es";
+      // Prefer the site language the user was browsing (stashed at checkout
+      // init), then the browser Accept-Language, then Spanish.
+      const langFromPage = await findLangFromPendingEvent({ order, requestId });
+      const lang = langFromPage || (acceptLang ?? "").split(",")[0]?.split("-")[0] || "es";
       const { sendTrialWelcomeEmail } = await import("../email");
       sendTrialWelcomeEmail({ to: u.email, name: u.name ?? u.email, lang, trialEndDate: periodEnd })
         .catch((err: any) => console.warn("[Sipay] welcome email failed:", err?.message ?? err));

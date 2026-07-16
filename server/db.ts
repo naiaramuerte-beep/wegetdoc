@@ -1919,6 +1919,46 @@ export async function findGclidFromPendingEvent(opts: {
 }
 
 /**
+ * Twin of findGclidFromPendingEvent: pulls the site language (URL prefix the
+ * user was browsing, e.g. "en") out of the fastpay_3ds_pending event so the
+ * welcome email is sent in the language of the page they used — not the
+ * browser Accept-Language, which can differ. Stashed at sipayCheckoutInit,
+ * read back here (callback) and by the reconciliation cron.
+ */
+export async function findLangFromPendingEvent(opts: {
+  order?: string;
+  requestId?: string;
+}): Promise<string | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const candidates = [opts.order, opts.requestId].filter(
+    (v): v is string => typeof v === "string" && v.length > 0,
+  );
+  if (candidates.length === 0) return null;
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const rows = await db
+    .select({ payload: webhookEvents.payload })
+    .from(webhookEvents)
+    .where(
+      and(
+        eq(webhookEvents.eventType, "fastpay_3ds_pending"),
+        gte(webhookEvents.receivedAt, since),
+        inArray(webhookEvents.eventId, candidates),
+      ),
+    )
+    .orderBy(desc(webhookEvents.receivedAt))
+    .limit(1);
+  if (rows.length === 0) return null;
+  try {
+    const p: any = rows[0].payload ? JSON.parse(rows[0].payload as string) : null;
+    const lang = typeof p?.lang === "string" ? p.lang : "";
+    return lang || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Returns fastpay_3ds_pending events from the last `hoursBack` hours that
  * don't have a matching fastpay_intro_charge — these are the orphan
  * candidates the reconciliation cron should re-confirm with Sipay.

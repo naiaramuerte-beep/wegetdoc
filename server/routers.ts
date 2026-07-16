@@ -441,6 +441,7 @@ export const appRouter = router({
         amountCents: z.number().int().positive(),
         gclid: z.string().max(512).optional(),
         gclidType: z.string().max(16).optional(),
+        lang: z.string().max(8).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const { chargeApplePay } = await import("./_core/sipay");
@@ -535,7 +536,7 @@ export const appRouter = router({
           const { sendTrialWelcomeEmail } = await import("./email");
           const u = await getUserById(ctx.user.id);
           if (u?.email) {
-            sendTrialWelcomeEmail({ to: u.email, name: u.name ?? u.email, lang: acceptLang, trialEndDate: periodEnd })
+            sendTrialWelcomeEmail({ to: u.email, name: u.name ?? u.email, lang: input.lang || acceptLang, trialEndDate: periodEnd })
               .catch((err: any) => console.warn("[Sipay ApPay] welcome email failed:", err?.message ?? err));
           }
         } catch (err: any) {
@@ -561,6 +562,7 @@ export const appRouter = router({
         amountCents: z.number().int().positive(),
         gclid: z.string().max(512).optional(),
         gclidType: z.string().max(16).optional(),
+        lang: z.string().max(8).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const { chargeGpay } = await import("./_core/sipay");
@@ -652,7 +654,7 @@ export const appRouter = router({
           const { sendTrialWelcomeEmail } = await import("./email");
           const u = await getUserById(ctx.user.id);
           if (u?.email) {
-            sendTrialWelcomeEmail({ to: u.email, name: u.name ?? u.email, lang: acceptLang, trialEndDate: periodEnd })
+            sendTrialWelcomeEmail({ to: u.email, name: u.name ?? u.email, lang: input.lang || acceptLang, trialEndDate: periodEnd })
               .catch((err: any) => console.warn("[Sipay GPay] welcome email failed:", err?.message ?? err));
           }
         } catch (err: any) {
@@ -679,6 +681,7 @@ export const appRouter = router({
         amountCents: z.number().int().positive(),
         gclid: z.string().max(512).optional(),
         gclidType: z.string().max(16).optional(),
+        lang: z.string().max(8).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const { createCheckoutFastpay } = await import("./_core/sipay");
@@ -740,6 +743,7 @@ export const appRouter = router({
             order,
             requestId: sipayRequestId,
             amountCents: input.amountCents,
+            ...(input.lang ? { lang: input.lang } : {}),
             ...(input.gclid ? { gclid: input.gclid, gclidType: input.gclidType ?? "gclid" } : {}),
           },
         });

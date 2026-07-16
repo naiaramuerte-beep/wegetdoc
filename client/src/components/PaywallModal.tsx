@@ -432,7 +432,7 @@ function SipayCheckoutForm({
     setAuthError(null);
     const cardGc = getStoredGclid();
     initMut
-      .mutateAsync({ fastpayRequestId: fpId, amountCents: 50, gclid: cardGc?.id, gclidType: cardGc?.type })
+      .mutateAsync({ fastpayRequestId: fpId, amountCents: 50, gclid: cardGc?.id, gclidType: cardGc?.type, lang })
       .then((res) => {
         if (res.redirectUrl) {
           // User is about to leave our domain for the bank's 3DS page
@@ -932,6 +932,7 @@ function ApplePayButton({
             amountCents,
             gclid: apayGc?.id,
             gclidType: apayGc?.type,
+            lang,
           });
           // Sandbox occasionally returns an empty transaction_id; fall back
           // to our own order so /payment/success always has a unique key.
@@ -1167,7 +1168,7 @@ function GooglePayButton({
               // for funnel parity. Fire before the backend charge.
               trackEvent("3ds_started", { method: "googlepay" });
               const gpayGc = getStoredGclid();
-              const res = await chargeMut.mutateAsync({ token, amountCents, gclid: gpayGc?.id, gclidType: gpayGc?.type });
+              const res = await chargeMut.mutateAsync({ token, amountCents, gclid: gpayGc?.id, gclidType: gpayGc?.type, lang });
               // Sandbox doesn't always echo transaction_id; fall back to our
               // own order so Google Ads still has a unique dedup key.
               const txnId = res.transactionId || res.order || `gpay-${Date.now()}`;
