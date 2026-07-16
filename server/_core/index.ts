@@ -165,6 +165,8 @@ async function startServer() {
         { loc: `${base}/es/blog`, priority: "0.9", changefreq: "weekly" },
         { loc: `${base}/en/blog`, priority: "0.9", changefreq: "weekly" },
         { loc: `${base}/es/tools`, priority: "0.7", changefreq: "monthly" },
+        { loc: `${base}/es/heic-to-pdf`, priority: "0.7", changefreq: "monthly" },
+        { loc: `${base}/en/heic-to-pdf`, priority: "0.7", changefreq: "monthly" },
       ];
       const blogUrls = (posts as Array<{slug: string; updatedAt: Date}>).flatMap((p) => [
         { loc: `${base}/es/blog/${p.slug}`, priority: "0.8", changefreq: "monthly", lastmod: new Date(p.updatedAt).toISOString().split("T")[0] },
@@ -187,12 +189,36 @@ ${allUrls.map(u => `  <url>
     }
   });
 
+  // Wrap a multer middleware so upload failures return a clean HTTP status
+  // instead of an unhandled error (which 500s the request + spams Sentry):
+  //  • too-large file  → 413 (100 MB matches the cap advertised on the site)
+  //  • client aborted the upload mid-POST (closed tab, lost network) → swallow
+  //    quietly; the socket is already gone so there's nothing to send and no
+  //    bug to report. Multer surfaces this as `Error: Request aborted`.
+  //  • anything else   → 400
+  const handleUpload = (mw: any) => (req: any, res: any, next: any) => {
+    mw(req, res, (err: any) => {
+      if (err) {
+        if (err?.message === "Request aborted" || req.aborted || !res.writable) {
+          return; // client disconnected — no response possible, don't report
+        }
+        if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
+          res.status(413).json({ error: "file-too-large", maxMb: 100 });
+          return;
+        }
+        res.status(400).json({ error: "upload-error" });
+        return;
+      }
+      next();
+    });
+  };
+
   // ── REST endpoint for TEMP PDF upload (pre-login, no auth required) ─────────────
   // Stores the edited PDF in S3 under a temp key. The key is returned and stored
   // in sessionStorage (small string, no quota issues). After login + payment,
   // the server moves it to the user's permanent folder.
   const tempUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
-  app.post("/api/documents/temp-upload", tempUpload.single("file"), async (req, res) => {
+  app.post("/api/documents/temp-upload", handleUpload(tempUpload.single("file")), async (req, res) => {
     try {
       const file = req.file;
       if (!file) { res.status(400).json({ error: "No file" }); return; }
@@ -265,7 +291,7 @@ ${allUrls.map(u => `  <url>
 
   // ── REST endpoint for file conversion + upload (any supported type → PDF) ──────
   const convertUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
-  app.post("/api/documents/convert-upload", convertUpload.single("file"), async (req, res) => {
+  app.post("/api/documents/convert-upload", handleUpload(convertUpload.single("file")), async (req, res) => {
     try {
       const file = req.file;
       if (!file) { res.status(400).json({ error: "No file" }); return; }
@@ -314,7 +340,7 @@ ${allUrls.map(u => `  <url>
     jpg:  { ext: "jpg",  mime: "image/jpeg" },
     png:  { ext: "png",  mime: "image/png" },
   };
-  app.post("/api/convert/pdf-to/:format", pdfFromUpload.single("file"), async (req, res) => {
+  app.post("/api/convert/pdf-to/:format", handleUpload(pdfFromUpload.single("file")), async (req, res) => {
     const target = (req.params.format || "").toLowerCase();
     const cfg = PDF_TO_FORMAT_MAP[target];
     if (!cfg) { res.status(400).json({ error: `Unsupported target format: ${target}` }); return; }
@@ -370,7 +396,7 @@ ${allUrls.map(u => `  <url>
 
   // ── Image → image conversion (HEIC/WEBP → JPG/PNG) via CloudConvert ───────────
   // input_format is omitted so CloudConvert auto-detects HEIC, WEBP, etc.
-  app.post("/api/convert/image-to/:format", pdfFromUpload.single("file"), async (req, res) => {
+  app.post("/api/convert/image-to/:format", handleUpload(pdfFromUpload.single("file")), async (req, res) => {
     const target = (req.params.format || "").toLowerCase();
     const OUT: Record<string, { ext: string; mime: string }> = {
       jpg: { ext: "jpg", mime: "image/jpeg" },
@@ -417,22 +443,6 @@ ${allUrls.map(u => `  <url>
 
   // ── REST endpoint for PDF upload (avoids tRPC base64 size limits) ─────────────
   const pdfUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
-  // Wrap a multer middleware so a too-large file returns a clean 413 instead of
-  // an unhandled MulterError (which 500s the request + spams Sentry). 100 MB
-  // matches the cap advertised on the site.
-  const handleUpload = (mw: any) => (req: any, res: any, next: any) => {
-    mw(req, res, (err: any) => {
-      if (err) {
-        if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
-          res.status(413).json({ error: "file-too-large", maxMb: 100 });
-          return;
-        }
-        res.status(400).json({ error: "upload-error" });
-        return;
-      }
-      next();
-    });
-  };
   app.post("/api/documents/upload", handleUpload(pdfUpload.single("file")), async (req, res) => {
     try {
       // Authenticate via session cookie using the same SDK as tRPC
@@ -562,7 +572,7 @@ ${allUrls.map(u => `  <url>
 
   // ── REST endpoint for PDF password protection (uses pikepdf via Python) ────────
   const protectUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
-  app.post("/api/documents/protect", protectUpload.single("file"), async (req, res) => {
+  app.post("/api/documents/protect", handleUpload(protectUpload.single("file")), async (req, res) => {
     try {
       const file = req.file;
       if (!file) { res.status(400).json({ error: "No file" }); return; }
@@ -624,7 +634,7 @@ ${allUrls.map(u => `  <url>
 
   // ── REST endpoint for PDF text blocks extraction via MuPDF ──────────────────────
   const blocksUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
-  app.post("/api/pdf/blocks", blocksUpload.single("file"), async (req, res) => {
+  app.post("/api/pdf/blocks", handleUpload(blocksUpload.single("file")), async (req, res) => {
     try {
       const file = req.file;
       if (!file) { res.status(400).json({ error: "No file" }); return; }
@@ -815,7 +825,7 @@ ${allUrls.map(u => `  <url>
 
   // ── REST endpoint for PDF export (PDF → Word/Excel/PPT) ─────────────────────────
   const exportUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
-  app.post("/api/documents/export", exportUpload.single("file"), async (req, res) => {
+  app.post("/api/documents/export", handleUpload(exportUpload.single("file")), async (req, res) => {
     try {
       const file = req.file;
       if (!file) { res.status(400).json({ error: "No file" }); return; }
