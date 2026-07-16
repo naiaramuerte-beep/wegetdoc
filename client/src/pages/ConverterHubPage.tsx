@@ -172,15 +172,19 @@ async function runConversion(conv: Conv, file: File): Promise<{ blob: Blob; name
   return { blob, name: `${base}.${conv.toExt}` };
 }
 
-export default function ConverterHubPage() {
+export default function ConverterHubPage({ preselectId, seoH1, seoSub }: { preselectId?: string; seoH1?: string; seoSub?: string } = {}) {
   const { lang } = useLanguage();
   const s = hubT(lang);
+  // Dedicated landings (e.g. /heic-to-pdf) reuse this hub pre-focused on one
+  // conversion with their own SEO copy; the generic /convert passes nothing.
+  const h1 = seoH1 ?? s.h1;
+  const sub = seoSub ?? s.sub;
   useEffect(() => {
-    document.title = `${s.h1} · EditorPDF`;
+    document.title = `${h1} · EditorPDF`;
     const desc = document.querySelector('meta[name="description"]');
-    if (desc) desc.setAttribute("content", s.sub);
+    if (desc) desc.setAttribute("content", sub);
     window.scrollTo(0, 0);
-  }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [lang, h1, sub]); // eslint-disable-line react-hooks/exhaustive-deps
   const [file, setFile] = useState<File | null>(null);
   const [selected, setSelected] = useState<Conv | null>(null);
   const [phase, setPhase] = useState<"idle" | "converting" | "ready">("idle");
@@ -191,6 +195,15 @@ export default function ConverterHubPage() {
   const { isTrulyPremium } = useLandingEntitlement();
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Pre-select a conversion on dedicated landings so the user lands ready to
+  // upload for that specific target (e.g. HEIC → PDF).
+  useEffect(() => {
+    if (preselectId) {
+      const c = CONVERSIONS.find((x) => x.id === preselectId);
+      if (c) setSelected(c);
+    }
+  }, [preselectId]);
 
   // When a file is uploaded, the valid conversions are those whose fromExts
   // include the file's extension. This drives the "convert to…" suggestions.
@@ -271,8 +284,8 @@ export default function ConverterHubPage() {
       <div style={{ maxWidth: 960, margin: "0 auto", padding: "48px 20px 80px" }}>
         <div style={{ textAlign: "center", marginBottom: 8 }}>
           <p style={{ color: ACCENT, fontWeight: 800, letterSpacing: 1, fontSize: 12, textTransform: "uppercase" }}>{s.eyebrow}</p>
-          <h1 style={{ fontSize: 34, fontWeight: 800, color: "#0A0A0B", margin: "6px 0" }}>{s.h1}</h1>
-          <p style={{ color: "#64748b" }}>{s.sub}</p>
+          <h1 style={{ fontSize: 34, fontWeight: 800, color: "#0A0A0B", margin: "6px 0" }}>{h1}</h1>
+          <p style={{ color: "#64748b" }}>{sub}</p>
         </div>
 
         {/* Always-mounted file input */}

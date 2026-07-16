@@ -60,6 +60,24 @@ const CONVERTER_ROUTES: Record<string, "docx" | "xlsx" | "pptx" | "jpg"> = {
 // don't know which target format they want, so we show a picker hub
 // instead of an upload form.
 const HUB_SLUG = "pdf-converter";
+
+// Dedicated HEIC→PDF landing (/heic-to-pdf) — renders the converter hub
+// pre-focused on HEIC→PDF with SEO copy. (PDF→HEIC is intentionally NOT
+// offered: no service encodes HEIC, an Apple/HEVC-licensed format.)
+const HEIC_SEO: Record<string, { h1: string; sub: string }> = {
+  en: { h1: "Convert HEIC to PDF", sub: "Turn iPhone HEIC photos into a PDF in seconds." },
+  es: { h1: "Convertir HEIC a PDF", sub: "Convierte fotos HEIC del iPhone en un PDF en segundos." },
+  fr: { h1: "Convertir HEIC en PDF", sub: "Transformez vos photos HEIC d'iPhone en PDF en quelques secondes." },
+  de: { h1: "HEIC in PDF umwandeln", sub: "Verwandle iPhone-HEIC-Fotos in Sekunden in ein PDF." },
+  pt: { h1: "Converter HEIC para PDF", sub: "Transforme fotos HEIC do iPhone num PDF em segundos." },
+  it: { h1: "Converti HEIC in PDF", sub: "Trasforma le foto HEIC dell'iPhone in un PDF in pochi secondi." },
+  nl: { h1: "HEIC naar PDF converteren", sub: "Zet iPhone HEIC-foto's in seconden om naar een PDF." },
+  pl: { h1: "Konwertuj HEIC na PDF", sub: "Zamień zdjęcia HEIC z iPhone'a na PDF w kilka sekund." },
+  ru: { h1: "Конвертировать HEIC в PDF", sub: "Превратите HEIC-фото с iPhone в PDF за секунды." },
+  uk: { h1: "Конвертувати HEIC у PDF", sub: "Перетворіть HEIC-фото з iPhone на PDF за секунди." },
+  ro: { h1: "Convertește HEIC în PDF", sub: "Transformă pozele HEIC de pe iPhone într-un PDF în câteva secunde." },
+  zh: { h1: "将 HEIC 转换为 PDF", sub: "几秒钟内将 iPhone 的 HEIC 照片转换为 PDF。" },
+};
 import { AD_PAGES } from "./pages/AdLanding";
 const LandingTest = lazy(() => import("./pages/LandingTest"));
 
@@ -202,9 +220,22 @@ function Router() {
 
       {/* Unified converter hub — upload + auto-detect + all conversions */}
       {LANGUAGES.map(({ code }) => (
-        <Route key={`${code}-convert`} path={`/${code}/convert`} component={ConverterHubPage} />
+        <Route key={`${code}-convert`} path={`/${code}/convert`} component={() => <ConverterHubPage />} />
       ))}
       <Route path="/convert" component={() => <Redirect to="/en/convert" />} />
+
+      {/* Dedicated HEIC→PDF landing */}
+      {LANGUAGES.map(({ code }) => {
+        const seo = HEIC_SEO[code] ?? HEIC_SEO.en;
+        return (
+          <Route
+            key={`${code}-heic-pdf`}
+            path={`/${code}/heic-to-pdf`}
+            component={() => <ConverterHubPage preselectId="heic-pdf" seoH1={seo.h1} seoSub={seo.sub} />}
+          />
+        );
+      })}
+      <Route path="/heic-to-pdf" component={() => <Redirect to="/en/heic-to-pdf" />} />
 
       {/* Tool landing pages — language-prefixed (skips slugs handled by ConverterPage / hub / dedicated utility landings above) */}
       {LANGUAGES.map(({ code }) =>
