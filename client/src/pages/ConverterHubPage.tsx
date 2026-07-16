@@ -7,6 +7,7 @@
    convert-upload for X→PDF) + client-side canvas for JPG↔PNG.
    ============================================================= */
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLandingEntitlement } from "@/lib/useLandingEntitlement";
 import Navbar from "@/components/Navbar";
@@ -66,6 +67,7 @@ interface Conv {
   imgServerTo?: "png" | "jpg" | "pdf";            // for backend "image-server" (CloudConvert)
   icon: any;
   tint: string;
+  landing?: string;     // dedicated SEO landing slug (e.g. "heic-to-pdf"), if any
 }
 
 // V1 conversions — every one here has a working backend today.
@@ -83,7 +85,7 @@ const CONVERSIONS: Conv[] = [
   { id: "png-jpg",   label: "PNG → JPG",        fromExts: ["png"],          toExt: "jpg",  backend: "image", imageTo: "jpg",      icon: ImageIcon,    tint: "#00838F" },
   { id: "pdf-png",   label: "PDF → PNG",        fromExts: ["pdf"],          toExt: "png",  backend: "pdf-to", pdfToFormat: "png",  icon: ImageIcon,    tint: "#8E24AA" },
   { id: "heic-jpg",  label: "HEIC → JPG",       fromExts: ["heic", "heif"], toExt: "jpg",  backend: "image-server", imgServerTo: "jpg", icon: ImageIcon, tint: "#0EA5E9" },
-  { id: "heic-pdf",  label: "HEIC → PDF",       fromExts: ["heic", "heif"], toExt: "pdf",  backend: "image-server", imgServerTo: "pdf", icon: FileText, tint: "#E63946" },
+  { id: "heic-pdf",  label: "HEIC → PDF",       fromExts: ["heic", "heif"], toExt: "pdf",  backend: "image-server", imgServerTo: "pdf", icon: FileText, tint: "#E63946", landing: "heic-to-pdf" },
   { id: "webp-jpg",  label: "WEBP → JPG",       fromExts: ["webp"],         toExt: "jpg",  backend: "image-server", imgServerTo: "jpg", icon: ImageIcon, tint: "#0EA5E9" },
   { id: "html-pdf",  label: "HTML → PDF",       fromExts: ["html", "htm"],  toExt: "pdf",  backend: "to-pdf", icon: FileText,     tint: "#F59E0B" },
   { id: "csv-pdf",   label: "CSV → PDF",        fromExts: ["csv"],          toExt: "pdf",  backend: "to-pdf", icon: FileSpreadsheet, tint: "#1E9E63" },
@@ -444,6 +446,28 @@ export default function ConverterHubPage({ preselectId, seoH1, seoSub }: { prese
             {CONVERSIONS.map((c) => {
               const Icon = c.icon;
               const active = selected?.id === c.id;
+              const tileStyle = {
+                display: "flex", alignItems: "center", gap: 10, padding: "14px", borderRadius: 14, textAlign: "left" as const,
+                border: `2px solid ${active ? ACCENT : "#eef2f7"}`, background: "#fff", cursor: "pointer",
+              };
+              const inner = (
+                <>
+                  <span style={{ width: 36, height: 36, borderRadius: 10, background: c.tint + "22", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon style={{ width: 18, height: 18, color: c.tint }} />
+                  </span>
+                  <span style={{ fontWeight: 700, color: "#0A0A0B", fontSize: 14 }}>{c.label}</span>
+                </>
+              );
+              // Conversions with a dedicated SEO landing render as a crawlable
+              // <a> so search engines follow the internal link; the landing is
+              // this same hub pre-focused on that conversion, so UX is identical.
+              if (c.landing) {
+                return (
+                  <Link key={c.id} href={`/${lang}/${c.landing}`} style={{ ...tileStyle, textDecoration: "none" }}>
+                    {inner}
+                  </Link>
+                );
+              }
               return (
                 <button
                   key={c.id}
@@ -452,15 +476,9 @@ export default function ConverterHubPage({ preselectId, seoH1, seoSub }: { prese
                     if (!file || !c.fromExts.includes(extOf(file.name))) { setFile(null); setPreviewUrl(null); inputRef.current?.click(); }
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 10, padding: "14px", borderRadius: 14, textAlign: "left",
-                    border: `2px solid ${active ? ACCENT : "#eef2f7"}`, background: "#fff", cursor: "pointer",
-                  }}
+                  style={tileStyle}
                 >
-                  <span style={{ width: 36, height: 36, borderRadius: 10, background: c.tint + "22", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Icon style={{ width: 18, height: 18, color: c.tint }} />
-                  </span>
-                  <span style={{ fontWeight: 700, color: "#0A0A0B", fontSize: 14 }}>{c.label}</span>
+                  {inner}
                 </button>
               );
             })}
