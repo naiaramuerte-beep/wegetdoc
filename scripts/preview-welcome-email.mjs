@@ -27,3 +27,6 @@ const ok = await sendTrialWelcomeEmail({
 });
 
 console.log(ok ? `✓ sent (lang=${LANG}) to ${TO}` : "✗ failed — see logs above");
+// getActiveMonthlyPrice opens a DB pool that keeps the event loop alive, so
+// force-exit once the email is out (otherwise the script hangs after sending).
+process.exit(ok ? 0 : 1);
