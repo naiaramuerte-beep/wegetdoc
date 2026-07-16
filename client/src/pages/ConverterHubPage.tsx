@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { checkUploadSize } from "@/lib/uploadLimit";
 import { useLandingEntitlement } from "@/lib/useLandingEntitlement";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -175,7 +176,7 @@ async function runConversion(conv: Conv, file: File): Promise<{ blob: Blob; name
 }
 
 export default function ConverterHubPage({ preselectId, seoH1, seoSub }: { preselectId?: string; seoH1?: string; seoSub?: string } = {}) {
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const s = hubT(lang);
   // Dedicated landings (e.g. /heic-to-pdf) reuse this hub pre-focused on one
   // conversion with their own SEO copy; the generic /convert passes nothing.
@@ -217,6 +218,7 @@ export default function ConverterHubPage({ preselectId, seoH1, seoSub }: { prese
 
   const onPickFile = (f: File | null) => {
     if (!f) return;
+    if (!checkUploadSize(f, t.upload_too_large)) return;
     setFile(f);
     setPhase("idle");
     setProgress(0);

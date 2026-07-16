@@ -20,6 +20,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { usePdfFile } from "@/contexts/PdfFileContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { checkUploadSize } from "@/lib/uploadLimit";
 import { isFastDoc } from "@/lib/brand";
 
 // ─── Accepted file types (preserved) ───────────────────────────
@@ -230,6 +231,7 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
   };
 
   const openEditor = useCallback((file: File, tool?: string) => {
+    if (!checkUploadSize(file, t.upload_too_large)) return;
     const ext = '.' + file.name.split('.').pop()?.toLowerCase();
     const isSupported = ACCEPTED_MIME_TYPES.has(file.type) || ACCEPTED_EXTENSIONS.has(ext);
     if (!isSupported) {
@@ -248,7 +250,7 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
       if (tool) setPendingTool(tool);
     });
     navigate(`/${lang}/editor`);
-  }, [setPendingFile, setPendingTool, navigate, lang]);
+  }, [setPendingFile, setPendingTool, navigate, lang, t]);
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];

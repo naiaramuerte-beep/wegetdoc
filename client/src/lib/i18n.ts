@@ -54,6 +54,7 @@ export type TranslationKeys = {
   hero_drag_here: string;
   hero_or: string;
   hero_max_size: string;
+  upload_too_large: string;
   hero_cloud_badge: string;
   hero_handnote: string;
   hero_pill_edit: string;
@@ -804,6 +805,7 @@ export const translations: Translations = {
     hero_drag_here: "Arrastra tu documento a esta área",
     hero_or: "o",
     hero_max_size: "Admitimos archivos de hasta 100 MB",
+    upload_too_large: "Este archivo pesa {size} MB y supera el límite de 100 MB. Elige uno más pequeño.",
     hero_cloud_badge: "Todo ocurre en la nube de forma segura — No necesitas instalar nada",
     hero_handnote: "¡suelta tu PDF aquí!",
     hero_pill_edit: "Editar",
@@ -1969,6 +1971,7 @@ export const translations: Translations = {
     hero_drag_here: "Place your document here",
     hero_or: "or",
     hero_max_size: "Accepts files up to 100 MB",
+    upload_too_large: "This file is {size} MB and exceeds the 100 MB limit. Please choose a smaller one.",
     hero_cloud_badge: "Secure cloud processing — no downloads needed",
     hero_handnote: "drop your PDF here!",
     hero_pill_edit: "Edit",
@@ -3134,6 +3137,7 @@ export const translations: Translations = {
     hero_drag_here: "Déposez votre fichier dans cette zone",
     hero_or: "ou",
     hero_max_size: "Fichiers jusqu'à 100 Mo",
+    upload_too_large: "Ce fichier fait {size} Mo et dépasse la limite de 100 Mo. Choisissez-en un plus petit.",
     hero_cloud_badge: "Traitement cloud sécurisé — Aucun logiciel supplémentaire requis",
     hero_handnote: "déposez votre PDF ici !",
     hero_pill_edit: "Modifier",
@@ -4030,6 +4034,7 @@ export const translations: Translations = {
     hero_drag_here: "Dokument hierher ziehen",
     hero_or: "oder",
     hero_max_size: "Maximale Dateigröße: 100 MB",
+    upload_too_large: "Diese Datei ist {size} MB groß und überschreitet das Limit von 100 MB. Bitte wähle eine kleinere.",
     hero_cloud_badge: "Geschützte Verarbeitung in der Cloud — kein Programm erforderlich",
     hero_handnote: "leg dein PDF hier ab!",
     hero_pill_edit: "Bearbeiten",
@@ -4926,6 +4931,7 @@ export const translations: Translations = {
     hero_drag_here: "Solte seu arquivo nesta área",
     hero_or: "ou",
     hero_max_size: "Arquivos de até 100 MB",
+    upload_too_large: "Este ficheiro tem {size} MB e ultrapassa o limite de 100 MB. Escolhe um mais pequeno.",
     hero_cloud_badge: "Processamento seguro na nuvem — Sem software adicional",
     hero_handnote: "solta o teu PDF aqui!",
     hero_pill_edit: "Editar",
@@ -5798,6 +5804,7 @@ export const translations: Translations = {
     hero_drag_here: "Rilascia il tuo file in questa area",
     hero_or: "o",
     hero_max_size: "Fino a 100 MB",
+    upload_too_large: "Questo file è di {size} MB e supera il limite di 100 MB. Scegline uno più piccolo.",
     hero_cloud_badge: "Elaborazione cloud sicura — Nessun software aggiuntivo necessario",
     hero_handnote: "trascina qui il tuo PDF!",
     hero_pill_edit: "Modifica",
@@ -6670,6 +6677,7 @@ export const translations: Translations = {
     hero_drag_here: "Plaats uw bestand in dit vak",
     hero_or: "of",
     hero_max_size: "Maximaal 100 MB",
+    upload_too_large: "Dit bestand is {size} MB en overschrijdt de limiet van 100 MB. Kies een kleiner bestand.",
     hero_cloud_badge: "Beschermde cloudverwerking — Geen aanvullende programma's vereist",
     hero_handnote: "zet je PDF hier neer!",
     hero_pill_edit: "Bewerken",
@@ -7542,6 +7550,7 @@ export const translations: Translations = {
     hero_drag_here: "Upuść plik w tym obszarze",
     hero_or: "lub",
     hero_max_size: "Do 100 MB",
+    upload_too_large: "Ten plik ma {size} MB i przekracza limit 100 MB. Wybierz mniejszy.",
     hero_cloud_badge: "Bezpieczne przetwarzanie w chmurze — Bez dodatkowego oprogramowania",
     hero_handnote: "upuść tu swój PDF!",
     hero_pill_edit: "Edytuj",
@@ -8414,6 +8423,7 @@ export const translations: Translations = {
     hero_drag_here: "Перетащите файл сюда",
     hero_or: "либо",
     hero_max_size: "Максимум 100 МБ",
+    upload_too_large: "Этот файл весит {size} МБ и превышает лимит в 100 МБ. Выберите файл поменьше.",
     hero_cloud_badge: "Облачная обработка с защитой — Никакого стороннего софта",
     hero_handnote: "перетащи сюда PDF!",
     hero_pill_edit: "Правка",
@@ -9286,6 +9296,7 @@ export const translations: Translations = {
     hero_drag_here: "Розмістіть документ тут",
     hero_or: "або",
     hero_max_size: "Файли до 100 МБ",
+    upload_too_large: "Цей файл важить {size} МБ і перевищує ліміт у 100 МБ. Оберіть менший.",
     hero_cloud_badge: "Безпечна обробка у хмарі — без завантажень",
     hero_handnote: "перетягніть PDF сюди!",
     hero_pill_edit: "Редагувати",
@@ -10447,6 +10458,7 @@ export const translations: Translations = {
     hero_drag_here: "Plasează documentul aici",
     hero_or: "sau",
     hero_max_size: "Fișiere până la 100 MB",
+    upload_too_large: "Acest fișier are {size} MB și depășește limita de 100 MB. Alege unul mai mic.",
     hero_cloud_badge: "Procesare sigură în cloud — fără descărcări",
     hero_handnote: "aruncă PDF-ul aici!",
     hero_pill_edit: "Editează",
@@ -11612,6 +11624,7 @@ export const translations: Translations = {
     hero_drag_here: "将文件放入此区域",
     hero_or: "或",
     hero_max_size: "最大100 MB",
+    upload_too_large: "该文件为 {size} MB，超过了 100 MB 的上限。请选择更小的文件。",
     hero_cloud_badge: "安全云端处理 — 无需额外软件",
     hero_handnote: "把PDF拖到这里！",
     hero_pill_edit: "编辑",

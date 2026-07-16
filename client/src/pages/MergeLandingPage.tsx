@@ -13,6 +13,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { checkUploadSize } from "@/lib/uploadLimit";
 import { useLandingEntitlement } from "@/lib/useLandingEntitlement";
 import { renderPdfThumbnail } from "@/lib/pdfThumbnail";
 import {
@@ -163,7 +164,10 @@ export default function MergeLandingPage() {
       toast.error(tr("landing_common_only_pdf", "Only PDF files are supported"));
       return;
     }
-    setFiles((prev) => [...prev, ...pdfs]);
+    // Drop any file over the 100 MB cap (checkUploadSize toasts per oversized file).
+    const sized = pdfs.filter((f) => checkUploadSize(f, tr("upload_too_large", "This file exceeds the 100 MB limit. Please choose a smaller one.")));
+    if (sized.length === 0) return;
+    setFiles((prev) => [...prev, ...sized]);
     setPhase("have-files");
   };
 

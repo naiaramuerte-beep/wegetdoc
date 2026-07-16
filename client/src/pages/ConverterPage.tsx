@@ -15,6 +15,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { checkUploadSize } from "@/lib/uploadLimit";
 import {
   Upload, FileText, Loader2, CheckCircle2, RefreshCw, Cloud, ArrowRight,
   Download as DownloadIcon, FileSpreadsheet, Presentation, Image as ImageIcon,
@@ -265,6 +266,7 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
 
   // ── Step 1: user picks PDF → render preview thumb in parallel + fake progress ──
   const startFakeConvert = (f: File) => {
+    if (!checkUploadSize(f, tr("upload_too_large", "This file exceeds the 100 MB limit. Please choose a smaller one."))) return;
     if (f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf")) {
       toast.error(tr("landing_common_only_pdf", "Only PDF files are supported"));
       return;

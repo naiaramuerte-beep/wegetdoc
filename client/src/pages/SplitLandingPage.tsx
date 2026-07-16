@@ -11,6 +11,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { checkUploadSize } from "@/lib/uploadLimit";
 import { useLandingEntitlement } from "@/lib/useLandingEntitlement";
 import { renderPdfThumbnail } from "@/lib/pdfThumbnail";
 import {
@@ -172,6 +173,7 @@ export default function SplitLandingPage() {
 
   const acceptPdf = async (incoming: File | undefined) => {
     if (!incoming) return;
+    if (!checkUploadSize(incoming, tr("upload_too_large", "This file exceeds the 100 MB limit. Please choose a smaller one."))) return;
     if (incoming.type !== "application/pdf" && !incoming.name.toLowerCase().endsWith(".pdf")) {
       toast.error(tr("landing_common_only_pdf", "Only PDF files are supported"));
       return;
