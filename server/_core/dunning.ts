@@ -90,19 +90,29 @@ function r3MovesToMonthStart(anchor: Date): boolean {
   return firstOfNextMonth(anchor).getTime() <= addDays(anchor, 21).getTime();
 }
 
+/** 07:00 UTC del día UTC de `d` (≈09:00 Madrid, mismo día en ambas zonas). */
+function atMorningUtc(d: Date): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 7, 0, 0, 0));
+}
+
 /**
- * Si la fecha cae en sáb/dom/lun (Madrid) la mueve al martes, y fija la hora a
- * las 07:00 UTC (≈08–09 Madrid, dentro de la ventana de ejecución del cron).
+ * Devuelve la mañana (07:00 UTC) del primer día hábil >= max(día de `target`, `min`)
+ * que NO sea sáb/dom/lun (Madrid); esos se mueven a martes.
+ *
+ * Clave anti-bug: se calcula el día de la semana SIEMPRE sobre las 07:00 UTC
+ * (≈09:00 Madrid). Si se usara una hora UTC nocturna, el día en Madrid cruzaría
+ * a medianoche y el weekday saldría desplazado (un domingo leído como sábado,
+ * etc.), colando fechas en lunes.
  */
-function shiftToBusinessMorning(d: Date): Date {
-  let add = 0;
-  const wd = madridWeekday(d);
-  if (wd === 6) add = 3;       // Sáb → Mar
-  else if (wd === 0) add = 2;  // Dom → Mar
-  else if (wd === 1) add = 1;  // Lun → Mar
-  const shifted = addDays(d, add);
-  shifted.setUTCHours(7, 0, 0, 0);
-  return shifted;
+function toBusinessMorning(target: Date, min: Date): Date {
+  const day07 = atMorningUtc(target);
+  // No antes del día del calendario ni antes del mínimo de 24h.
+  const floor = day07.getTime() >= min.getTime() ? day07 : min;
+  let base = atMorningUtc(floor);
+  if (base.getTime() < floor.getTime()) base = addDays(base, 1); // 07:00 ya pasó → mañana
+  const wd = madridWeekday(base);
+  const add = wd === 6 ? 3 : wd === 0 ? 2 : wd === 1 ? 1 : 0; // Sáb/Dom/Lun → Mar
+  return addDays(base, add);
 }
 
 /** Fecha objetivo (antes de guardas y desplazamiento) para el reintento N. */
@@ -148,21 +158,13 @@ export function decideNextRetry(opts: {
     return { action: "cancel", category: info.category, reason: `max_retries_${info.maxRetries}` };
   }
 
-  let target = targetForRetry(info, n, opts.anchor);
+  const target = targetForRetry(info, n, opts.anchor);
+  const min = addHours(opts.lastAttemptAt, 24);   // mín 24h entre intentos (máx 1/día)
+  const next = toBusinessMorning(target, min);     // 07:00 UTC, no antes de min, sin finde/lunes
 
-  // Regla dura: mínimo 24h desde el último intento (máx 1 intento/día).
-  const min = addHours(opts.lastAttemptAt, 24);
-  if (target.getTime() < min.getTime()) target = min;
-
-  // Ventana máxima de 30 días desde el ancla.
-  if (target.getTime() > addDays(opts.anchor, 30).getTime()) {
+  // Ventana máxima de 30 días desde el ancla (sobre la fecha final ya desplazada).
+  if (next.getTime() > addDays(opts.anchor, 30).getTime()) {
     return { action: "cancel", category: info.category, reason: "beyond_30d" };
   }
-
-  // Sáb/Dom/Lun → martes, por la mañana.
-  target = shiftToBusinessMorning(target);
-  // Re-asegurar el mínimo de 24h por si el desplazamiento adelantó la hora.
-  if (target.getTime() < min.getTime()) target = min;
-
-  return { action: "retry", category: info.category, nextRetryAt: target, retryNumber: n };
+  return { action: "retry", category: info.category, nextRetryAt: next, retryNumber: n };
 }

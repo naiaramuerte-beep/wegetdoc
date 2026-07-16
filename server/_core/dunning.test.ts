@@ -78,11 +78,26 @@ describe("decideNextRetry — calendario y reglas de fecha", () => {
   });
 
   it("técnico: primer reintento a +24h", () => {
-    // anchor miércoles 2026-01-07 → +24h = jueves 2026-01-08 (sin desplazamiento).
-    const anchor = new Date(Date.UTC(2026, 0, 7, 10));
+    // anchor miércoles 2026-01-07 00:00 → +24h = jueves 2026-01-08 07:00 (día hábil).
+    const anchor = new Date(Date.UTC(2026, 0, 7, 0));
     const d = decideNextRetry({ code: "912", retryCount: 0, anchor, lastAttemptAt: anchor });
     expect(d.action).toBe("retry");
-    if (d.action === "retry") expect(d.nextRetryAt.getUTCDate()).toBe(8);
+    if (d.action === "retry") {
+      expect(d.nextRetryAt.getUTCDate()).toBe(8);
+      expect(d.nextRetryAt.getTime()).toBeGreaterThanOrEqual(anchor.getTime() + 24 * 3600 * 1000);
+    }
+  });
+
+  it("nunca programa en sábado, domingo ni lunes (barrido de anclas)", () => {
+    // Para 30 anclas consecutivas, R1 (código 190) nunca cae en finde/lunes.
+    for (let i = 0; i < 30; i++) {
+      const anchor = new Date(Date.UTC(2026, 6, 1 + i, 8, 30));
+      const d = decideNextRetry({ code: "190", retryCount: 0, anchor, lastAttemptAt: anchor });
+      if (d.action === "retry") {
+        const wd = d.nextRetryAt.getUTCDay();
+        expect([0, 1, 6]).not.toContain(wd); // ni dom(0) ni lun(1) ni sáb(6)
+      }
+    }
   });
 
   it("técnico repetido se comporta como 190 (calendario) desde el 2º intento", () => {
