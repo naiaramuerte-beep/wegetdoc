@@ -1037,180 +1037,97 @@ ${allUrls.map(u => `  <url>
     try {
       const db = await import("../db");
       const { createMITRecurring } = await import("./sipay");
-      const due = await db.getSubsDueForRenewal();
-      // Read price from site_settings so the A/B test toggle still drives
-      // recurring charges. Default to 19.95 € if the row was deleted.
+      const { decideNextRetry, classifyDecline } = await import("./dunning");
+      const now = new Date();
+      const due = await db.getSubsDueForRetry(now);
+      // Price from site_settings so the A/B toggle drives recurring charges too.
       const priceStr = await db.getSiteSetting?.("subscription_price_eur").catch(() => null);
       const priceEur = Number(priceStr ?? "19.95");
       const amountCents = Math.round(priceEur * 100);
-      const results: { userId: number; ok: boolean; reason?: string }[] = [];
-      // Dunning policy: retry a few times spread across ~2 months, then cancel.
-      // Visa/MC cap retries on a declined authorization (~15 in 30 days) and
-      // excess/daily retries incur acquirer fees + card-testing flags, so we
-      // space them out generously: day 0 → +10 → +30 → +60 = 4 total attempts
-      // over ~2 months, then give up and cancel. Well under the 30-day cap
-      // (3 attempts in the first 30 days). Shared by BOTH the decline path and
-      // the exception path — the latter previously left nextRenewalAt untouched,
-      // so a card that made Sipay throw got re-selected every daily run and
-      // retried forever (the pattern Sipay flagged 2026-07).
-      const RETRY_GAPS_DAYS = [10, 20, 30];
-      const applyDunning = async (sub: { userId: number; renewalAttempts: number | null; currentPeriodEnd: Date | null }) => {
-        const attempts = (sub.renewalAttempts ?? 0) + 1;
-        if (attempts > RETRY_GAPS_DAYS.length) {
-          await db.upsertSubscription({ userId: sub.userId, status: "canceled", renewalAttempts: attempts, nextRenewalAt: null });
-          return { canceled: true, attempts };
-        }
-        const gapDays = RETRY_GAPS_DAYS[attempts - 1];
-        await db.upsertSubscription({
-          userId: sub.userId,
-          status: "past_due",
-          currentPeriodEnd: sub.currentPeriodEnd ?? new Date(),
-          renewalAttempts: attempts,
-          nextRenewalAt: new Date(Date.now() + gapDays * 24 * 60 * 60 * 1000),
-        });
-        return { canceled: false, attempts, gapDays };
-      };
+      const results: Array<{ userId: number; subId: number; ok: boolean; action?: string; code?: string; nextRetryAt?: string | null; reason?: string }> = [];
+
       for (const sub of due) {
-        if (dryRun) {
-          results.push({ userId: sub.userId, ok: true, reason: "dry-run" });
-          continue;
+        // Idempotencia: solo UNA corrida procesa una sub. Si no ganamos el lock,
+        // otra ya está en ello → saltar (evita cargos dobles si el job se solapa).
+        if (!dryRun) {
+          const claimed = await db.claimSubForDunning(sub.id, now);
+          if (!claimed) { results.push({ userId: sub.userId, subId: sub.id, ok: false, reason: "locked" }); continue; }
         }
+        const anchor = sub.currentPeriodEnd ?? now;       // vencimiento = día 0 del ciclo
+        const paymentMethod = sub.sipayProvider ?? "mit";
         const order = `mit-${sub.userId}-${Date.now()}`;
         const chargeStart = Date.now();
         try {
-          const result = await createMITRecurring({
-            amountCents,
-            token: sub.sipayToken!,
-            order,
-            custom_01: String(sub.userId),
-          });
+          if (dryRun) {
+            // No cobramos: solo mostramos a quién tocaría cobrar ahora.
+            results.push({ userId: sub.userId, subId: sub.id, ok: true, action: "dry-run", code: sub.lastDeclineCode ?? undefined });
+            continue;
+          }
+          const result = await createMITRecurring({ amountCents, token: sub.sipayToken!, order, custom_01: String(sub.userId) });
           const data = result.data as any;
-          const code = data?.payload?.code ?? data?.code;
-          const txn = data?.payload?.transaction_id ?? "";
-          // Require a real transaction_id, not just code:"0". The MIT init step
-          // returns code:"0" detail:"authentication_started" with NO txn — that
-          // is NOT a captured charge. createMITRecurring now chains the confirm
-          // so a genuine success carries a transaction_id; demand it here.
-          const ok = result.ok && code === "0" && !!txn;
-          const masked = data?.payload?.masked_card ?? sub.sipayMaskedCard ?? "";
-          if (ok) {
-            // Extend the period 30 days and bump status -> active. Past-due
-            // subs that paid now become active again.
-            const newPeriodStart = sub.currentPeriodEnd ?? new Date();
-            const newPeriodEnd = new Date(newPeriodStart.getTime() + 30 * 24 * 60 * 60 * 1000);
+          // El código de denegación Redsys llega SIEMPRE en data.payload.code.
+          const code: string = String(data?.payload?.code ?? data?.code ?? "");
+          const txn: string = data?.payload?.transaction_id ?? "";
+          const masked: string = data?.payload?.masked_card ?? sub.sipayMaskedCard ?? "";
+          const success = result.ok && code === "0" && !!txn;
+
+          // Traza de intento (original o reintento), pase lo que pase.
+          await db.recordPaymentAttempt({ subscriptionId: sub.id, userId: sub.userId, paymentMethod, amountCents, responseCode: success ? "0" : code, success, rawResponse: data ?? result.raw });
+
+          if (success) {
+            const newPeriodEnd = new Date(anchor.getTime() + 30 * 24 * 60 * 60 * 1000);
             await db.upsertSubscription({
-              userId: sub.userId,
-              plan: "monthly",
-              status: "active",
-              currentPeriodStart: newPeriodStart,
-              currentPeriodEnd: newPeriodEnd,
-              sipayTransactionId: txn,
-              sipayOrder: order,
-              sipayMaskedCard: masked,
-              renewalAttempts: 0,
-              nextRenewalAt: null,
+              userId: sub.userId, plan: "monthly", status: "active",
+              currentPeriodStart: anchor, currentPeriodEnd: newPeriodEnd,
+              sipayTransactionId: txn, sipayOrder: order, sipayMaskedCard: masked,
+              // reset de dunning al cobrar OK
+              retryCount: 0, nextRetryAt: null, lastDeclineCode: null, declineCategory: null,
+              renewalAttempts: 0, nextRenewalAt: null,
             });
-            await db.recordCharge({
-              userId: sub.userId,
-              provider: "mit",
-              amountCents,
-              sipayTransactionId: txn,
-              sipayOrder: order,
-              sipayMaskedCard: masked,
-              status: "ok",
-            });
-            await db.recordWebhookEvent({
-              provider: "sipay",
-              eventType: "mit_charge_ok",
-              eventId: txn || order,
-              status: "ok",
-              durationMs: Date.now() - chargeStart,
-              payload: data,
-            });
-            results.push({ userId: sub.userId, ok: true });
+            await db.recordCharge({ userId: sub.userId, provider: "mit", amountCents, sipayTransactionId: txn, sipayOrder: order, sipayMaskedCard: masked, status: "ok" });
+            await db.recordWebhookEvent({ provider: "sipay", eventType: "mit_charge_ok", eventId: txn || order, status: "ok", durationMs: Date.now() - chargeStart, payload: data });
+            results.push({ userId: sub.userId, subId: sub.id, ok: true, action: "charged", code: "0" });
           } else {
-            // Dunning audit — log the FULL Sipay response on every decline so
-            // we can see the exact field name + format used for the response
-            // code ("116", "0116", "R116", separate `error_code` field, etc).
-            // This drives the per-code retry policy in the dunning refactor;
-            // remove the log once the mapping is locked in. Marker prefix
-            // makes it grep-friendly in Railway logs.
-            const candidateCodes = {
-              code: data?.payload?.code ?? data?.code,
-              error_code: data?.payload?.error_code ?? data?.error_code,
-              errorCode: data?.payload?.errorCode ?? data?.errorCode,
-              response_code: data?.payload?.response_code ?? data?.response_code,
-              responseCode: data?.payload?.responseCode ?? data?.responseCode,
-              status_code: data?.payload?.status_code ?? data?.status_code,
-              return_code: data?.payload?.return_code ?? data?.return_code,
-              reason_code: data?.payload?.reason_code ?? data?.reason_code,
-              // Token-like fields: in MIT failure responses Sipay sometimes
-              // returns the cof_id that DID work or hints at why the stored
-              // credentials are no longer usable. Logging both helps us
-              // diagnose token drift across renewals.
-              cof_id: data?.payload?.cof_id ?? data?.cof_id,
-              token: data?.payload?.token ?? data?.token,
-            };
-            console.warn(
-              "[MIT-DUNNING-RAW]",
-              JSON.stringify({
-                userId: sub.userId,
-                order,
-                candidateCodes,
-                payload: data,
-                rawTail: typeof result.raw === "string" ? result.raw.slice(0, 2000) : null,
-              }),
-            );
-            // Space + cap the retries via the shared dunning policy above.
-            await applyDunning(sub);
+            // Reclasificar el código de ESTA respuesta (un técnico puede volverse
+            // 190; un soft puede volverse hard → cancelar aquí mismo).
+            const decision = decideNextRetry({ code, retryCount: sub.retryCount ?? 0, anchor, lastAttemptAt: now });
+            if (classifyDecline(code).kind === "unmapped") {
+              await db.recordWebhookEvent({ provider: "sipay", eventType: "mit_unmapped_code", eventId: order, status: "error", errorMessage: `unmapped_code_${code}`, durationMs: Date.now() - chargeStart, payload: data });
+            }
             const detail = data?.payload?.detail ?? data?.detail ?? "unknown";
-            await db.recordCharge({
-              userId: sub.userId,
-              provider: "mit",
-              amountCents,
-              sipayOrder: order,
-              status: "failed",
-              errorDetail: String(detail).slice(0, 500),
-            });
-            await db.recordWebhookEvent({
-              provider: "sipay",
-              eventType: "mit_charge_failed",
-              eventId: order,
-              status: "error",
-              errorMessage: String(detail),
-              durationMs: Date.now() - chargeStart,
-              payload: data ?? result.raw,
-            });
-            results.push({ userId: sub.userId, ok: false, reason: String(detail) });
+            await db.recordCharge({ userId: sub.userId, provider: "mit", amountCents, sipayOrder: order, status: "failed", errorDetail: `${code}:${String(detail)}`.slice(0, 500) });
+            if (decision.action === "cancel") {
+              await db.upsertSubscription({ userId: sub.userId, status: "canceled", lastDeclineCode: code, declineCategory: decision.category, nextRetryAt: null });
+              results.push({ userId: sub.userId, subId: sub.id, ok: false, action: "canceled", code, reason: decision.reason });
+            } else {
+              await db.upsertSubscription({ userId: sub.userId, status: "past_due", retryCount: decision.retryNumber, nextRetryAt: decision.nextRetryAt, lastDeclineCode: code, declineCategory: decision.category });
+              results.push({ userId: sub.userId, subId: sub.id, ok: false, action: "retry_scheduled", code, nextRetryAt: decision.nextRetryAt.toISOString() });
+            }
+            await db.recordWebhookEvent({ provider: "sipay", eventType: "mit_charge_failed", eventId: order, status: "error", errorMessage: `${code}:${String(detail)}`, durationMs: Date.now() - chargeStart, payload: data ?? result.raw });
           }
         } catch (err: any) {
           const msg = err?.message ?? String(err);
-          // Advance the dunning schedule on exceptions too. Without this the
-          // sub keeps nextRenewalAt <= now and gets re-charged on every daily
-          // run — the infinite-daily-retry pattern Sipay flagged.
-          try { await applyDunning(sub); } catch { /* best-effort */ }
-          await db.recordWebhookEvent({
-            provider: "sipay",
-            eventType: "mit_cron_exception",
-            eventId: order,
-            status: "error",
-            errorMessage: msg,
-            durationMs: Date.now() - chargeStart,
-          });
-          results.push({ userId: sub.userId, ok: false, reason: msg });
+          // Excepción / red / timeout → código técnico "TECH": el clasificador
+          // programa +24h (NO se reintenta a diario).
+          try {
+            const decision = decideNextRetry({ code: "TECH", retryCount: sub.retryCount ?? 0, anchor, lastAttemptAt: now });
+            await db.recordPaymentAttempt({ subscriptionId: sub.id, userId: sub.userId, paymentMethod, amountCents, responseCode: "TECH", success: false, rawResponse: { error: msg } });
+            if (decision.action === "cancel") {
+              await db.upsertSubscription({ userId: sub.userId, status: "canceled", lastDeclineCode: "TECH", declineCategory: decision.category, nextRetryAt: null });
+            } else {
+              await db.upsertSubscription({ userId: sub.userId, status: "past_due", retryCount: decision.retryNumber, nextRetryAt: decision.nextRetryAt, lastDeclineCode: "TECH", declineCategory: decision.category });
+            }
+          } catch { /* best-effort */ }
+          await db.recordWebhookEvent({ provider: "sipay", eventType: "mit_cron_exception", eventId: order, status: "error", errorMessage: msg, durationMs: Date.now() - chargeStart });
+          results.push({ userId: sub.userId, subId: sub.id, ok: false, action: "exception", reason: msg });
+        } finally {
+          if (!dryRun) { try { await db.clearDunningLock(sub.id); } catch { /* best-effort */ } }
         }
       }
       const succeeded = results.filter((r) => r.ok).length;
       const failed = results.length - succeeded;
-      console.log(`[MIT-R cron] processed=${results.length} ok=${succeeded} fail=${failed} duration=${Date.now() - startedAt}ms dryRun=${dryRun}`);
-      return res.json({
-        processed: results.length,
-        succeeded,
-        failed,
-        durationMs: Date.now() - startedAt,
-        dryRun,
-        results,
-      });
+      console.log(`[dunning cron] processed=${results.length} ok=${succeeded} fail=${failed} duration=${Date.now() - startedAt}ms dryRun=${dryRun}`);
+      return res.json({ processed: results.length, succeeded, failed, durationMs: Date.now() - startedAt, dryRun, results });
     } catch (err: any) {
       console.error("[MIT-R cron] fatal:", err?.message ?? err);
       return res.status(500).json({ error: "cron_exception", detail: err?.message ?? String(err) });

@@ -65,6 +65,19 @@ export const subscriptions = mysqlTable("subscriptions", {
   // the bank daily, which risks getting the merchant flagged) and give up after.
   renewalAttempts: int("renewalAttempts").default(0).notNull(),
   nextRenewalAt: timestamp("nextRenewalAt"),
+  // Dunning v2 — reintentos clasificados por código de denegación Redsys.
+  // Sustituyen a renewalAttempts/nextRenewalAt (que quedan muertos, se
+  // dropearán en una migración futura). Ancla del calendario = currentPeriodEnd.
+  //  retryCount:      reintentos ya programados en el ciclo actual.
+  //  nextRetryAt:     cuándo toca el siguiente reintento (null = sin reintento).
+  //  lastDeclineCode: último code Redsys (data.payload.code).
+  //  declineCategory: 'soft' | 'hard' | 'unknown'.
+  //  dunningLockedAt: lock de idempotencia del cron (no es dato de negocio).
+  retryCount: int("retryCount").default(0).notNull(),
+  nextRetryAt: timestamp("nextRetryAt"),
+  lastDeclineCode: varchar("lastDeclineCode", { length: 16 }),
+  declineCategory: mysqlEnum("declineCategory", ["soft", "hard", "unknown"]),
+  dunningLockedAt: timestamp("dunningLockedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   // Reason captured from the user when they cancel — powers churn analysis.
@@ -82,6 +95,29 @@ export const subscriptions = mysqlTable("subscriptions", {
 
 export type Subscription = typeof subscriptions.$inferSelect;
 export type InsertSubscription = typeof subscriptions.$inferInsert;
+
+/**
+ * Payment attempts — un registro por CADA intento de cobro MIT (original +
+ * cada reintento del dunning). Es la traza estructurada para auditar el ciclo
+ * de cobro de una suscripción sin JSON-parsear webhook_events. `charges` sigue
+ * siendo el ledger de dinero; esto es el log de intentos con su código Redsys.
+ */
+export const paymentAttempts = mysqlTable("payment_attempts", {
+  id: int("id").autoincrement().primaryKey(),
+  subscriptionId: int("subscriptionId").notNull(),
+  userId: int("userId"),
+  attemptedAt: timestamp("attemptedAt").defaultNow().notNull(),
+  // Método de la credencial usada (de subscriptions.sipayProvider). El cobro es
+  // siempre MIT, pero la tarjeta puede venir de FastPay / Apple Pay / Google Pay.
+  paymentMethod: varchar("paymentMethod", { length: 16 }),
+  amountCents: int("amountCents"),
+  responseCode: varchar("responseCode", { length: 16 }),
+  success: boolean("success").notNull(),
+  rawResponse: text("rawResponse"),
+});
+
+export type PaymentAttempt = typeof paymentAttempts.$inferSelect;
+export type InsertPaymentAttempt = typeof paymentAttempts.$inferInsert;
 
 /**
  * Documents — user PDF documents stored in S3.

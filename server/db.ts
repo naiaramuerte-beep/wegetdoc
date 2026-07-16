@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, isNotNull, isNull, like, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull, isNull, like, lt, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
@@ -11,6 +11,7 @@ import {
   emailTemplates,
   folders,
   legalPages,
+  paymentAttempts,
   siteSettings,
   subscriptions,
   teamInvitations,
@@ -180,6 +181,12 @@ export async function upsertSubscription(data: {
   cancelAtPeriodEnd?: boolean;
   renewalAttempts?: number;
   nextRenewalAt?: Date | null;
+  // Dunning v2
+  retryCount?: number;
+  nextRetryAt?: Date | null;
+  lastDeclineCode?: string | null;
+  declineCategory?: "soft" | "hard" | "unknown" | null;
+  dunningLockedAt?: Date | null;
 }) {
   const db = await getDb();
   if (!db) return;
@@ -855,28 +862,35 @@ const STRIPE_REVENUE_CACHE_MS = 60 * 1000;
  * Returns the inserted id (best-effort) for callers that want it.
  */
 /**
- * Subs whose current period has expired and are not flagged for cancellation.
- * The MIT-R cron iterates these and calls Sipay's all-in-one with the
- * stored token to take the monthly charge. Only returns subs that:
- *   - have a sipayToken (legacy Stripe subs are skipped)
- *   - status in trialing / active / past_due (past_due gets one retry)
- *   - cancelAtPeriodEnd = false (canceled subs roll off naturally)
- *   - currentPeriodEnd <= now
+ * Dunning v2 — subs cuyo cobro MIT toca ahora (cobro original o un reintento
+ * programado). El cron itera estas y clasifica el código de cada respuesta.
+ * Solo devuelve subs que:
+ *   - tienen sipayToken (subs Stripe legacy se saltan)
+ *   - status in trialing / active / past_due
+ *   - cancelAtPeriodEnd = false
+ *   - currentPeriodEnd <= now (vencidas)
+ *   - nextRetryAt IS NULL (cobro original) OR nextRetryAt <= now (reintento due)
+ *   - declineCategory <> 'hard' (los HARD ya se cancelaron, no se reintentan)
+ *   - no bloqueada por otra corrida del cron (lock idempotente)
  */
-export async function getSubsDueForRenewal(now: Date = new Date()) {
+export async function getSubsDueForRetry(now: Date = new Date(), lockStaleMs = 15 * 60 * 1000) {
   const db = await getDb();
   if (!db) return [];
+  const lockCutoff = new Date(now.getTime() - lockStaleMs);
   return db.select({
     id: subscriptions.id,
     userId: subscriptions.userId,
     sipayToken: subscriptions.sipayToken,
     sipayOrder: subscriptions.sipayOrder,
     sipayMaskedCard: subscriptions.sipayMaskedCard,
+    sipayProvider: subscriptions.sipayProvider,
     plan: subscriptions.plan,
     status: subscriptions.status,
     currentPeriodEnd: subscriptions.currentPeriodEnd,
     cancelAtPeriodEnd: subscriptions.cancelAtPeriodEnd,
-    renewalAttempts: subscriptions.renewalAttempts,
+    retryCount: subscriptions.retryCount,
+    lastDeclineCode: subscriptions.lastDeclineCode,
+    declineCategory: subscriptions.declineCategory,
   }).from(subscriptions)
     .where(sql`
       ${subscriptions.sipayToken} IS NOT NULL
@@ -884,8 +898,59 @@ export async function getSubsDueForRenewal(now: Date = new Date()) {
       AND ${subscriptions.cancelAtPeriodEnd} = false
       AND ${subscriptions.status} IN ('trialing', 'active', 'past_due')
       AND ${subscriptions.currentPeriodEnd} <= ${now}
-      AND (${subscriptions.nextRenewalAt} IS NULL OR ${subscriptions.nextRenewalAt} <= ${now})
+      AND (${subscriptions.nextRetryAt} IS NULL OR ${subscriptions.nextRetryAt} <= ${now})
+      AND (${subscriptions.declineCategory} IS NULL OR ${subscriptions.declineCategory} <> 'hard')
+      AND (${subscriptions.dunningLockedAt} IS NULL OR ${subscriptions.dunningLockedAt} < ${lockCutoff})
     `);
+}
+
+/**
+ * Reclama una sub para el dunning de forma atómica (lock de idempotencia).
+ * Devuelve true si ESTA corrida ganó el lock; false si otra ya la tenía.
+ * El lock caduca a los `lockStaleMs` para no bloquear si el cron murió a media.
+ */
+export async function claimSubForDunning(subId: number, now: Date = new Date(), lockStaleMs = 15 * 60 * 1000): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const cutoff = new Date(now.getTime() - lockStaleMs);
+  const res: any = await db.update(subscriptions)
+    .set({ dunningLockedAt: now })
+    .where(and(
+      eq(subscriptions.id, subId),
+      or(isNull(subscriptions.dunningLockedAt), lt(subscriptions.dunningLockedAt, cutoff)),
+    ));
+  const affected = Array.isArray(res) ? (res[0]?.affectedRows ?? 0) : (res?.affectedRows ?? 0);
+  return affected > 0;
+}
+
+/** Libera el lock de dunning de una sub (llamar siempre en finally). */
+export async function clearDunningLock(subId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(subscriptions).set({ dunningLockedAt: null }).where(eq(subscriptions.id, subId));
+}
+
+/** Registra un intento de cobro MIT (original o reintento) en payment_attempts. */
+export async function recordPaymentAttempt(opts: {
+  subscriptionId: number;
+  userId?: number;
+  paymentMethod?: string | null;
+  amountCents?: number;
+  responseCode?: string | null;
+  success: boolean;
+  rawResponse?: unknown;
+}) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(paymentAttempts).values({
+    subscriptionId: opts.subscriptionId,
+    userId: opts.userId,
+    paymentMethod: opts.paymentMethod ?? null,
+    amountCents: opts.amountCents,
+    responseCode: opts.responseCode ?? null,
+    success: opts.success,
+    rawResponse: opts.rawResponse != null ? JSON.stringify(opts.rawResponse).slice(0, 8000) : null,
+  });
 }
 
 export async function recordCharge(opts: {
