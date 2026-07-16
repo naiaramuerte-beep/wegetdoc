@@ -88,16 +88,32 @@ describe("decideNextRetry — calendario y reglas de fecha", () => {
     }
   });
 
-  it("nunca programa en sábado, domingo ni lunes (barrido de anclas)", () => {
-    // Para 30 anclas consecutivas, R1 (código 190) nunca cae en finde/lunes.
-    for (let i = 0; i < 30; i++) {
-      const anchor = new Date(Date.UTC(2026, 6, 1 + i, 8, 30));
-      const d = decideNextRetry({ code: "190", retryCount: 0, anchor, lastAttemptAt: anchor });
-      if (d.action === "retry") {
-        const wd = d.nextRetryAt.getUTCDay();
-        expect([0, 1, 6]).not.toContain(wd); // ni dom(0) ni lun(1) ni sáb(6)
+  it("REGRESIÓN: ninguna next_retry_at cae en sáb/dom/lun, corra CUANDO corra", () => {
+    // Barrido exhaustivo: día de ancla × HORA de ejecución (incl. noche UTC, que
+    // es lo que disparaba el bug de rollover de zona horaria) × código × retryCount.
+    const madridWd = (d: Date) =>
+      new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Madrid", weekday: "short" }).format(d);
+    const codes = ["116", "190", "181", "912", "999"];
+    let checked = 0;
+    for (let day = 0; day < 40; day++) {
+      // Horas UTC clave: 06/12/18 y sobre todo 22/23/23:59 (Madrid = día siguiente).
+      for (const [h, m] of [[6, 0], [12, 0], [18, 0], [22, 0], [23, 0], [23, 59]] as const) {
+        const lastAttemptAt = new Date(Date.UTC(2026, 0, 1 + day, h, m));
+        const anchor = new Date(lastAttemptAt.getTime() - 3 * 24 * 3600 * 1000);
+        for (const code of codes) {
+          for (let rc = 0; rc < 4; rc++) {
+            const d = decideNextRetry({ code, retryCount: rc, anchor, lastAttemptAt });
+            if (d.action === "retry") {
+              expect(["Sat", "Sun", "Mon"]).not.toContain(madridWd(d.nextRetryAt));
+              // y siempre respeta el mínimo de 24h
+              expect(d.nextRetryAt.getTime()).toBeGreaterThanOrEqual(lastAttemptAt.getTime() + 24 * 3600 * 1000);
+              checked++;
+            }
+          }
+        }
       }
     }
+    expect(checked).toBeGreaterThan(500); // el barrido realmente evaluó reintentos
   });
 
   it("técnico repetido se comporta como 190 (calendario) desde el 2º intento", () => {
