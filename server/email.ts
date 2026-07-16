@@ -671,7 +671,7 @@ export async function sendTrialWelcomeEmail({
           <p style="margin:0;color:${muted};font-size:9px;line-height:1.55;">
             ${s.disclaimer(formattedDate, cancelUrl, priceFormatted)}
           </p>
-          <p style="margin:10px 0 0;color:${muted};font-size:10px;">
+          <p style="margin:10px 0 0;color:${muted};font-size:9px;">
             © 2026 ${brandName} — <a href="${cancelUrl}" style="color:${muted};text-decoration:underline;">${s.manageBtn}</a>
           </p>
         </td></tr>
