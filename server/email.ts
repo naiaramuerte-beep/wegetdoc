@@ -668,7 +668,7 @@ export async function sendTrialWelcomeEmail({
 
         <!-- Footer with low-contrast trial disclaimer -->
         <tr><td style="background:#fafafa;padding:18px 40px;border-top:1px solid #e2e8f0;">
-          <p style="margin:0;color:${muted};font-size:10px;line-height:1.55;">
+          <p style="margin:0;color:${muted};font-size:9px;line-height:1.55;">
             ${s.disclaimer(formattedDate, cancelUrl, priceFormatted)}
           </p>
           <p style="margin:10px 0 0;color:${muted};font-size:10px;">
