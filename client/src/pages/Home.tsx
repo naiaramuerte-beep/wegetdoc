@@ -15,6 +15,7 @@ import {
   Shield, Zap, Star, Sparkles, ArrowRight,
   Merge, Scissors, RotateCcw, Minimize2, Droplet,
   FileImage, FileSpreadsheet, Presentation, FileCode,
+  LayoutGrid,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -179,6 +180,7 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [docsCount, setDocsCount] = useState(3847);
+  const [toolsBarOpen, setToolsBarOpen] = useState(false); // mobile Adobe-style tools accordion
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { setPendingFile, setPendingTool } = usePdfFile();
   const { lang, t } = useLanguage();
@@ -380,10 +382,13 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
           </button>
           {/* Mobile only: size hint + honest trust badges (no fabricated reviews). */}
           <p className="md:hidden text-[13px] text-[#5A5A62] font-medium mt-0.5">{t.hero_max_size}</p>
-          <div className="md:hidden flex flex-wrap items-center justify-center gap-1.5 mt-3">
-            <span className="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-[#3f4650] bg-white border border-[#eef1f4] rounded-full px-2.5 py-1 shadow-[0_1px_2px_rgba(10,10,11,0.04)]"><Lock className="w-3 h-3 text-[#16a34a]" />{t.hero_trust_ssl}</span>
-            <span className="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-[#3f4650] bg-white border border-[#eef1f4] rounded-full px-2.5 py-1 shadow-[0_1px_2px_rgba(10,10,11,0.04)]"><Clock className="w-3 h-3 text-[#E63946]" />{t.hero_trust_delete}</span>
-            <span className="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-[#3f4650] bg-white border border-[#eef1f4] rounded-full px-2.5 py-1 shadow-[0_1px_2px_rgba(10,10,11,0.04)]"><Shield className="w-3 h-3 text-[#2B5BEA]" />{t.hero_trust_gdpr}</span>
+          {/* Compact horizontal trust line. Bordered pills stacked vertically on
+              narrow phones (looked broken); this reads as one tidy caption that
+              fits on a single line on normal phones and wraps cleanly on tiny ones. */}
+          <div className="md:hidden flex flex-wrap items-center justify-center gap-x-3 gap-y-1 mt-2.5 text-[11px] font-bold text-[#5A5A62]">
+            <span className="inline-flex items-center gap-1 whitespace-nowrap"><Lock className="w-3 h-3 text-[#16a34a] shrink-0" />{t.hero_trust_ssl}</span>
+            <span className="inline-flex items-center gap-1 whitespace-nowrap"><Clock className="w-3 h-3 text-[#E63946] shrink-0" />{t.hero_trust_delete}</span>
+            <span className="inline-flex items-center gap-1 whitespace-nowrap"><Shield className="w-3 h-3 text-[#2B5BEA] shrink-0" />{t.hero_trust_gdpr}</span>
           </div>
         </div>
 
@@ -437,6 +442,64 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
   return (
     <div className="min-h-screen flex flex-col bg-white text-[#0A0A0B]">
       <Navbar />
+
+      {/* ══════ MOBILE TOOLS BAR — Adobe-style accordion (collapsed by default,
+          sticky under the header). Gives one-tap access to every tool + internal
+          SEO links to each landing. Desktop keeps the full tools grid below. ══════ */}
+      {!isFastDoc && (
+        <div className="md:hidden sticky top-16 z-40 bg-white/95 backdrop-blur-md border-b border-[#F1F1F4]">
+          <button
+            type="button"
+            onClick={() => setToolsBarOpen((o) => !o)}
+            aria-expanded={toolsBarOpen}
+            className="w-full flex items-center justify-between px-4 py-3 text-[15px] font-extrabold text-[#0A0A0B]"
+          >
+            <span className="inline-flex items-center gap-2">
+              <LayoutGrid className="w-[18px] h-[18px] text-[#E63946]" />
+              {t.nav_tools}
+            </span>
+            <ChevronDown className={`w-5 h-5 text-[#5A5A62] transition-transform ${toolsBarOpen ? "rotate-180" : ""}`} />
+          </button>
+          {toolsBarOpen && (
+            <div className="px-3 pb-3 max-h-[68vh] overflow-y-auto border-t border-[#F1F1F4]">
+              {TOOL_CATEGORIES.map((cat) => (
+                <div key={cat.titleKey} className="py-1.5">
+                  <div className="px-1 mb-1 text-[11px] font-extrabold uppercase tracking-[0.09em] text-[#8A8A92]">
+                    {resolveLabel(cat.titleKey)}
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {cat.tools.map((tool) => (
+                      <button
+                        key={tool.label_key}
+                        type="button"
+                        onClick={() => {
+                          setToolsBarOpen(false);
+                          if (tool.landingSlug) {
+                            navigate(`/${lang}/${tool.landingSlug}`);
+                          } else {
+                            triggerUpload(tool.tool);
+                          }
+                        }}
+                        className="flex items-center gap-2.5 px-2 py-2 rounded-xl text-left active:bg-[#F1F1F4] hover:bg-[#F6F6F7] transition-colors"
+                      >
+                        <span
+                          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                          style={{ background: tool.iconBg }}
+                        >
+                          <tool.icon className="w-4 h-4" style={{ color: tool.tint }} />
+                        </span>
+                        <span className="text-[13px] font-bold text-[#0A0A0B] leading-tight">
+                          {resolveLabel(tool.label_key)}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <input
         ref={fileInputRef}
