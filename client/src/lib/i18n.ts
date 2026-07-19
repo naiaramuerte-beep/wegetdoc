@@ -813,7 +813,7 @@ export const translations: Translations = {
     hero_upload_mobile_lead: "Sube tu documento",
     hero_upload_device: "Subir desde tu dispositivo",
     hero_trust_ssl: "SSL 256-bit",
-    hero_trust_delete: "Borrado en 1h",
+    hero_trust_delete: "Se borran en 1h",
     hero_trust_gdpr: "RGPD & eIDAS",
     nav_tools: "Herramientas",
     hero_pitch: "Edita, convierte, firma y protege tus PDF en segundos, sin instalar nada.",
