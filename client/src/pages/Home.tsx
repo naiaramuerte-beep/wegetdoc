@@ -11,7 +11,7 @@ import { flushSync } from "react-dom";
 import { useLocation } from "wouter";
 import {
   FileText, PenTool, MessageSquare, Type, Image, Lock,
-  ChevronDown, Upload, Edit3, Cloud, RefreshCw, Clock,
+  ChevronDown, Upload, Edit3, Cloud, RefreshCw,
   Shield, Zap, Star, Sparkles, ArrowRight,
   Merge, Scissors, RotateCcw, Minimize2, Droplet,
   FileImage, FileSpreadsheet, Presentation, FileCode,
@@ -382,13 +382,11 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
           </button>
           {/* Mobile only: size hint + honest trust badges (no fabricated reviews). */}
           <p className="md:hidden text-[13px] text-[#5A5A62] font-medium mt-0.5">{t.hero_max_size}</p>
-          {/* Compact horizontal trust line. Bordered pills stacked vertically on
-              narrow phones (looked broken); this reads as one tidy caption that
-              fits on a single line on normal phones and wraps cleanly on tiny ones. */}
-          <div className="md:hidden flex flex-wrap items-center justify-center gap-x-3 gap-y-1 mt-2.5 text-[11px] font-bold text-[#5A5A62]">
-            <span className="inline-flex items-center gap-1 whitespace-nowrap"><Lock className="w-3 h-3 text-[#16a34a] shrink-0" />{t.hero_trust_ssl}</span>
-            <span className="inline-flex items-center gap-1 whitespace-nowrap"><Clock className="w-3 h-3 text-[#E63946] shrink-0" />{t.hero_trust_delete}</span>
-            <span className="inline-flex items-center gap-1 whitespace-nowrap"><Shield className="w-3 h-3 text-[#2B5BEA] shrink-0" />{t.hero_trust_gdpr}</span>
+          {/* Two clear trust badges (PDFServices-style): SSL + files private.
+              Simpler and clearer than three cramped pills; both green = "safe". */}
+          <div className="md:hidden flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 mt-3 text-[12px] font-bold text-[#3f4650]">
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><Shield className="w-4 h-4 text-[#16a34a] shrink-0" />{t.hero_trust_ssl}</span>
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><Lock className="w-4 h-4 text-[#16a34a] shrink-0" />{t.hero_trust_delete}</span>
           </div>
         </div>
 
