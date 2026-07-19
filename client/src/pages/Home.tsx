@@ -11,7 +11,7 @@ import { flushSync } from "react-dom";
 import { useLocation } from "wouter";
 import {
   FileText, PenTool, MessageSquare, Type, Image, Lock,
-  ChevronDown, Upload, Edit3, Cloud, RefreshCw,
+  ChevronDown, Upload, Edit3, Cloud, RefreshCw, Clock,
   Shield, Zap, Star, Sparkles, ArrowRight,
   Merge, Scissors, RotateCcw, Minimize2, Droplet,
   FileImage, FileSpreadsheet, Presentation, FileCode,
@@ -362,7 +362,10 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
           }}
         >
           {/* Desktop: "Arrastra … o [Subir archivo]" (drag works there).
-              Mobile: no drag — a lead line + a full-width "desde tu dispositivo" button. */}
+              Mobile: no drag — icon + lead + full-width button + size + trust badges. */}
+          <div className="md:hidden w-12 h-12 rounded-2xl flex items-center justify-center mb-1" style={{ background: "#FDECEE" }}>
+            <Upload className="w-6 h-6" style={{ color: ACCENT }} />
+          </div>
           <strong className="hidden md:inline text-[15px] font-bold text-[#0A0A0B]">{t.hero_drag_here}</strong>
           <span className="hidden md:inline text-[15px] text-[#1A1A1C] font-medium">{t.hero_or}</span>
           <strong className="md:hidden text-[16px] font-bold text-[#0A0A0B]">{t.hero_upload_mobile_lead}</strong>
@@ -375,6 +378,13 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
             <span className="md:hidden">{t.hero_upload_device}</span>
             <span className="hidden md:inline">{t.hero_upload_btn}</span>
           </button>
+          {/* Mobile only: size hint + honest trust badges (no fabricated reviews). */}
+          <p className="md:hidden text-[13px] text-[#5A5A62] font-medium mt-0.5">{t.hero_max_size}</p>
+          <div className="md:hidden flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 mt-2">
+            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#3f4650]"><Lock className="w-3.5 h-3.5 text-[#16a34a]" />{t.hero_trust_ssl}</span>
+            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#3f4650]"><Clock className="w-3.5 h-3.5 text-[#E63946]" />{t.hero_trust_delete}</span>
+            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#3f4650]"><Shield className="w-3.5 h-3.5 text-[#2B5BEA]" />{t.hero_trust_gdpr}</span>
+          </div>
         </div>
 
         {withTabs && (
