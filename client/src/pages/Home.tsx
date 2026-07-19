@@ -506,16 +506,51 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
       {!isFastDoc && (
         <section className="pb-14">
           <div className="container">
-            <div className="max-w-[760px] mx-auto grid grid-cols-1 sm:grid-cols-3 gap-0">
+            <div className="max-w-[760px] mx-auto grid grid-cols-3 gap-0">
               {[
                 { big: docsCount.toLocaleString(), label: t.hero_social_pdfs, emoji: "📄" },
                 { big: "12M+", label: t.hero_social_users, emoji: "👥" },
                 { big: "4.8 ★", label: t.hero_social_rating, emoji: "🏆" },
               ].map((s, i) => (
-                <div key={i} className={`text-center px-4 py-2 ${i > 0 ? "sm:border-l sm:border-[#E8E8EC]" : ""}`}>
-                  <div className="text-2xl mb-2">{s.emoji}</div>
-                  <div className="text-[28px] font-extrabold tracking-[-0.02em] text-[#0A0A0B] leading-none">{s.big}</div>
-                  <div className="text-xs text-[#5A5A62] mt-2">{s.label}</div>
+                <div key={i} className={`text-center px-1.5 py-2 sm:px-4 ${i > 0 ? "border-l border-[#E8E8EC]" : ""}`}>
+                  <div className="text-xl sm:text-2xl mb-1.5 sm:mb-2">{s.emoji}</div>
+                  <div className="text-[19px] sm:text-[28px] font-extrabold tracking-[-0.02em] text-[#0A0A0B] leading-none">{s.big}</div>
+                  <div className="text-[11px] sm:text-xs text-[#5A5A62] mt-1.5 sm:mt-2 leading-tight">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ══════ HOW IT WORKS (kept for #how-it-works anchor) ══════ */}
+      {!isFastDoc && (
+        <section id="how-it-works" className="py-14 md:py-20">
+          <div className="container">
+            <div className="text-center mb-10 md:mb-14">
+              <h2
+                className="font-extrabold tracking-[-0.025em] leading-[1.1] text-[#0A0A0B] mb-3"
+                style={{ fontSize: "clamp(32px, 4vw, 42px)" }}
+              >
+                {t.how_title}
+              </h2>
+              <p className="text-base text-[#5A5A62]">{t.how_subtitle}</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+              {[
+                { n: 1, icon: Upload, title: t.how_step1_title, desc: t.how_step1_desc },
+                { n: 2, icon: Edit3,  title: t.how_step2_title, desc: t.how_step2_desc },
+                { n: 3, icon: Cloud,  title: t.how_step3_title, desc: t.how_step3_desc },
+              ].map((s) => (
+                <div key={s.n} className="text-center px-4">
+                  <div className="w-12 h-12 rounded-full bg-[#0A0A0B] text-white text-sm font-bold flex items-center justify-center mx-auto mb-4 ring-4 ring-[#FDECEE]">
+                    {s.n}
+                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-[#F6F6F7] flex items-center justify-center mx-auto mb-3">
+                    <s.icon className="w-5 h-5 text-[#0A0A0B]" />
+                  </div>
+                  <h3 className="text-base font-bold text-[#0A0A0B] mb-2">{s.title}</h3>
+                  <p className="text-sm text-[#5A5A62] leading-relaxed">{s.desc}</p>
                 </div>
               ))}
             </div>
@@ -590,41 +625,6 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
           </div>
         </div>
       </section>
-
-      {/* ══════ HOW IT WORKS (kept for #how-it-works anchor) ══════ */}
-      {!isFastDoc && (
-        <section id="how-it-works" className="py-20">
-          <div className="container">
-            <div className="text-center mb-14">
-              <h2
-                className="font-extrabold tracking-[-0.025em] leading-[1.1] text-[#0A0A0B] mb-3"
-                style={{ fontSize: "clamp(32px, 4vw, 42px)" }}
-              >
-                {t.how_title}
-              </h2>
-              <p className="text-base text-[#5A5A62]">{t.how_subtitle}</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-              {[
-                { n: 1, icon: Upload, title: t.how_step1_title, desc: t.how_step1_desc },
-                { n: 2, icon: Edit3,  title: t.how_step2_title, desc: t.how_step2_desc },
-                { n: 3, icon: Cloud,  title: t.how_step3_title, desc: t.how_step3_desc },
-              ].map((s) => (
-                <div key={s.n} className="text-center px-4">
-                  <div className="w-12 h-12 rounded-full bg-[#0A0A0B] text-white text-sm font-bold flex items-center justify-center mx-auto mb-4 ring-4 ring-[#FDECEE]">
-                    {s.n}
-                  </div>
-                  <div className="w-12 h-12 rounded-2xl bg-[#F6F6F7] flex items-center justify-center mx-auto mb-3">
-                    <s.icon className="w-5 h-5 text-[#0A0A0B]" />
-                  </div>
-                  <h3 className="text-base font-bold text-[#0A0A0B] mb-2">{s.title}</h3>
-                  <p className="text-sm text-[#5A5A62] leading-relaxed">{s.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* ══════ TESTIMONIALS — 3 cards in bundle aesthetic ══════ */}
       {!isFastDoc && (
