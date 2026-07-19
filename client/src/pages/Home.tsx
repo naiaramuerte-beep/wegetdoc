@@ -361,15 +361,19 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
             minHeight: 140,
           }}
         >
-          <strong className="text-[15px] font-bold text-[#0A0A0B]">{t.hero_drag_here}</strong>
-          <span className="text-[15px] text-[#1A1A1C] font-medium">{t.hero_or}</span>
+          {/* Desktop: "Arrastra … o [Subir archivo]" (drag works there).
+              Mobile: no drag — a lead line + a full-width "desde tu dispositivo" button. */}
+          <strong className="hidden md:inline text-[15px] font-bold text-[#0A0A0B]">{t.hero_drag_here}</strong>
+          <span className="hidden md:inline text-[15px] text-[#1A1A1C] font-medium">{t.hero_or}</span>
+          <strong className="md:hidden text-[16px] font-bold text-[#0A0A0B]">{t.hero_upload_mobile_lead}</strong>
           <button
             onClick={(e) => { e.stopPropagation(); triggerUpload(TAB_TO_TOOL[activeTab]); }}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#E63946] text-white text-sm font-bold border border-[#E63946] shadow-[0_6px_16px_-6px_rgba(230,57,70,0.55)] hover:bg-[#C72738] hover:border-[#C72738] hover:shadow-[0_10px_24px_-8px_rgba(230,57,70,0.65)] hover:-translate-y-px transition-all"
+            className="flex md:inline-flex w-full md:w-auto items-center justify-center gap-2 px-5 py-4 md:py-3 rounded-xl bg-[#E63946] text-white text-base md:text-sm font-bold border border-[#E63946] shadow-[0_6px_16px_-6px_rgba(230,57,70,0.55)] hover:bg-[#C72738] hover:border-[#C72738] hover:shadow-[0_10px_24px_-8px_rgba(230,57,70,0.65)] hover:-translate-y-px transition-all"
             type="button"
           >
-            <Upload className="w-4 h-4" />
-            {t.hero_upload_btn}
+            <Upload className="w-5 h-5 md:w-4 md:h-4" />
+            <span className="md:hidden">{t.hero_upload_device}</span>
+            <span className="hidden md:inline">{t.hero_upload_btn}</span>
           </button>
         </div>
 
@@ -425,7 +429,7 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
       />
 
       {/* ══════ HERO — bundle variant A (centered upload) ══════ */}
-      <section className="relative pt-16 md:pt-[72px] pb-20 overflow-hidden">
+      <section className="relative pt-6 md:pt-[72px] pb-20 overflow-hidden">
         <div
           className="absolute inset-0 z-0 pointer-events-none"
           style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%, #F6F6F7 0%, transparent 70%)" }}
@@ -448,7 +452,7 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
               for the Google Ads human reviewer. Every other landing string was
               rewritten to positive, keyword-free copy so the classifier bot
               stops scoring the page as downloadable desktop software. */}
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 mb-4 text-[13px] md:text-sm font-semibold">
+          <div className="hidden md:flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 mb-4 text-[13px] md:text-sm font-semibold">
             <span className="inline-flex items-center gap-1.5 text-[#0A0A0B]">
               <span className="text-[#16a34a]">✓</span> {t.hero_no_download}
             </span>
