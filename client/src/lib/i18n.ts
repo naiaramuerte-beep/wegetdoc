@@ -58,6 +58,7 @@ export type TranslationKeys = {
   hero_trust_ssl: string;
   hero_trust_delete: string;
   hero_trust_gdpr: string;
+  hero_pitch: string;
   hero_max_size: string;
   upload_too_large: string;
   hero_cloud_badge: string;
@@ -813,6 +814,7 @@ export const translations: Translations = {
     hero_trust_ssl: "SSL 256-bit",
     hero_trust_delete: "Se eliminan en 1h",
     hero_trust_gdpr: "RGPD & eIDAS",
+    hero_pitch: "Edita, convierte, firma y protege tus PDF en segundos, sin instalar nada.",
     hero_or: "o",
     hero_max_size: "Admitimos archivos de hasta 100 MB",
     upload_too_large: "Este archivo pesa {size} MB y supera el límite de 100 MB. Elige uno más pequeño.",
@@ -1984,6 +1986,7 @@ export const translations: Translations = {
     hero_trust_ssl: "SSL 256-bit",
     hero_trust_delete: "Deleted in 1h",
     hero_trust_gdpr: "GDPR & eIDAS",
+    hero_pitch: "Edit, convert, sign and protect your PDFs in seconds — no install needed.",
     hero_or: "or",
     hero_max_size: "Accepts files up to 100 MB",
     upload_too_large: "This file is {size} MB and exceeds the 100 MB limit. Please choose a smaller one.",
@@ -3155,6 +3158,7 @@ export const translations: Translations = {
     hero_trust_ssl: "SSL 256-bit",
     hero_trust_delete: "Supprimés en 1h",
     hero_trust_gdpr: "RGPD & eIDAS",
+    hero_pitch: "Modifie, convertis, signe et protège tes PDF en quelques secondes, sans rien installer.",
     hero_or: "ou",
     hero_max_size: "Fichiers jusqu'à 100 Mo",
     upload_too_large: "Ce fichier fait {size} Mo et dépasse la limite de 100 Mo. Choisissez-en un plus petit.",
@@ -4057,6 +4061,7 @@ export const translations: Translations = {
     hero_trust_ssl: "SSL 256-bit",
     hero_trust_delete: "In 1 Std. gelöscht",
     hero_trust_gdpr: "DSGVO & eIDAS",
+    hero_pitch: "Bearbeite, konvertiere, signiere und schütze deine PDFs in Sekunden – ohne Installation.",
     hero_or: "oder",
     hero_max_size: "Maximale Dateigröße: 100 MB",
     upload_too_large: "Diese Datei ist {size} MB groß und überschreitet das Limit von 100 MB. Bitte wähle eine kleinere.",
@@ -4959,6 +4964,7 @@ export const translations: Translations = {
     hero_trust_ssl: "SSL 256-bit",
     hero_trust_delete: "Eliminados em 1h",
     hero_trust_gdpr: "RGPD & eIDAS",
+    hero_pitch: "Edita, converte, assina e protege os teus PDF em segundos, sem instalar nada.",
     hero_or: "ou",
     hero_max_size: "Arquivos de até 100 MB",
     upload_too_large: "Este ficheiro tem {size} MB e ultrapassa o limite de 100 MB. Escolhe um mais pequeno.",
@@ -5837,6 +5843,7 @@ export const translations: Translations = {
     hero_trust_ssl: "SSL 256-bit",
     hero_trust_delete: "Eliminati in 1h",
     hero_trust_gdpr: "GDPR & eIDAS",
+    hero_pitch: "Modifica, converti, firma e proteggi i tuoi PDF in pochi secondi, senza installare nulla.",
     hero_or: "o",
     hero_max_size: "Fino a 100 MB",
     upload_too_large: "Questo file è di {size} MB e supera il limite di 100 MB. Scegline uno più piccolo.",
@@ -6715,6 +6722,7 @@ export const translations: Translations = {
     hero_trust_ssl: "SSL 256-bit",
     hero_trust_delete: "Verwijderd in 1u",
     hero_trust_gdpr: "AVG & eIDAS",
+    hero_pitch: "Bewerk, converteer, onderteken en beveilig je PDF's in seconden — zonder installatie.",
     hero_or: "of",
     hero_max_size: "Maximaal 100 MB",
     upload_too_large: "Dit bestand is {size} MB en overschrijdt de limiet van 100 MB. Kies een kleiner bestand.",
@@ -7593,6 +7601,7 @@ export const translations: Translations = {
     hero_trust_ssl: "SSL 256-bit",
     hero_trust_delete: "Usuwane w 1h",
     hero_trust_gdpr: "RODO & eIDAS",
+    hero_pitch: "Edytuj, konwertuj, podpisuj i chroń swoje PDF-y w kilka sekund, bez instalacji.",
     hero_or: "lub",
     hero_max_size: "Do 100 MB",
     upload_too_large: "Ten plik ma {size} MB i przekracza limit 100 MB. Wybierz mniejszy.",
@@ -8471,6 +8480,7 @@ export const translations: Translations = {
     hero_trust_ssl: "SSL 256-bit",
     hero_trust_delete: "Удаляются за 1ч",
     hero_trust_gdpr: "GDPR & eIDAS",
+    hero_pitch: "Редактируйте, конвертируйте, подписывайте и защищайте PDF за секунды — без установки.",
     hero_or: "либо",
     hero_max_size: "Максимум 100 МБ",
     upload_too_large: "Этот файл весит {size} МБ и превышает лимит в 100 МБ. Выберите файл поменьше.",
@@ -9349,6 +9359,7 @@ export const translations: Translations = {
     hero_trust_ssl: "SSL 256-bit",
     hero_trust_delete: "Видаляються за 1 год",
     hero_trust_gdpr: "GDPR & eIDAS",
+    hero_pitch: "Редагуйте, конвертуйте, підписуйте та захищайте PDF за секунди — без встановлення.",
     hero_or: "або",
     hero_max_size: "Файли до 100 МБ",
     upload_too_large: "Цей файл важить {size} МБ і перевищує ліміт у 100 МБ. Оберіть менший.",
@@ -10516,6 +10527,7 @@ export const translations: Translations = {
     hero_trust_ssl: "SSL 256-bit",
     hero_trust_delete: "Șterse în 1h",
     hero_trust_gdpr: "GDPR & eIDAS",
+    hero_pitch: "Editează, convertește, semnează și protejează PDF-urile în câteva secunde, fără instalare.",
     hero_or: "sau",
     hero_max_size: "Fișiere până la 100 MB",
     upload_too_large: "Acest fișier are {size} MB și depășește limita de 100 MB. Alege unul mai mic.",
@@ -11687,6 +11699,7 @@ export const translations: Translations = {
     hero_trust_ssl: "SSL 256 位",
     hero_trust_delete: "1 小时内删除",
     hero_trust_gdpr: "GDPR 与 eIDAS",
+    hero_pitch: "几秒钟内编辑、转换、签署和保护你的 PDF，无需安装。",
     hero_or: "或",
     hero_max_size: "最大100 MB",
     upload_too_large: "该文件为 {size} MB，超过了 100 MB 的上限。请选择更小的文件。",

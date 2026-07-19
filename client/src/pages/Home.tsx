@@ -380,12 +380,20 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
           </button>
           {/* Mobile only: size hint + honest trust badges (no fabricated reviews). */}
           <p className="md:hidden text-[13px] text-[#5A5A62] font-medium mt-0.5">{t.hero_max_size}</p>
-          <div className="md:hidden flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 mt-2">
-            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#3f4650]"><Lock className="w-3.5 h-3.5 text-[#16a34a]" />{t.hero_trust_ssl}</span>
-            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#3f4650]"><Clock className="w-3.5 h-3.5 text-[#E63946]" />{t.hero_trust_delete}</span>
-            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#3f4650]"><Shield className="w-3.5 h-3.5 text-[#2B5BEA]" />{t.hero_trust_gdpr}</span>
+          <div className="md:hidden flex flex-wrap items-center justify-center gap-1.5 mt-3">
+            <span className="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-[#3f4650] bg-white border border-[#eef1f4] rounded-full px-2.5 py-1 shadow-[0_1px_2px_rgba(10,10,11,0.04)]"><Lock className="w-3 h-3 text-[#16a34a]" />{t.hero_trust_ssl}</span>
+            <span className="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-[#3f4650] bg-white border border-[#eef1f4] rounded-full px-2.5 py-1 shadow-[0_1px_2px_rgba(10,10,11,0.04)]"><Clock className="w-3 h-3 text-[#E63946]" />{t.hero_trust_delete}</span>
+            <span className="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-[#3f4650] bg-white border border-[#eef1f4] rounded-full px-2.5 py-1 shadow-[0_1px_2px_rgba(10,10,11,0.04)]"><Shield className="w-3 h-3 text-[#2B5BEA]" />{t.hero_trust_gdpr}</span>
           </div>
         </div>
+
+        {withTabs && (
+          <div className="md:hidden flex flex-wrap justify-center gap-1.5 mt-4">
+            {([["PDF", "#E63946", "#FDECEE"], ["Word", "#2B5BEA", "#E8EEFE"], ["Excel", "#1E9E63", "#E4F5EC"], ["PowerPoint", "#E8710A", "#FDEEDD"], ["JPG", "#8E24AA", "#F3E6F8"]] as const).map(([l, c, bg]) => (
+              <span key={l} className="text-[11.5px] font-extrabold px-2.5 py-1 rounded-lg" style={{ color: c, background: bg }}>{l}</span>
+            ))}
+          </div>
+        )}
 
         {withTabs && (
           <div className="mt-5 -mx-1 sm:mx-0">
@@ -457,6 +465,8 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
               <>{t.hero_title_1} <SquiggleUnderline>{t.hero_title_2}</SquiggleUnderline></>
             )}
           </h1>
+          {/* Mobile pitch line (desktop keeps the ✓ benefit lines below). */}
+          <p className="md:hidden text-[15px] leading-relaxed text-[#5A5A62] max-w-[340px] mx-auto mb-4">{t.hero_pitch}</p>
           {/* Ad-compliance reassurance. This is the SINGLE explicit "web app —
               no download/installation" signal on the page, kept above the fold
               for the Google Ads human reviewer. Every other landing string was
