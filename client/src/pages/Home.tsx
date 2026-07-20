@@ -662,10 +662,10 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
                             <span className="w-2 h-2 rounded-full bg-[#E4E4E7]" />
                           </span>
                         </div>
-                        <div className="h-[176px] p-3 flex items-center justify-center bg-white">
+                        <div className="h-[188px] px-5 py-4 flex items-center justify-center bg-white">
                           {/* STEP 1 — upload box */}
                           {n === 1 && (
-                            <div className="w-full rounded-xl border-[1.5px] border-dashed border-[#F2C1C6] py-6 px-3 flex flex-col items-center gap-2" style={{ background: "linear-gradient(180deg,#FEF6F7,#FFFBFB)" }}>
+                            <div className="w-full rounded-xl border-[1.5px] border-dashed border-[#F2C1C6] py-4 px-3 flex flex-col items-center gap-1.5" style={{ background: "linear-gradient(180deg,#FEF6F7,#FFFBFB)" }}>
                               <div className="w-10 h-10 rounded-xl bg-[#FDECEE] flex items-center justify-center"><Upload className="w-5 h-5 text-[#E63946]" /></div>
                               <div className="text-[11px] font-extrabold text-[#0A0A0B] text-center leading-tight px-1">{t.hero_upload_mobile_lead}</div>
                               <div className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#E63946] text-white text-[10px] font-bold shadow-[0_6px_14px_-6px_rgba(230,57,70,0.6)] whitespace-nowrap"><Upload className="w-3 h-3" />{t.hero_upload_btn}</div>
