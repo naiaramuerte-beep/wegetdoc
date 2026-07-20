@@ -391,9 +391,9 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
         </div>
 
         {withTabs && (
-          <div className="md:hidden flex flex-wrap justify-center gap-1.5 mt-4">
-            {([["PDF", "#E63946", "#FDECEE"], ["Word", "#2B5BEA", "#E8EEFE"], ["Excel", "#1E9E63", "#E4F5EC"], ["PowerPoint", "#E8710A", "#FDEEDD"], ["JPG", "#8E24AA", "#F3E6F8"]] as const).map(([l, c, bg]) => (
-              <span key={l} className="text-[11.5px] font-extrabold px-2.5 py-1 rounded-lg" style={{ color: c, background: bg }}>{l}</span>
+          <div className="md:hidden flex flex-nowrap justify-center items-center gap-1.5 mt-4">
+            {([["PDF", "#E5252A", "#FDE7E8"], ["Word", "#2B579A", "#EAF0F8"], ["Excel", "#217346", "#E6F2EC"], ["PowerPoint", "#C43E1C", "#FBEAE4"], ["JPG", "#8E24AA", "#F3E6F8"]] as const).map(([l, c, bg]) => (
+              <span key={l} className="text-[10px] font-extrabold px-2 py-1 rounded-md whitespace-nowrap" style={{ color: c, background: bg }}>{l}</span>
             ))}
           </div>
         )}
@@ -651,12 +651,16 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
                         {n}
                       </span>
                       <div className="rounded-2xl border border-[#E8E8EC] bg-white overflow-hidden shadow-[0_20px_44px_-22px_rgba(10,10,11,0.28)]">
-                        {/* faux browser bar */}
-                        <div className="flex items-center gap-1.5 px-3 py-2 bg-[#FAFAFB] border-b border-[#F1F1F4]">
-                          <span className="w-2 h-2 rounded-full bg-[#E4E4E7]" />
-                          <span className="w-2 h-2 rounded-full bg-[#E4E4E7]" />
-                          <span className="w-2 h-2 rounded-full bg-[#E4E4E7]" />
-                          <span className="ml-2 flex-1 text-center text-[9px] font-bold tracking-tight text-[#8A8A92] truncate">editorpdf.net</span>
+                        {/* faux browser bar — window dots on the RIGHT so the step
+                            number badge (top-left) doesn't overlap them */}
+                        <div className="flex items-center px-3 py-2 bg-[#FAFAFB] border-b border-[#F1F1F4]">
+                          <span className="w-9 flex-shrink-0" aria-hidden="true" />
+                          <span className="flex-1 text-center text-[9px] font-bold tracking-tight text-[#8A8A92] truncate">editorpdf.net</span>
+                          <span className="flex items-center gap-1.5 flex-shrink-0">
+                            <span className="w-2 h-2 rounded-full bg-[#E4E4E7]" />
+                            <span className="w-2 h-2 rounded-full bg-[#E4E4E7]" />
+                            <span className="w-2 h-2 rounded-full bg-[#E4E4E7]" />
+                          </span>
                         </div>
                         <div className="h-[176px] p-3 flex items-center justify-center bg-white">
                           {/* STEP 1 — upload box */}
