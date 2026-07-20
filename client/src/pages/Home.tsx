@@ -557,15 +557,17 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
       {!isFastDoc && (
         <section className="pb-12 -mt-6">
           <div className="container">
-            <div className="flex items-center justify-center gap-3 flex-wrap">
-              <div className="flex gap-0.5">
-                {[1,2,3,4,5].map(i => (
-                  <Star key={i} className="w-4 h-4 fill-current" style={{ color: i <= 4 ? "#F4A442" : "#E4E4E7" }} />
-                ))}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3 text-center">
+              <div className="flex items-center gap-2">
+                <div className="flex gap-0.5">
+                  {[1,2,3,4,5].map(i => (
+                    <Star key={i} className="w-4 h-4 fill-current" style={{ color: i <= 4 ? "#F4A442" : "#E4E4E7" }} />
+                  ))}
+                </div>
+                <span className="font-bold text-sm text-[#0A0A0B]">4.8</span>
               </div>
-              <span className="font-bold text-sm text-[#0A0A0B]">4.8</span>
-              <span className="text-[#8A8A92] text-sm">·</span>
-              <p className="text-[11px] uppercase tracking-[0.18em] text-[#8A8A92] font-bold">
+              <span className="hidden sm:inline text-[#8A8A92] text-sm">·</span>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-[#8A8A92] font-bold max-w-[300px] sm:max-w-none">
                 {t.testimonials_subtitle}
               </p>
             </div>
