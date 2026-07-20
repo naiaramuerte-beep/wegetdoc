@@ -11,7 +11,7 @@ import { flushSync } from "react-dom";
 import { useLocation } from "wouter";
 import {
   FileText, PenTool, MessageSquare, Type, Image, Lock,
-  ChevronDown, Upload, Edit3, Cloud, RefreshCw,
+  ChevronDown, Upload, Edit3, Cloud, RefreshCw, Download, Check,
   Shield, Zap, Star, Sparkles, ArrowRight,
   Merge, Scissors, RotateCcw, Minimize2, Droplet,
   FileImage, FileSpreadsheet, Presentation, FileCode,
@@ -639,23 +639,78 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
               </h2>
               <p className="text-base text-[#5A5A62]">{t.how_subtitle}</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-              {[
-                { n: 1, icon: Upload, title: t.how_step1_title, desc: t.how_step1_desc },
-                { n: 2, icon: Edit3,  title: t.how_step2_title, desc: t.how_step2_desc },
-                { n: 3, icon: Cloud,  title: t.how_step3_title, desc: t.how_step3_desc },
-              ].map((s) => (
-                <div key={s.n} className="text-center px-4">
-                  <div className="w-12 h-12 rounded-full bg-[#0A0A0B] text-white text-sm font-bold flex items-center justify-center mx-auto mb-4 ring-4 ring-[#FDECEE]">
-                    {s.n}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6 max-w-5xl mx-auto">
+              {[1, 2, 3].map((n) => {
+                const title = n === 1 ? t.how_step1_title : n === 2 ? t.how_step2_title : t.how_step3_title;
+                const desc = n === 1 ? t.how_step1_desc : n === 2 ? t.how_step2_desc : t.how_step3_desc;
+                return (
+                  <div key={n} className="flex flex-col">
+                    {/* ── Faithful UI mockup in a browser frame ── */}
+                    <div className="relative">
+                      <span className="absolute -top-3 left-3 z-10 w-8 h-8 rounded-full bg-[#0A0A0B] text-white text-sm font-bold flex items-center justify-center ring-4 ring-white shadow-[0_4px_12px_-2px_rgba(10,10,11,0.3)]">
+                        {n}
+                      </span>
+                      <div className="rounded-2xl border border-[#E8E8EC] bg-white overflow-hidden shadow-[0_20px_44px_-22px_rgba(10,10,11,0.28)]">
+                        {/* faux browser bar */}
+                        <div className="flex items-center gap-1.5 px-3 py-2 bg-[#FAFAFB] border-b border-[#F1F1F4]">
+                          <span className="w-2 h-2 rounded-full bg-[#E4E4E7]" />
+                          <span className="w-2 h-2 rounded-full bg-[#E4E4E7]" />
+                          <span className="w-2 h-2 rounded-full bg-[#E4E4E7]" />
+                          <span className="ml-2 flex-1 text-center text-[9px] font-bold tracking-tight text-[#8A8A92] truncate">editorpdf.net</span>
+                        </div>
+                        <div className="h-[176px] p-3 flex items-center justify-center bg-white">
+                          {/* STEP 1 — upload box */}
+                          {n === 1 && (
+                            <div className="w-full rounded-xl border-[1.5px] border-dashed border-[#F2C1C6] py-6 px-3 flex flex-col items-center gap-2" style={{ background: "linear-gradient(180deg,#FEF6F7,#FFFBFB)" }}>
+                              <div className="w-10 h-10 rounded-xl bg-[#FDECEE] flex items-center justify-center"><Upload className="w-5 h-5 text-[#E63946]" /></div>
+                              <div className="text-[11px] font-extrabold text-[#0A0A0B]">Sube tu documento</div>
+                              <div className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#E63946] text-white text-[10px] font-bold shadow-[0_6px_14px_-6px_rgba(230,57,70,0.6)]"><Upload className="w-3 h-3" />Subir archivo</div>
+                              <div className="text-[9px] text-[#8A8A92] font-medium">Hasta 100 MB</div>
+                            </div>
+                          )}
+                          {/* STEP 2 — editor: toolbar + page with editable text & signature */}
+                          {n === 2 && (
+                            <div className="w-full h-full flex gap-2">
+                              <div className="flex flex-col gap-1.5 pt-0.5">
+                                {[{ I: Type, on: true }, { I: PenTool, on: false }, { I: Image, on: false }, { I: Droplet, on: false }].map(({ I, on }, i) => (
+                                  <span key={i} className={`w-7 h-7 rounded-lg flex items-center justify-center ${on ? "bg-[#FDECEE]" : "bg-[#F4F4F6]"}`}>
+                                    <I className={`w-3.5 h-3.5 ${on ? "text-[#E63946]" : "text-[#8A8A92]"}`} />
+                                  </span>
+                                ))}
+                              </div>
+                              <div className="flex-1 rounded-md border border-[#E8E8EC] bg-white p-2.5 flex flex-col justify-center">
+                                <div className="h-1.5 w-2/3 rounded bg-[#E4E4E7] mb-2" />
+                                <div className="h-1.5 w-full rounded bg-[#EFEFF1] mb-1.5" />
+                                <div className="inline-flex items-center self-start rounded border border-[#E63946] bg-[#FDECEE]/40 px-1.5 py-0.5 my-0.5">
+                                  <span className="text-[9px] font-semibold text-[#0A0A0B] leading-none">Texto editable</span>
+                                  <span className="w-px h-3 bg-[#E63946] ml-0.5 animate-pulse" />
+                                </div>
+                                <div className="h-1.5 w-5/6 rounded bg-[#EFEFF1] mt-2 mb-1.5" />
+                                <svg viewBox="0 0 90 20" className="w-[70px] h-[16px] mt-0.5" fill="none">
+                                  <path d="M2 14 C 10 4, 16 4, 22 12 S 34 18, 40 8 S 54 2, 62 12 S 78 16, 86 6" stroke="#E63946" strokeWidth="2.2" strokeLinecap="round" />
+                                </svg>
+                              </div>
+                            </div>
+                          )}
+                          {/* STEP 3 — file ready + download */}
+                          {n === 3 && (
+                            <div className="flex flex-col items-center gap-2.5">
+                              <div className="relative">
+                                <div className="w-12 h-14 rounded-lg bg-[#FDECEE] border border-[#F2C1C6] flex items-center justify-center"><FileText className="w-6 h-6 text-[#E63946]" /></div>
+                                <span className="absolute -right-1.5 -bottom-1.5 w-5 h-5 rounded-full bg-[#16a34a] flex items-center justify-center ring-2 ring-white"><Check className="w-3 h-3 text-white" /></span>
+                              </div>
+                              <div className="text-[10px] font-extrabold text-[#0A0A0B]">documento.pdf</div>
+                              <div className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#0A0A0B] text-white text-[10px] font-bold"><Download className="w-3 h-3" />Descargar</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <h3 className="text-base font-bold text-[#0A0A0B] mt-5 mb-1.5 text-center">{title}</h3>
+                    <p className="text-sm text-[#5A5A62] leading-relaxed text-center">{desc}</p>
                   </div>
-                  <div className="w-12 h-12 rounded-2xl bg-[#F6F6F7] flex items-center justify-center mx-auto mb-3">
-                    <s.icon className="w-5 h-5 text-[#0A0A0B]" />
-                  </div>
-                  <h3 className="text-base font-bold text-[#0A0A0B] mb-2">{s.title}</h3>
-                  <p className="text-sm text-[#5A5A62] leading-relaxed">{s.desc}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
