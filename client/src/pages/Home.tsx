@@ -560,9 +560,18 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3 text-center">
               <div className="flex items-center gap-2">
                 <div className="flex gap-0.5">
-                  {[1,2,3,4,5].map(i => (
-                    <Star key={i} className="w-4 h-4 fill-current" style={{ color: i <= 4 ? "#F4A442" : "#E4E4E7" }} />
-                  ))}
+                  {[0,1,2,3,4].map((i) => {
+                    // brand-red stars with precise partial fill for 4.8 (no Trustpilot green)
+                    const fill = Math.max(0, Math.min(1, 4.8 - i));
+                    return (
+                      <span key={i} className="relative inline-block w-4 h-4">
+                        <Star className="w-4 h-4 fill-current text-[#E4E4E7]" />
+                        <span className="absolute inset-0 overflow-hidden" style={{ width: `${fill * 100}%` }}>
+                          <Star className="w-4 h-4 fill-current text-[#E63946]" />
+                        </span>
+                      </span>
+                    );
+                  })}
                 </div>
                 <span className="font-bold text-sm text-[#0A0A0B]">4.8</span>
               </div>
