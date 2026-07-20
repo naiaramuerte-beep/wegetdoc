@@ -924,7 +924,7 @@ export const translations: Translations = {
     how_step1_title: "Sube tu documento",
     how_step1_desc: "Elige o arrastra tu archivo desde cualquier dispositivo. El proceso se realiza completamente en la nube.",
     how_step2_title: "Ajusta a tu medida",
-    how_step2_desc: "Usa nuestras herramientas dentro del navegador: texto, rúbricas, fotos y mucho más.",
+    how_step2_desc: "Usa nuestras herramientas dentro del navegador: texto, firmas, fotos y mucho más.",
     how_step3_title: "Descarga el resultado",
     how_step3_desc: "Tu archivo final estará disponible para guardar con un solo clic.",
     cloud_notice: "EditorPDF funciona al 100% en la nube. Todo se ejecuta en tu navegador y en nuestros servidores protegidos. No es necesario descargar ni configurar ningún programa.",
