@@ -663,9 +663,9 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
                           {n === 1 && (
                             <div className="w-full rounded-xl border-[1.5px] border-dashed border-[#F2C1C6] py-6 px-3 flex flex-col items-center gap-2" style={{ background: "linear-gradient(180deg,#FEF6F7,#FFFBFB)" }}>
                               <div className="w-10 h-10 rounded-xl bg-[#FDECEE] flex items-center justify-center"><Upload className="w-5 h-5 text-[#E63946]" /></div>
-                              <div className="text-[11px] font-extrabold text-[#0A0A0B]">Sube tu documento</div>
-                              <div className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#E63946] text-white text-[10px] font-bold shadow-[0_6px_14px_-6px_rgba(230,57,70,0.6)]"><Upload className="w-3 h-3" />Subir archivo</div>
-                              <div className="text-[9px] text-[#8A8A92] font-medium">Hasta 100 MB</div>
+                              <div className="text-[11px] font-extrabold text-[#0A0A0B] text-center leading-tight px-1">{t.hero_upload_mobile_lead}</div>
+                              <div className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#E63946] text-white text-[10px] font-bold shadow-[0_6px_14px_-6px_rgba(230,57,70,0.6)] whitespace-nowrap"><Upload className="w-3 h-3" />{t.hero_upload_btn}</div>
+                              <div className="text-[9px] text-[#8A8A92] font-medium">100 MB</div>
                             </div>
                           )}
                           {/* STEP 2 — editor: toolbar + page with editable text & signature */}
@@ -682,7 +682,7 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
                                 <div className="h-1.5 w-2/3 rounded bg-[#E4E4E7] mb-2" />
                                 <div className="h-1.5 w-full rounded bg-[#EFEFF1] mb-1.5" />
                                 <div className="inline-flex items-center self-start rounded border border-[#E63946] bg-[#FDECEE]/40 px-1.5 py-0.5 my-0.5">
-                                  <span className="text-[9px] font-semibold text-[#0A0A0B] leading-none">Texto editable</span>
+                                  <span className="text-[9px] font-semibold text-[#0A0A0B] leading-none whitespace-nowrap">{t.how_mock_editable}</span>
                                   <span className="w-px h-3 bg-[#E63946] ml-0.5 animate-pulse" />
                                 </div>
                                 <div className="h-1.5 w-5/6 rounded bg-[#EFEFF1] mt-2 mb-1.5" />
@@ -699,8 +699,8 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
                                 <div className="w-12 h-14 rounded-lg bg-[#FDECEE] border border-[#F2C1C6] flex items-center justify-center"><FileText className="w-6 h-6 text-[#E63946]" /></div>
                                 <span className="absolute -right-1.5 -bottom-1.5 w-5 h-5 rounded-full bg-[#16a34a] flex items-center justify-center ring-2 ring-white"><Check className="w-3 h-3 text-white" /></span>
                               </div>
-                              <div className="text-[10px] font-extrabold text-[#0A0A0B]">documento.pdf</div>
-                              <div className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#0A0A0B] text-white text-[10px] font-bold"><Download className="w-3 h-3" />Descargar</div>
+                              <div className="text-[10px] font-extrabold text-[#0A0A0B]">{t.how_mock_file}</div>
+                              <div className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#0A0A0B] text-white text-[10px] font-bold whitespace-nowrap"><Download className="w-3 h-3" />{t.landing_common_download}</div>
                             </div>
                           )}
                         </div>
