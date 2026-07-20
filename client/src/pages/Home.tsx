@@ -578,15 +578,16 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
               <span className="hidden sm:inline text-[#8A8A92] text-sm">·</span>
               <p className="text-[11px] uppercase tracking-[0.18em] text-[#8A8A92] font-bold max-w-[320px] sm:max-w-none leading-relaxed">
                 {(() => {
-                  // Replace the brand word with the actual logo (icon + wordmark).
-                  // Only ES/IT strings include "EditorPDF"; other languages don't
-                  // mention the brand, so they render unchanged.
+                  // Show the actual logo (icon + wordmark) as a brand signature at
+                  // the end of the trust line, uniformly in every language. ES/IT
+                  // mention "EditorPDF" in the sentence → strip it so it isn't
+                  // duplicated; the other languages just get the logo appended.
                   const sub = t.testimonials_subtitle;
                   const idx = sub.toLowerCase().indexOf("editorpdf");
-                  if (idx === -1) return sub;
+                  const text = (idx === -1 ? sub : sub.slice(0, idx) + sub.slice(idx + 9)).replace(/\s+$/, "");
                   return (
                     <>
-                      {sub.slice(0, idx)}
+                      {text}{" "}
                       <span className="inline-flex items-center gap-1 align-middle normal-case tracking-normal">
                         <svg width="15" height="15" viewBox="0 0 512 512" fill="none" aria-hidden="true" className="flex-shrink-0">
                           <rect x="48" y="48" width="416" height="416" rx="112" fill="#0A0A0B" />
@@ -595,7 +596,6 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
                         </svg>
                         <span className="font-extrabold text-[13px] tracking-[-0.03em] text-[#0A0A0B] leading-none">editorpdf<span className="text-[#E63946]">.net</span></span>
                       </span>
-                      {sub.slice(idx + "editorpdf".length)}
                     </>
                   );
                 })()}
