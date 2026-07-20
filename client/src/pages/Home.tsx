@@ -576,8 +576,29 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
                 <span className="font-bold text-sm text-[#0A0A0B]">4.8</span>
               </div>
               <span className="hidden sm:inline text-[#8A8A92] text-sm">·</span>
-              <p className="text-[11px] uppercase tracking-[0.18em] text-[#8A8A92] font-bold max-w-[300px] sm:max-w-none">
-                {t.testimonials_subtitle}
+              <p className="text-[11px] uppercase tracking-[0.18em] text-[#8A8A92] font-bold max-w-[320px] sm:max-w-none leading-relaxed">
+                {(() => {
+                  // Replace the brand word with the actual logo (icon + wordmark).
+                  // Only ES/IT strings include "EditorPDF"; other languages don't
+                  // mention the brand, so they render unchanged.
+                  const sub = t.testimonials_subtitle;
+                  const idx = sub.toLowerCase().indexOf("editorpdf");
+                  if (idx === -1) return sub;
+                  return (
+                    <>
+                      {sub.slice(0, idx)}
+                      <span className="inline-flex items-center gap-1 align-middle normal-case tracking-normal">
+                        <svg width="15" height="15" viewBox="0 0 512 512" fill="none" aria-hidden="true" className="flex-shrink-0">
+                          <rect x="48" y="48" width="416" height="416" rx="112" fill="#0A0A0B" />
+                          <path d="M176 180v152M176 180h82a50 50 0 010 100h-82" stroke="white" strokeWidth="34" strokeLinecap="round" strokeLinejoin="round" />
+                          <circle cx="342" cy="348" r="32" fill="#E63946" />
+                        </svg>
+                        <span className="font-extrabold text-[13px] tracking-[-0.03em] text-[#0A0A0B] leading-none">editorpdf<span className="text-[#E63946]">.net</span></span>
+                      </span>
+                      {sub.slice(idx + "editorpdf".length)}
+                    </>
+                  );
+                })()}
               </p>
             </div>
           </div>
