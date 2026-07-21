@@ -1389,7 +1389,11 @@ export default function PaywallModal({
       // users abandon thinking it failed. goRedirect always navigates away, so
       // this never gets stuck.
       setGoogleRedirecting(true);
-      let resumeQs = "";
+      // ALWAYS mark resume mode in the return URL. Even if the S3 upload fails
+      // (no tk), the return then still lands in the editor with the paywall
+      // open instead of dumping the user on the home page. When tk IS available
+      // we also restore the edited PDF from it.
+      let resumeQs = "resume=download";
       if (pdfData) {
         // Restore the EDITED (annotated) PDF so the editor reopens showing the
         // user's work — a mobile redirect can't preserve the live annotation
@@ -1410,7 +1414,7 @@ export default function PaywallModal({
           // the URL always comes back (server-controlled), so the edited PDF is
           // restored on return regardless of any storage loss. This is the fix
           // for "vuelve a la home y se pierde lo editado".
-          if (tk) resumeQs = `resume=download&tk=${encodeURIComponent(tk)}&tn=${encodeURIComponent(pdfData.name)}`;
+          if (tk) resumeQs += `&tk=${encodeURIComponent(tk)}&tn=${encodeURIComponent(pdfData.name)}`;
         } catch {}
       } else if (pendingFile) {
         try { await savePdfToSession(pendingFile); } catch {}
@@ -1418,7 +1422,7 @@ export default function PaywallModal({
       setPendingPaywall(true);
       sessionStorage.setItem("cloudpdf_pending_action", "download");
       const sep = returnPath.includes("?") ? "&" : "?";
-      const returnWithResume = resumeQs ? `${returnPath}${sep}${resumeQs}` : returnPath;
+      const returnWithResume = `${returnPath}${sep}${resumeQs}`;
       window.location.href = `/api/auth/google?origin=${encodeURIComponent(window.location.origin)}&returnPath=${encodeURIComponent(returnWithResume)}`;
     };
 

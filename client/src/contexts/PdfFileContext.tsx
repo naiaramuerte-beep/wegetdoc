@@ -69,7 +69,7 @@ export function PdfFileProvider({ children }: { children: ReactNode }) {
       return !!sessionStorage.getItem(SESSION_KEY_PDF) ||
              sessionStorage.getItem(SESSION_KEY_PAYWALL) === "1" ||
              sessionStorage.getItem("cloudpdf_pending_action") === "download" ||
-             (params.get("resume") === "download" && !!params.get("tk"));
+             params.get("resume") === "download";
     } catch {
       return false;
     }
@@ -126,10 +126,15 @@ export function PdfFileProvider({ children }: { children: ReactNode }) {
     // always comes back. If present, restore from it — independent of any storage.
     try {
       const params = new URLSearchParams(window.location.search);
-      if (params.get("resume") === "download" && params.get("tk")) {
-        const tk = params.get("tk")!;
-        const tn = params.get("tn") || tempName || "document.pdf";
-        setPendingEditedPdf({ tempKey: tk, name: tn });
+      if (params.get("resume") === "download") {
+        // Always enter resume mode (paywall open) so EditorPage never falls back
+        // to <Home/> after login. If a tempKey is present, also restore the
+        // edited PDF from S3; if not, at least keep the user in the editor.
+        const tk = params.get("tk");
+        if (tk) {
+          const tn = params.get("tn") || tempName || "document.pdf";
+          setPendingEditedPdf({ tempKey: tk, name: tn });
+        }
         setPendingPaywallState(true);
         sessionStorage.setItem("cloudpdf_pending_action", "download");
         // Strip the resume params so a later refresh doesn't re-trigger the flow.
