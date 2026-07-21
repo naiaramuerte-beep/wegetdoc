@@ -283,6 +283,7 @@ export type TranslationKeys = {
   paywall_create_account: string;
   paywall_sign_up_seconds: string;
   paywall_continue_google: string;
+  paywall_google_connecting: string;
   paywall_continue_email: string;
   paywall_offer_label: string;
   paywall_enter_email: string;
@@ -972,6 +973,7 @@ export const translations: Translations = {
     paywall_create_account: "Crea tu perfil para obtener el documento",
     paywall_sign_up_seconds: "Abre tu cuenta en un instante y elige el plan que más te convenga",
     paywall_continue_google: "Entrar con Google",
+    paywall_google_connecting: "Conectando…",
     paywall_continue_email: "Entrar con Email",
     paywall_offer_label: "Tu archivo por solo",
     paywall_enter_email: "Introduce tu dirección de correo",
@@ -2147,6 +2149,7 @@ export const translations: Translations = {
     paywall_create_account: "Sign up to access your document",
     paywall_sign_up_seconds: "Set up your profile in moments and select your preferred plan",
     paywall_continue_google: "Sign in with Google",
+    paywall_google_connecting: "Connecting…",
     paywall_continue_email: "Sign in with Email",
     paywall_offer_label: "Your file for only",
     paywall_enter_email: "Enter your email",
@@ -3322,6 +3325,7 @@ export const translations: Translations = {
     paywall_create_account: "Inscrivez-vous pour obtenir votre fichier",
     paywall_sign_up_seconds: "Inscrivez-vous en quelques secondes et choisissez un plan",
     paywall_continue_google: "Accéder avec Google",
+    paywall_google_connecting: "Connexion…",
     paywall_continue_email: "Accéder avec Email",
     paywall_offer_label: "Votre PDF pour seulement",
     paywall_enter_email: "Entrez votre email",
@@ -4228,6 +4232,7 @@ export const translations: Translations = {
     paywall_create_account: "Konto erstellen zum Herunterladen",
     paywall_sign_up_seconds: "Registrieren Sie sich in Sekunden und wählen Sie einen Plan",
     paywall_continue_google: "Mit Google fortfahren",
+    paywall_google_connecting: "Verbinden…",
     paywall_continue_email: "Mit E-Mail fortfahren",
     paywall_offer_label: "Ihr PDF für nur",
     paywall_enter_email: "E-Mail eingeben",
@@ -5134,6 +5139,7 @@ export const translations: Translations = {
     paywall_create_account: "Crie uma conta para baixar",
     paywall_sign_up_seconds: "Cadastre-se em segundos e escolha um plano",
     paywall_continue_google: "Continuar com Google",
+    paywall_google_connecting: "A ligar…",
     paywall_continue_email: "Continuar com Email",
     paywall_offer_label: "Seu PDF por apenas",
     paywall_enter_email: "Digite seu email",
@@ -6016,6 +6022,7 @@ export const translations: Translations = {
     paywall_create_account: "Crea un account per scaricare",
     paywall_sign_up_seconds: "Registrati in pochi secondi e scegli un piano",
     paywall_continue_google: "Continua con Google",
+    paywall_google_connecting: "Connessione…",
     paywall_continue_email: "Continua con Email",
     paywall_offer_label: "Il tuo PDF per solo",
     paywall_enter_email: "Inserisci la tua email",
@@ -6898,6 +6905,7 @@ export const translations: Translations = {
     paywall_create_account: "Maak een account aan om te downloaden",
     paywall_sign_up_seconds: "Meld u in seconden aan en kies een plan",
     paywall_continue_google: "Doorgaan met Google",
+    paywall_google_connecting: "Verbinden…",
     paywall_continue_email: "Doorgaan met Email",
     paywall_offer_label: "Uw PDF voor slechts",
     paywall_enter_email: "Voer uw e-mail in",
@@ -7780,6 +7788,7 @@ export const translations: Translations = {
     paywall_create_account: "Utwórz konto, aby pobrać",
     paywall_sign_up_seconds: "Zarejestruj się w kilka sekund i wybierz plan",
     paywall_continue_google: "Kontynuuj z Google",
+    paywall_google_connecting: "Łączenie…",
     paywall_continue_email: "Kontynuuj z Email",
     paywall_offer_label: "Twój PDF za jedyne",
     paywall_enter_email: "Wprowadź swój email",
@@ -8662,6 +8671,7 @@ export const translations: Translations = {
     paywall_create_account: "Создайте аккаунт для загрузки",
     paywall_sign_up_seconds: "Зарегистрируйтесь за несколько секунд и выберите план",
     paywall_continue_google: "Продолжить с Google",
+    paywall_google_connecting: "Подключение…",
     paywall_continue_email: "Продолжить с Email",
     paywall_offer_label: "Ваш PDF всего за",
     paywall_enter_email: "Введите ваш email",
@@ -9544,6 +9554,7 @@ export const translations: Translations = {
     paywall_create_account: "Зареєструйтеся, щоб отримати документ",
     paywall_sign_up_seconds: "Налаштуйте профіль за мить і оберіть план",
     paywall_continue_google: "Увійти через Google",
+    paywall_google_connecting: "З'єднання…",
     paywall_continue_email: "Увійти через e-mail",
     paywall_offer_label: "Ваш файл лише за",
     paywall_enter_email: "Введіть вашу e-mail адресу",
@@ -10715,6 +10726,7 @@ export const translations: Translations = {
     paywall_create_account: "Înregistrează-te pentru a accesa documentul",
     paywall_sign_up_seconds: "Configurează-ți profilul în câteva momente și alege planul preferat",
     paywall_continue_google: "Autentifică-te cu Google",
+    paywall_google_connecting: "Se conectează…",
     paywall_continue_email: "Autentifică-te cu email",
     paywall_offer_label: "Fișierul tău doar cu",
     paywall_enter_email: "Introdu adresa de email",
@@ -11890,6 +11902,7 @@ export const translations: Translations = {
     paywall_create_account: "创建账户以下载",
     paywall_sign_up_seconds: "几秒钟内注册并选择计划以继续",
     paywall_continue_google: "使用Google继续",
+    paywall_google_connecting: "连接中…",
     paywall_continue_email: "使用邮筱继续",
     paywall_offer_label: "您的PDF仅需",
     paywall_enter_email: "输入您的邮筱",

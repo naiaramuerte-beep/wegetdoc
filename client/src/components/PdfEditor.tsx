@@ -239,6 +239,22 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [showPaywall, setShowPaywall] = useState(false);
+  // Resume-from-OAuth: after returning from Google we're about to open the
+  // paywall. Show a clean branded loader OVER the editor so the user goes
+  // "straight to payment" instead of watching the editor re-open + render
+  // thumbnails (which looked like the PDF was being re-uploaded).
+  const [preparingResume, setPreparingResume] = useState<boolean>(() => {
+    try { return sessionStorage.getItem("cloudpdf_pending_action") === "download" || !!initialOpenPaywall; }
+    catch { return !!initialOpenPaywall; }
+  });
+  // Once the paywall is up, drop the loader (the modal covers the screen).
+  useEffect(() => { if (showPaywall) setPreparingResume(false); }, [showPaywall]);
+  // Safety net: never trap the user on the loader if auth/PDF never resolve.
+  useEffect(() => {
+    if (!preparingResume) return;
+    const tmr = setTimeout(() => setPreparingResume(false), 8000);
+    return () => clearTimeout(tmr);
+  }, [preparingResume]);
   // Controls the small dropdown under the "Descargar" button that lets
   // unauthenticated users pick Google or Email before the modal opens
   // (pdfe.com pattern). For authenticated users we skip the dropdown and
@@ -892,6 +908,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         console.log("[autoResume] Timed out waiting for auth/pdf");
         clearInterval(interval);
         sessionStorage.removeItem("cloudpdf_pending_action");
+        setPreparingResume(false);
         return;
       }
 
@@ -920,6 +937,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
       // If premium → download immediately
       if (currentIsPremium) {
+        setPreparingResume(false); // premium downloads directly, no paywall to cover the loader
         toast.loading(t.editor_toast_preparing_doc ?? "Preparing document...", { id: "dl" });
         try {
           const out = await buildAnnotatedPdf();
@@ -5953,6 +5971,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           </button>
         </div>
       </div>
+
+      {/* Resume-from-OAuth loader — covers the editor re-open + thumbnail render
+          so the user goes straight from Google login to the payment modal. */}
+      {preparingResume && !showPaywall && (
+        <div className="fixed inset-0 z-[9998] flex flex-col items-center justify-center bg-white">
+          <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin mb-3" />
+          <p className="text-sm font-medium text-[#5A5A62]">{t.editor_toast_preparing_doc ?? "Preparando tu documento…"}</p>
+        </div>
+      )}
 
       {/* Paywall modal */}
       <PaywallModal
