@@ -201,6 +201,7 @@ export function registerGoogleOAuthRoutes(app: Express) {
       }
 
       // Normal redirect flow
+      console.log(`[Google OAuth] redirect → ${origin}${returnPath}`);
       res.redirect(302, `${origin}${returnPath}`);
     } catch (err) {
       console.error("[Google OAuth] Callback error:", err);

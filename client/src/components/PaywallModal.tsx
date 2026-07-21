@@ -1444,7 +1444,16 @@ export default function PaywallModal({
 
     // Listen for the popup to complete login
     const onMessage = async (e: MessageEvent) => {
-      if (e.origin !== window.location.origin) return;
+      // The OAuth callback runs on the APEX (editorpdf.net) because that's the
+      // only registered redirect_uri, but the opener is usually on WWW. So the
+      // popup's postMessage arrives with e.origin = apex while our origin is www
+      // → a strict `e.origin === window.location.origin` check silently drops it
+      // and the modal hangs. Accept the whole editorpdf.net family.
+      const okOrigin =
+        e.origin === window.location.origin ||
+        e.origin === "https://editorpdf.net" ||
+        e.origin === "https://www.editorpdf.net";
+      if (!okOrigin) return;
       if (e.data?.type !== "google-auth-success") return;
       window.removeEventListener("message", onMessage);
       // Refresh auth state — the session cookie was set by the popup
