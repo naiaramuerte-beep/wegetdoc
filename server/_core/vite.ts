@@ -109,6 +109,16 @@ export function serveStatic(app: Express) {
 
   // All routes → processed index.html (SPA fallback)
   app.use("*", (_req, res) => {
-    res.status(200).set({ "Content-Type": "text/html" }).end(getProcessedIndex());
+    res.status(200).set({
+      "Content-Type": "text/html",
+      // CRITICAL: never let the browser cache the HTML shell. Without this the
+      // browser heuristically caches index.html and keeps loading the OLD hashed
+      // JS bundles after a deploy — which made every fix seem "intermittent" /
+      // stuck (users on a cached shell ran old code). The hashed assets stay
+      // immutable-cached; only this HTML must always revalidate.
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0",
+    }).end(getProcessedIndex());
   });
 }
