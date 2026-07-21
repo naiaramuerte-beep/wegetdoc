@@ -29,8 +29,10 @@ interface PdfFileContextValue {
   /** True while restoring PDF from sessionStorage (after OAuth redirect) */
   isRestoringFromSession: boolean;
   /** Upload the EDITED PDF to S3 as a temp file before login redirect.
-   *  Stores only the small tempKey in sessionStorage (no quota issues). */
-  saveEditedPdfToSession: (base64: string, name: string, size: number) => Promise<void>;
+   *  Stores the small tempKey in sessionStorage (no quota issues) AND returns it
+   *  so the caller can also thread it through the OAuth return URL (survives a
+   *  sessionStorage wipe on the cross-origin redirect — the real fix). */
+  saveEditedPdfToSession: (base64: string, name: string, size: number) => Promise<string | null>;
   /** The restored edited PDF data (after login redirect) — cleared after reading.
    *  Contains the tempKey for claiming the PDF from S3 after payment. */
   pendingEditedPdf: { tempKey: string; name: string } | null;
@@ -46,7 +48,7 @@ const PdfFileContext = createContext<PdfFileContextValue>({
   pendingPaywall: false,
   savePdfToSession: async () => {},
   isRestoringFromSession: false,
-  saveEditedPdfToSession: async () => {},
+  saveEditedPdfToSession: async () => null,
   pendingEditedPdf: null,
   clearPendingEditedPdf: () => {},
 });
@@ -60,10 +62,14 @@ export function PdfFileProvider({ children }: { children: ReactNode }) {
   // isRestoringFromSession: true while we're restoring from sessionStorage
   const [isRestoringFromSession, setIsRestoringFromSession] = useState(() => {
     try {
-      // Check for ANY session restoration signal: original PDF, paywall flag, or pending action
+      // Check for ANY session restoration signal: original PDF, paywall flag,
+      // pending action, OR the resume params in the URL (the robust path that
+      // survives a sessionStorage wipe on the cross-origin OAuth redirect).
+      const params = new URLSearchParams(window.location.search);
       return !!sessionStorage.getItem(SESSION_KEY_PDF) ||
              sessionStorage.getItem(SESSION_KEY_PAYWALL) === "1" ||
-             sessionStorage.getItem("cloudpdf_pending_action") === "download";
+             sessionStorage.getItem("cloudpdf_pending_action") === "download" ||
+             (params.get("resume") === "download" && !!params.get("tk"));
     } catch {
       return false;
     }
@@ -111,6 +117,28 @@ export function PdfFileProvider({ children }: { children: ReactNode }) {
       setPendingPaywallState(true);
       sessionStorage.removeItem(SESSION_KEY_PAYWALL);
     }
+
+    // ── Robust restore via the OAuth return URL ───────────────────────────────
+    // sessionStorage does NOT reliably survive the cross-origin OAuth round-trip
+    // on mobile (www → google → apex callback → back), so the editor lost the
+    // work and EditorPage fell back to <Home/>. The tempKey (S3 ref of the edited
+    // PDF) is also threaded through the return URL, which the server controls and
+    // always comes back. If present, restore from it — independent of any storage.
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("resume") === "download" && params.get("tk")) {
+        const tk = params.get("tk")!;
+        const tn = params.get("tn") || tempName || "document.pdf";
+        setPendingEditedPdf({ tempKey: tk, name: tn });
+        setPendingPaywallState(true);
+        sessionStorage.setItem("cloudpdf_pending_action", "download");
+        // Strip the resume params so a later refresh doesn't re-trigger the flow.
+        params.delete("resume"); params.delete("tk"); params.delete("tn");
+        const qs = params.toString();
+        window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash);
+      }
+    } catch { /* URL parsing best-effort */ }
+
     setIsRestoringFromSession(false);
   }, []);
 
@@ -123,7 +151,7 @@ export function PdfFileProvider({ children }: { children: ReactNode }) {
   };
 
   /** Upload edited PDF to S3 as temp file, then store only the small key in sessionStorage */
-  const saveEditedPdfToSession = async (base64: string, name: string, _size: number): Promise<void> => {
+  const saveEditedPdfToSession = async (base64: string, name: string, _size: number): Promise<string | null> => {
     try {
       // Convert base64 to binary and upload to server temp endpoint
       const binary = atob(base64);
@@ -142,6 +170,7 @@ export function PdfFileProvider({ children }: { children: ReactNode }) {
       // Store only the small key string (not the full base64)
       sessionStorage.setItem(SESSION_KEY_TEMP_KEY, tempKey);
       sessionStorage.setItem(SESSION_KEY_TEMP_NAME, name);
+      return tempKey;
     } catch (err) {
       console.error("[PdfFileContext] saveEditedPdfToSession failed:", err);
       // Fallback: try storing base64 in sessionStorage (may fail for large files)
@@ -151,6 +180,7 @@ export function PdfFileProvider({ children }: { children: ReactNode }) {
       } catch {
         // Storage quota exceeded — PDF will need to be re-uploaded
       }
+      return null;
     }
   };
 
