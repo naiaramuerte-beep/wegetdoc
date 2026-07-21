@@ -1383,6 +1383,7 @@ export default function PaywallModal({
     // Persist the in-progress work and switch to a FULL-PAGE redirect. Used on
     // mobile (always) and as the popup-blocked fallback on desktop.
     const goRedirect = async () => {
+      let resumeQs = "";
       if (pdfData) {
         // Restore the EDITED (annotated) PDF so the editor reopens showing the
         // user's work — a mobile redirect can't preserve the live annotation
@@ -1396,13 +1397,23 @@ export default function PaywallModal({
           const editedFile = new File([bytes], pdfData.name, { type: "application/pdf" });
           await savePdfToSession(editedFile);
         } catch {}
-        try { await saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size); } catch {}
+        try {
+          const tk = await saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size);
+          // Thread the S3 tempKey through the OAuth RETURN URL. sessionStorage
+          // does not reliably survive the cross-origin redirect on mobile, but
+          // the URL always comes back (server-controlled), so the edited PDF is
+          // restored on return regardless of any storage loss. This is the fix
+          // for "vuelve a la home y se pierde lo editado".
+          if (tk) resumeQs = `resume=download&tk=${encodeURIComponent(tk)}&tn=${encodeURIComponent(pdfData.name)}`;
+        } catch {}
       } else if (pendingFile) {
         try { await savePdfToSession(pendingFile); } catch {}
       }
       setPendingPaywall(true);
       sessionStorage.setItem("cloudpdf_pending_action", "download");
-      window.location.href = authUrl.replace("&popup=1", "");
+      const sep = returnPath.includes("?") ? "&" : "?";
+      const returnWithResume = resumeQs ? `${returnPath}${sep}${resumeQs}` : returnPath;
+      window.location.href = `/api/auth/google?origin=${encodeURIComponent(window.location.origin)}&returnPath=${encodeURIComponent(returnWithResume)}`;
     };
 
     // Mobile browsers open window.open() as a NEW TAB with no window.opener, so
