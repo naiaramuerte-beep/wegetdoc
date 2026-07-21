@@ -905,6 +905,49 @@ export async function getSubsDueForRetry(now: Date = new Date(), lockStaleMs = 1
 }
 
 /**
+ * Barrido de bajas vencidas. Las subs con `cancelAtPeriodEnd = true` cuyo periodo
+ * ya terminó (`currentPeriodEnd < now`) se finalizan a `status = 'canceled'`.
+ *
+ * El cron de reintentos ya las EXCLUYE (nunca se les cobra), pero sin este barrido
+ * se quedaban colgadas para siempre en `past_due` / `active` / `trialing`: el
+ * acceso ya está denegado (getActiveSubscription), pero el estado no reflejaba la
+ * baja y las métricas de "canceladas" no las contaban.
+ *
+ * Devuelve los IDs afectados (para log/informe). Con `dryRun = true` solo lista
+ * los candidatos sin escribir nada.
+ */
+// Predicado puro (única fuente de verdad, testeable): ¿esta sub con baja
+// pendiente ya venció y debe finalizarse a 'canceled'? La query del barrido
+// filtra con esto, no con SQL, para no duplicar la lógica.
+export function shouldCancelExpiredSub(
+  sub: { cancelAtPeriodEnd: boolean | null; currentPeriodEnd: Date | null; status: string },
+  now: Date,
+): boolean {
+  return (
+    sub.cancelAtPeriodEnd === true &&
+    sub.currentPeriodEnd != null &&
+    sub.currentPeriodEnd < now &&
+    (sub.status === "active" || sub.status === "trialing" || sub.status === "past_due")
+  );
+}
+
+export async function sweepExpiredCancellations(now: Date = new Date(), dryRun = false): Promise<number[]> {
+  const db = await getDb();
+  if (!db) return [];
+  // El conjunto con cancelAtPeriodEnd=true es pequeño: lo traemos y decidimos con
+  // el predicado puro `shouldCancelExpiredSub`, luego cancelamos por IDs.
+  const rows = await db
+    .select({ id: subscriptions.id, cancelAtPeriodEnd: subscriptions.cancelAtPeriodEnd, currentPeriodEnd: subscriptions.currentPeriodEnd, status: subscriptions.status })
+    .from(subscriptions)
+    .where(eq(subscriptions.cancelAtPeriodEnd, true));
+  const ids = rows.filter((r) => shouldCancelExpiredSub(r, now)).map((r) => r.id);
+  if (!dryRun && ids.length) {
+    await db.update(subscriptions).set({ status: "canceled", updatedAt: new Date() }).where(inArray(subscriptions.id, ids));
+  }
+  return ids;
+}
+
+/**
  * Reclama una sub para el dunning de forma atómica (lock de idempotencia).
  * Devuelve true si ESTA corrida ganó el lock; false si otra ya la tenía.
  * El lock caduca a los `lockStaleMs` para no bloquear si el cron murió a media.
