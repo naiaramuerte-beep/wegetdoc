@@ -1286,6 +1286,15 @@ export default function PaywallModal({
   // and isolate the registration drop-off.
   const startedUnauthedRef = useRef(false);
   const registerFiredRef = useRef(false);
+  // Holds the in-flight S3 upload of the edited PDF, started as soon as the
+  // auth modal opens so the tempKey is ready by the time the user taps Google
+  // (the upload was the ~3-4s wait before Google opened). Reset on close.
+  const preUploadRef = useRef<Promise<string | null> | null>(null);
+  useEffect(() => {
+    if (!isOpen) { preUploadRef.current = null; return; }
+    if (isAuthenticated || !pdfData || preUploadRef.current) return;
+    preUploadRef.current = saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size).catch(() => null);
+  }, [isOpen, isAuthenticated, pdfData]);
   useEffect(() => {
     if (isOpen && !paywallShownFiredRef.current) {
       startedUnauthedRef.current = !isAuthenticated;
@@ -1395,25 +1404,14 @@ export default function PaywallModal({
       // we also restore the edited PDF from it.
       let resumeQs = "resume=download";
       if (pdfData) {
-        // Restore the EDITED (annotated) PDF so the editor reopens showing the
-        // user's work — a mobile redirect can't preserve the live annotation
-        // layer, so persist the flattened result as the file to reload. We also
-        // keep an S3 temp copy (used for the paywall preview + auto-save, and as
-        // the source when the base64 is too big for sessionStorage).
         try {
-          const bin = atob(pdfData.base64);
-          const bytes = new Uint8Array(bin.length);
-          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-          const editedFile = new File([bytes], pdfData.name, { type: "application/pdf" });
-          await savePdfToSession(editedFile);
-        } catch {}
-        try {
-          const tk = await saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size);
-          // Thread the S3 tempKey through the OAuth RETURN URL. sessionStorage
-          // does not reliably survive the cross-origin redirect on mobile, but
-          // the URL always comes back (server-controlled), so the edited PDF is
-          // restored on return regardless of any storage loss. This is the fix
-          // for "vuelve a la home y se pierde lo editado".
+          // Use the S3 upload we kicked off when the modal opened (preUploadRef).
+          // By the time the user taps Google it's usually already done, so the
+          // redirect is instant instead of waiting ~3-4s for the upload here.
+          // Falls back to uploading now if the pre-upload wasn't started.
+          // The edited PDF lives in S3 and its tempKey rides the OAuth return
+          // URL, so it survives the cross-origin redirect (no sessionStorage).
+          const tk = await (preUploadRef.current ?? saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size));
           if (tk) resumeQs += `&tk=${encodeURIComponent(tk)}&tn=${encodeURIComponent(pdfData.name)}`;
         } catch {}
       } else if (pendingFile) {
