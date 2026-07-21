@@ -1102,7 +1102,11 @@ function GooglePayButton({
     const cardPaymentMethod = {
       type: "CARD",
       parameters: {
-        allowedAuthMethods: ["PAN_ONLY", "CRYPTOGRAM_3DS"],
+        // CRYPTOGRAM_3DS only (no PAN_ONLY): forces Google Pay to return a
+        // network token + 3DS cryptogram instead of a raw PAN. Redsys rejects
+        // the PAN-only path as non-authenticated (code 190), so restricting to
+        // the cryptogram is what makes wallet charges actually authorize.
+        allowedAuthMethods: ["CRYPTOGRAM_3DS"],
         allowedCardNetworks: ["AMEX", "DISCOVER", "JCB", "MASTERCARD", "VISA"],
       },
       tokenizationSpecification: {
@@ -1118,6 +1122,10 @@ function GooglePayButton({
       .isReadyToPay({
         ...baseRequest,
         allowedPaymentMethods: [cardPaymentMethod],
+        // Only show the button to buyers who ALREADY have a card in Google Pay
+        // that can produce a CRYPTOGRAM_3DS token. Avoids surfacing a button
+        // that would then fail to authorize; no user-facing message either way.
+        existingPaymentMethodRequired: true,
       })
       .then((res: { result: boolean; paymentMethodPresent?: boolean }) => {
         console.log("[GPay] isReadyToPay response:", res);
