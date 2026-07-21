@@ -3489,31 +3489,37 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           <span className="text-[#0A0A0B]">editorpdf</span>
           <span className="text-[#E63946]">.net</span>
         </div>
-        {/* Title */}
+        {/* Title. On the resume-from-OAuth path we're heading straight to the
+            paywall, so show a clean "preparing" message instead of the PDF
+            progress + "creating thumbnails" (which read like a re-upload). */}
         <p className="text-2xl font-bold mb-2 tracking-[-0.01em]" style={{ color: "#0A0A0B" }}>
-          {t.editor_loading_pdf}
+          {preparingResume ? (t.editor_toast_preparing_doc ?? "Preparando tu documento…") : t.editor_loading_pdf}
         </p>
-        <p className="text-sm mb-8" style={{ color: "#5A5A62" }}>
-          {initialFile?.name ?? ""}
-        </p>
-        {/* Progress bar */}
-        <div className="w-full max-w-sm">
-          <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "#F1F1F4" }}>
-            <div
-              className="h-full rounded-full transition-all duration-300 ease-out"
-              style={{
-                width: `${pdfLoadProgress}%`,
-                backgroundColor: pdfLoadProgress === 100 ? "#1E9E63" : "#E63946",
-              }}
-            />
-          </div>
-          <div className="flex justify-between mt-2">
-            <span className="text-xs font-medium" style={{ color: "#5A5A62" }}>
-              {pdfLoadProgress < 20 ? t.editor_loading_pdf_reading : pdfLoadProgress < 55 ? t.editor_loading_pdf_parsing : pdfLoadProgress < 95 ? t.editor_loading_pdf_thumbnails : t.editor_loading_pdf_ready}
-            </span>
-            <span className="text-xs font-bold" style={{ color: "#E63946" }}>{pdfLoadProgress}%</span>
-          </div>
-        </div>
+        {!preparingResume && (
+          <>
+            <p className="text-sm mb-8" style={{ color: "#5A5A62" }}>
+              {initialFile?.name ?? ""}
+            </p>
+            {/* Progress bar */}
+            <div className="w-full max-w-sm">
+              <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "#F1F1F4" }}>
+                <div
+                  className="h-full rounded-full transition-all duration-300 ease-out"
+                  style={{
+                    width: `${pdfLoadProgress}%`,
+                    backgroundColor: pdfLoadProgress === 100 ? "#1E9E63" : "#E63946",
+                  }}
+                />
+              </div>
+              <div className="flex justify-between mt-2">
+                <span className="text-xs font-medium" style={{ color: "#5A5A62" }}>
+                  {pdfLoadProgress < 20 ? t.editor_loading_pdf_reading : pdfLoadProgress < 55 ? t.editor_loading_pdf_parsing : pdfLoadProgress < 95 ? t.editor_loading_pdf_thumbnails : t.editor_loading_pdf_ready}
+                </span>
+                <span className="text-xs font-bold" style={{ color: "#E63946" }}>{pdfLoadProgress}%</span>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     );
   }
