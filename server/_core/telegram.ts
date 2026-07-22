@@ -1,13 +1,10 @@
 /**
- * Telegram "cha-ching" sale notifications. Fire-and-forget: any error is
- * swallowed so a notification can NEVER block or break a payment.
+ * Telegram "cha-ching" sale notifications + daily summary. Fire-and-forget:
+ * any error is swallowed so a notification can NEVER block or break a payment.
  *
  * Config (Railway env vars):
  *   TELEGRAM_BOT_TOKEN  — the bot token from @BotFather
  *   TELEGRAM_CHAT_ID    — the destination chat (the owner's private chat)
- *
- * The "money sound" is set by the user on their side: Telegram → chat settings
- * → Notifications → Sound → a cash-register tone.
  */
 
 const PROVIDER_LABEL: Record<string, string> = {
@@ -17,25 +14,27 @@ const PROVIDER_LABEL: Record<string, string> = {
   mit: "Renovación mensual",
 };
 
-export async function notifySale(opts: {
-  amountCents: number;
-  provider: string; // fastpay | gpay | apay | mit
-  userId?: number;
-}): Promise<void> {
+const eur = (cents: number) => (cents / 100).toFixed(2).replace(".", ",") + " €";
+
+/** 2-letter ISO country → flag emoji (regional indicator letters). */
+function countryFlag(code?: string | null): string {
+  const c = (code || "").trim().toUpperCase();
+  if (c.length !== 2 || !/^[A-Z]{2}$/.test(c)) return "";
+  return String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65, 0x1f1e6 + c.charCodeAt(1) - 65);
+}
+
+/** Country code → localized name (es), best-effort. */
+function countryName(code?: string | null): string {
+  const c = (code || "").trim().toUpperCase();
+  if (c.length !== 2) return "";
+  try { return new Intl.DisplayNames(["es"], { type: "region" }).of(c) || c; } catch { return c; }
+}
+
+async function sendTelegram(text: string): Promise<void> {
   try {
     const token = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
     if (!token || !chatId) return;
-
-    const eur = (opts.amountCents / 100).toFixed(2).replace(".", ",");
-    const method = PROVIDER_LABEL[opts.provider] ?? opts.provider;
-    const kind = opts.provider === "mit" ? "Renovación" : "Alta nueva";
-    const text =
-      `💰 <b>¡Nueva venta!</b>\n` +
-      `<b>+${eur} €</b> · ${method}\n` +
-      `${kind}${opts.userId ? ` · user ${opts.userId}` : ""}`;
-
-    // Short timeout so a slow Telegram call never delays the payment path.
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 4000);
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -47,4 +46,65 @@ export async function notifySale(opts: {
   } catch {
     /* never break a payment for a notification */
   }
+}
+
+export async function notifySale(opts: {
+  amountCents: number;
+  provider: string; // fastpay | gpay | apay | mit
+  userId?: number;
+  country?: string | null;
+  maskedCard?: string | null;
+  todayCount?: number;      // running total for today (incl. this sale)
+  todayTotalCents?: number;
+  hora?: string;            // HH:mm Madrid
+}): Promise<void> {
+  const method = PROVIDER_LABEL[opts.provider] ?? opts.provider;
+  const kind = opts.provider === "mit" ? "🔄 Renovación" : "🆕 Alta nueva";
+  const flag = countryFlag(opts.country);
+  const cname = countryName(opts.country);
+
+  const lines = [
+    `💰 <b>¡Nueva venta!</b>  <b>+${eur(opts.amountCents)}</b>`,
+    `${method} · ${kind}`,
+  ];
+  const geoTime = [
+    flag ? `${flag} ${cname}` : "",
+    opts.hora ? `🕐 ${opts.hora}` : "",
+  ].filter(Boolean).join(" · ");
+  if (geoTime) lines.push(geoTime);
+  if (typeof opts.todayCount === "number" && typeof opts.todayTotalCents === "number") {
+    lines.push(`📊 Hoy: <b>${opts.todayCount}</b> ventas · <b>${eur(opts.todayTotalCents)}</b>`);
+  }
+  const idCard = [
+    opts.userId ? `👤 ${opts.userId}` : "",
+    opts.maskedCard ? `💳 ${opts.maskedCard}` : "",
+  ].filter(Boolean).join(" · ");
+  if (idCard) lines.push(idCard);
+
+  await sendTelegram(lines.join("\n"));
+}
+
+/** End-of-day summary ("resumen del día"). */
+export async function notifyDailySummary(s: {
+  dateLabel: string;
+  count: number;
+  totalCents: number;
+  altasCount: number;
+  altasCents: number;
+  renovCount: number;
+  renovCents: number;
+  byMethod: { provider: string; count: number; cents: number }[];
+}): Promise<void> {
+  const methodLines = s.byMethod
+    .map((m) => `   • ${PROVIDER_LABEL[m.provider] ?? m.provider}: <b>${m.count}</b> · ${eur(m.cents)}`)
+    .join("\n");
+  const text = [
+    `📊 <b>Resumen del día · ${s.dateLabel}</b>`,
+    `━━━━━━━━━━━━━━`,
+    `💰 Total: <b>${eur(s.totalCents)}</b> · <b>${s.count}</b> ventas`,
+    `🆕 Altas nuevas: <b>${s.altasCount}</b> · ${eur(s.altasCents)}`,
+    `🔄 Renovaciones: <b>${s.renovCount}</b> · ${eur(s.renovCents)}`,
+    s.byMethod.length ? `\nPor método:\n${methodLines}` : "",
+  ].filter(Boolean).join("\n");
+  await sendTelegram(text);
 }

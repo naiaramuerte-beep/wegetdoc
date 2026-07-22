@@ -1116,6 +1116,26 @@ ${allUrls.map(u => `  <url>
   app.get("/api/recovery/unsubscribe", handleRecoveryUnsub);
   app.post("/api/recovery/unsubscribe", handleRecoveryUnsub);
 
+  // Resumen de ventas del día → Telegram. Registrar en Railway a las 23:00
+  // Madrid (= 21:00 UTC en verano: cron "0 21 * * *"). ?dry=1 no envía.
+  app.post("/api/cron/daily-summary", async (req, res) => {
+    const secret = String(req.headers["x-cron-secret"] ?? "");
+    const { ENV } = await import("./env");
+    if (!ENV.cronSecret || secret !== ENV.cronSecret) return res.status(401).json({ error: "unauthorized" });
+    try {
+      const db = await import("../db");
+      const { notifyDailySummary } = await import("./telegram");
+      const now = new Date();
+      const s = await db.getDailySalesSummary(now);
+      const dateLabel = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "numeric", month: "long" }).format(now);
+      if (req.query.dry !== "1") await notifyDailySummary({ dateLabel, ...s });
+      return res.json({ ok: true, dry: req.query.dry === "1", dateLabel, ...s });
+    } catch (err: any) {
+      console.error("[daily-summary] error:", err?.message ?? err);
+      return res.status(500).json({ error: "exception", detail: err?.message ?? String(err) });
+    }
+  });
+
   app.post("/api/cron/sipay-renew", async (req, res) => {
     const secret = String(req.headers["x-cron-secret"] ?? "");
     const { ENV } = await import("./env");

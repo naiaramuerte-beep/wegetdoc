@@ -1097,11 +1097,69 @@ export async function recordCharge(opts: {
   // "Cha-ching" Telegram notification on every successful payment (altas 0,50 €
   // + renovaciones + wallets). Fire-and-forget — never awaited, never throws.
   if ((opts.status ?? "ok") === "ok") {
-    import("./_core/telegram")
-      .then((m) => m.notifySale({ amountCents: opts.amountCents, provider: opts.provider, userId: opts.userId }))
-      .catch(() => {});
+    (async () => {
+      try {
+        const ctx = await getSaleContext(opts.userId);
+        const hora = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" }).format(new Date());
+        const m = await import("./_core/telegram");
+        await m.notifySale({
+          amountCents: opts.amountCents, provider: opts.provider, userId: opts.userId,
+          country: ctx.country, maskedCard: opts.sipayMaskedCard ?? null,
+          todayCount: ctx.todayCount, todayTotalCents: ctx.todayTotalCents, hora,
+        });
+      } catch { /* notification is best-effort */ }
+    })();
   }
   return null;
+}
+
+/** UTC instant of "today" at midnight Europe/Madrid (DST-correct). */
+function madridDayStartUtc(now: Date = new Date()): Date {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Madrid", hour12: false,
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+  }).formatToParts(now);
+  const g = (t: string) => Number(parts.find((p) => p.type === t)?.value);
+  const madridNowAsUtc = Date.UTC(g("year"), g("month") - 1, g("day"), g("hour"), g("minute"), g("second"));
+  const offsetMs = madridNowAsUtc - now.getTime();
+  const madridMidnightAsUtc = Date.UTC(g("year"), g("month") - 1, g("day"), 0, 0, 0);
+  return new Date(madridMidnightAsUtc - offsetMs);
+}
+
+/** Country + today's running sales total, for the enriched Telegram sale alert. */
+export async function getSaleContext(userId: number): Promise<{ country: string | null; todayCount: number; todayTotalCents: number }> {
+  const db = await getDb();
+  if (!db) return { country: null, todayCount: 0, todayTotalCents: 0 };
+  const start = madridDayStartUtc();
+  const [u] = await db.select({ country: users.country }).from(users).where(eq(users.id, userId)).limit(1);
+  const [agg] = await db.select({
+    n: sql<number>`count(*)`,
+    s: sql<number>`coalesce(sum(${charges.amountCents}),0)`,
+  }).from(charges).where(and(eq(charges.status, "ok"), gte(charges.createdAt, start)));
+  return { country: u?.country ?? null, todayCount: Number(agg?.n ?? 0), todayTotalCents: Number(agg?.s ?? 0) };
+}
+
+/** Full breakdown of today's (Madrid) successful sales — for the 23:00 summary. */
+export async function getDailySalesSummary(now: Date = new Date()) {
+  const db = await getDb();
+  const empty = { count: 0, totalCents: 0, altasCount: 0, altasCents: 0, renovCount: 0, renovCents: 0, byMethod: [] as { provider: string; count: number; cents: number }[] };
+  if (!db) return empty;
+  const start = madridDayStartUtc(now);
+  const rows = await db.select({ provider: charges.provider, amountCents: charges.amountCents })
+    .from(charges).where(and(eq(charges.status, "ok"), gte(charges.createdAt, start)));
+  const out = { ...empty, byMethod: [] as { provider: string; count: number; cents: number }[] };
+  const byMethod: Record<string, { provider: string; count: number; cents: number }> = {};
+  for (const r of rows) {
+    const c = Number(r.amountCents);
+    out.count++; out.totalCents += c;
+    if (r.provider === "mit") { out.renovCount++; out.renovCents += c; }
+    else { out.altasCount++; out.altasCents += c; }
+    (byMethod[r.provider] ??= { provider: r.provider, count: 0, cents: 0 }).count++;
+    byMethod[r.provider].cents += c;
+  }
+  out.byMethod = Object.values(byMethod).sort((a, b) => b.cents - a.cents);
+  return out;
 }
 
 /**
