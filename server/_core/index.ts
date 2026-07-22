@@ -1039,6 +1039,16 @@ ${allUrls.map(u => `  <url>
       const { createMITRecurring } = await import("./sipay");
       const { decideNextRetry, classifyDecline } = await import("./dunning");
       const now = new Date();
+
+      // ── Barrido de bajas vencidas ─────────────────────────────────────────
+      // Subs con cancelAtPeriodEnd=true cuyo periodo ya terminó → status=canceled.
+      // El loop de reintentos ya las excluye (nunca se cobran); esto solo finaliza
+      // su estado para que no queden colgadas en past_due/active. Respeta ?dry=1.
+      const sweptCanceled = await db.sweepExpiredCancellations(now, dryRun);
+      if (sweptCanceled.length) {
+        console.log(`[dunning cron] bajas vencidas finalizadas → canceled (${sweptCanceled.length}): ${sweptCanceled.join(",")}`);
+      }
+
       const due = await db.getSubsDueForRetry(now);
       // Price from site_settings so the A/B toggle drives recurring charges too.
       const priceStr = await db.getSiteSetting?.("subscription_price_eur").catch(() => null);
@@ -1127,7 +1137,7 @@ ${allUrls.map(u => `  <url>
       const succeeded = results.filter((r) => r.ok).length;
       const failed = results.length - succeeded;
       console.log(`[dunning cron] processed=${results.length} ok=${succeeded} fail=${failed} duration=${Date.now() - startedAt}ms dryRun=${dryRun}`);
-      return res.json({ processed: results.length, succeeded, failed, durationMs: Date.now() - startedAt, dryRun, results });
+      return res.json({ processed: results.length, succeeded, failed, sweptCanceled: sweptCanceled.length, sweptCanceledIds: sweptCanceled, durationMs: Date.now() - startedAt, dryRun, results });
     } catch (err: any) {
       console.error("[MIT-R cron] fatal:", err?.message ?? err);
       return res.status(500).json({ error: "cron_exception", detail: err?.message ?? String(err) });

@@ -18,6 +18,15 @@ const now = new Date();
 const DAY = 24 * 3600 * 1000;
 const WINDOW_DAYS = 21;
 
+// ⚠️ BUG CONOCIDO DE ZONA HORARIA (documentado, no corregido — ver más abajo).
+// Esta conexión NO fija `timezone`, así que mysql2 usa `timezone:'local'`. Al
+// pasar un objeto Date como parámetro (ver el UPDATE de nextRetryAt), mysql2 lo
+// serializa en la hora LOCAL del proceso Node. En el deploy (Europe/Madrid,
+// UTC+2 en verano) eso convierte un Date de 07:00 UTC en el string "09:00:00",
+// y como la SESIÓN MySQL está en UTC, se guarda como 09:00 UTC (= 11:00 Madrid).
+// Resultado: doble conversión → los nextRetryAt migrados quedaron 2h TARDE.
+// Si se reutiliza este script, fija `timezone:'Z'` aquí para escribir en UTC:
+//   await mysql.createConnection({ uri: process.env.DATABASE_URL, timezone: 'Z' });
 const db = await mysql.createConnection(process.env.DATABASE_URL);
 
 // Candidatas: subs en dunning bajo el sistema viejo (past_due, o con reintentos/
@@ -91,6 +100,14 @@ if (EXECUTE) {
     );
   }
   for (const r of rescheduleList) {
+    // ⚠️ DOBLE CONVERSIÓN DE ZONA HORARIA (ver comentario de la conexión):
+    // `new Date(r.nuevoNextRetryAt)` es correcto (07:00 UTC), pero mysql2 con
+    // timezone:'local' (Madrid) lo escribe como "09:00:00" y la sesión UTC lo
+    // guarda como 09:00 UTC → +2h. Por eso la tanda migrada del 21-jul quedó
+    // citada a las 11:00 Madrid en vez de las 09:00, y se saltó la corrida del
+    // cron de ese día (corre ~09:05 Madrid) — se recogen al día siguiente.
+    // NO se corrige a mano (decisión: aceptar el retraso). Si se reusa el
+    // script, fija timezone:'Z' en la conexión y desaparece la deriva.
     await db.query(
       `UPDATE subscriptions SET status='past_due', retryCount=?, nextRetryAt=?, lastDeclineCode=?, declineCategory=?, updatedAt=NOW() WHERE id=?`,
       [r.retryCount, new Date(r.nuevoNextRetryAt), r.ultimoCodigo.startsWith("(") ? null : r.ultimoCodigo, r.categoria, r.id],
