@@ -1026,6 +1026,89 @@ ${allUrls.map(u => `  <url>
   // Auth via shared `X-Cron-Secret` header — anything else returns 401. Runs
   // in foreground (no queue) because the active sub set is small (<5k for
   // the foreseeable future) and Sipay's all-in-one MIT-R is ~300 ms each.
+  // ── Recovery emails cron ──────────────────────────────────────────────────
+  // "Tu archivo está listo, descárgalo" a los no-pagadores (docs pending).
+  // Secuencia +1h / +24h / día-6, 1 email por usuario por corrida, para el doc
+  // más reciente. Nunca a quien ya pagó ni a quien se dio de baja. Además borra
+  // los docs pending de >7 días (retención real). Corre cada ~20-30 min.
+  // Registrar en Railway: POST /api/cron/recovery-emails con X-Cron-Secret.
+  //   ?dry=1 → no envía ni borra, solo lista a quién tocaría.
+  app.post("/api/cron/recovery-emails", async (req, res) => {
+    const secret = String(req.headers["x-cron-secret"] ?? "");
+    const { ENV } = await import("./env");
+    if (!ENV.cronSecret || secret !== ENV.cronSecret) return res.status(401).json({ error: "unauthorized" });
+    const dry = req.query.dry === "1";
+    try {
+      const db = await import("../db");
+      const { sendRecoveryEmail } = await import("../email");
+      const crypto = await import("crypto");
+      const now = new Date();
+      const HOUR = 3600 * 1000, DAY = 24 * HOUR, RETENTION_DAYS = 7;
+      const since = new Date(now.getTime() - RETENTION_DAYS * DAY);
+
+      const [docs, paidUsers] = await Promise.all([db.getPendingRecoveryDocs(since), db.getPaidUserIds()]);
+      const seenUser = new Set<number>();
+      const results: Array<{ userId: number; docId: number; email: string; stage: number; doc: string }> = [];
+
+      for (const d of docs) {
+        if (paidUsers.has(d.userId) || seenUser.has(d.userId)) continue; // paid / not the latest doc
+        seenUser.add(d.userId);
+        const age = now.getTime() - new Date(d.createdAt).getTime();
+        let stage = 0;
+        if (d.recoveryStage === 0 && age >= 1 * HOUR) stage = 1;
+        else if (d.recoveryStage === 1 && age >= 24 * HOUR) stage = 2;
+        else if (d.recoveryStage === 2 && age >= 6 * DAY) stage = 3;
+        if (!stage) continue;
+        // Min 12h between emails (catch-up safety so we never send 2 in a row).
+        if (d.recoveryLastSentAt && now.getTime() - new Date(d.recoveryLastSentAt).getTime() < 12 * HOUR) continue;
+
+        const lang = (d.language || "es").slice(0, 2);
+        const sig = crypto.createHmac("sha256", ENV.cronSecret).update(String(d.userId)).digest("hex").slice(0, 24);
+        const unsubscribeUrl = `https://editorpdf.net/api/recovery/unsubscribe?u=${d.userId}&s=${sig}`;
+        const downloadUrl = `https://editorpdf.net/${lang}/dashboard`;
+        const expires = new Date(new Date(d.createdAt).getTime() + RETENTION_DAYS * DAY);
+        let expiresDate: string;
+        try { expiresDate = new Intl.DateTimeFormat(lang, { day: "numeric", month: "long" }).format(expires); }
+        catch { expiresDate = expires.toISOString().slice(0, 10); }
+
+        results.push({ userId: d.userId, docId: d.docId, email: d.email!, stage, doc: d.docName });
+        if (!dry) {
+          const ok = await sendRecoveryEmail({ to: d.email!, lang, docName: d.docName, downloadUrl, unsubscribeUrl, expiresDate, stage });
+          if (ok) await db.markRecoverySent(d.docId, stage, now);
+        }
+      }
+
+      // Retención: borra los docs pending de >7 días (hace honesta la urgencia).
+      let deletedCount = 0;
+      if (!dry) { try { deletedCount = (await db.deleteExpiredPendingDocs(since)).length; } catch { /* best-effort */ } }
+
+      console.log(`[recovery cron] ${dry ? "DRY " : ""}sent=${results.length} deleted=${deletedCount}`);
+      return res.json({ dry, sent: results.length, deleted: deletedCount, results });
+    } catch (err: any) {
+      console.error("[recovery cron] fatal:", err?.message ?? err);
+      return res.status(500).json({ error: "cron_exception", detail: err?.message ?? String(err) });
+    }
+  });
+
+  // Unsubscribe from recovery emails (signed link, no auth). Handles GET (user
+  // clicks the link) and POST (RFC 8058 one-click via List-Unsubscribe-Post).
+  const handleRecoveryUnsub = async (req: any, res: any) => {
+    try {
+      const u = Number(req.query.u);
+      const s = String(req.query.s ?? "");
+      const { ENV } = await import("./env");
+      const crypto = await import("crypto");
+      const expected = crypto.createHmac("sha256", ENV.cronSecret).update(String(u)).digest("hex").slice(0, 24);
+      if (!u || !s || s !== expected) { res.status(400).send("Enlace no válido"); return; }
+      const db = await import("../db");
+      await db.setRecoveryUnsubscribed(u);
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.send(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;text-align:center;padding:64px 24px;color:#0A0A0B;background:#f4f4f6;"><div style="max-width:420px;margin:0 auto;background:#fff;border-radius:16px;padding:36px 28px;box-shadow:0 8px 30px rgba(10,10,11,.08);"><div style="font-size:40px;">✅</div><h2 style="margin:12px 0 6px;">Listo</h2><p style="color:#5A5A62;margin:0;">No volverás a recibir recordatorios de <b>editorpdf<span style="color:#E63946;">.net</span></b>.</p></div></body></html>`);
+    } catch { res.status(500).send("Error"); }
+  };
+  app.get("/api/recovery/unsubscribe", handleRecoveryUnsub);
+  app.post("/api/recovery/unsubscribe", handleRecoveryUnsub);
+
   app.post("/api/cron/sipay-renew", async (req, res) => {
     const secret = String(req.headers["x-cron-secret"] ?? "");
     const { ENV } = await import("./env");

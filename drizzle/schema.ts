@@ -28,6 +28,9 @@ export const users = mysqlTable("users", {
   deletedAt: timestamp("deletedAt"),
   // Internal admin-only notes about this user (support context, VIP tags, etc.).
   adminNotes: text("adminNotes"),
+  // Recovery emails ("tu archivo está listo, descárgalo"): user opted out via
+  // the unsubscribe link. Never email recovery to unsubscribed users.
+  recoveryUnsubscribed: boolean("recoveryUnsubscribed").default(false).notNull(),
 });
 
 export type User = typeof users.$inferSelect;
@@ -137,6 +140,10 @@ export const documents = mysqlTable("documents", {
   // First time this doc was downloaded by the owner. Used to count trial usage
   // — re-downloads of the same doc don't count toward the 2-PDF trial limit.
   firstDownloadedAt: timestamp("firstDownloadedAt"),
+  // Recovery-email sequence for abandoned (pending) docs: 0=none, 1=sent +1h,
+  // 2=sent +24h, 3=sent last-chance. Stops when the doc becomes paid.
+  recoveryStage: int("recoveryStage").default(0).notNull(),
+  recoveryLastSentAt: timestamp("recoveryLastSentAt"),
 });
 
 export type Document = typeof documents.$inferSelect;
