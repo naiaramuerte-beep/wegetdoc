@@ -1131,7 +1131,13 @@ ${allUrls.map(u => `  <url>
         const lang = (d.language || "es").slice(0, 2);
         const sig = crypto.createHmac("sha256", ENV.cronSecret).update(String(d.userId)).digest("hex").slice(0, 24);
         const unsubscribeUrl = `https://editorpdf.net/api/recovery/unsubscribe?u=${d.userId}&s=${sig}`;
-        const downloadUrl = `https://editorpdf.net/${lang}/dashboard?tab=documents`;
+        // One-click auto-login link → drops the user on their documents without a
+        // login wall. Signed + expires exactly when the doc is deleted (createdAt
+        // + retention), so a stale link just falls back to the manual dashboard.
+        const loginNext = `/${lang}/dashboard?tab=documents`;
+        const loginExp = new Date(d.createdAt).getTime() + RETENTION_DAYS * DAY;
+        const loginSig = crypto.createHmac("sha256", ENV.cronSecret).update(`${d.userId}.${loginExp}.${loginNext}`).digest("hex").slice(0, 32);
+        const downloadUrl = `https://www.editorpdf.net/api/recovery/login?u=${d.userId}&exp=${loginExp}&next=${encodeURIComponent(loginNext)}&sig=${loginSig}`;
         const expires = new Date(new Date(d.createdAt).getTime() + RETENTION_DAYS * DAY);
         let expiresDate: string;
         try { expiresDate = new Intl.DateTimeFormat(lang, { day: "numeric", month: "long" }).format(expires); }
@@ -1174,6 +1180,48 @@ ${allUrls.map(u => `  <url>
   };
   app.get("/api/recovery/unsubscribe", handleRecoveryUnsub);
   app.post("/api/recovery/unsubscribe", handleRecoveryUnsub);
+
+  // One-click auto-login from a recovery email (signed, expiring, single user).
+  // Logs the user straight into their own account and drops them on their docs,
+  // so they don't hit a login wall. Safe: HMAC-signed with CRON_SECRET (can't be
+  // forged), time-limited via `exp`, `next` forced to a relative path (no open
+  // redirect), timing-safe compare. On ANY failure it just sends them to the
+  // dashboard to log in manually — never errors, never breaks normal auth.
+  app.get("/api/recovery/login", async (req: any, res: any) => {
+    const WWW = "https://www.editorpdf.net";
+    const fallback = `${WWW}/es/dashboard?tab=documents`;
+    try {
+      const { ENV } = await import("./env");
+      const crypto = await import("crypto");
+      const u = Number(req.query.u);
+      const exp = Number(req.query.exp);
+      const sig = String(req.query.sig ?? "");
+      let next = String(req.query.next ?? "/es/dashboard?tab=documents");
+      // No open redirect: only same-site relative paths.
+      if (!next.startsWith("/") || next.startsWith("//")) next = "/es/dashboard?tab=documents";
+      const dest = `${WWW}${next}`;
+
+      if (!u || !exp || !sig || !ENV.cronSecret) return res.redirect(dest);
+      if (Date.now() > exp) return res.redirect(dest); // expired → manual login
+      const expected = crypto.createHmac("sha256", ENV.cronSecret).update(`${u}.${exp}.${next}`).digest("hex").slice(0, 32);
+      const ok = sig.length === expected.length &&
+        crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+      if (!ok) return res.redirect(dest); // bad/tampered sig → just show the page (they log in)
+
+      const db = await import("../db");
+      const user = await db.getUserById(u);
+      if (!user) return res.redirect(fallback);
+      const { sdk } = await import("./sdk");
+      const { getSessionCookieOptions } = await import("./cookies");
+      const { COOKIE_NAME, ONE_YEAR_MS } = await import("@shared/const");
+      const token = await sdk.createSessionToken(user.openId, { name: user.name ?? "", expiresInMs: ONE_YEAR_MS });
+      res.cookie(COOKIE_NAME, token, { ...getSessionCookieOptions(req), maxAge: ONE_YEAR_MS });
+      return res.redirect(302, dest);
+    } catch (err) {
+      console.error("[recovery-login] error:", err);
+      return res.redirect(fallback);
+    }
+  });
 
   // Resumen de ventas del día → Telegram. Registrar en Railway a las 23:00
   // Madrid (= 21:00 UTC en verano: cron "0 21 * * *"). ?dry=1 no envía.
