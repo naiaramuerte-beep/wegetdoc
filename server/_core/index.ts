@@ -1386,6 +1386,14 @@ ${allUrls.map(u => `  <url>
 
   server.listen(port, "0.0.0.0", () => {
     console.log(`Server running on http://0.0.0.0:${port}/`);
+    // Internal cron scheduler (daily Telegram summary + recovery emails). Only
+    // in production so dev doesn't send real emails/notifications. No-ops if
+    // CRON_SECRET is unset. Reuses the /api/cron/* endpoints over localhost.
+    if (process.env.NODE_ENV === "production") {
+      import("./scheduler")
+        .then(({ startInternalSchedulers }) => startInternalSchedulers(port))
+        .catch((err) => console.error("[scheduler] failed to start:", err));
+    }
   });
 
   // Seed legal pages if they don't exist (retry after 5s if DB not ready yet)
