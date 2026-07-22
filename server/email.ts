@@ -705,6 +705,192 @@ export async function sendTrialWelcomeEmail({
   }
 }
 
+/* =============================================================
+   RECOVERY EMAILS — "tu archivo está listo, descárgalo"
+   For users who edited a PDF but never downloaded it (abandoned,
+   paymentStatus=pending). NO mention of price/payment/buy — the CTA
+   just brings them back; the paywall does the selling on-site. Also
+   showcases every tool to create need. 3-stage sequence: +1h / +24h /
+   last-chance before the file is deleted (real 7-day retention).
+   ============================================================= */
+
+type RecoveryLang = {
+  subject: (stage: number, doc: string) => string;
+  hero: (stage: number) => string;
+  fileReady: string;      // small label over the file card
+  intro: (doc: string) => string;
+  cta: string;            // download button
+  expires: (date: string) => string;   // urgency line
+  toolsTitle: string;
+  tools: [string, string][];           // [name, one-liner]
+  footerNote: string;
+  unsub: string;
+};
+
+const RECOVERY_STRINGS: Record<string, RecoveryLang> = {
+  es: {
+    subject: (stage, doc) =>
+      stage >= 3 ? `Última oportunidad: tu archivo se elimina pronto`
+      : stage === 2 ? `Tu archivo sigue disponible — ${doc}`
+      : `Tu archivo está listo — ${doc}`,
+    hero: (stage) =>
+      stage >= 3 ? "Última oportunidad para descargar tu archivo"
+      : stage === 2 ? "Tu archivo sigue esperándote"
+      : "Tu archivo está listo",
+    fileReady: "LISTO PARA DESCARGAR",
+    intro: (doc) => `Terminaste de trabajar en <strong>${doc}</strong> pero no llegaste a descargarlo. Aún lo tienes guardado — vuelve y descárgalo cuando quieras.`,
+    cta: "Descargar mi archivo",
+    expires: (date) => `Tu archivo estará disponible hasta el <strong>${date}</strong>. Después se eliminará de forma automática.`,
+    toolsTitle: "Todo lo que puedes hacer con tus PDF",
+    tools: [
+      ["✏️ Editar texto", "Modifica el contenido directamente en el navegador"],
+      ["🔄 Convertir", "PDF a Word, Excel, PowerPoint o JPG (y al revés)"],
+      ["🗂️ Unir y dividir", "Combina varios PDF o separa páginas en segundos"],
+      ["🗜️ Comprimir", "Reduce el peso de tus archivos sin perder calidad"],
+      ["✍️ Firmar", "Añade tu firma a cualquier documento"],
+      ["🔒 Proteger", "Pon contraseña y marca de agua a tus PDF"],
+    ],
+    footerNote: "Recibes este email porque editaste un documento en editorpdf.net.",
+    unsub: "No quiero recibir más recordatorios",
+  },
+  en: {
+    subject: (stage, doc) =>
+      stage >= 3 ? `Last chance: your file is about to be deleted`
+      : stage === 2 ? `Your file is still available — ${doc}`
+      : `Your file is ready — ${doc}`,
+    hero: (stage) =>
+      stage >= 3 ? "Last chance to download your file"
+      : stage === 2 ? "Your file is still waiting for you"
+      : "Your file is ready",
+    fileReady: "READY TO DOWNLOAD",
+    intro: (doc) => `You finished working on <strong>${doc}</strong> but didn't download it. It's still saved — come back and grab it whenever you like.`,
+    cta: "Download my file",
+    expires: (date) => `Your file will be available until <strong>${date}</strong>. After that it's deleted automatically.`,
+    toolsTitle: "Everything you can do with your PDFs",
+    tools: [
+      ["✏️ Edit text", "Change the content right in your browser"],
+      ["🔄 Convert", "PDF to Word, Excel, PowerPoint or JPG (and back)"],
+      ["🗂️ Merge & split", "Combine PDFs or split pages in seconds"],
+      ["🗜️ Compress", "Shrink your files without losing quality"],
+      ["✍️ Sign", "Add your signature to any document"],
+      ["🔒 Protect", "Password-protect and watermark your PDFs"],
+    ],
+    footerNote: "You're receiving this because you edited a document at editorpdf.net.",
+    unsub: "Stop sending me reminders",
+  },
+};
+
+export async function sendRecoveryEmail(opts: {
+  to: string;
+  lang?: string;
+  docName: string;
+  downloadUrl: string;
+  unsubscribeUrl: string;
+  expiresDate: string;   // already formatted for the user
+  stage: number;         // 1 | 2 | 3
+}): Promise<boolean> {
+  if (!resend) {
+    console.warn("[Email] Resend not configured, skipping recovery email");
+    return false;
+  }
+  const { to, docName, downloadUrl, unsubscribeUrl, expiresDate, stage } = opts;
+  const s = RECOVERY_STRINGS[(opts.lang || "es").slice(0, 2)] ?? RECOVERY_STRINGS.en;
+  const ink = "#0A0A0B", accent = "#E63946", muted = "#94a3b8";
+  const safeDoc = docName.replace(/[<>]/g, "");
+
+  const toolsHtml = s.tools.map(([name, desc]) => `
+    <tr>
+      <td style="padding:9px 0;border-bottom:1px solid #f1f1f4;">
+        <p style="margin:0;color:${ink};font-size:14px;font-weight:700;">${name}</p>
+        <p style="margin:2px 0 0;color:#5A5A62;font-size:12.5px;line-height:1.4;">${desc}</p>
+      </td>
+    </tr>`).join("");
+
+  const html = `<!DOCTYPE html>
+<html lang="${(opts.lang || "es").slice(0, 2)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;background:#f4f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f6;padding:24px 12px;"><tr><td align="center">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(10,10,11,0.08);">
+
+      <!-- Header -->
+      <tr><td style="padding:22px 40px;border-bottom:1px solid #f1f1f4;">
+        <span style="font-weight:800;font-size:18px;letter-spacing:-0.03em;color:${ink};">editorpdf<span style="color:${accent};">.net</span></span>
+      </td></tr>
+
+      <!-- Hero -->
+      <tr><td style="padding:34px 40px 8px;">
+        <h1 style="margin:0;color:${ink};font-size:26px;line-height:1.15;letter-spacing:-0.02em;font-weight:800;">${s.hero(stage)}</h1>
+      </td></tr>
+
+      <!-- File card -->
+      <tr><td style="padding:16px 40px 0;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FDECEE;border:1px solid #F2C1C6;border-radius:12px;">
+          <tr>
+            <td style="padding:16px 18px;width:44px;vertical-align:middle;">
+              <div style="width:40px;height:48px;background:#ffffff;border-radius:8px;text-align:center;line-height:48px;font-size:22px;">📄</div>
+            </td>
+            <td style="padding:16px 8px;vertical-align:middle;">
+              <p style="margin:0 0 3px;color:${accent};font-size:10px;font-weight:800;letter-spacing:0.1em;">${s.fileReady}</p>
+              <p style="margin:0;color:${ink};font-size:15px;font-weight:700;word-break:break-all;">${safeDoc}</p>
+            </td>
+          </tr>
+        </table>
+      </td></tr>
+
+      <!-- Intro -->
+      <tr><td style="padding:18px 40px 0;">
+        <p style="margin:0;color:#5A5A62;font-size:15px;line-height:1.6;">${s.intro(safeDoc)}</p>
+      </td></tr>
+
+      <!-- CTA -->
+      <tr><td style="padding:24px 40px 6px;" align="center">
+        <a href="${downloadUrl}" style="display:inline-block;background:${accent};color:#ffffff;text-decoration:none;padding:15px 40px;border-radius:12px;font-size:16px;font-weight:800;box-shadow:0 8px 20px -6px rgba(230,57,70,0.5);">${s.cta}</a>
+      </td></tr>
+
+      <!-- Urgency -->
+      <tr><td style="padding:8px 40px 26px;" align="center">
+        <p style="margin:0;color:#8A8A92;font-size:12.5px;line-height:1.5;">${s.expires(expiresDate)}</p>
+      </td></tr>
+
+      <!-- Tools showcase -->
+      <tr><td style="padding:6px 40px 8px;border-top:1px solid #f1f1f4;">
+        <p style="margin:22px 0 6px;color:${ink};font-size:15px;font-weight:800;">${s.toolsTitle}</p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${toolsHtml}</table>
+      </td></tr>
+
+      <!-- Footer -->
+      <tr><td style="background:#fafafa;padding:20px 40px;border-top:1px solid #f1f1f4;">
+        <p style="margin:0;color:${muted};font-size:11px;line-height:1.6;">${s.footerNote}</p>
+        <p style="margin:8px 0 0;color:${muted};font-size:11px;">© 2026 ${brandName} · <a href="${unsubscribeUrl}" style="color:${muted};text-decoration:underline;">${s.unsub}</a></p>
+      </td></tr>
+
+    </table>
+  </td></tr></table>
+</body></html>`.trim();
+
+  try {
+    const result = await resend.emails.send({
+      from: FROM_ADDRESS_VERIFIED,
+      to,
+      replyTo: REPLY_TO_ADDRESS,
+      subject: s.subject(stage, safeDoc),
+      html,
+      text: htmlToText(html),
+      // Marketing email → List-Unsubscribe (one-click) for deliverability + law.
+      headers: {
+        "List-Unsubscribe": `<${unsubscribeUrl}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      },
+    });
+    if (result.error) { console.error("[Email] recovery send failed:", result.error); return false; }
+    console.log("[Email] recovery sent to:", to, "stage:", stage, "id:", result.data?.id);
+    return true;
+  } catch (err) {
+    console.error("[Email] recovery error:", err);
+    return false;
+  }
+}
+
 /**
  * Send a password reset link. The token is generated by the caller
  * (`forgotPassword` in routers.ts) and stored on the user row; we just

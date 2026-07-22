@@ -337,6 +337,72 @@ export async function deleteDocument(docId: number, userId: number) {
   await db.delete(documents).where(and(eq(documents.id, docId), eq(documents.userId, userId)));
 }
 
+// ─── Recovery emails ("tu archivo está listo, descárgalo") ───────────────────
+
+/** Pending (abandoned) docs created since `sinceDate` whose owner has an email,
+ *  isn't unsubscribed and isn't soft-deleted, and that still have a recovery
+ *  stage left. The cron dedups to the latest doc per user + filters paid users. */
+export async function getPendingRecoveryDocs(sinceDate: Date) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    docId: documents.id,
+    docName: documents.name,
+    userId: documents.userId,
+    createdAt: documents.createdAt,
+    recoveryStage: documents.recoveryStage,
+    recoveryLastSentAt: documents.recoveryLastSentAt,
+    email: users.email,
+    language: users.language,
+  }).from(documents)
+    .innerJoin(users, eq(users.id, documents.userId))
+    .where(and(
+      eq(documents.paymentStatus, "pending"),
+      gte(documents.createdAt, sinceDate),
+      lt(documents.recoveryStage, 3),
+      isNotNull(users.email),
+      eq(users.recoveryUnsubscribed, false),
+      isNull(users.deletedAt),
+    ))
+    .orderBy(desc(documents.createdAt));
+}
+
+/** Set of userIds that have at least one successful charge (i.e. have paid).
+ *  Used to never send recovery emails to someone who already paid. */
+export async function getPaidUserIds(): Promise<Set<number>> {
+  const db = await getDb();
+  if (!db) return new Set();
+  const rows = await db.selectDistinct({ userId: charges.userId }).from(charges).where(eq(charges.status, "ok"));
+  return new Set(rows.map((r) => r.userId));
+}
+
+export async function markRecoverySent(docId: number, stage: number, now: Date = new Date()) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(documents).set({ recoveryStage: stage, recoveryLastSentAt: now }).where(eq(documents.id, docId));
+}
+
+export async function setRecoveryUnsubscribed(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ recoveryUnsubscribed: true }).where(eq(users.id, userId));
+}
+
+/** Delete pending (never-paid) docs older than `olderThan` — the real 7-day
+ *  retention that makes the "your file will be deleted" wording honest.
+ *  Returns the deleted doc IDs. (S3 objects are left for the R2 lifecycle rule.) */
+export async function deleteExpiredPendingDocs(olderThan: Date): Promise<number[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select({ id: documents.id }).from(documents)
+    .where(and(eq(documents.paymentStatus, "pending"), lt(documents.createdAt, olderThan)));
+  const ids = rows.map((r) => r.id);
+  if (ids.length) {
+    await db.delete(documents).where(and(eq(documents.paymentStatus, "pending"), lt(documents.createdAt, olderThan)));
+  }
+  return ids;
+}
+
 export async function getDocumentById(docId: number, userId: number) {
   const db = await getDb();
   if (!db) return null;
