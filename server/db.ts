@@ -1028,6 +1028,13 @@ export async function recordCharge(opts: {
   } catch (err) {
     console.error("[recordCharge] failed:", err);
   }
+  // "Cha-ching" Telegram notification on every successful payment (altas 0,50 €
+  // + renovaciones + wallets). Fire-and-forget — never awaited, never throws.
+  if ((opts.status ?? "ok") === "ok") {
+    import("./_core/telegram")
+      .then((m) => m.notifySale({ amountCents: opts.amountCents, provider: opts.provider, userId: opts.userId }))
+      .catch(() => {});
+  }
   return null;
 }
 
