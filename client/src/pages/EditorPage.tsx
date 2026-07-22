@@ -45,6 +45,9 @@ export default function EditorPage() {
   const { productTourEnabled } = useFeatureFlags();
   const isFileFree = pendingTool ? FILE_FREE_TOOLS.includes(pendingTool) : false;
   const hasDraft = Boolean(localStorage.getItem("pdfpro_editor_draft"));
+  // Monotonic latch: true once the editor has been shown at least once. Keeps
+  // the OAuth resume flow from bouncing back to Home when the paywall opens.
+  const enteredEditorRef = useRef(false);
 
   /* Editable filename */
   const [fileName, setFileName] = useState("document.pdf");
@@ -79,8 +82,19 @@ export default function EditorPage() {
   /* No file loaded and no draft — render the Home landing so /editor mirrors
      the main site instead of a stripped-down upload card. Home's upload
      button stamps the file into PdfFileContext and navigates back here,
-     at which point pendingFile is truthy and we drop into the editor. */
-  if (!pendingFile && !isFileFree && !pendingPaywall && !hasDraft) {
+     at which point pendingFile is truthy and we drop into the editor.
+
+     LATCH: once the editor has EVER been shown (a file loaded, a paywall
+     resume, a free tool or a draft), never fall back to <Home/> again. The
+     OAuth resume flow (register with Google → return with ?resume=download)
+     opens the paywall and, in doing so, flips pendingPaywall back to false;
+     without this latch EditorPage would then see "no file + no paywall" and
+     swap the mounted editor — and its just-opened paywall — for the home
+     page mid-flow, sending the user "back to home" and losing their edits. */
+  if (pendingFile || isFileFree || pendingPaywall || hasDraft) {
+    enteredEditorRef.current = true;
+  }
+  if (!enteredEditorRef.current) {
     return <Home />;
   }
 
