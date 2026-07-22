@@ -148,6 +148,93 @@ Tu opción más sencilla es responder a este email aceptando el reembolso direct
 Un saludo,
 Equipo EditorPDF`,
   },
+  {
+    name: "ES — No sabía que iba a pagar",
+    body: `Hola {{name}},
+
+Gracias por escribir y lamentamos la confusión.
+
+Entendemos tu sorpresa, pero el cargo corresponde a la suscripción que activaste en EditorPDF. La renovación se te mostró —y aceptaste— de forma clara en varios momentos:
+
+1) AL DESCARGAR tu documento, justo encima del botón, tenías que aceptar este aviso para continuar:
+"Al pulsar 'Descargar', aceptas que, si no cancelas antes de que concluya la prueba de 48 horas (0,50€), se facturarán {{price}}/mes de forma automática hasta que canceles."
+Además marcaste la casilla de aceptación de los Términos y Condiciones y la Política de Privacidad.
+
+2) EN TU EMAIL DE BIENVENIDA, al pie, te lo recordamos por escrito:
+"Has activado un período de prueba de 48 horas por 0,50€. Si no cancelas antes de la fecha indicada, tu suscripción se renovará automáticamente al plan mensual de {{price}}/mes. Puedes cancelar en cualquier momento desde tu panel de Facturación."
+
+3) EN NUESTRA FAQ (página de precios), en "¿Qué pasa después de la prueba de 48 horas?":
+"Tras la prueba, tu plan se renueva automáticamente al plan mensual. Puedes cancelar en cualquier momento antes de que termine la prueba."
+https://editorpdf.net/es/pricing
+
+Dicho esto, cancelar es muy sencillo y así no se te hará ningún cargo más:
+1. Entra en https://editorpdf.net/es/dashboard?tab=billing
+2. Pulsa "Cancelar suscripción".
+Mantendrás el acceso hasta el final del periodo que ya tienes pagado.
+
+Si necesitas que te ayudemos a cancelar o revisar tu caso, respóndenos y lo vemos encantados.
+
+Un saludo,
+Equipo EditorPDF`,
+  },
+  {
+    name: "EN — Didn't know I'd be charged",
+    body: `Hi {{name}},
+
+Thanks for reaching out, and sorry for the confusion.
+
+We understand your surprise, but the charge corresponds to the EditorPDF subscription you activated. The renewal was shown to you — and accepted — clearly, at several points:
+
+1) WHEN DOWNLOADING your document, right above the button, you had to accept this notice to continue:
+"By pressing 'Download', you acknowledge that if the 48-hour trial (€0.50) is not cancelled beforehand, a recurring charge of {{price}}/month will apply until you cancel."
+You also ticked the box accepting our Terms & Conditions and Privacy Policy.
+
+2) IN YOUR WELCOME EMAIL, at the bottom, we reminded you in writing:
+"You've activated a 48-hour trial for €0.50. If you don't cancel before the date shown, your subscription will automatically renew at the monthly plan of {{price}}/month. You can cancel anytime from your Billing dashboard."
+
+3) IN OUR FAQ (pricing page), under "What happens after the 48-hour trial?":
+"After the trial, your plan automatically renews to the monthly plan. You can cancel anytime before the trial ends."
+https://editorpdf.net/en/pricing
+
+That said, cancelling is very easy, so you won't be charged again:
+1. Go to https://editorpdf.net/en/dashboard?tab=billing
+2. Click "Cancel subscription".
+You'll keep access until the end of the period you've already paid for.
+
+If you'd like us to help you cancel or review your case, just reply and we'll be glad to help.
+
+Best regards,
+EditorPDF Team`,
+  },
+  {
+    name: "FR — Je ne savais pas que je serais facturé",
+    body: `Bonjour {{name}},
+
+Merci de nous avoir contactés, et désolés pour la confusion.
+
+Nous comprenons votre surprise, mais le prélèvement correspond à l'abonnement EditorPDF que vous avez activé. Le renouvellement vous a été présenté — et accepté — clairement, à plusieurs reprises :
+
+1) AU MOMENT DE TÉLÉCHARGER votre document, juste au-dessus du bouton, vous deviez accepter cet avis pour continuer :
+"En cliquant sur 'Télécharger', vous acceptez que si vous n'annulez pas avant la fin de l'essai de 48 heures (0,50€), vous serez automatiquement facturé {{price}}/mois jusqu'à l'annulation."
+Vous avez également coché la case d'acceptation des Conditions Générales et de la Politique de confidentialité.
+
+2) DANS VOTRE E-MAIL DE BIENVENUE, en bas, nous vous l'avons rappelé par écrit :
+"Vous avez activé une période d'essai de 48 heures pour 0,50€. Si vous n'annulez pas avant la date indiquée, votre abonnement sera automatiquement renouvelé au tarif mensuel de {{price}}/mois. Vous pouvez annuler à tout moment depuis votre tableau de Facturation."
+
+3) DANS NOTRE FAQ (page de tarifs), à "Que se passe-t-il après l'essai de 48 heures ?" :
+"Après l'essai, votre plan est automatiquement renouvelé au plan mensuel. Vous pouvez annuler à tout moment avant la fin de l'essai."
+https://editorpdf.net/fr/pricing
+
+Cela dit, l'annulation est très simple, ainsi vous ne serez plus prélevé :
+1. Rendez-vous sur https://editorpdf.net/fr/dashboard?tab=billing
+2. Cliquez sur "Annuler l'abonnement".
+Vous conserverez l'accès jusqu'à la fin de la période déjà payée.
+
+Si vous souhaitez que nous vous aidions à annuler ou à examiner votre cas, répondez-nous et nous serons ravis de vous aider.
+
+Cordialement,
+L'équipe EditorPDF`,
+  },
 ];
 
 const db = await mysql.createConnection(process.env.DATABASE_URL);
