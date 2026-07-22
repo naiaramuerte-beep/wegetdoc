@@ -899,7 +899,25 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const maxAttempts = 50; // 15 seconds max
     const interval = setInterval(async () => {
       attempts++;
-      const authed = isAuthenticatedRef.current;
+      let authed = isAuthenticatedRef.current;
+      // The React Query `auth.me` cache can stay stale after the cross-origin
+      // OAuth redirect on mobile (session cookie is set, but the cached query
+      // still reads "logged out"), which strands the user on an empty editor.
+      // Fall back to a direct, uncached cookie check every ~1s until authed.
+      if (!authed && attempts % 3 === 0) {
+        try {
+          const r = await fetch("/api/auth/status", { credentials: "include", cache: "no-store" });
+          if (r.ok) {
+            const s = await r.json();
+            if (s?.authenticated) {
+              authed = true;
+              isAuthenticatedRef.current = true;
+              if (s.premium) isPremiumRef.current = true;
+              refreshAuth(); // sync the React Query so the rest of the UI updates
+            }
+          }
+        } catch { /* transient — retry next poll */ }
+      }
       const hasPdf = pdfDocRef.current || pendingEditedPdfRef.current;
 
       console.log(`[autoResume] Poll #${attempts}: authed=${authed}, hasPdf=${!!hasPdf}`);

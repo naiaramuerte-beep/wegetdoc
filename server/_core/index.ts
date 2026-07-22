@@ -65,6 +65,32 @@ async function startServer() {
     res.json({ id: process.env.RAILWAY_GIT_COMMIT_SHA || "dev" });
   });
 
+  // Direct, uncached session check. The post-OAuth auto-resume flow polls this
+  // instead of trusting the React Query `auth.me` cache, which on mobile can
+  // stay stale after the cross-origin redirect and strand the user on an empty
+  // editor. Reads the session cookie straight off the request — so it also
+  // tells us (via the log) whether the browser is even sending the cookie.
+  app.get("/api/auth/status", async (req, res) => {
+    res.set("Cache-Control", "no-store");
+    const hasCookie = /(?:^|;\s*)app_session_id=/.test(req.headers.cookie || "");
+    try {
+      const { sdk } = await import("./sdk");
+      const user = await sdk.authenticateRequest(req);
+      let premium = false;
+      try {
+        const db = await import("../db");
+        const sub = await db.getActiveSubscription(user.id);
+        premium = !!sub && (sub.status === "active" || sub.status === "trialing") &&
+          (sub.plan === "monthly" || sub.plan === "annual");
+      } catch { /* premium best-effort */ }
+      console.log(`[auth-status] cookie=${hasCookie} authed=true userId=${user.id} premium=${premium}`);
+      res.json({ authenticated: true, premium });
+    } catch {
+      console.log(`[auth-status] cookie=${hasCookie} authed=false`);
+      res.json({ authenticated: false, premium: false });
+    }
+  });
+
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
