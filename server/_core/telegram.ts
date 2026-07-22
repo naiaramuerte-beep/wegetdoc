@@ -16,6 +16,14 @@ const PROVIDER_LABEL: Record<string, string> = {
 
 const eur = (cents: number) => (cents / 100).toFixed(2).replace(".", ",") + " €";
 
+/** Rough device class from a User-Agent. null when unknown (e.g. MIT cron). */
+export function deviceFromUA(ua?: string | null): "mobile" | "desktop" | null {
+  if (!ua) return null;
+  return /Mobi|Android|iPhone|iPod|iPad|Windows Phone|BlackBerry|Opera Mini|IEMobile/i.test(ua)
+    ? "mobile"
+    : "desktop";
+}
+
 /** 2-letter ISO country → flag emoji (regional indicator letters). */
 function countryFlag(code?: string | null): string {
   const c = (code || "").trim().toUpperCase();
@@ -57,11 +65,13 @@ export async function notifySale(opts: {
   todayCount?: number;      // running total for today (incl. this sale)
   todayTotalCents?: number;
   hora?: string;            // HH:mm Madrid
+  device?: "mobile" | "desktop" | null;
 }): Promise<void> {
   const method = PROVIDER_LABEL[opts.provider] ?? opts.provider;
   const kind = opts.provider === "mit" ? "🔄 Renovación" : "🆕 Alta nueva";
   const flag = countryFlag(opts.country);
   const cname = countryName(opts.country);
+  const deviceLabel = opts.device === "mobile" ? "📱 Móvil" : opts.device === "desktop" ? "💻 PC" : "";
 
   const lines = [
     `💰 <b>¡Nueva venta!</b>  <b>+${eur(opts.amountCents)}</b>`,
@@ -69,6 +79,7 @@ export async function notifySale(opts: {
   ];
   const geoTime = [
     flag ? `${flag} ${cname}` : "",
+    deviceLabel,
     opts.hora ? `🕐 ${opts.hora}` : "",
   ].filter(Boolean).join(" · ");
   if (geoTime) lines.push(geoTime);

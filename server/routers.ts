@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { deviceFromUA } from "./_core/telegram";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
@@ -522,6 +523,7 @@ export const appRouter = router({
           status: "ok",
           gclid: input.gclid,
           gclidType: input.gclidType,
+          deviceType: deviceFromUA(String(ctx.req?.headers?.["user-agent"] ?? "")),
         });
         await recordWebhookEvent({
           provider: "sipay",
@@ -640,6 +642,7 @@ export const appRouter = router({
           status: "ok",
           gclid: input.gclid,
           gclidType: input.gclidType,
+          deviceType: deviceFromUA(String(ctx.req?.headers?.["user-agent"] ?? "")),
         });
         await recordWebhookEvent({
           provider: "sipay",

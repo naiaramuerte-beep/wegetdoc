@@ -184,6 +184,7 @@ export async function finalizeFastpayPayment(opts: {
   fallbackUserId?: number;
   source: "callback" | "cron" | "admin";
   acceptLang?: string;
+  deviceType?: "mobile" | "desktop" | null;
 }): Promise<{
   ok: boolean;
   alreadyFinalized: boolean;
@@ -306,6 +307,7 @@ export async function finalizeFastpayPayment(opts: {
     status: "ok",
     gclid: pendingGclid?.gclid,
     gclidType: pendingGclid?.gclidType,
+    deviceType: opts.deviceType ?? null,
   });
   await recordWebhookEvent({
     provider: "sipay",

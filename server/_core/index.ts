@@ -953,8 +953,10 @@ ${allUrls.map(u => `  <url>
     const startedAt = Date.now();
     try {
       const { finalizeFastpayPayment } = await import("./sipay");
+      const { deviceFromUA } = await import("./telegram");
       const acceptLang = String(req.headers["accept-language"] ?? "");
-      const result = await finalizeFastpayPayment({ requestId, source: "callback", acceptLang });
+      const deviceType = deviceFromUA(String(req.headers["user-agent"] ?? ""));
+      const result = await finalizeFastpayPayment({ requestId, source: "callback", acceptLang, deviceType });
       if (!result.ok) {
         return res.redirect(`/?sipay=confirm_failed&detail=${encodeURIComponent(result.errorMessage ?? "unknown")}`);
       }

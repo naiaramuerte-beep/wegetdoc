@@ -1074,6 +1074,7 @@ export async function recordCharge(opts: {
   currency?: string;
   gclid?: string;
   gclidType?: string;
+  deviceType?: "mobile" | "desktop" | null;
 }) {
   const db = await getDb();
   if (!db) return null;
@@ -1106,6 +1107,7 @@ export async function recordCharge(opts: {
           amountCents: opts.amountCents, provider: opts.provider, userId: opts.userId,
           country: ctx.country, maskedCard: opts.sipayMaskedCard ?? null,
           todayCount: ctx.todayCount, todayTotalCents: ctx.todayTotalCents, hora,
+          device: opts.deviceType ?? null,
         });
       } catch { /* notification is best-effort */ }
     })();
