@@ -105,6 +105,27 @@ async function startServer() {
     });
   }
 
+  // ── Canonical host: apex → www (production only) ──────────────────────────────
+  // Google Pay is only approved on www.editorpdf.net — Google's console refuses
+  // to register the bare apex, forcing www. So funnel every page load to www,
+  // where Google Pay (and Apple Pay + card) all work. EXCLUDE /api/* so the
+  // Google OAuth callback (registered redirect_uri is the apex) and the Sipay
+  // callbacks keep processing on whatever host they land on, and /.well-known/*
+  // so domain-verification files (Apple Pay) stay reachable on the apex.
+  if (process.env.NODE_ENV === "production") {
+    app.use((req, res, next) => {
+      const host = String(req.headers.host || "").toLowerCase();
+      if (
+        host === "editorpdf.net" &&
+        !req.url.startsWith("/api/") &&
+        !req.url.startsWith("/.well-known/")
+      ) {
+        return res.redirect(301, `https://www.editorpdf.net${req.url}`);
+      }
+      next();
+    });
+  }
+
   // ── Security Headers ─────────────────────────────────────────────────────────
   // Comprehensive security headers
   app.use((_req, res, next) => {
@@ -191,7 +212,9 @@ async function startServer() {
   app.get("/sitemap.xml", async (_req, res) => {
     try {
       const posts = await getBlogPosts(true);
-      const base = "https://editorpdf.net";
+      // www is the canonical host (apex 301s to www — Google Pay is only
+      // approved on www), so list www URLs to avoid sitemap entries that redirect.
+      const base = "https://www.editorpdf.net";
       const staticUrls: Array<{ loc: string; priority: string; changefreq: string; lastmod?: string }> = [
         { loc: `${base}/es`, priority: "1.0", changefreq: "weekly" },
         { loc: `${base}/en`, priority: "1.0", changefreq: "weekly" },
