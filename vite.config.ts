@@ -53,6 +53,12 @@ export default defineConfig({
       "@assets": path.resolve(import.meta.dirname, "attached_assets"),
     },
   },
+  // Bake the deploy's commit SHA into the client bundle so the running app can
+  // tell whether it's stale vs. what the server currently serves (see
+  // installVersionAutoReload). Falls back to "dev" outside Railway builds.
+  define: {
+    __BUILD_ID__: JSON.stringify(process.env.RAILWAY_GIT_COMMIT_SHA || "dev"),
+  },
   envDir: path.resolve(import.meta.dirname),
   root: path.resolve(import.meta.dirname, "client"),
   publicDir: path.resolve(import.meta.dirname, "client", "public"),

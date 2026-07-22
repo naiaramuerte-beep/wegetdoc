@@ -57,6 +57,14 @@ async function startServer() {
   app.get("/.well-known/apple-developer-merchantid-domain-association", sendApplePayDomain);
   app.get("/.well-known/apple-developer-merchantid-domain-association.txt", sendApplePayDomain);
 
+  // Build identifier — the commit SHA this server was deployed from. The client
+  // bundle bakes in the SHA it was built from (__BUILD_ID__); when they differ
+  // the client knows it's stale and reloads (see installVersionAutoReload).
+  app.get("/api/version", (_req, res) => {
+    res.set("Cache-Control", "no-store");
+    res.json({ id: process.env.RAILWAY_GIT_COMMIT_SHA || "dev" });
+  });
+
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
