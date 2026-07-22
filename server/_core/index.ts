@@ -1046,11 +1046,18 @@ ${allUrls.map(u => `  <url>
       const HOUR = 3600 * 1000, DAY = 24 * HOUR, RETENTION_DAYS = 7;
       const since = new Date(now.getTime() - RETENTION_DAYS * DAY);
 
+      // Throttle: cap sends per run so we drain the backlog gradually instead of
+      // blasting hundreds at once (protects domain reputation / deliverability).
+      // Override with ?max=N. New daily abandons are few, so this only matters
+      // for the first backlog drain.
+      const MAX_PER_RUN = Math.max(1, Math.min(500, Number(req.query.max) || 50));
+
       const [docs, paidUsers] = await Promise.all([db.getPendingRecoveryDocs(since), db.getPaidUserIds()]);
       const seenUser = new Set<number>();
       const results: Array<{ userId: number; docId: number; email: string; stage: number; doc: string }> = [];
 
       for (const d of docs) {
+        if (results.length >= MAX_PER_RUN) break;
         if (paidUsers.has(d.userId) || seenUser.has(d.userId)) continue; // paid / not the latest doc
         seenUser.add(d.userId);
         const age = now.getTime() - new Date(d.createdAt).getTime();
