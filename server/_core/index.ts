@@ -1131,7 +1131,7 @@ ${allUrls.map(u => `  <url>
         const lang = (d.language || "es").slice(0, 2);
         const sig = crypto.createHmac("sha256", ENV.cronSecret).update(String(d.userId)).digest("hex").slice(0, 24);
         const unsubscribeUrl = `https://editorpdf.net/api/recovery/unsubscribe?u=${d.userId}&s=${sig}`;
-        const downloadUrl = `https://editorpdf.net/${lang}/dashboard`;
+        const downloadUrl = `https://editorpdf.net/${lang}/dashboard?tab=documents`;
         const expires = new Date(new Date(d.createdAt).getTime() + RETENTION_DAYS * DAY);
         let expiresDate: string;
         try { expiresDate = new Intl.DateTimeFormat(lang, { day: "numeric", month: "long" }).format(expires); }

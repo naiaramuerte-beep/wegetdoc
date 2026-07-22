@@ -718,7 +718,7 @@ type RecoveryLang = {
   subject: (stage: number, doc: string) => string;
   hero: (stage: number) => string;
   fileReady: string;      // small label over the file card
-  intro: (doc: string) => string;
+  intro: (stage: number, doc: string) => string;
   cta: string;            // download button
   expires: (date: string) => string;   // urgency line
   toolsTitle: string;
@@ -738,7 +738,10 @@ const RECOVERY_STRINGS: Record<string, RecoveryLang> = {
       : stage === 2 ? "Tu archivo sigue esperándote"
       : "Tu archivo está listo",
     fileReady: "LISTO PARA DESCARGAR",
-    intro: (doc) => `Terminaste de trabajar en <strong>${doc}</strong> pero no llegaste a descargarlo. Aún lo tienes guardado — vuelve y descárgalo cuando quieras.`,
+    intro: (stage, doc) =>
+      stage >= 3 ? `Este es el último aviso: <strong>${doc}</strong> se eliminará muy pronto de tu cuenta. Entra ahora y descárgalo antes de perderlo para siempre.`
+      : stage === 2 ? `Tu documento <strong>${doc}</strong> sigue guardado en tu cuenta. No pierdas el trabajo que hiciste — entra y descárgalo antes de que caduque.`
+      : `Terminaste de trabajar en <strong>${doc}</strong> pero no llegaste a descargarlo. Lo tienes guardado en tu cuenta — entra y descárgalo cuando quieras.`,
     cta: "Descargar mi archivo",
     expires: (date) => `Tu archivo estará disponible hasta el <strong>${date}</strong>. Después se eliminará de forma automática.`,
     toolsTitle: "Todo lo que puedes hacer con tus PDF",
@@ -763,7 +766,10 @@ const RECOVERY_STRINGS: Record<string, RecoveryLang> = {
       : stage === 2 ? "Your file is still waiting for you"
       : "Your file is ready",
     fileReady: "READY TO DOWNLOAD",
-    intro: (doc) => `You finished working on <strong>${doc}</strong> but didn't download it. It's still saved — come back and grab it whenever you like.`,
+    intro: (stage, doc) =>
+      stage >= 3 ? `This is your final reminder: <strong>${doc}</strong> will be deleted from your account very soon. Sign in now and download it before it's gone for good.`
+      : stage === 2 ? `Your document <strong>${doc}</strong> is still saved in your account. Don't lose the work you did — download it before it expires.`
+      : `You finished working on <strong>${doc}</strong> but didn't download it. It's saved in your account — sign in and grab it whenever you like.`,
     cta: "Download my file",
     expires: (date) => `Your file will be available until <strong>${date}</strong>. After that it's deleted automatically.`,
     toolsTitle: "Everything you can do with your PDFs",
@@ -782,7 +788,10 @@ const RECOVERY_STRINGS: Record<string, RecoveryLang> = {
     subject: (stage, doc) => stage >= 3 ? `Dernière chance : votre fichier va bientôt être supprimé` : stage === 2 ? `Votre fichier est toujours disponible — ${doc}` : `Votre fichier est prêt — ${doc}`,
     hero: (stage) => stage >= 3 ? "Dernière chance de télécharger votre fichier" : stage === 2 ? "Votre fichier vous attend toujours" : "Votre fichier est prêt",
     fileReady: "PRÊT À TÉLÉCHARGER",
-    intro: (doc) => `Vous avez fini de travailler sur <strong>${doc}</strong> mais vous ne l'avez pas téléchargé. Il est toujours enregistré — revenez le récupérer quand vous voulez.`,
+    intro: (stage, doc) =>
+      stage >= 3 ? `Dernier rappel : <strong>${doc}</strong> sera bientôt supprimé de votre compte. Connectez-vous maintenant et téléchargez-le avant de le perdre définitivement.`
+      : stage === 2 ? `Votre document <strong>${doc}</strong> est toujours enregistré dans votre compte. Ne perdez pas votre travail — téléchargez-le avant qu'il n'expire.`
+      : `Vous avez fini de travailler sur <strong>${doc}</strong> mais vous ne l'avez pas téléchargé. Il est enregistré dans votre compte — connectez-vous et récupérez-le quand vous voulez.`,
     cta: "Télécharger mon fichier",
     expires: (date) => `Votre fichier sera disponible jusqu'au <strong>${date}</strong>. Ensuite, il sera supprimé automatiquement.`,
     toolsTitle: "Tout ce que vous pouvez faire avec vos PDF",
@@ -801,7 +810,10 @@ const RECOVERY_STRINGS: Record<string, RecoveryLang> = {
     subject: (stage, doc) => stage >= 3 ? `Letzte Chance: Ihre Datei wird bald gelöscht` : stage === 2 ? `Ihre Datei ist noch verfügbar — ${doc}` : `Ihre Datei ist fertig — ${doc}`,
     hero: (stage) => stage >= 3 ? "Letzte Chance, Ihre Datei herunterzuladen" : stage === 2 ? "Ihre Datei wartet noch auf Sie" : "Ihre Datei ist fertig",
     fileReady: "BEREIT ZUM DOWNLOAD",
-    intro: (doc) => `Sie haben <strong>${doc}</strong> fertig bearbeitet, aber nicht heruntergeladen. Sie ist noch gespeichert — kommen Sie zurück und laden Sie sie herunter, wann immer Sie möchten.`,
+    intro: (stage, doc) =>
+      stage >= 3 ? `Letzte Erinnerung: <strong>${doc}</strong> wird sehr bald aus Ihrem Konto gelöscht. Melden Sie sich jetzt an und laden Sie sie herunter, bevor sie endgültig weg ist.`
+      : stage === 2 ? `Ihr Dokument <strong>${doc}</strong> ist weiterhin in Ihrem Konto gespeichert. Verlieren Sie Ihre Arbeit nicht — laden Sie sie herunter, bevor sie abläuft.`
+      : `Sie haben <strong>${doc}</strong> fertig bearbeitet, aber nicht heruntergeladen. Sie ist in Ihrem Konto gespeichert — melden Sie sich an und laden Sie sie herunter, wann immer Sie möchten.`,
     cta: "Meine Datei herunterladen",
     expires: (date) => `Ihre Datei ist bis zum <strong>${date}</strong> verfügbar. Danach wird sie automatisch gelöscht.`,
     toolsTitle: "Alles, was Sie mit Ihren PDFs machen können",
@@ -820,7 +832,10 @@ const RECOVERY_STRINGS: Record<string, RecoveryLang> = {
     subject: (stage, doc) => stage >= 3 ? `Última oportunidade: o seu ficheiro será apagado em breve` : stage === 2 ? `O seu ficheiro ainda está disponível — ${doc}` : `O seu ficheiro está pronto — ${doc}`,
     hero: (stage) => stage >= 3 ? "Última oportunidade para descarregar o seu ficheiro" : stage === 2 ? "O seu ficheiro ainda está à sua espera" : "O seu ficheiro está pronto",
     fileReady: "PRONTO PARA DESCARREGAR",
-    intro: (doc) => `Terminou de trabalhar em <strong>${doc}</strong> mas não o descarregou. Continua guardado — volte e descarregue-o quando quiser.`,
+    intro: (stage, doc) =>
+      stage >= 3 ? `Último aviso: <strong>${doc}</strong> será apagado da sua conta muito em breve. Inicie sessão agora e descarregue-o antes de o perder para sempre.`
+      : stage === 2 ? `O seu documento <strong>${doc}</strong> continua guardado na sua conta. Não perca o trabalho que fez — descarregue-o antes de expirar.`
+      : `Terminou de trabalhar em <strong>${doc}</strong> mas não o descarregou. Está guardado na sua conta — inicie sessão e descarregue-o quando quiser.`,
     cta: "Descarregar o meu ficheiro",
     expires: (date) => `O seu ficheiro estará disponível até <strong>${date}</strong>. Depois será apagado automaticamente.`,
     toolsTitle: "Tudo o que pode fazer com os seus PDF",
@@ -839,7 +854,10 @@ const RECOVERY_STRINGS: Record<string, RecoveryLang> = {
     subject: (stage, doc) => stage >= 3 ? `Ultima possibilità: il tuo file sta per essere eliminato` : stage === 2 ? `Il tuo file è ancora disponibile — ${doc}` : `Il tuo file è pronto — ${doc}`,
     hero: (stage) => stage >= 3 ? "Ultima possibilità per scaricare il tuo file" : stage === 2 ? "Il tuo file ti sta ancora aspettando" : "Il tuo file è pronto",
     fileReady: "PRONTO PER IL DOWNLOAD",
-    intro: (doc) => `Hai finito di lavorare su <strong>${doc}</strong> ma non l'hai scaricato. È ancora salvato — torna e scaricalo quando vuoi.`,
+    intro: (stage, doc) =>
+      stage >= 3 ? `Ultimo promemoria: <strong>${doc}</strong> sta per essere eliminato dal tuo account. Accedi ora e scaricalo prima di perderlo per sempre.`
+      : stage === 2 ? `Il tuo documento <strong>${doc}</strong> è ancora salvato nel tuo account. Non perdere il lavoro che hai fatto — scaricalo prima che scada.`
+      : `Hai finito di lavorare su <strong>${doc}</strong> ma non l'hai scaricato. È salvato nel tuo account — accedi e scaricalo quando vuoi.`,
     cta: "Scarica il mio file",
     expires: (date) => `Il tuo file sarà disponibile fino al <strong>${date}</strong>. Dopo verrà eliminato automaticamente.`,
     toolsTitle: "Tutto ciò che puoi fare con i tuoi PDF",
@@ -858,7 +876,10 @@ const RECOVERY_STRINGS: Record<string, RecoveryLang> = {
     subject: (stage, doc) => stage >= 3 ? `Laatste kans: je bestand wordt binnenkort verwijderd` : stage === 2 ? `Je bestand is nog beschikbaar — ${doc}` : `Je bestand is klaar — ${doc}`,
     hero: (stage) => stage >= 3 ? "Laatste kans om je bestand te downloaden" : stage === 2 ? "Je bestand wacht nog op je" : "Je bestand is klaar",
     fileReady: "KLAAR OM TE DOWNLOADEN",
-    intro: (doc) => `Je bent klaar met werken aan <strong>${doc}</strong> maar hebt het niet gedownload. Het is nog opgeslagen — kom terug en download het wanneer je wilt.`,
+    intro: (stage, doc) =>
+      stage >= 3 ? `Laatste herinnering: <strong>${doc}</strong> wordt binnenkort uit je account verwijderd. Log nu in en download het voordat het definitief weg is.`
+      : stage === 2 ? `Je document <strong>${doc}</strong> staat nog opgeslagen in je account. Verlies je werk niet — download het voordat het verloopt.`
+      : `Je bent klaar met werken aan <strong>${doc}</strong> maar hebt het niet gedownload. Het staat opgeslagen in je account — log in en download het wanneer je wilt.`,
     cta: "Mijn bestand downloaden",
     expires: (date) => `Je bestand is beschikbaar tot <strong>${date}</strong>. Daarna wordt het automatisch verwijderd.`,
     toolsTitle: "Alles wat je met je PDF's kunt doen",
@@ -877,7 +898,10 @@ const RECOVERY_STRINGS: Record<string, RecoveryLang> = {
     subject: (stage, doc) => stage >= 3 ? `Ostatnia szansa: Twój plik wkrótce zostanie usunięty` : stage === 2 ? `Twój plik jest nadal dostępny — ${doc}` : `Twój plik jest gotowy — ${doc}`,
     hero: (stage) => stage >= 3 ? "Ostatnia szansa, aby pobrać plik" : stage === 2 ? "Twój plik wciąż na Ciebie czeka" : "Twój plik jest gotowy",
     fileReady: "GOTOWY DO POBRANIA",
-    intro: (doc) => `Skończyłeś pracę nad <strong>${doc}</strong>, ale go nie pobrałeś. Nadal jest zapisany — wróć i pobierz go, kiedy chcesz.`,
+    intro: (stage, doc) =>
+      stage >= 3 ? `Ostatnie przypomnienie: <strong>${doc}</strong> wkrótce zostanie usunięty z Twojego konta. Zaloguj się teraz i pobierz go, zanim zniknie na zawsze.`
+      : stage === 2 ? `Twój dokument <strong>${doc}</strong> nadal jest zapisany na Twoim koncie. Nie trać swojej pracy — pobierz go, zanim wygaśnie.`
+      : `Skończyłeś pracę nad <strong>${doc}</strong>, ale go nie pobrałeś. Jest zapisany na Twoim koncie — zaloguj się i pobierz go, kiedy chcesz.`,
     cta: "Pobierz mój plik",
     expires: (date) => `Twój plik będzie dostępny do <strong>${date}</strong>. Potem zostanie automatycznie usunięty.`,
     toolsTitle: "Wszystko, co możesz zrobić ze swoimi PDF",
@@ -896,7 +920,10 @@ const RECOVERY_STRINGS: Record<string, RecoveryLang> = {
     subject: (stage, doc) => stage >= 3 ? `Последний шанс: ваш файл скоро будет удалён` : stage === 2 ? `Ваш файл всё ещё доступен — ${doc}` : `Ваш файл готов — ${doc}`,
     hero: (stage) => stage >= 3 ? "Последний шанс скачать ваш файл" : stage === 2 ? "Ваш файл всё ещё ждёт вас" : "Ваш файл готов",
     fileReady: "ГОТОВ К СКАЧИВАНИЮ",
-    intro: (doc) => `Вы закончили работу над <strong>${doc}</strong>, но не скачали его. Он всё ещё сохранён — вернитесь и скачайте его в любое время.`,
+    intro: (stage, doc) =>
+      stage >= 3 ? `Последнее напоминание: <strong>${doc}</strong> скоро будет удалён из вашего аккаунта. Войдите сейчас и скачайте его, пока не потеряли навсегда.`
+      : stage === 2 ? `Ваш документ <strong>${doc}</strong> всё ещё сохранён в вашем аккаунте. Не теряйте проделанную работу — скачайте его, пока он доступен.`
+      : `Вы закончили работу над <strong>${doc}</strong>, но не скачали его. Он сохранён в вашем аккаунте — войдите и скачайте его в любое время.`,
     cta: "Скачать мой файл",
     expires: (date) => `Ваш файл будет доступен до <strong>${date}</strong>. После этого он будет удалён автоматически.`,
     toolsTitle: "Всё, что вы можете сделать со своими PDF",
@@ -915,7 +942,10 @@ const RECOVERY_STRINGS: Record<string, RecoveryLang> = {
     subject: (stage, doc) => stage >= 3 ? `Останній шанс: ваш файл скоро буде видалено` : stage === 2 ? `Ваш файл усе ще доступний — ${doc}` : `Ваш файл готовий — ${doc}`,
     hero: (stage) => stage >= 3 ? "Останній шанс завантажити ваш файл" : stage === 2 ? "Ваш файл усе ще чекає на вас" : "Ваш файл готовий",
     fileReady: "ГОТОВИЙ ДО ЗАВАНТАЖЕННЯ",
-    intro: (doc) => `Ви завершили роботу над <strong>${doc}</strong>, але не завантажили його. Він усе ще збережений — поверніться та завантажте його будь-коли.`,
+    intro: (stage, doc) =>
+      stage >= 3 ? `Останнє нагадування: <strong>${doc}</strong> незабаром буде видалено з вашого акаунту. Увійдіть зараз і завантажте його, поки не втратили назавжди.`
+      : stage === 2 ? `Ваш документ <strong>${doc}</strong> усе ще збережений у вашому акаунті. Не втрачайте свою роботу — завантажте його, поки він доступний.`
+      : `Ви завершили роботу над <strong>${doc}</strong>, але не завантажили його. Він збережений у вашому акаунті — увійдіть і завантажте його будь-коли.`,
     cta: "Завантажити мій файл",
     expires: (date) => `Ваш файл буде доступний до <strong>${date}</strong>. Після цього його буде видалено автоматично.`,
     toolsTitle: "Усе, що ви можете зробити зі своїми PDF",
@@ -934,7 +964,10 @@ const RECOVERY_STRINGS: Record<string, RecoveryLang> = {
     subject: (stage, doc) => stage >= 3 ? `Ultima șansă: fișierul tău va fi șters în curând` : stage === 2 ? `Fișierul tău este încă disponibil — ${doc}` : `Fișierul tău este gata — ${doc}`,
     hero: (stage) => stage >= 3 ? "Ultima șansă să îți descarci fișierul" : stage === 2 ? "Fișierul tău încă te așteaptă" : "Fișierul tău este gata",
     fileReady: "GATA DE DESCĂRCARE",
-    intro: (doc) => `Ai terminat de lucrat la <strong>${doc}</strong>, dar nu l-ai descărcat. Este încă salvat — întoarce-te și descarcă-l oricând vrei.`,
+    intro: (stage, doc) =>
+      stage >= 3 ? `Ultimul memento: <strong>${doc}</strong> va fi șters în curând din contul tău. Autentifică-te acum și descarcă-l înainte să-l pierzi definitiv.`
+      : stage === 2 ? `Documentul tău <strong>${doc}</strong> este încă salvat în contul tău. Nu-ți pierde munca — descarcă-l înainte să expire.`
+      : `Ai terminat de lucrat la <strong>${doc}</strong>, dar nu l-ai descărcat. Este salvat în contul tău — autentifică-te și descarcă-l oricând vrei.`,
     cta: "Descarcă fișierul meu",
     expires: (date) => `Fișierul tău va fi disponibil până pe <strong>${date}</strong>. După aceea va fi șters automat.`,
     toolsTitle: "Tot ce poți face cu PDF-urile tale",
@@ -953,7 +986,10 @@ const RECOVERY_STRINGS: Record<string, RecoveryLang> = {
     subject: (stage, doc) => stage >= 3 ? `最后机会：您的文件即将被删除` : stage === 2 ? `您的文件仍然可用 — ${doc}` : `您的文件已就绪 — ${doc}`,
     hero: (stage) => stage >= 3 ? "下载文件的最后机会" : stage === 2 ? "您的文件仍在等待您" : "您的文件已就绪",
     fileReady: "可供下载",
-    intro: (doc) => `您已完成对 <strong>${doc}</strong> 的编辑，但尚未下载。它仍已保存 — 随时回来下载。`,
+    intro: (stage, doc) =>
+      stage >= 3 ? `最后提醒：<strong>${doc}</strong> 即将从您的账户中删除。请立即登录并下载，以免永久丢失。`
+      : stage === 2 ? `您的文档 <strong>${doc}</strong> 仍保存在您的账户中。不要丢失您的成果 — 请在到期前下载。`
+      : `您已完成对 <strong>${doc}</strong> 的编辑，但尚未下载。它已保存在您的账户中 — 登录后随时下载。`,
     cta: "下载我的文件",
     expires: (date) => `您的文件将保留到 <strong>${date}</strong>，之后将自动删除。`,
     toolsTitle: "您可以用 PDF 做的一切",
@@ -1029,7 +1065,7 @@ export async function sendRecoveryEmail(opts: {
 
       <!-- Intro -->
       <tr><td style="padding:18px 40px 0;">
-        <p style="margin:0;color:#5A5A62;font-size:15px;line-height:1.6;">${s.intro(safeDoc)}</p>
+        <p style="margin:0;color:#5A5A62;font-size:15px;line-height:1.6;">${s.intro(stage, safeDoc)}</p>
       </td></tr>
 
       <!-- CTA -->
