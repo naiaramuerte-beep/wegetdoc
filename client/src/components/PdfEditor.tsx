@@ -980,6 +980,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           if (out) {
             triggerDownload(out);
             toast.success(t.editor_toast_download_success ?? "PDF downloaded successfully", { id: "dl" });
+            // Resume flow: no document is loaded in the editor, so after the
+            // auto-download don't strand the user on the empty upload zone —
+            // send them home cleanly. (When the editor HAS the PDF loaded, the
+            // normal in-place case, we stay put as before.)
+            if (!pdfBytesRef.current) {
+              const lm = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
+              navigate(`/${lm ? lm[1] : "es"}`);
+            }
           } else {
             // Never leave the loader hanging — the doc is auto-saved to the
             // account, so send the user to their documents.
