@@ -134,6 +134,14 @@ export function PdfFileProvider({ children }: { children: ReactNode }) {
         if (tk) {
           const tn = params.get("tn") || tempName || "document.pdf";
           setPendingEditedPdf({ tempKey: tk, name: tn });
+          // Persist to sessionStorage too, so if the page reloads for ANY reason
+          // (chunk-error recovery, manual refresh, etc.) the resume state is
+          // rebuilt from storage instead of dumping the user on an empty editor.
+          try {
+            sessionStorage.setItem(SESSION_KEY_TEMP_KEY, tk);
+            sessionStorage.setItem(SESSION_KEY_TEMP_NAME, tn);
+            sessionStorage.setItem(SESSION_KEY_PAYWALL, "1");
+          } catch { /* storage full/disabled — URL restore already covered this load */ }
         }
         setPendingPaywallState(true);
         sessionStorage.setItem("cloudpdf_pending_action", "download");

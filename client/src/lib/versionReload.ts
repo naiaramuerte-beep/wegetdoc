@@ -27,14 +27,25 @@ function inSensitiveFlow(): boolean {
   // Payment success/return, Sipay callbacks, the OAuth resume download flow,
   // and any raw OAuth params (code/state) — never yank the page out from under
   // these. They're short-lived; the next navigation will pick up the new build.
-  return (
-    url.includes("/payment/") ||
+  // NEVER reload on the interactive flow pages — the editor + dashboard are
+  // where the OAuth resume, the paywall and downloads happen, and a reload
+  // there loses in-memory state (e.g. the edited-PDF tempKey) and strands the
+  // user. A stale bundle on those pages is harmless; it self-updates on the
+  // next navigation. Only landing/pricing/etc. pages ever auto-reload.
+  if (url.includes("/editor") || url.includes("/dashboard") || url.includes("/payment")) return true;
+  if (
     url.includes("sipay") ||
     url.includes("resume=") ||
     url.includes("code=") ||
     url.includes("state=") ||
     url.includes("txn=")
-  );
+  ) return true;
+  try {
+    // A download/resume is mid-flight (survives the resume-param stripping).
+    if (sessionStorage.getItem("cloudpdf_pending_action")) return true;
+    if (sessionStorage.getItem("cloudpdf_open_paywall") === "1") return true;
+  } catch { /* storage disabled — fall through */ }
+  return false;
 }
 
 async function checkOnce(): Promise<void> {
