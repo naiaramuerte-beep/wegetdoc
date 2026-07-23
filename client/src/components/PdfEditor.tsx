@@ -3615,6 +3615,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         setShowPaywall(false);
         setPaywallReason(undefined);
         setPaywallAutoGoogle(false);
+        // This element renders in the resume/no-file branch, where the editor
+        // has no document loaded. Closing the modal must NOT strand the user on
+        // the "Preparando…" loader or a bare upload zone — clear the loader and
+        // send them back home so they always have a way out.
+        setPreparingResume(false);
+        if (!file || !pdfDoc) {
+          const lm = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
+          navigate(`/${lm ? lm[1] : "es"}`);
+        }
       }}
       reason={paywallReason}
       autoTriggerGoogle={paywallAutoGoogle}
