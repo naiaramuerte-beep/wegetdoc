@@ -10,6 +10,7 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import PresenceTracker from "./components/PresenceTracker";
+import PaymentResultToast from "./components/PaymentResultToast";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { PdfFileProvider } from "./contexts/PdfFileContext";
@@ -300,6 +301,7 @@ function App() {
             <TooltipProvider>
               <Toaster position="top-center" duration={2000} style={{ top: "60px" }} />
               <PresenceTracker />
+              <PaymentResultToast />
               <Suspense fallback={null}>
                 <AnnouncementBanner />
               </Suspense>
