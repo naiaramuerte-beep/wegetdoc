@@ -5046,9 +5046,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                 // (autoSave + premium check + download or paywall).
                 downloadPdf();
               } else {
-                // Toggle the auth-picker dropdown. The actual download
-                // path runs after the user picks Google or Email.
-                setShowDownloadMenu((v) => !v);
+                // Open the register modal DIRECTLY (Email + Google together
+                // inside it), instead of an intermediate Google/Email dropdown.
+                setPaywallAutoGoogle(false);
+                downloadPdf();
               }
             }}
             className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-white text-sm font-semibold transition-all shadow-sm hover:shadow-md"
@@ -5057,7 +5058,6 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             onMouseLeave={e => e.currentTarget.style.backgroundColor = "#E63946"}
           >
             <Download className="w-4 h-4" />{t.editor_download}
-            {!isAuthenticated && <ChevronDown className="w-3.5 h-3.5 -mr-1 opacity-80" />}
           </button>
           {!isAuthenticated && showDownloadMenu && (
             <>
