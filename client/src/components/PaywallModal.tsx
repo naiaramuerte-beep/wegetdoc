@@ -741,7 +741,7 @@ function SipayCheckoutForm({
                 .fastpay-btn + iframe {
                   display: block !important;
                   width: 100% !important;
-                  min-height: 520px !important;
+                  min-height: 400px !important;
                   border: 0 !important;
                   background: #f7f8f9 !important;
                   position: relative !important;
@@ -755,10 +755,10 @@ function SipayCheckoutForm({
                   margin-top: 6px !important;
                 }
                 @media (min-height: 700px) {
-                  .fastpay-btn + iframe { min-height: 580px !important; }
+                  .fastpay-btn + iframe { min-height: 410px !important; }
                 }
                 @media (min-width: 768px) {
-                  .fastpay-btn + iframe { min-height: 620px !important; }
+                  .fastpay-btn + iframe { min-height: 430px !important; }
                 }
                 /* Hide the skeleton the instant the real iframe shows up. */
                 .fastpay-shell:has(iframe) .fastpay-skel {
