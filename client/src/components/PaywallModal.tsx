@@ -802,7 +802,16 @@ function SipayCheckoutForm({
                       setRedirecting(false);
                       setFastpayResult(null);
                       triedFastpayIdRef.current = null;
-                      setRetryNonce((n) => n + 1);
+                      // Fully TEAR DOWN the card form before rebuilding it —
+                      // just re-decorating on top of the consumed iframe stacked
+                      // a SECOND form. Collapse (unmounts the shell + iframe),
+                      // then on the next tick reinject a fresh script + re-expand
+                      // so exactly one clean form comes back.
+                      setCardExpanded(false);
+                      setTimeout(() => {
+                        setRetryNonce((n) => n + 1);
+                        setCardExpanded(true);
+                      }, 150);
                     }}
                     className="w-full rounded-lg py-2 text-white text-xs font-semibold"
                     style={{ backgroundColor: "#E63946" }}
