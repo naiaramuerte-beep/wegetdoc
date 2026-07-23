@@ -958,10 +958,34 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         setPreparingResume(false); // premium downloads directly, no paywall to cover the loader
         toast.loading(t.editor_toast_preparing_doc ?? "Preparing document...", { id: "dl" });
         try {
-          const out = await buildAnnotatedPdf();
+          // If the editor has the PDF loaded, build the annotated version.
+          let out: Uint8Array | null = pdfBytesRef.current ? await buildAnnotatedPdf() : null;
+          // Resume flow (back from OAuth): the edited PDF lives in S3, not in the
+          // editor, so buildAnnotatedPdf can't produce it → fetch it by tempKey.
+          // Without this, `out` stays null, the `if (out)` was skipped, and the
+          // "Preparando…" toast never dismissed → stuck forever (the exact bug).
+          const pe = pendingEditedPdfRef.current;
+          if (!out && pe) {
+            const tk = pe.tempKey;
+            if (tk.startsWith("base64:")) {
+              const bin = atob(tk.slice(7));
+              const arr = new Uint8Array(bin.length);
+              for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+              out = arr;
+            } else {
+              const resp = await fetch(`/api/documents/temp-download/${encodeURIComponent(tk)}`);
+              if (resp.ok) out = new Uint8Array(await resp.arrayBuffer());
+            }
+          }
           if (out) {
             triggerDownload(out);
             toast.success(t.editor_toast_download_success ?? "PDF downloaded successfully", { id: "dl" });
+          } else {
+            // Never leave the loader hanging — the doc is auto-saved to the
+            // account, so send the user to their documents.
+            toast.dismiss("dl");
+            const lm = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
+            navigate(`/${lm ? lm[1] : "es"}/dashboard?tab=documents`);
           }
         } catch {
           toast.error(t.editor_toast_prepare_download_error ?? "Error preparing download", { id: "dl" });
