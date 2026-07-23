@@ -3602,7 +3602,83 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     );
   }
 
+  // Hoisted so the payment modal can render BOTH in the main editor view AND in
+  // the no-file branch below. The OAuth resume flow keeps the edited PDF in S3
+  // (tempKey) — it is NOT loaded here as `file` — so `!file` is true and the
+  // early return below would otherwise short-circuit before the modal ever
+  // paints. That was THE bug: after login the code set showPaywall=true (the
+  // beacon fired) but the modal was never reached in the JSX.
+  const paywallModalEl = (
+    <PaywallModal
+      isOpen={showPaywall}
+      onClose={() => {
+        setShowPaywall(false);
+        setPaywallReason(undefined);
+        setPaywallAutoGoogle(false);
+      }}
+      reason={paywallReason}
+      autoTriggerGoogle={paywallAutoGoogle}
+      editorAlreadySaved={!!savedDocId}
+      pdfData={pdfDataForPaywall}
+      thumbnailUrl={paywallThumbnail ?? thumbnails[0]}
+      buildPdfForUpload={async () => {
+        if (!pdfBytes) return null;
+        try {
+          const out = await buildAnnotatedPdf();
+          if (!out) return null;
+          return { base64: uint8ToBase64(out), name: file?.name ?? "document.pdf", size: out.byteLength };
+        } catch {
+          return null;
+        }
+      }}
+      onPaymentSuccess={async (transactionId?: string) => {
+        setShowPaywall(false);
+        toast.loading("Preparando descarga...", { id: "post-pay-dl" });
+        const langMatch = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
+        const lang = langMatch ? langMatch[1] : "es";
+        const txnParam = transactionId ? `?txn=${encodeURIComponent(transactionId)}` : `?txn=pmt_${Date.now()}`;
+        try {
+          if (pendingToolDownloadRef.current) {
+            const { blob, name } = pendingToolDownloadRef.current;
+            triggerBlobDownload(blob, name);
+            pendingToolDownloadRef.current = null;
+            toast.success("¡Pago completado! Archivo descargado correctamente.", { id: "post-pay-dl" });
+            navigate(`/${lang}/payment/success${txnParam}`);
+            return;
+          }
+          const out = await buildAnnotatedPdf();
+          if (out) {
+            triggerDownload(out);
+            toast.success("¡Pago completado! PDF descargado correctamente.", { id: "post-pay-dl" });
+          } else {
+            toast.success("¡Pago completado! Tu documento está en tu panel.", { id: "post-pay-dl" });
+          }
+        } catch {
+          toast.success("¡Pago completado! Tu documento está en tu panel.", { id: "post-pay-dl" });
+        }
+        navigate(`/${lang}/payment/success${txnParam}`);
+      }}
+    />
+  );
+
   if (!file || !pdfDoc) {
+    // OAuth resume / paywall flow: no `file` loaded (the edited PDF is in S3),
+    // but we MUST still render the payment modal. Without this, the early
+    // return below paints only the upload zone and the modal never appears
+    // after Google login — the exact bug the user hit.
+    if (showPaywall || preparingResume) {
+      return (
+        <>
+          {preparingResume && !showPaywall && (
+            <div className="fixed inset-0 z-[9998] flex flex-col items-center justify-center bg-white">
+              <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin mb-3" />
+              <p className="text-sm font-medium text-[#5A5A62]">{t.editor_toast_preparing_doc ?? "Preparando tu documento…"}</p>
+            </div>
+          )}
+          {paywallModalEl}
+        </>
+      );
+    }
     // Note: file-free mode is handled below after renderToolPanel is defined
     if (!isFileFreeMode) return (
       <div
