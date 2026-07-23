@@ -11,11 +11,6 @@ initSentry();
 import { installChunkErrorRecovery } from "@/lib/chunkReload";
 installChunkErrorRecovery();
 
-// Auto-reload when the server is serving a newer build than this stale tab is
-// running (belt-and-suspenders for cached index.html after a deploy).
-import { installVersionAutoReload } from "@/lib/versionReload";
-installVersionAutoReload();
-
 // Capture the Google Ads click ID (gclid/gbraid/wbraid) from the landing URL
 // ASAP, before any client-side redirect can strip the query, so we can report
 // the conversion server-side later (survives Safari/ITP + adblockers).
