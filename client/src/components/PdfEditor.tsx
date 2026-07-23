@@ -1013,6 +1013,12 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         } catch {}
       }
       setShowPaywall(true);
+      // "Chivato": confirm to the server that the post-login paywall actually
+      // opened, so the logs objectively show the modal opens on real devices
+      // (device + userId are read server-side from the request). Fire-and-forget.
+      try {
+        fetch("/api/ev/paywall?resume=1", { method: "POST", credentials: "include", keepalive: true }).catch(() => {});
+      } catch {}
 
       // Auto-save document in background (so it's in the user's account even if they don't pay)
       if (currentPendingEdited) {

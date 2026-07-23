@@ -91,6 +91,29 @@ async function startServer() {
     }
   });
 
+  // "Chivato": the client pings this the instant the paywall modal actually
+  // opens (esp. the post-Google resume flow), so the server logs OBJECTIVE proof
+  // that the modal opened — with device + userId read server-side. Grep the logs
+  // for `[paywall-open] device=mobile ... resume=true` to confirm mobile works.
+  app.post("/api/ev/paywall", async (req, res) => {
+    res.set("Cache-Control", "no-store");
+    try {
+      const { deviceFromUA } = await import("./telegram");
+      const device = deviceFromUA(String(req.headers["user-agent"] ?? "")) ?? "unknown";
+      const resume = req.query.resume === "1";
+      let userId = 0;
+      try {
+        const { sdk } = await import("./sdk");
+        const user = await sdk.authenticateRequest(req);
+        userId = user.id;
+      } catch { /* not authed / no cookie */ }
+      console.log(`[paywall-open] device=${device} userId=${userId} resume=${resume}`);
+    } catch (err: any) {
+      console.error("[paywall-open] error:", err?.message ?? err);
+    }
+    res.status(204).end();
+  });
+
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
