@@ -306,6 +306,10 @@ function SipayCheckoutForm({
   const initMut = trpc.subscription.sipayCheckoutInit.useMutation();
   const [scriptReady, setScriptReady] = useState(false);
   const [fastpayResult, setFastpayResult] = useState<{ payload?: { request_id?: string }; request_id?: string } | null>(null);
+  // Bump to force a full FastPay re-init (fresh script + fresh iframe) so the
+  // user can retry after a declined card — otherwise the consumed iframe never
+  // comes back and the form is stuck on the "Preparando…" skeleton.
+  const [retryNonce, setRetryNonce] = useState(0);
   const [redirecting, setRedirecting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   // Collapsed by default. The user picks "Tarjeta de crédito o débito" to
@@ -345,7 +349,7 @@ function SipayCheckoutForm({
       document.querySelectorAll(`script[data-sipay-fastpay="1"]`).forEach((sc) => sc.remove());
       try { delete (window as any).Fastpay; } catch {}
     };
-  }, [sipayConfigQ.data?.bundleUrl]);
+  }, [sipayConfigQ.data?.bundleUrl, retryNonce]);
 
   // 2) Expose a global callback for FastPay to invoke when the card is captured.
   useEffect(() => {
@@ -418,7 +422,7 @@ function SipayCheckoutForm({
       document.querySelectorAll("[id^='fastpay']").forEach((el) => el.remove());
       document.querySelectorAll(".fastpay-modal, .fastpay-overlay, .fastpay-wrapper").forEach((el) => el.remove());
     };
-  }, [scriptReady, sipayConfigQ.data?.key, cardExpanded]);
+  }, [scriptReady, sipayConfigQ.data?.key, cardExpanded, retryNonce]);
 
   // 4) When FastPay returns a token, auto-fire the all-in-one authorization
   //    and navigate to the 3DS URL Sipay gives us back. We track the last
@@ -765,7 +769,24 @@ function SipayCheckoutForm({
               {authError && !redirecting && (
                 <div className="rounded-lg p-3 text-xs text-amber-900 bg-amber-50 border border-amber-200">
                   <p className="font-semibold mb-1">{s.authFailedTitle}</p>
-                  <p>{s.authFailedBody}</p>
+                  <p className="mb-2">{s.authFailedBody}</p>
+                  {/* Retry: reset the FastPay state and force a fresh script +
+                      iframe so the user can enter their card again. Without this
+                      the consumed iframe never returns and the form is stuck. */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthError(null);
+                      setRedirecting(false);
+                      setFastpayResult(null);
+                      triedFastpayIdRef.current = null;
+                      setRetryNonce((n) => n + 1);
+                    }}
+                    className="w-full rounded-lg py-2 text-white text-xs font-semibold"
+                    style={{ backgroundColor: "#E63946" }}
+                  >
+                    {fpLang === "es" ? "Reintentar el pago" : fpLang === "ca" ? "Torna-ho a provar" : "Try again"}
+                  </button>
                 </div>
               )}
             </div>
