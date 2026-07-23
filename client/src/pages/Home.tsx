@@ -271,6 +271,9 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
     if (tool && FILE_FREE_TOOLS.includes(tool)) {
       navigate(`/${lang}/editor`);
     } else {
+      // Reset before opening so re-selecting the SAME file always fires change
+      // (browsers skip `change` when the value is unchanged).
+      if (fileInputRef.current) fileInputRef.current.value = "";
       fileInputRef.current?.click();
     }
   };
@@ -499,11 +502,16 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
         </div>
       )}
 
+      {/* Visually hidden but STILL RENDERED (not display:none). Mobile browsers
+          (iOS Safari / Android Chrome) frequently drop the first `change` event
+          on a `display:none` file input triggered via .click() — the classic
+          "first upload does nothing, second works" bug. Keeping it in the layout
+          off-screen fixes it. */}
       <input
         ref={fileInputRef}
         type="file"
         accept="application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.html,.txt,.csv"
-        className="hidden"
+        style={{ position: "absolute", width: 1, height: 1, opacity: 0, overflow: "hidden", left: -9999, top: 0 }}
         onChange={handleFileInput}
       />
 
