@@ -65,6 +65,27 @@ export function initSentry() {
     ignoreErrors: IGNORED_ERRORS,
     denyUrls: DENY_URLS,
     beforeSend(event) {
+      // Drop "Failed to fetch" noise from Google Analytics / gtag pings and
+      // from browser extensions that wrap window.fetch. Real example seen in
+      // prod: a gtag beacon to region1.analytics.google.com fails, and an
+      // ad-blocker/extension (chrome-extension://…/frame_ant.js) that had
+      // monkeypatched fetch re-throws it. denyUrls misses it because the frame
+      // Sentry blames is "/gtag/js" resolved against our own origin. Scan the
+      // WHOLE stacktrace instead: if it's a fetch failure touching analytics,
+      // gtag, or an extension frame, it's third-party telemetry — not our bug.
+      try {
+        const values = event.exception?.values ?? [];
+        const msg = values.map((v) => v?.value ?? "").join(" ");
+        if (/failed to fetch|networkerror|load failed/i.test(msg)) {
+          const frames = values.flatMap((v) => v?.stacktrace?.frames ?? []);
+          const files = frames.map((f) => f?.filename ?? "").join(" ") + " " + msg;
+          if (/chrome-extension:|moz-extension:|safari-web-extension:|\/gtag\/js|googletagmanager|analytics\.google\.com|google-analytics/i.test(files)) {
+            return null;
+          }
+        }
+      } catch {
+        /* best-effort — never let filtering throw */
+      }
       // Strip cookies: they carry session tokens. Anyone with Sentry
       // read access shouldn't be able to impersonate users via a leaked
       // event.
