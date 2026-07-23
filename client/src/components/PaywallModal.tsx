@@ -767,6 +767,21 @@ function SipayCheckoutForm({
               `}</style>
               </div>
               )}
+              {/* Hint under Sipay's iframe: if the card number/date/CVV is
+                  invalid, Sipay marks the field red and silently blocks its
+                  "Descargar" button (nothing happens on click). We can't reach
+                  inside their cross-origin iframe to add a message, so this
+                  helper — in OUR chrome, right below it — tells the user what to
+                  check so a mistyped digit doesn't read as a broken form. */}
+              {cardExpanded && !redirecting && !authError && (
+                <p className="text-[11px] text-gray-400 text-center mt-1 px-3 leading-snug">
+                  {fpLang === "es"
+                    ? "Si el botón no responde, revisa que el número de tarjeta, la fecha (MM/AA) y el CVV sean correctos."
+                    : fpLang === "ca"
+                    ? "Si el botó no respon, comprova que el número de targeta, la data (MM/AA) i el CVV siguin correctes."
+                    : "If the button doesn't respond, check that the card number, date (MM/YY) and CVV are correct."}
+                </p>
+              )}
               {redirecting && (
                 <div className="flex items-center justify-center gap-2 py-3 text-sm text-gray-600">
                   <Loader2 className="w-4 h-4 animate-spin text-[#E63946]" />
