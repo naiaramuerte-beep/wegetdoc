@@ -377,6 +377,12 @@ function SipayCheckoutForm({
     const fp = (window as any).Fastpay;
     if (!fp) return;
 
+    // Remove any leftover card iframe from a previous attempt BEFORE decorating
+    // again — otherwise a retry stacks a SECOND card form on top of the first
+    // (FastPay injects the iframe as a sibling of .fastpay-btn inside the shell,
+    // and its src doesn't always match the sipay/fastpay selectors we swept).
+    document.querySelectorAll(".fastpay-shell iframe").forEach((el) => el.remove());
+
     try {
       if (typeof fp.customize === "function") {
         // Sipay's customize() just JSON.stringifies whatever we pass and
@@ -417,6 +423,7 @@ function SipayCheckoutForm({
       // doesn't carry it away. When the user collapses the row, the iframe
       // would otherwise stick around floating in the DOM and show a
       // half-rendered card form. Sweep any leftover iframes + popup hosts.
+      document.querySelectorAll(".fastpay-shell iframe").forEach((el) => el.remove());
       document.querySelectorAll("iframe[src*='sipay']").forEach((el) => el.remove());
       document.querySelectorAll("iframe[src*='fastpay']").forEach((el) => el.remove());
       document.querySelectorAll("[id^='fastpay']").forEach((el) => el.remove());
