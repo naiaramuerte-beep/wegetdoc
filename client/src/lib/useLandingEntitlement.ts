@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 /**
  * Shared download-entitlement rule for the tool landings (split/merge/compress/
@@ -15,8 +16,14 @@ import { trpc } from "@/lib/trpc";
  * must gate "truly premium" on the plan, not on isPremium.
  */
 export function useLandingEntitlement() {
-  const { data: sub } = trpc.subscription.status.useQuery(undefined, { retry: false });
-  const { data: usage, refetch: refetchUsage } = trpc.subscription.trialUsage.useQuery(undefined, { retry: false });
+  // Only query the (auth-protected) subscription endpoints when logged in.
+  // For anonymous visitors these threw UNAUTHORIZED, which the global query-
+  // error handler in main.tsx turned into a redirect to `/{lang}?login=true`
+  // → the landing pages (convert/split/merge/…) bounced logged-out users to the
+  // home. Anonymous users simply aren't premium/trialing → they hit the paywall.
+  const { isAuthenticated } = useAuth();
+  const { data: sub } = trpc.subscription.status.useQuery(undefined, { retry: false, enabled: isAuthenticated });
+  const { data: usage, refetch: refetchUsage } = trpc.subscription.trialUsage.useQuery(undefined, { retry: false, enabled: isAuthenticated });
   const recordDownload = trpc.subscription.recordDownload.useMutation();
 
   const plan = sub?.subscription?.plan;
