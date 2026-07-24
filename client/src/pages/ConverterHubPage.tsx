@@ -11,6 +11,8 @@ import { Link } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { checkUploadSize } from "@/lib/uploadLimit";
 import { useLandingEntitlement } from "@/lib/useLandingEntitlement";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { usePdfFile } from "@/contexts/PdfFileContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
@@ -196,8 +198,11 @@ export default function ConverterHubPage({ preselectId, seoH1, seoSub }: { prese
   const [showPaywall, setShowPaywall] = useState(false);
   const [busy, setBusy] = useState(false);
   const { isTrulyPremium } = useLandingEntitlement();
+  const { isAuthenticated } = useAuth();
+  const { saveEditedPdfToSession } = usePdfFile();
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const resumeTriedRef = useRef(false);
 
   // Pre-select a conversion on dedicated landings so the user lands ready to
   // upload for that specific target (e.g. HEIC → PDF).
@@ -207,6 +212,49 @@ export default function ConverterHubPage({ preselectId, seoH1, seoSub }: { prese
       if (c) setSelected(c);
     }
   }, [preselectId]);
+
+  // Resume after the Google-OAuth full-page redirect (mobile). The modal appends
+  // `resume=download` to the return URL, and handleDownloadClick stashed the
+  // file's S3 key (rk), name (rn) and conversion id (cf) in the URL before the
+  // redirect. On return — once auth resolves — pull the file back from S3,
+  // restore the target, and reopen the paywall so the user can finish paying.
+  // WITHOUT this, registering with Google on /convert dropped the user back on
+  // an empty page (file lost, modal never reopened) — the reported bug.
+  useEffect(() => {
+    if (resumeTriedRef.current) return;
+    const p = new URLSearchParams(window.location.search);
+    const rk = p.get("rk"), rn = p.get("rn"), cf = p.get("cf");
+    if (p.get("resume") !== "download" || !rk || !rn) return;
+    if (!isAuthenticated) return; // wait until auth.me resolves after the redirect
+    resumeTriedRef.current = true;
+    (async () => {
+      try {
+        let buf: ArrayBuffer | null = null;
+        if (rk.startsWith("base64:")) {
+          const bin = atob(rk.slice(7));
+          const arr = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+          buf = arr.buffer as ArrayBuffer;
+        } else {
+          const resp = await fetch(`/api/documents/temp-download/${encodeURIComponent(rk)}`);
+          if (resp.ok) buf = await resp.arrayBuffer();
+        }
+        if (buf) {
+          setFile(new File([buf], rn));
+          const c = CONVERSIONS.find((x) => x.id === cf);
+          if (c) setSelected(c);
+          setPhase("ready");
+          setShowPaywall(true);
+        }
+      } catch { /* ignore — user can re-upload */ }
+      finally {
+        const q = new URLSearchParams(window.location.search);
+        ["rk", "rn", "cf", "resume", "tk", "tn"].forEach((k) => q.delete(k));
+        const qs = q.toString();
+        window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
+      }
+    })();
+  }, [isAuthenticated]);
 
   // When a file is uploaded, the valid conversions are those whose fromExts
   // include the file's extension. This drives the "convert to…" suggestions.
@@ -259,6 +307,24 @@ export default function ConverterHubPage({ preselectId, seoH1, seoSub }: { prese
   // hits the paywall. (Trial users still pay per conversion on this funnel.)
   const handleDownloadClick = async () => {
     if (isTrulyPremium) { await handlePaymentSuccess(); return; }
+    // Fire-and-forget: persist the file to S3 and stash its key + name + target
+    // in the URL so the flow SURVIVES the Google-OAuth full-page redirect (mobile).
+    // The modal reads the current URL as its OAuth returnPath, so by the time the
+    // user taps "Google" (a few seconds of reading later) the params are in place.
+    // Don't block the modal opening on the upload — matches the editor's pre-upload.
+    if (file && selected) {
+      (async () => {
+        try {
+          const base64 = await fileToBase64(file);
+          const tk = await saveEditedPdfToSession(base64, file.name, file.size);
+          if (tk) {
+            const p = new URLSearchParams(window.location.search);
+            p.set("rk", tk); p.set("rn", file.name); p.set("cf", selected.id);
+            window.history.replaceState({}, "", window.location.pathname + `?${p.toString()}`);
+          }
+        } catch { /* best-effort; desktop popup flow keeps state without this */ }
+      })();
+    }
     setShowPaywall(true);
   };
 
