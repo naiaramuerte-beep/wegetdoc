@@ -650,6 +650,20 @@ function SipayCheckoutForm({
                   {s.loading}
                 </div>
               )}
+              {/* Card hint ABOVE the iframe so it's always visible. Below the
+                  400-430px iframe it fell off-screen on mobile and was too
+                  faint (11px gray-400) to notice. The iframe is cross-origin,
+                  so we can't detect the red field — this permanent guide tells
+                  the user what a red field means and what to check. */}
+              {cardExpanded && !redirecting && !authError && (
+                <p className="text-[12px] text-slate-500 text-center px-3 mb-2 leading-snug">
+                  {fpLang === "es"
+                    ? "Si un campo de la tarjeta se marca en rojo, revisa el número, la fecha (MM/AA) o el CVV."
+                    : fpLang === "ca"
+                    ? "Si un camp de la targeta es marca en vermell, revisa el número, la data (MM/AA) o el CVV."
+                    : "If a card field turns red, check the number, date (MM/YY) or CVV."}
+                </p>
+              )}
               {cardExpanded && (
               <div className="fastpay-shell relative">
                 {/* Skeleton shown while Sipay is decorating the .fastpay-btn
@@ -766,21 +780,6 @@ function SipayCheckoutForm({
                 }
               `}</style>
               </div>
-              )}
-              {/* Hint under Sipay's iframe: if the card number/date/CVV is
-                  invalid, Sipay marks the field red and silently blocks its
-                  "Descargar" button (nothing happens on click). We can't reach
-                  inside their cross-origin iframe to add a message, so this
-                  helper — in OUR chrome, right below it — tells the user what to
-                  check so a mistyped digit doesn't read as a broken form. */}
-              {cardExpanded && !redirecting && !authError && (
-                <p className="text-[11px] text-gray-400 text-center mt-1 px-3 leading-snug">
-                  {fpLang === "es"
-                    ? "Si el botón no responde, revisa que el número de tarjeta, la fecha (MM/AA) y el CVV sean correctos."
-                    : fpLang === "ca"
-                    ? "Si el botó no respon, comprova que el número de targeta, la data (MM/AA) i el CVV siguin correctes."
-                    : "If the button doesn't respond, check that the card number, date (MM/YY) and CVV are correct."}
-                </p>
               )}
               {redirecting && (
                 <div className="flex items-center justify-center gap-2 py-3 text-sm text-gray-600">
