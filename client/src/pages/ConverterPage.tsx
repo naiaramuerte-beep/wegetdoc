@@ -14,6 +14,7 @@ import { useLocation } from "wouter";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
+import { useLandingResume } from "@/lib/useLandingResume";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { checkUploadSize } from "@/lib/uploadLimit";
 import {
@@ -251,6 +252,17 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
   const [resultName, setResultName] = useState<string | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const { isAuthenticated, persist, tryResume } = useLandingResume();
+  // Reopen the paywall + restore the uploaded PDF after the Google-OAuth
+  // full-page redirect (mobile). Target format comes from the route, so we only
+  // persist the input file. See useLandingResume.
+  useEffect(() => {
+    tryResume(({ bytes, name }) => {
+      setFile(new File([bytes.buffer as ArrayBuffer], name));
+      setPhase("ready");
+      setShowPaywall(true);
+    });
+  }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
   const fakeTimerRef = useRef<number | null>(null);
 
   const reset = () => {
@@ -299,6 +311,9 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
   // ── Step 3: user clicks Download → open auth + paywall ──
   const handleDownloadClick = () => {
     setPhase("awaiting-payment");
+    // Persist the uploaded PDF so the flow survives the Google-OAuth full-page
+    // redirect (mobile). The target format is in the route, so no params needed.
+    if (file) file.arrayBuffer().then((buf) => persist(new Uint8Array(buf), file.name)).catch(() => {});
     setShowPaywall(true);
   };
 

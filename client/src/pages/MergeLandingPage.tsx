@@ -12,6 +12,7 @@ import { PDFDocument } from "pdf-lib";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
+import { useLandingResume } from "@/lib/useLandingResume";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { checkUploadSize } from "@/lib/uploadLimit";
 import { useLandingEntitlement } from "@/lib/useLandingEntitlement";
@@ -127,6 +128,18 @@ export default function MergeLandingPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
   const { claim } = useLandingEntitlement();
+  const { isAuthenticated, persist, tryResume } = useLandingResume();
+  // Reopen the paywall + restore the ready result after the Google-OAuth
+  // full-page redirect (mobile). Without this, users who registered with Google
+  // came back to an empty page and never paid — see useLandingResume.
+  useEffect(() => {
+    tryResume(({ bytes, name }) => {
+      setMergedBytes(bytes);
+      setMergedName(name);
+      setPhase("ready");
+      setShowPaywall(true);
+    });
+  }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Localized copy with English fallbacks so the page never shows blanks
   // while the language context resolves. Supports {var} interpolation.
@@ -242,6 +255,7 @@ export default function MergeLandingPage() {
       setPhase("done");
       return;
     }
+    persist(mergedBytes, mergedName);
     setPhase("awaiting-payment");
     setShowPaywall(true);
   };

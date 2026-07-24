@@ -11,6 +11,7 @@ import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PaywallModal from "@/components/PaywallModal";
+import { useLandingResume } from "@/lib/useLandingResume";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { checkUploadSize } from "@/lib/uploadLimit";
 import { useLandingEntitlement } from "@/lib/useLandingEntitlement";
@@ -121,6 +122,17 @@ export default function WatermarkLandingPage() {
   const [stampedName, setStampedName] = useState("watermarked.pdf");
   const [showPaywall, setShowPaywall] = useState(false);
   const { claim } = useLandingEntitlement();
+  const { isAuthenticated, persist, tryResume } = useLandingResume();
+  // Reopen the paywall + restore the ready result after the Google-OAuth
+  // full-page redirect (mobile). See useLandingResume.
+  useEffect(() => {
+    tryResume(({ bytes, name }) => {
+      setStampedBytes(bytes);
+      setStampedName(name);
+      setPhase("ready");
+      setShowPaywall(true);
+    });
+  }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const tr = (key: string, fallback: string, vars?: Record<string, string | number>): string => {
     let s = ((t as any)[key] as string | undefined) || fallback;
@@ -279,6 +291,7 @@ export default function WatermarkLandingPage() {
       return;
     }
     setPhase("awaiting-payment");
+    persist(stampedBytes, stampedName);
     setShowPaywall(true);
   };
 
