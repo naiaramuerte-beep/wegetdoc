@@ -1054,13 +1054,18 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
       // Auto-save document in background (so it's in the user's account even if they don't pay)
       if (currentPendingEdited) {
+        // (b) RESUME after Google OAuth (mobile redirect): the edited PDF lived
+        // in R2-temp (tempKey) across the redirect; promote it to a user-linked
+        // pending doc. Log for prod verification of the recovery path.
+        console.log(`[draft-recover] resume: claiming temp draft "${currentPendingEdited.name}" → pending doc`);
         fetch("/api/documents/claim-temp", {
           method: "POST", credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ tempKey: currentPendingEdited.tempKey, name: currentPendingEdited.name, paymentStatus: "pending" }),
         }).then(r => r.ok ? r.json() : null).then(data => {
-          if (data?.doc?.id) setSavedDocId(data.doc.id);
-        }).catch(() => {});
+          if (data?.doc?.id) { setSavedDocId(data.doc.id); console.log(`[draft-recover] resume: draft recovered as doc id=${data.doc.id}`); }
+          else console.warn("[draft-recover] resume: claim-temp returned no doc id");
+        }).catch((e) => console.warn("[draft-recover] resume: claim-temp failed", e));
         clearPendingEditedPdf();
       } else if (currentPdfBytes) {
         buildAnnotatedPdf().then(out => {

@@ -8,6 +8,7 @@ import { colors } from "@/lib/brand";
 import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield, FileText, ChevronDown, PenLine, Layers, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getStoredGclid } from "@/lib/gclid";
+import { shouldPersistDraft } from "@/lib/draftPersist";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { usePdfFile } from "@/contexts/PdfFileContext";
@@ -1325,6 +1326,7 @@ export default function PaywallModal({
   // (right after register/login, before payment) or handlePaymentSuccess
   // (for already-authed users who skipped the auth step). Reset on close.
   const docSavedRef = useRef(false);
+  const draftPersistTriedRef = useRef(false);
 
   // Fire paywall_shown exactly once per open-cycle of the modal. React
   // re-renders for any reason (auth state change, payment-method
@@ -1385,17 +1387,20 @@ export default function PaywallModal({
   // depend on us to do the save.
   //
   // NOTE: declared BEFORE the early return so React's hook order stays stable.
-  const saveDocToDashboard = useCallback(async (): Promise<void> => {
-    if (docSavedRef.current) return;
+  const saveDocToDashboard = useCallback(async (): Promise<number | null> => {
+    if (docSavedRef.current) return null;
     // The editor already persisted it (its autoSaveDocument ran) → skip to
     // avoid a duplicate. Otherwise (landing flow, OR an editor user who
-    // registered by EMAIL inside the modal and never triggered the editor's
-    // own save) we MUST save here, or the paid doc never reaches the panel.
-    if (editorAlreadySaved) return;
-    const docToSave = buildPdfForUpload
-      ? await buildPdfForUpload()
-      : (pdfData ?? null);
-    if (!docToSave || !("base64" in docToSave)) return;
+    // registered by EMAIL/Google inside the modal and never triggered the
+    // editor's own save) we MUST save here, or the paid doc never reaches R2.
+    if (editorAlreadySaved) return null;
+    // Prefer the freshly-rebuilt annotated bytes; on the resume path the editor
+    // has no pdfBytes loaded so buildPdfForUpload returns null → fall back to
+    // pdfData (the annotated PDF restored from the temp key). Before, a null
+    // build bailed WITHOUT trying pdfData → the doc was lost.
+    const built = buildPdfForUpload ? await buildPdfForUpload() : null;
+    const docToSave = built ?? pdfData ?? null;
+    if (!docToSave || !("base64" in docToSave)) return null;
     try {
       const binaryStr = atob(docToSave.base64);
       const bytes = new Uint8Array(binaryStr.length);
@@ -1406,17 +1411,21 @@ export default function PaywallModal({
       fd.append("name", docToSave.name);
       const doPost = () => fetch("/api/documents/auto-save", { method: "POST", credentials: "include", body: fd });
       let res = await doPost();
-      // Right after an email registration the session cookie can race this
-      // request → 401. Wait a beat for it to settle and retry once so the paid
-      // document still lands in the dashboard.
+      // Right after a register the session cookie can race this request → 401.
+      // Wait a beat for it to settle and retry once so the paid doc still lands.
       if (res.status === 401) {
         await new Promise((r) => setTimeout(r, 1200));
         res = await doPost();
       }
-      if (res.ok) docSavedRef.current = true;
-      else console.warn("[PaywallModal] auto-save failed", res.status);
+      if (res.ok) {
+        docSavedRef.current = true;
+        try { const j = await res.json(); return j?.doc?.id ?? null; } catch { return null; }
+      }
+      console.warn("[PaywallModal] auto-save failed", res.status);
+      return null;
     } catch (err) {
       console.warn("[PaywallModal] auto-save error", err);
+      return null;
     }
   }, [editorAlreadySaved, buildPdfForUpload, pdfData]);
 
@@ -1425,6 +1434,31 @@ export default function PaywallModal({
   useEffect(() => {
     if (isOpen) docSavedRef.current = false;
   }, [isOpen]);
+
+  // (a) PERSIST-ON-AUTH — the core delivery fix. The moment the user becomes
+  // authenticated inside the open paywall (email, Google POPUP, or Google
+  // mobile REDIRECT return), persist the annotated PDF as a user-linked pending
+  // doc — BEFORE they reach the payment redirect (3DS/wallet). Previously only
+  // the email path saved it and the Google-desktop-popup path saved nothing
+  // (→ "pagué y no hay archivo"). Idempotent; fires once per modal-open.
+  useEffect(() => {
+    if (!isOpen) { draftPersistTriedRef.current = false; return; }
+    const decide = shouldPersistDraft({
+      isOpen,
+      isAuthenticated,
+      hasAnnotated: !!pdfData || !!buildPdfForUpload,
+      alreadyTried: draftPersistTriedRef.current,
+      editorAlreadySaved: !!editorAlreadySaved,
+    });
+    if (!decide) return;
+    draftPersistTriedRef.current = true;
+    (async () => {
+      const docId = await saveDocToDashboard();
+      // Prod verification: grep for [draft-persist] to confirm the annotated
+      // doc is saved on auth, before any payment redirect, on every device.
+      console.log(`[draft-persist] authed→persisted annotated pending doc${docId ? ` id=${docId}` : " (or already saved by editor)"}`);
+    })();
+  }, [isOpen, isAuthenticated, pdfData, buildPdfForUpload, editorAlreadySaved, saveDocToDashboard]);
 
   // Tracks whether the autoTriggerGoogle effect has already fired in
   // this modal open-cycle so we don't re-open the OAuth popup on every
