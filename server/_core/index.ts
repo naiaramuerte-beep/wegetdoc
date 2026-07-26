@@ -18,6 +18,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { getBlogPosts, createDocument, userHasActiveSubscription, getDocumentById } from "../db";
 import { storagePut, storageGet } from "../storage";
+import { validatePdfBuffer } from "./pdfValidate";
 import { sdk } from "./sdk";
 import { convertToPdf, isConvertibleType, ACCEPTED_EXTENSIONS } from "../convertToPdf";
 
@@ -592,8 +593,17 @@ ${allUrls.map(u => `  <url>
 
   // ── Download document by ID (fetches from R2 using fileKey) ──────────────
   app.get("/api/documents/download/:id", async (req, res) => {
+    // Auth in its OWN try so an expired session (common after the 3DS/OAuth
+    // redirect) returns 401 the client can act on — not a generic 500 that
+    // reads as "download failed" with no recovery path.
+    let user: { id: number };
     try {
-      const user = await sdk.authenticateRequest(req as any);
+      user = await sdk.authenticateRequest(req as any) as any;
+    } catch {
+      res.status(401).json({ error: "unauthorized" });
+      return;
+    }
+    try {
       const docId = parseInt(req.params.id, 10);
       if (!docId) { res.status(400).json({ error: "Invalid id" }); return; }
       // Trial usage gate: blocks the 3rd distinct PDF download during trial.
@@ -608,11 +618,27 @@ ${allUrls.map(u => `  <url>
         return;
       }
       const doc = await getDocumentById(docId, user.id);
-      if (!doc || !doc.fileKey) { res.status(404).json({ error: "Document not found" }); return; }
+      if (!doc || !doc.fileKey) { res.status(404).json({ error: "document-missing" }); return; }
       const { url } = await storageGet(doc.fileKey, 300);
       const response = await fetch(url);
-      if (!response.ok) { res.status(500).json({ error: "Failed to fetch from storage" }); return; }
+      // R2 miss / storage error → 404, NOT 500, so the client shows a clear
+      // "we couldn't find your file, contact support" instead of a raw error.
+      if (!response.ok) {
+        console.error(`[Download] R2 miss doc ${docId} user ${user.id}: ${response.status} ${doc.fileKey}`);
+        res.status(404).json({ error: "document-missing" });
+        return;
+      }
       const buffer = Buffer.from(await response.arrayBuffer());
+      // NEVER hand the user a blank/corrupt PDF. Validate structure first; on
+      // failure return 422 so the success page shows a support-contact message
+      // instead of downloading empty bytes. Don't stamp firstDownloadedAt on a
+      // bad doc (keeps the trial count + recovery intact).
+      const check = await validatePdfBuffer(buffer);
+      if (!check.ok) {
+        console.error(`[Download] INVALID doc ${docId} user ${user.id}: ${check.reason} size=${buffer.length} key=${doc.fileKey}`);
+        res.status(422).json({ error: "invalid-document", reason: check.reason });
+        return;
+      }
       // Record the download (stamps firstDownloadedAt on the first hit only).
       await recordDocumentDownload(user.id, docId);
       res.setHeader("Content-Type", "application/pdf");

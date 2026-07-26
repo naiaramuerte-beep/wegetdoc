@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle, ArrowRight, Upload, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -6,6 +6,7 @@ import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { trackEvent, isInternalTest } from "@/lib/track";
 import { INTRO_CHARGE_EUR, INTRO_CHARGE_CURRENCY } from "@/lib/pricing";
+import { pickDownloadDoc } from "@/lib/pickDownloadDoc";
 
 // The user has only paid the intro 0,50 € at this point; the recurring
 // monthly isn't billed until trial_end. Display the real charged amount
@@ -29,34 +30,50 @@ export default function PaymentSuccess() {
   // finalizeFastpayPayment → markDocumentsPaid, so it's ready by the time the
   // success page loads.
   const { data: docs } = trpc.documents.list.useQuery(undefined, { staleTime: 0 });
-  const latestDoc = docs && docs.length > 0 ? docs[0] : null;
+  // Pick the RIGHT doc — NOT documents.list[0]. The list is ordered updatedAt
+  // DESC, but markDocumentsPaid re-stamps ALL of a user's pending docs at
+  // payment time, so their updatedAt ties and list[0] can be an OLDER doc — the
+  // "pagué y me dio otro / en blanco" bug (real case: user 72366 got doc 4634
+  // instead of her final 4642). Prefer an explicit ?doc=<id> when the payment
+  // flow threaded it, else the newest by createdAt = the doc just edited + paid.
+  const latestDoc = useMemo(() => {
+    const forced = Number(new URLSearchParams(window.location.search).get("doc")) || null;
+    return pickDownloadDoc(docs as any[] | undefined, forced);
+  }, [docs]);
   const hasDocRef = useRef(false);
   useEffect(() => { hasDocRef.current = !!latestDoc; }, [latestDoc]);
   const [downloading, setDownloading] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
   // "trial-limit" when the user has used up their trial downloads (they still
   // paid, but the 3rd distinct file is gated); "error" for any other failure.
-  const [downloadError, setDownloadError] = useState<"trial-limit" | "error" | null>(null);
+  // Distinct failure states so we can show a CLEAR message (never a blank file):
+  //  trial-limit = paid but over the trial download cap; invalid = the stored
+  //  PDF failed server-side validation (blank/corrupt) — support contact;
+  //  missing = R2 has no file (support contact); auth = session lapsed during
+  //  the redirect (re-login); error = other transient failure (retry).
+  const [downloadError, setDownloadError] = useState<
+    "trial-limit" | "invalid" | "missing" | "auth" | "error" | null
+  >(null);
   const autoTriedRef = useRef(false);
 
-  const handleDownloadDoc = async () => {
+  const handleDownloadDoc = async (retry = 0) => {
     if (!latestDoc?.id) return;
     try {
       setDownloading(true);
       setDownloadError(null);
       const res = await fetch(`/api/documents/download/${latestDoc.id}`, { credentials: "include" });
       if (!res.ok) {
-        // Surface the trial-download limit distinctly instead of a generic
-        // failure — otherwise a paying user who re-downloads sees "could not
-        // download" with no explanation (support ticket magnet).
-        if (res.status === 403) {
-          let body: any = null;
-          try { body = await res.json(); } catch {}
-          if (body?.error === "trial-limit") {
-            setDownloadError("trial-limit");
-            return;
-          }
-        }
+        let body: any = null;
+        try { body = await res.json(); } catch {}
+        // Map each server status to a clear, distinct message. NEVER fall
+        // through to downloading empty bytes — the server already refuses to
+        // serve a blank PDF (422), we just surface it.
+        if (res.status === 403 && body?.error === "trial-limit") { setDownloadError("trial-limit"); return; }
+        if (res.status === 422) { setDownloadError("invalid"); return; }
+        if (res.status === 404) { setDownloadError("missing"); return; }
+        if (res.status === 401) { setDownloadError("auth"); return; }
+        // Transient 5xx: one silent retry before surfacing a generic error.
+        if (res.status >= 500 && retry < 1) { setTimeout(() => handleDownloadDoc(retry + 1), 1500); return; }
         setDownloadError("error");
         throw new Error(`download failed: ${res.status}`);
       }
@@ -73,6 +90,9 @@ export default function PaymentSuccess() {
       setDownloaded(true);
     } catch (err) {
       console.warn("[PaymentSuccess] auto-download failed", err);
+      // Network-level failure (fetch threw): one silent retry, else surface it.
+      if (retry < 1) { setTimeout(() => handleDownloadDoc(retry + 1), 1500); return; }
+      if (!downloadError) setDownloadError("error");
     } finally {
       setDownloading(false);
     }
@@ -251,7 +271,7 @@ export default function PaymentSuccess() {
       <div className="flex flex-col sm:flex-row gap-3 mb-10">
         {latestDoc && (
           <button
-            onClick={handleDownloadDoc}
+            onClick={() => handleDownloadDoc()}
             disabled={downloading}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-white font-semibold text-sm transition-all duration-200 hover:opacity-90 disabled:opacity-60"
             style={{ backgroundColor: "#16a34a" }}
@@ -308,11 +328,58 @@ export default function PaymentSuccess() {
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </>
+          ) : downloadError === "auth" ? (
+            <>
+              <p className="font-semibold mb-1">
+                {(t as any).payment_success_auth_title || "Tu sesión ha caducado"}
+              </p>
+              <p style={{ color: "#b45309" }}>
+                {(t as any).payment_success_auth_body ||
+                  "Tu pago está registrado y tu documento guardado. Vuelve a iniciar sesión para descargarlo."}
+              </p>
+              <button
+                onClick={() => navigate(`/${lang}/dashboard`)}
+                className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-white font-semibold text-xs"
+                style={{ backgroundColor: "#E63946" }}
+              >
+                {(t as any).payment_success_go_dashboard || "Ir a mi panel"}
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </>
           ) : (
-            <p>
-              {(t as any).payment_success_download_error ||
-                "No se pudo descargar el archivo en este momento. Tu documento está guardado en tu panel — inténtalo de nuevo desde ahí."}
-            </p>
+            <>
+              <p className="font-semibold mb-1">
+                {downloadError === "invalid"
+                  ? (t as any).payment_success_invalid_title || "No pudimos preparar tu archivo"
+                  : downloadError === "missing"
+                  ? (t as any).payment_success_missing_title || "No encontramos tu archivo"
+                  : (t as any).payment_success_error_title || "No se pudo descargar ahora mismo"}
+              </p>
+              <p style={{ color: "#b45309" }}>
+                {(t as any).payment_success_paid_registered || "Tu pago está registrado."}{" "}
+                {downloadError === "error"
+                  ? (t as any).payment_success_try_again_hint || "Inténtalo de nuevo."
+                  : (t as any).payment_success_support_hint ||
+                    "Escríbenos a support@editorpdf.net con el email de tu pago y te lo enviamos enseguida."}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleDownloadDoc()}
+                  disabled={downloading}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-white font-semibold text-xs disabled:opacity-60"
+                  style={{ backgroundColor: "#E63946" }}
+                >
+                  {(t as any).payment_success_retry || "Reintentar"}
+                </button>
+                <a
+                  href={`mailto:support@editorpdf.net?subject=${encodeURIComponent("No puedo descargar mi PDF pagado")}&body=${encodeURIComponent(`Hola, pagué y no puedo descargar mi documento (id ${latestDoc?.id ?? "?"}). Mi email de pago es: `)}`}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-semibold text-xs"
+                  style={{ backgroundColor: "#fff", border: "1px solid #fed7aa", color: "#9a3412" }}
+                >
+                  {(t as any).payment_success_contact_support || "Contactar soporte"}
+                </a>
+              </div>
+            </>
           )}
         </div>
       )}
