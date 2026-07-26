@@ -1394,14 +1394,17 @@ export default function PaywallModal({
     // registered by EMAIL/Google inside the modal and never triggered the
     // editor's own save) we MUST save here, or the paid doc never reaches R2.
     if (editorAlreadySaved) return null;
-    // Prefer the freshly-rebuilt annotated bytes; on the resume path the editor
-    // has no pdfBytes loaded so buildPdfForUpload returns null → fall back to
-    // pdfData (the annotated PDF restored from the temp key). Before, a null
-    // build bailed WITHOUT trying pdfData → the doc was lost.
-    const built = buildPdfForUpload ? await buildPdfForUpload() : null;
-    const docToSave = built ?? pdfData ?? null;
-    if (!docToSave || !("base64" in docToSave)) return null;
+    // Whole thing wrapped in try/catch — buildPdfForUpload() included — so a
+    // failed draft-save NEVER throws up to the payment modal. Worst case the
+    // doc isn't pre-saved (old behavior) and the user still pays normally.
     try {
+      // Prefer the freshly-rebuilt annotated bytes; on the resume path the
+      // editor has no pdfBytes loaded so buildPdfForUpload returns null → fall
+      // back to pdfData (annotated PDF restored from the temp key). Before, a
+      // null build bailed WITHOUT trying pdfData → the doc was lost.
+      const built = buildPdfForUpload ? await buildPdfForUpload() : null;
+      const docToSave = built ?? pdfData ?? null;
+      if (!docToSave || !("base64" in docToSave)) return null;
       const binaryStr = atob(docToSave.base64);
       const bytes = new Uint8Array(binaryStr.length);
       for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
@@ -1452,11 +1455,18 @@ export default function PaywallModal({
     });
     if (!decide) return;
     draftPersistTriedRef.current = true;
+    // FAIL-SAFE: fire-and-forget + try/catch. A draft-save failure (network,
+    // R2, session) must NEVER block or break the payment modal — the user pays
+    // exactly as before; worst case the doc simply isn't pre-saved.
     (async () => {
-      const docId = await saveDocToDashboard();
-      // Prod verification: grep for [draft-persist] to confirm the annotated
-      // doc is saved on auth, before any payment redirect, on every device.
-      console.log(`[draft-persist] authed→persisted annotated pending doc${docId ? ` id=${docId}` : " (or already saved by editor)"}`);
+      try {
+        const docId = await saveDocToDashboard();
+        // Prod verification: grep [draft-persist] to confirm the annotated doc
+        // is saved on auth, before any payment redirect, on every device.
+        console.log(`[draft-persist] authed→persisted annotated pending doc${docId ? ` id=${docId}` : " (or already saved by editor)"}`);
+      } catch (err) {
+        console.warn("[draft-persist] save failed (non-blocking, user can still pay):", err);
+      }
     })();
   }, [isOpen, isAuthenticated, pdfData, buildPdfForUpload, editorAlreadySaved, saveDocToDashboard]);
 
