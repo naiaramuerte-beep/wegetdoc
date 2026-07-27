@@ -565,6 +565,13 @@ export const appRouter = router({
         gclid: z.string().max(512).optional(),
         gclidType: z.string().max(16).optional(),
         lang: z.string().max(8).optional(),
+        // Code-190 forensics (logging only): the Google Pay credential type
+        // (PAN_ONLY vs CRYPTOGRAM_3DS) + network + raw assuranceDetails, so we
+        // can split wallet failures by credential and confirm the cryptogram
+        // path is the one Sipay/Redsys rejects. Does NOT affect the charge.
+        credType: z.string().max(24).optional(),
+        cardNetwork: z.string().max(24).optional(),
+        assurance: z.string().max(256).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const { chargeGpay } = await import("./_core/sipay");
@@ -577,7 +584,7 @@ export const appRouter = router({
           eventId: order,
           status: "ok",
           durationMs: 0,
-          payload: { userId: ctx.user.id, amountCents: input.amountCents },
+          payload: { userId: ctx.user.id, amountCents: input.amountCents, credType: input.credType, cardNetwork: input.cardNetwork, assurance: input.assurance },
         });
         const result = await chargeGpay({
           amountCents: input.amountCents,
@@ -597,7 +604,7 @@ export const appRouter = router({
             status: "error",
             errorMessage: data?.payload?.detail ?? data?.detail ?? "unknown",
             durationMs: Date.now() - startedAt,
-            payload: data ?? result.raw,
+            payload: { ...(data && typeof data === "object" ? data : { raw: result.raw }), credType: input.credType, cardNetwork: input.cardNetwork },
           });
           throw new TRPCError({
             code: "BAD_REQUEST",
@@ -650,7 +657,7 @@ export const appRouter = router({
           eventId: txn || order,
           status: "ok",
           durationMs: Date.now() - startedAt,
-          payload: data,
+          payload: { ...data, credType: input.credType, cardNetwork: input.cardNetwork },
         });
         try {
           const acceptLang = String(ctx.req?.headers?.["accept-language"] ?? "").split(",")[0]?.split("-")[0] ?? "es";

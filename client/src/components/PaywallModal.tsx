@@ -1154,6 +1154,14 @@ function GooglePayButton({
     const cardPaymentMethod = {
       type: "CARD",
       parameters: {
+        // ⚠️ VETO (2026-07-27): NO reducir a ["CRYPTOGRAM_3DS"] (forzar
+        // criptograma) hasta que Sipay arregle el code 190. Evidencia:
+        // Apple Pay (100% cryptogram) falla 71,4% vs Google Pay mixto 39,0%
+        // (14d); los fallos 190 vuelven authorizator/approval/cof_id = NULL
+        // (nunca llegan al banco) y un reintento inmediato con la MISMA tarjeta
+        // aprueba → el 190 golpea la vía cryptogram/network-token en el lado
+        // Sipay/Redsys, no el emisor. Forzar cryptogram HOY empeoraría las
+        // altas. Mantener PAN_ONLY como escape hasta que Sipay confirme el fix.
         allowedAuthMethods: ["PAN_ONLY", "CRYPTOGRAM_3DS"],
         allowedCardNetworks: ["AMEX", "DISCOVER", "JCB", "MASTERCARD", "VISA"],
       },
@@ -1215,12 +1223,24 @@ function GooglePayButton({
               });
               const token = paymentData?.paymentMethodData?.tokenizationData?.token;
               if (!token) throw new Error("Google Pay no devolvió token");
+              // Capture the credential type for the code-190 forensics — LOGGING
+              // ONLY, wrapped so it can NEVER block the charge. Google Pay's
+              // assuranceDetails: both flags true = device cryptogram
+              // (CRYPTOGRAM_3DS), otherwise PAN_ONLY (card-on-file).
+              let credType: string | undefined, cardNetwork: string | undefined, assurance: string | undefined;
+              try {
+                const info: any = (paymentData as any)?.paymentMethodData?.info;
+                const a = info?.assuranceDetails;
+                credType = (a?.cardHolderAuthenticated && a?.accountVerified) ? "CRYPTOGRAM_3DS" : "PAN_ONLY";
+                cardNetwork = info?.cardNetwork;
+                assurance = JSON.stringify(a ?? {});
+              } catch { /* logging only — never blocks the charge */ }
               // Google Pay's sheet just authenticated the buyer (saved
               // card + device auth) — analogous to the card 3DS step
               // for funnel parity. Fire before the backend charge.
               trackEvent("3ds_started", { method: "googlepay" });
               const gpayGc = getStoredGclid();
-              const res = await chargeMut.mutateAsync({ token, amountCents, gclid: gpayGc?.id, gclidType: gpayGc?.type, lang });
+              const res = await chargeMut.mutateAsync({ token, amountCents, gclid: gpayGc?.id, gclidType: gpayGc?.type, lang, credType, cardNetwork, assurance });
               // Sandbox doesn't always echo transaction_id; fall back to our
               // own order so Google Ads still has a unique dedup key.
               const txnId = res.transactionId || res.order || `gpay-${Date.now()}`;
