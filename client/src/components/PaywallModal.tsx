@@ -9,6 +9,7 @@ import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shi
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getStoredGclid } from "@/lib/gclid";
 import { shouldPersistDraft } from "@/lib/draftPersist";
+import { resolveResumeTicket } from "@/lib/resumeTicket";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { usePdfFile } from "@/contexts/PdfFileContext";
@@ -1533,16 +1534,27 @@ export default function PaywallModal({
       // we also restore the edited PDF from it.
       let resumeQs = "resume=download";
       if (pdfData) {
-        try {
-          // Use the S3 upload we kicked off when the modal opened (preUploadRef).
-          // By the time the user taps Google it's usually already done, so the
-          // redirect is instant instead of waiting ~3-4s for the upload here.
-          // Falls back to uploading now if the pre-upload wasn't started.
-          // The edited PDF lives in S3 and its tempKey rides the OAuth return
-          // URL, so it survives the cross-origin redirect (no sessionStorage).
-          const tk = await (preUploadRef.current ?? saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size));
-          if (tk) resumeQs += `&tk=${encodeURIComponent(tk)}&tn=${encodeURIComponent(pdfData.name)}`;
-        } catch {}
+        // SHIELD (see client/lib/resumeTicket.ts): resolve the ACTUAL ticket
+        // value, not just the pre-upload promise (which may have resolved to null
+        // on a failed upload — the footgun). If null, retry; if STILL null, do
+        // NOT redirect — the edited PDF would be lost. Every branch logs under
+        // [pre-redirect-guard].
+        const tk = await resolveResumeTicket({
+          preUpload: preUploadRef.current,
+          upload: () => saveEditedPdfToSession(pdfData.base64, pdfData.name, pdfData.size),
+          onSaving: () => toast.loading(t.editor_toast_preparing_doc ?? "Guardando tu documento…", { id: "presave" }),
+          log: (m) => console.log(m),
+        });
+        toast.dismiss("presave");
+        if (!tk) {
+          // Never redirect without a confirmed ticket. Stay in the editor with
+          // the edits intact so the user can retry, instead of losing the work.
+          console.error("[pre-redirect-guard] aborting redirect: no ticket after retries");
+          setGoogleRedirecting(false);
+          toast.error(t.editor_toast_prepare_download_error ?? "No pudimos guardar tu documento. Revisa tu conexión e inténtalo de nuevo.");
+          return;
+        }
+        resumeQs += `&tk=${encodeURIComponent(tk)}&tn=${encodeURIComponent(pdfData.name)}`;
       } else if (pendingFile) {
         try { await savePdfToSession(pendingFile); } catch {}
       }

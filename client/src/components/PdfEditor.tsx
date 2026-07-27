@@ -1033,8 +1033,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             pdfBytes = arr;
           } else {
             const resp = await fetch(`/api/documents/temp-download/${encodeURIComponent(tempKey)}`);
+            console.log(`[pre-redirect-guard] temp-download ${tempKey}: HTTP ${resp.status}`);
             if (resp.ok) pdfBytes = new Uint8Array(await resp.arrayBuffer());
           }
+          console.log(`[pre-redirect-guard] preview rebuild from tempKey: ${pdfBytes ? `${pdfBytes.byteLength}B` : "FAILED (empty preview)"}`);
           if (pdfBytes) {
             setPdfDataForPaywall({
               base64: uint8ToBase64(pdfBytes),

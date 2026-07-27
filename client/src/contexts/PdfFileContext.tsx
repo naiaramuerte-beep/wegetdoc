@@ -131,6 +131,7 @@ export function PdfFileProvider({ children }: { children: ReactNode }) {
         // to <Home/> after login. If a tempKey is present, also restore the
         // edited PDF from S3; if not, at least keep the user in the editor.
         const tk = params.get("tk");
+        console.log(`[pre-redirect-guard] restore: tk from return URL = ${tk ?? "MISSING"}`);
         if (tk) {
           const tn = params.get("tn") || tempName || "document.pdf";
           setPendingEditedPdf({ tempKey: tk, name: tn });
