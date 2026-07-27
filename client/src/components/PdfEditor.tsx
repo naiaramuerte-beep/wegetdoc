@@ -28,6 +28,7 @@ import { colors } from "@/lib/brand";
 // requires but WebKit < 18.4 doesn't ship natively.
 import { pdfjsCompatOpts } from "@/lib/pdfjs-safe";
 import { pickPaywallUploadSource } from "@/lib/paywallUploadSource";
+import { canOpenResumePaywall } from "@/lib/resumeTicket";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import { PDFDocument, PDFDict, PDFName, PDFRef, PDFStream, rgb, StandardFonts, degrees } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
@@ -1007,6 +1008,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const currentPdfBytes = pdfBytesRef.current;
 
       // Build paywall data and open it right away
+      let recoveredEditedPreview = false;
       if (currentPdfBytes) {
         try {
           const out = await buildAnnotatedPdf();
@@ -1038,6 +1040,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           }
           console.log(`[pre-redirect-guard] preview rebuild from tempKey: ${pdfBytes ? `${pdfBytes.byteLength}B` : "FAILED (empty preview)"}`);
           if (pdfBytes) {
+            recoveredEditedPreview = true;
             setPdfDataForPaywall({
               base64: uint8ToBase64(pdfBytes),
               name: currentPendingEdited.name,
@@ -1046,6 +1049,20 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             generateAnnotatedThumbnail(pdfBytes).then(t => { if (t) setPaywallThumbnail(t); });
           }
         } catch {}
+      }
+      // BARRIER #2: never open payment for a resume that couldn't recover the
+      // edited PDF — the user would pay for a copy WITHOUT their edits (queja /
+      // chargeback). Block, tell them to re-edit, and send them home to redo it.
+      if (!canOpenResumePaywall({ hasEditorBytes: !!currentPdfBytes, recoveredEditedPreview })) {
+        console.error("[pre-redirect-guard] BARRIER: edited draft not recovered on resume — NOT opening paywall");
+        setPreparingResume(false);
+        toast.error(
+          "No pudimos recuperar tu documento editado. Vuelve a editarlo antes de continuar.",
+          { duration: 12000 },
+        );
+        const lm = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
+        navigate(`/${lm ? lm[1] : "es"}`);
+        return;
       }
       setShowPaywall(true);
       // "Chivato": confirm to the server that the post-login paywall actually

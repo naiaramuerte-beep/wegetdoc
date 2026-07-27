@@ -24,6 +24,15 @@ export interface ResumeTicketDeps {
   log?: (msg: string) => void;
 }
 
+// BARRIER #2 — on resume, only open the paywall when the edited PDF is actually
+// available: either still loaded in the editor, or successfully recovered from
+// the temp key. If neither, the user would be paying for a copy WITHOUT their
+// edits (the chargeback risk), so the caller must block payment and tell them to
+// re-edit instead.
+export function canOpenResumePaywall(i: { hasEditorBytes: boolean; recoveredEditedPreview: boolean }): boolean {
+  return i.hasEditorBytes || i.recoveredEditedPreview;
+}
+
 export async function resolveResumeTicket(d: ResumeTicketDeps): Promise<string | null> {
   const max = d.maxRetries ?? 3;
   // 1. The VALUE of the pre-upload — not just awaiting the (possibly null) promise.

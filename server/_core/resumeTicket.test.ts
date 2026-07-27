@@ -1,5 +1,18 @@
 import { describe, it, expect, vi } from "vitest";
-import { resolveResumeTicket } from "@/lib/resumeTicket";
+import { resolveResumeTicket, canOpenResumePaywall } from "@/lib/resumeTicket";
+
+// BARRIER #2 — never open payment on a resume that couldn't recover the edits.
+describe("canOpenResumePaywall — block payment for a copy without edits", () => {
+  it("editor has the PDF loaded → open (normal in-editor flow)", () => {
+    expect(canOpenResumePaywall({ hasEditorBytes: true, recoveredEditedPreview: false })).toBe(true);
+  });
+  it("edited preview recovered from temp key → open", () => {
+    expect(canOpenResumePaywall({ hasEditorBytes: false, recoveredEditedPreview: true })).toBe(true);
+  });
+  it("neither recovered → BLOCK (no payment for an unedited copy)", () => {
+    expect(canOpenResumePaywall({ hasEditorBytes: false, recoveredEditedPreview: false })).toBe(false);
+  });
+});
 
 // STEP 2 — the shield. Closes the footgun from preRedirectTicket.test.ts: never
 // hand the redirect a null ticket in silence.
