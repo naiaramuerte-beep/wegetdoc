@@ -127,6 +127,14 @@ function CardBrands() {
 // Pay. Flip back to false if OR_BIBED_11 reappears in production.
 const GPAY_ENABLED = true;
 
+// TEMPORARY CUT (2026-07-27): Google register is disabled INSIDE the paywall
+// (the document-carrying flow) because the mobile redirect could return a preview
+// WITHOUT the user's edits — someone could pay for a copy missing their work.
+// Email register is unaffected and works perfectly. This does NOT touch the
+// normal Google login on the login page / dashboard — paying customers keep
+// account access. Flip back to true once the tempKey-content root cause is fixed.
+const GOOGLE_IN_PAYWALL_ENABLED = false;
+
 // FastPay JS captures the card in Sipay's iframe; we forward the resulting
 // request_id to our backend to fire /mdwr/v1/all-in-one and then navigate the
 // parent window to the 3DS URL Sipay returns.
@@ -1612,6 +1620,7 @@ export default function PaywallModal({
   // option in the editor). Only fires once per modal open cycle and
   // only if the user is not already authenticated.
   useEffect(() => {
+    if (!GOOGLE_IN_PAYWALL_ENABLED) return; // temporary cut — never auto-fire Google in the paywall
     if (!isOpen || !autoTriggerGoogle || isAuthenticated) return;
     if (googleAutoFiredRef.current) return;
     googleAutoFiredRef.current = true;
@@ -1831,6 +1840,7 @@ export default function PaywallModal({
                 <span className="text-xs text-gray-400">{t.paywall_or}</span>
                 <div className="flex-1 h-px bg-gray-200" />
               </div>
+              {GOOGLE_IN_PAYWALL_ENABLED ? (
               <button
                 onClick={() => handleGoogleLogin()}
                 disabled={googleRedirecting}
@@ -1850,6 +1860,11 @@ export default function PaywallModal({
                   ? (t.paywall_google_connecting ?? "Conectando…")
                   : (emailMode === "register" ? t.paywall_auth_create_google : t.paywall_continue_google)}
               </button>
+              ) : (
+                <div className="w-full text-center py-3 px-3 rounded-xl border border-gray-200 bg-gray-50 text-xs text-gray-500">
+                  Registro con Google temporalmente no disponible — usa tu email.
+                </div>
+              )}
               <div className="text-center text-sm text-gray-500 pt-1">
                 {emailMode === "register"
                   ? <>{t.paywall_auth_have_account} · <button onClick={() => setEmailMode("login")} className="text-[#E63946] font-semibold hover:underline">{t.paywall_login}</button></>
