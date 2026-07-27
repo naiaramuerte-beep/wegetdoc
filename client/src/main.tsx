@@ -17,6 +17,16 @@ installChunkErrorRecovery();
 import { captureGclid } from "@/lib/gclid";
 captureGclid();
 
+// TEST GATE: latch ?gauth=<secret> at startup (before any client-side nav strips
+// the query) so a controlled Google repro in the editor paywall works end to end.
+// Public paywall Google stays hidden; this only flips the per-tab session flag
+// that googleInPaywallEnabled() reads.
+try {
+  if (new URLSearchParams(window.location.search).get("gauth") === "ee8ddb64c000d511") {
+    sessionStorage.setItem("gauth_ok", "1");
+  }
+} catch { /* no-op */ }
+
 import "@/lib/brand"; // Set data-brand attribute early
 import { trpc } from "@/lib/trpc";
 import { UNAUTHED_ERR_MSG } from '@shared/const';
