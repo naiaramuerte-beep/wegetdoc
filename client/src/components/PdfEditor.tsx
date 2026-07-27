@@ -27,6 +27,7 @@ import { colors } from "@/lib/brand";
 // Uint8Array hex methods (toHex / setFromHex / fromHex) that pdfjs v5
 // requires but WebKit < 18.4 doesn't ship natively.
 import { pdfjsCompatOpts } from "@/lib/pdfjs-safe";
+import { pickPaywallUploadSource } from "@/lib/paywallUploadSource";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import { PDFDocument, PDFDict, PDFName, PDFRef, PDFStream, rgb, StandardFonts, degrees } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
@@ -3639,6 +3640,32 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     );
   }
 
+  // The authoritative "what to persist / upload" builder for the paywall. It is
+  // the SINGLE source of truth PaywallModal saves — there is no divergent
+  // fallback anymore (a stale snapshot once persisted corrupted docs: typed text
+  // lost, freehand ink relocated by a scale/DPR transform).
+  //  - In-editor (pdfBytes loaded): rebuild the annotated PDF from live state.
+  //  - Resume (post-OAuth mobile redirect): the editor was remounted, so pdfBytes
+  //    AND annotations are GONE — buildAnnotatedPdf can't reconstruct anything.
+  //    The annotated PDF the user is looking at was built BEFORE the redirect and
+  //    restored into pdfDataForPaywall (from the temp key). Return THOSE exact
+  //    bytes — identical to the preview and the download — never a rebuild (would
+  //    lose/relocate the edits) and never a silent different doc.
+  const buildPdfForUploadForPaywall = async (): Promise<{ base64: string; name: string; size: number } | null> => {
+    let rebuilt: { base64: string; name: string; size: number } | null = null;
+    if (pdfBytes) {
+      try {
+        const out = await buildAnnotatedPdf();
+        if (out) rebuilt = { base64: uint8ToBase64(out), name: file?.name ?? "document.pdf", size: out.byteLength };
+      } catch { /* rebuilt stays null → caller retries, never substitutes */ }
+    }
+    return pickPaywallUploadSource({
+      hasEditorBytes: !!pdfBytes,
+      rebuilt,
+      onScreen: pdfDataForPaywall?.base64 ? pdfDataForPaywall : null,
+    });
+  };
+
   // Hoisted so the payment modal can render BOTH in the main editor view AND in
   // the no-file branch below. The OAuth resume flow keeps the edited PDF in S3
   // (tempKey) — it is NOT loaded here as `file` — so `!file` is true and the
@@ -3657,7 +3684,26 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         // the "Preparando…" loader or a bare upload zone — clear the loader and
         // send them back home so they always have a way out.
         setPreparingResume(false);
+        // Resume/no-file branch: the edited PDF is NOT loaded as `file` (it lived
+        // in the temp key across the OAuth redirect). Closing must NOT reload the
+        // ORIGINAL PDF or dump the user on a bare uploader — both silently DROP
+        // their edits (the exact bug reported). Instead load the annotated bytes
+        // the user is looking at (pdfDataForPaywall) INTO the editor as a
+        // flattened document, so their result stays on screen and pressing
+        // Download simply reopens this modal with the same content. Only if we
+        // somehow have no annotated bytes do we fall back to sending them home.
         if (!file || !pdfDoc) {
+          const restore = pdfDataForPaywall;
+          if (restore?.base64) {
+            try {
+              const bin = atob(restore.base64);
+              const arr = new Uint8Array(bin.length);
+              for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+              const restoredFile = new File([arr], restore.name || "document.pdf", { type: "application/pdf" });
+              handleFile(restoredFile);
+              return;
+            } catch { /* fall through to navigate home */ }
+          }
           const lm = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/);
           navigate(`/${lm ? lm[1] : "es"}`);
         }
@@ -3667,16 +3713,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       editorAlreadySaved={!!savedDocId}
       pdfData={pdfDataForPaywall}
       thumbnailUrl={paywallThumbnail ?? thumbnails[0]}
-      buildPdfForUpload={async () => {
-        if (!pdfBytes) return null;
-        try {
-          const out = await buildAnnotatedPdf();
-          if (!out) return null;
-          return { base64: uint8ToBase64(out), name: file?.name ?? "document.pdf", size: out.byteLength };
-        } catch {
-          return null;
-        }
-      }}
+      buildPdfForUpload={buildPdfForUploadForPaywall}
       onPaymentSuccess={async (transactionId?: string) => {
         setShowPaywall(false);
         toast.loading("Preparando descarga...", { id: "post-pay-dl" });
@@ -6149,20 +6186,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         editorAlreadySaved={!!savedDocId}
         pdfData={pdfDataForPaywall}
         thumbnailUrl={paywallThumbnail ?? thumbnails[0]}
-        buildPdfForUpload={async () => {
-          if (!pdfBytes) return null;
-          try {
-            const out = await buildAnnotatedPdf();
-            if (!out) return null;
-            return {
-              base64: uint8ToBase64(out),
-              name: file?.name ?? "document.pdf",
-              size: out.byteLength,
-            };
-          } catch {
-            return null;
-          }
-        }}
+        buildPdfForUpload={buildPdfForUploadForPaywall}
         onPaymentSuccess={async (transactionId?: string) => {
           // After successful payment: auto-download the PDF, then navigate to success page
           setShowPaywall(false);

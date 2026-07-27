@@ -1418,13 +1418,27 @@ export default function PaywallModal({
     // failed draft-save NEVER throws up to the payment modal. Worst case the
     // doc isn't pre-saved (old behavior) and the user still pays normally.
     try {
-      // Prefer the freshly-rebuilt annotated bytes; on the resume path the
-      // editor has no pdfBytes loaded so buildPdfForUpload returns null → fall
-      // back to pdfData (annotated PDF restored from the temp key). Before, a
-      // null build bailed WITHOUT trying pdfData → the doc was lost.
-      const built = buildPdfForUpload ? await buildPdfForUpload() : null;
-      const docToSave = built ?? pdfData ?? null;
-      if (!docToSave || !("base64" in docToSave)) return null;
+      // The persisted doc MUST be the exact annotated build the user is looking
+      // at — produced by buildPdfForUpload, the single source of truth. We do
+      // NOT fall back to a different snapshot (pdfData): a divergent fallback
+      // once saved CORRUPTED docs (typed text lost, freehand ink relocated by a
+      // canvas scale/DPR transform). If the build can't run yet, retry a few
+      // times; if it still can't, log loudly and save NOTHING — a missing doc is
+      // recoverable, a silently-wrong doc is not. (buildPdfForUpload is now
+      // resume-aware on the editor: on the OAuth-redirect path it returns the
+      // exact on-screen bytes instead of null — see PdfEditor.)
+      let docToSave: { base64: string; name: string; size: number } | null = null;
+      for (let attempt = 0; attempt < 3 && !docToSave; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, 400));
+        try {
+          const built = buildPdfForUpload ? await buildPdfForUpload() : null;
+          if (built && "base64" in built) docToSave = built;
+        } catch { /* retry */ }
+      }
+      if (!docToSave) {
+        console.error("[draft-persist] build unavailable after retries — NOT saving (refusing to persist a divergent/corrupted doc)");
+        return null;
+      }
       const binaryStr = atob(docToSave.base64);
       const bytes = new Uint8Array(binaryStr.length);
       for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
@@ -1450,7 +1464,7 @@ export default function PaywallModal({
       console.warn("[PaywallModal] auto-save error", err);
       return null;
     }
-  }, [editorAlreadySaved, buildPdfForUpload, pdfData]);
+  }, [editorAlreadySaved, buildPdfForUpload]);
 
   // Reset the saved flag whenever the modal re-opens, so a user who
   // closes mid-flow and re-opens with new content gets their new doc saved.
