@@ -1868,6 +1868,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const ctx = dc.getContext("2d");
     if (!ctx) return;
     ctx.clearRect(0, 0, dc.width, dc.height);
+    // Brush points are stored in CSS space (dpr-independent). This canvas is at
+    // canvas-INTERNAL resolution (dc.width = pageW·scale·dpr), so scale points
+    // back up by the same canvas/CSS ratio getCanvasPos used → identical to how
+    // they rendered before the capture was normalized (at dpr=1, sx=sy=1).
+    const rect = dc.getBoundingClientRect();
+    const sx = rect.width ? dc.width / rect.width : (window.devicePixelRatio || 1);
+    const sy = rect.height ? dc.height / rect.height : (window.devicePixelRatio || 1);
     const pageAnns = annotations.filter(a => a.page === currentPage);
     for (const ann of pageAnns) {
       if (ann.type === "drawing" && ann.points && ann.points.length > 1) {
@@ -1876,8 +1883,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         ctx.lineWidth = ann.strokeWidth ?? 3;
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
-        ctx.moveTo(ann.points[0].x, ann.points[0].y);
-        for (let i = 1; i < ann.points.length; i++) ctx.lineTo(ann.points[i].x, ann.points[i].y);
+        ctx.moveTo(ann.points[0].x * sx, ann.points[0].y * sy);
+        for (let i = 1; i < ann.points.length; i++) ctx.lineTo(ann.points[i].x * sx, ann.points[i].y * sy);
         ctx.stroke();
       } else if (ann.type === "eraser") {
         ctx.fillStyle = "#FFFFFF";
@@ -1998,8 +2005,16 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     e.preventDefault();
     setIsCanvasDrawing(false);
     if (activeTool === "brush" && currentBrushPoints.length > 1) {
+      // Normalize brush points from canvas-INTERNAL pixels (×devicePixelRatio)
+      // to CSS space — exactly what the eraser/highlight branches do via
+      // getCanvasToCssRatios. Stored dpr-independent, the PDF export
+      // (buildAnnotatedPdf, `p.x / scale`) lands where the user drew. Before,
+      // raw ×dpr points were displaced 2-3× on mobile (desktop dpr=1 hid it).
+      // redrawDrawingCanvas scales them back by dpr, so on-screen is unchanged.
+      const { rx, ry } = getCanvasToCssRatios();
+      const cssPoints = currentBrushPoints.map((p) => ({ x: p.x * rx, y: p.y * ry }));
       const newAnn: Omit<Annotation, "id"> = {
-        type: "drawing", points: currentBrushPoints,
+        type: "drawing", points: cssPoints,
         x: 0, y: 0, width: 0, height: 0,
         page: currentPage, color: brushColor, strokeWidth: brushSize,
       };
@@ -2101,8 +2116,16 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     setIsCanvasDrawing(false);
     const pos = getCanvasPos(e);
     if (activeTool === "brush" && currentBrushPoints.length > 1) {
+      // Normalize brush points from canvas-INTERNAL pixels (×devicePixelRatio)
+      // to CSS space — exactly what the eraser/highlight branches do via
+      // getCanvasToCssRatios. Stored dpr-independent, the PDF export
+      // (buildAnnotatedPdf, `p.x / scale`) lands where the user drew. Before,
+      // raw ×dpr points were displaced 2-3× on mobile (desktop dpr=1 hid it).
+      // redrawDrawingCanvas scales them back by dpr, so on-screen is unchanged.
+      const { rx, ry } = getCanvasToCssRatios();
+      const cssPoints = currentBrushPoints.map((p) => ({ x: p.x * rx, y: p.y * ry }));
       const newAnn: Omit<Annotation, "id"> = {
-        type: "drawing", points: currentBrushPoints,
+        type: "drawing", points: cssPoints,
         x: 0, y: 0, width: 0, height: 0,
         page: currentPage, color: brushColor, strokeWidth: brushSize,
       };

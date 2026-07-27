@@ -1,64 +1,57 @@
 import { describe, it, expect } from "vitest";
 
-// CHARACTERIZATION TEST — pins the freehand-brush coordinate contract and proves
-// the displacement bug the corruption sweep surfaced (paid docs with ink outside
-// the page). It mirrors, byte for byte, the two pieces of PdfEditor.tsx:
+// Pins the freehand-brush coordinate pipeline end to end and proves the
+// capture-side fix. Mirrors three pieces of PdfEditor.tsx exactly:
 //
-//  1. Storage (handleCanvasMouseUp:2104 / handleCanvasTouchEnd:2001):
-//     brush `points` are stored RAW from getCanvasPos → canvas-INTERNAL pixels,
-//     i.e. CSS pixels * devicePixelRatio. (eraser/highlight DO divide by dpr via
-//     getCanvasToCssRatios; brush does NOT — that asymmetry is the bug.)
+//  1. Raw capture (getCanvasPos): a CSS position becomes canvas-INTERNAL pixels
+//     = CSS·scale·devicePixelRatio.
+//  2. FIX — store normalized (handleCanvasMouseUp / handleCanvasTouchEnd): the
+//     points are multiplied by getCanvasToCssRatios rx=1/dpr → CSS space,
+//     dpr-independent. (eraser/highlight already did this; brush didn't.)
+//  3. Export (buildAnnotatedPdf, UNCHANGED): `x = p.x / scale`,
+//     `y = pageHeight - p.y / scale`.
 //
-//  2. Export (buildAnnotatedPdf:3041): each point becomes a PDF coordinate via
-//     `x = px / scale`, `y = pageHeight - py / scale`  — divides by scale only.
-//
-// On desktop dpr=1 so it round-trips. On mobile dpr=2..3 a leftover ×dpr factor
-// throws the stroke far outside the page (the exact "displaced/deformed ink").
+// The bug: skipping step 2 left a leftover ×dpr in the export → on mobile
+// (dpr 2-3) the stroke landed 2-3× off the page. Desktop (dpr=1) hid it.
 
-const PAGE_W = 595;   // A4 portrait in PDF points
-const PAGE_H = 842;
-const SCALE = 0.7;    // user was editing at ~60-75% zoom
+const PAGE_W = 595, PAGE_H = 842, SCALE = 0.7;
 
-// (1) how a brush point drawn at CSS position (cssX,cssY) is CURRENTLY stored
-const storeRaw = (cssX: number, cssY: number, dpr: number) => ({ x: cssX * SCALE * dpr, y: cssY * SCALE * dpr });
-// (1-fixed) how it SHOULD be stored (CSS space, dpr divided out — like eraser/highlight)
-const storeFixed = (cssX: number, cssY: number, _dpr: number) => ({ x: cssX * SCALE, y: cssY * SCALE });
-// (2) buildAnnotatedPdf export transform (divides by scale only)
+const rawCapture = (cssX: number, cssY: number, dpr: number) => ({ x: cssX * SCALE * dpr, y: cssY * SCALE * dpr });
+const normalizeToCss = (p: { x: number; y: number }, dpr: number) => { const rx = 1 / dpr; return { x: p.x * rx, y: p.y * rx }; };
 const exportPoint = (p: { x: number; y: number }) => ({ x: p.x / SCALE, y: PAGE_H - p.y / SCALE });
-
 const inside = (pt: { x: number; y: number }) => pt.x >= 0 && pt.x <= PAGE_W && pt.y >= 0 && pt.y <= PAGE_H;
 
-// User draws a dot at the visual CENTRE of the page (CSS points = PDF points).
 const CENTER = { cssX: PAGE_W / 2, cssY: PAGE_H / 2 };
 
-describe("brush export coordinates", () => {
-  it("desktop (dpr=1): centre stroke exports to the page centre — correct", () => {
-    const out = exportPoint(storeRaw(CENTER.cssX, CENTER.cssY, 1));
-    expect(out.x).toBeCloseTo(PAGE_W / 2, 5);
-    expect(out.y).toBeCloseTo(PAGE_H / 2, 5);
-    expect(inside(out)).toBe(true);
-  });
-
-  it("mobile (dpr=3): the SAME centre stroke lands far OFF the page — the bug", () => {
-    const out = exportPoint(storeRaw(CENTER.cssX, CENTER.cssY, 3));
-    // x blows up to ~3x page width, y goes deep negative — matches the sweep
-    // (e.g. y in [-835..840] on an 842-pt page).
-    expect(out.x).toBeCloseTo((PAGE_W / 2) * 3, 5);
-    expect(out.y).toBeCloseTo(PAGE_H - (PAGE_H / 2) * 3, 5); // = -421
-    expect(inside(out)).toBe(false);
-  });
-
-  it("mobile (dpr=2): displacement factor equals the device pixel ratio", () => {
-    const out = exportPoint(storeRaw(CENTER.cssX, CENTER.cssY, 2));
-    expect(out.x / (PAGE_W / 2)).toBeCloseTo(2, 5);
-  });
-
-  it("FIX (store in CSS space, divide dpr out): centre stays centred on mobile", () => {
-    for (const dpr of [1, 2, 3]) {
-      const out = exportPoint(storeFixed(CENTER.cssX, CENTER.cssY, dpr));
+describe("brush capture→export pipeline (post-fix)", () => {
+  for (const dpr of [1, 2, 3]) {
+    it(`dpr=${dpr}: a centre stroke exports to the page centre`, () => {
+      const out = exportPoint(normalizeToCss(rawCapture(CENTER.cssX, CENTER.cssY, dpr), dpr));
       expect(out.x).toBeCloseTo(PAGE_W / 2, 5);
       expect(out.y).toBeCloseTo(PAGE_H / 2, 5);
       expect(inside(out)).toBe(true);
+    });
+  }
+
+  it("desktop (dpr=1): normalization is a no-op → coordinates identical to before the fix (pure regression)", () => {
+    const raw = rawCapture(CENTER.cssX, CENTER.cssY, 1);
+    const normalized = normalizeToCss(raw, 1);
+    expect(normalized).toEqual(raw); // rx = 1 → unchanged
+    expect(exportPoint(normalized)).toEqual(exportPoint(raw));
+  });
+
+  it("regression proof: the OLD path (no normalization) displaced the stroke off-page on mobile", () => {
+    const outOld = exportPoint(rawCapture(CENTER.cssX, CENTER.cssY, 3)); // pre-fix
+    expect(inside(outOld)).toBe(false);
+    expect(outOld.x).toBeCloseTo((PAGE_W / 2) * 3, 5);
+  });
+
+  it("arbitrary point lands where drawn for every dpr (not just the centre)", () => {
+    const pt = { cssX: 123, cssY: 700 };
+    for (const dpr of [1, 2, 3]) {
+      const out = exportPoint(normalizeToCss(rawCapture(pt.cssX, pt.cssY, dpr), dpr));
+      expect(out.x).toBeCloseTo(pt.cssX, 5);
+      expect(out.y).toBeCloseTo(PAGE_H - pt.cssY, 5);
     }
   });
 });
