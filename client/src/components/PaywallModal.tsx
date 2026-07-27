@@ -135,6 +135,19 @@ const GPAY_ENABLED = true;
 // account access. Flip back to true once the tempKey-content root cause is fixed.
 const GOOGLE_IN_PAYWALL_ENABLED = false;
 
+// Test gate: the paywall Google button stays hidden to the public, but appending
+// ?gauth=<secret> to the editor URL re-enables it for a controlled repro without
+// reopening the door to anyone. The param is part of the URL, so it rides the
+// OAuth returnPath and survives the redirect.
+const GAUTH_SECRET = "ee8ddb64c000d511";
+function googleInPaywallEnabled(): boolean {
+  if (GOOGLE_IN_PAYWALL_ENABLED) return true;
+  try {
+    return typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).get("gauth") === GAUTH_SECRET;
+  } catch { return false; }
+}
+
 // FastPay JS captures the card in Sipay's iframe; we forward the resulting
 // request_id to our backend to fire /mdwr/v1/all-in-one and then navigate the
 // parent window to the 3DS URL Sipay returns.
@@ -1620,7 +1633,7 @@ export default function PaywallModal({
   // option in the editor). Only fires once per modal open cycle and
   // only if the user is not already authenticated.
   useEffect(() => {
-    if (!GOOGLE_IN_PAYWALL_ENABLED) return; // temporary cut — never auto-fire Google in the paywall
+    if (!googleInPaywallEnabled()) return; // temporary cut (or ?gauth test gate)
     if (!isOpen || !autoTriggerGoogle || isAuthenticated) return;
     if (googleAutoFiredRef.current) return;
     googleAutoFiredRef.current = true;
@@ -1840,7 +1853,7 @@ export default function PaywallModal({
                 <span className="text-xs text-gray-400">{t.paywall_or}</span>
                 <div className="flex-1 h-px bg-gray-200" />
               </div>
-              {GOOGLE_IN_PAYWALL_ENABLED ? (
+              {googleInPaywallEnabled() ? (
               <button
                 onClick={() => handleGoogleLogin()}
                 disabled={googleRedirecting}

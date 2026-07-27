@@ -1007,23 +1007,14 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       const currentPendingEdited = pendingEditedPdfRef.current;
       const currentPdfBytes = pdfBytesRef.current;
 
-      // Build paywall data and open it right away
+      // Build paywall data and open it right away.
+      // BELT (confirmed root fix): when an edited draft is pending (resume), the
+      // temp key is the ONLY source of truth — use it even if an original
+      // pendingFile got loaded into pdfBytes. Building from that base would
+      // preview/persist the UNEDITED original and shadow the edit.
       let recoveredEditedPreview = false;
-      if (currentPdfBytes) {
-        try {
-          const out = await buildAnnotatedPdf();
-          if (out) {
-            setPdfDataForPaywall({
-              base64: uint8ToBase64(out),
-              name: file?.name ?? "document.pdf",
-              size: out.byteLength,
-            });
-            generateAnnotatedThumbnail(out).then(t => { if (t) setPaywallThumbnail(t); });
-          }
-        } catch {}
-      } else if (currentPendingEdited) {
-        // No PDF loaded in editor but we have an edited PDF in temp storage
-        // Fetch it to generate thumbnail for the paywall
+      if (currentPendingEdited) {
+        // Resume: recover the edited PDF from temp storage (never the base).
         try {
           const tempKey = currentPendingEdited.tempKey;
           let pdfBytes: Uint8Array | null = null;
@@ -1049,11 +1040,25 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
             generateAnnotatedThumbnail(pdfBytes).then(t => { if (t) setPaywallThumbnail(t); });
           }
         } catch {}
+      } else if (currentPdfBytes) {
+        // Normal in-editor flow (no resume): build from the live document.
+        try {
+          const out = await buildAnnotatedPdf();
+          if (out) {
+            setPdfDataForPaywall({
+              base64: uint8ToBase64(out),
+              name: file?.name ?? "document.pdf",
+              size: out.byteLength,
+            });
+            generateAnnotatedThumbnail(out).then(t => { if (t) setPaywallThumbnail(t); });
+          }
+        } catch {}
       }
       // BARRIER #2: never open payment for a resume that couldn't recover the
       // edited PDF — the user would pay for a copy WITHOUT their edits (queja /
-      // chargeback). Block, tell them to re-edit, and send them home to redo it.
-      if (!canOpenResumePaywall({ hasEditorBytes: !!currentPdfBytes, recoveredEditedPreview })) {
+      // chargeback). When an edited draft is pending, ONLY the recovered temp-key
+      // preview counts — a loaded base (currentPdfBytes) must NOT satisfy it.
+      if (!canOpenResumePaywall({ hasEditorBytes: !currentPendingEdited && !!currentPdfBytes, recoveredEditedPreview })) {
         console.error("[pre-redirect-guard] BARRIER: edited draft not recovered on resume — NOT opening paywall");
         setPreparingResume(false);
         toast.error(
@@ -3694,6 +3699,10 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   //    bytes — identical to the preview and the download — never a rebuild (would
   //    lose/relocate the edits) and never a silent different doc.
   const buildPdfForUploadForPaywall = async (): Promise<{ base64: string; name: string; size: number } | null> => {
+    // BELT: on resume (an edited draft is pending) the on-screen bytes are the
+    // recovered temp key (the edit) — persist THOSE, never rebuild from a loaded
+    // original, which would save the unedited base and shadow the edit.
+    if (pendingEditedPdfRef.current && pdfDataForPaywall?.base64) return pdfDataForPaywall;
     let rebuilt: { base64: string; name: string; size: number } | null = null;
     if (pdfBytes) {
       try {

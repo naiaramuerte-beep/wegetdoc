@@ -308,6 +308,9 @@ ${allUrls.map(u => `  <url>
       const randomId = Math.random().toString(36).slice(2) + Date.now().toString(36);
       const key = `temp/${randomId}-${name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
       const { url } = await storagePut(key, file.buffer, "application/pdf");
+      // [temp-io] instrumentation: the key is the upload↔download correlation id;
+      // size is the marker (edited builds are heavier than the bare original).
+      console.log(`[temp-io] UPLOAD key=${key} size=${file.buffer.length}B rid=${req.headers["x-railway-request-id"] ?? "-"}`);
       res.json({ success: true, tempKey: key, tempUrl: url, name });
     } catch (err) {
       console.error("[TempUpload] Error:", err);
@@ -322,8 +325,11 @@ ${allUrls.map(u => `  <url>
       if (!tempKey || !tempKey.startsWith("temp/")) { res.status(400).json({ error: "Invalid key" }); return; }
       const { url } = await storageGet(tempKey, 300);
       const response = await fetch(url);
-      if (!response.ok) { res.status(404).json({ error: "File not found" }); return; }
+      if (!response.ok) { console.log(`[temp-io] DOWNLOAD key=${tempKey} status=${response.status} MISS`); res.status(404).json({ error: "File not found" }); return; }
       const buffer = Buffer.from(await response.arrayBuffer());
+      // [temp-io]: same key as the UPLOAD line; matching size confirms the same
+      // content round-tripped through the OAuth redirect.
+      console.log(`[temp-io] DOWNLOAD key=${tempKey} status=200 size=${buffer.length}B`);
       res.setHeader("Content-Type", "application/pdf");
       res.send(buffer);
     } catch (err) {
