@@ -10,6 +10,7 @@ import { useEffect, useState, useRef } from "react";
 import { useLocation } from "wouter";
 import PdfEditor from "@/components/PdfEditor";
 import { usePdfFile } from "@/contexts/PdfFileContext";
+import { shouldLoadOriginalFile } from "@/lib/resolveResumeSource";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Home from "./Home";
 import { Pencil, X as XIcon, Check, HelpCircle } from "lucide-react";
@@ -39,7 +40,7 @@ const LogoText = () => (
 );
 
 export default function EditorPage() {
-  const { pendingFile, pendingTool, pendingPaywall, setPendingPaywall, isRestoringFromSession } = usePdfFile();
+  const { pendingFile, pendingTool, pendingPaywall, setPendingPaywall, isRestoringFromSession, pendingEditedPdf } = usePdfFile();
   const [, navigate] = useLocation();
   const { lang, t } = useLanguage();
   const { productTourEnabled } = useFeatureFlags();
@@ -151,7 +152,11 @@ export default function EditorPage() {
       {/* Full-screen editor */}
       <div className="flex-1 overflow-hidden">
         <PdfEditor
-          initialFile={pendingFile ?? undefined}
+          // On resume with an edited draft pending (Google mobile redirect), do
+          // NOT load the ORIGINAL as the working doc — it would shadow the edits
+          // and export the unedited original. The edited temp key is the source
+          // of truth (buildPdfForUpload + close handler use it). See #0.
+          initialFile={shouldLoadOriginalFile({ hasPendingEdited: !!pendingEditedPdf }) ? (pendingFile ?? undefined) : undefined}
           initialTool={pendingTool ?? undefined}
           initialOpenPaywall={pendingPaywall}
           onPaywallOpened={() => setPendingPaywall(false)}
