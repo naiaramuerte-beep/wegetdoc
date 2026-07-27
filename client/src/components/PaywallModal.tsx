@@ -143,8 +143,15 @@ const GAUTH_SECRET = "ee8ddb64c000d511";
 function googleInPaywallEnabled(): boolean {
   if (GOOGLE_IN_PAYWALL_ENABLED) return true;
   try {
-    return typeof window !== "undefined" &&
-      new URLSearchParams(window.location.search).get("gauth") === GAUTH_SECRET;
+    if (typeof window === "undefined") return false;
+    // Seeing ?gauth=<secret> once latches it for the whole session, so it
+    // survives the upload navigation (which drops the query) and the OAuth
+    // redirect. Cleared only when the tab closes.
+    if (new URLSearchParams(window.location.search).get("gauth") === GAUTH_SECRET) {
+      sessionStorage.setItem("gauth_ok", "1");
+      return true;
+    }
+    return sessionStorage.getItem("gauth_ok") === "1";
   } catch { return false; }
 }
 
