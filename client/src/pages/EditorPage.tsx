@@ -50,6 +50,15 @@ export default function EditorPage() {
   // the OAuth resume flow from bouncing back to Home when the paywall opens.
   const enteredEditorRef = useRef(false);
 
+  // Monotonic latch for the resume flow: true once an edited draft has EVER been
+  // pending. The autoResume clears pendingEditedPdf after claiming the temp draft
+  // (PdfEditor:1094); without this latch that clear would flip
+  // shouldLoadOriginalFile back to true and load the ORIGINAL as the working doc
+  // — shadowing the edit AFTER the preview already showed it (the "close shows no
+  // changes" bug). Once latched, we never load the original for this session.
+  const resumeLatchRef = useRef(false);
+  if (pendingEditedPdf) resumeLatchRef.current = true;
+
   /* Editable filename */
   const [fileName, setFileName] = useState("document.pdf");
   const [isEditingName, setIsEditingName] = useState(false);
@@ -156,7 +165,7 @@ export default function EditorPage() {
           // NOT load the ORIGINAL as the working doc — it would shadow the edits
           // and export the unedited original. The edited temp key is the source
           // of truth (buildPdfForUpload + close handler use it). See #0.
-          initialFile={shouldLoadOriginalFile({ hasPendingEdited: !!pendingEditedPdf }) ? (pendingFile ?? undefined) : undefined}
+          initialFile={shouldLoadOriginalFile({ hasPendingEdited: !!pendingEditedPdf || resumeLatchRef.current }) ? (pendingFile ?? undefined) : undefined}
           initialTool={pendingTool ?? undefined}
           initialOpenPaywall={pendingPaywall}
           onPaywallOpened={() => setPendingPaywall(false)}

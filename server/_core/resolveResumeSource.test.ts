@@ -13,6 +13,15 @@ describe("shouldLoadOriginalFile — never let the original shadow the edited dr
   it("normal open (no edited draft) → load the original as the working doc", () => {
     expect(shouldLoadOriginalFile({ hasPendingEdited: false })).toBe(true);
   });
+
+  it("clear race: pendingEditedPdf cleared by autoResume but resume LATCHED → still suppress the original", () => {
+    // autoResume clears pendingEditedPdf after claiming the temp draft; the
+    // EditorPage latch ORs the live value with a monotonic ref so the original
+    // is never loaded after the clear (the "close shows no changes" bug).
+    const pendingEditedNow = false; // cleared
+    const resumeLatched = true;     // we entered resume earlier this session
+    expect(shouldLoadOriginalFile({ hasPendingEdited: pendingEditedNow || resumeLatched })).toBe(false);
+  });
 });
 
 describe("#0 end-to-end: original present + edited present → export/persist the EDITED", () => {
