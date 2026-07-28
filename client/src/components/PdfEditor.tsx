@@ -1926,6 +1926,30 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
   useEffect(() => { redrawDrawingCanvas(); }, [redrawDrawingCanvas]);
 
+  // Touch equivalent of the native text-block resize/move mouse drags. The dots
+  // (and block move) only had onMouseDown, so on mobile they didn't respond to
+  // touch (the user could edit native text but not widen/narrow the box). This
+  // sets up touchmove/touchend and reports the delta; each handle keeps its own
+  // onMouseDown untouched (desktop unchanged).
+  const startNativeTouchDrag = (e: React.TouchEvent, onDelta: (dx: number, dy: number) => void) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const t0 = e.touches[0];
+    if (!t0) return;
+    const startX = t0.clientX, startY = t0.clientY;
+    const move = (ev: TouchEvent) => {
+      ev.preventDefault();
+      const t = ev.touches[0];
+      if (t) onDelta(t.clientX - startX, t.clientY - startY);
+    };
+    const up = () => {
+      window.removeEventListener("touchmove", move);
+      window.removeEventListener("touchend", up);
+    };
+    window.addEventListener("touchmove", move, { passive: false });
+    window.addEventListener("touchend", up);
+  };
+
   // ── Get canvas-relative position ─────────────────────────────
   const getCanvasPos = useCallback((e: React.MouseEvent): { x: number; y: number } => {
     const canvas = mainCanvasRef.current;
@@ -5901,7 +5925,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   {editingBlockId === block.id && (<>
                     {/* Left dot — resize width from left */}
                     <div
-                      style={{ position: "absolute", left: -5, top: "50%", transform: "translateY(-50%)", width: 10, height: 10, backgroundColor: "#E63946", borderRadius: "50%", cursor: "ew-resize", zIndex: 35, border: "2px solid white" }}
+                      style={{ position: "absolute", left: -5, top: "50%", transform: "translateY(-50%)", width: 10, height: 10, backgroundColor: "#E63946", borderRadius: "50%", cursor: "ew-resize", zIndex: 35, border: "2px solid white", touchAction: "none" }}
                       onMouseDown={e => {
                         e.stopPropagation(); e.preventDefault();
                         const startX = e.clientX, startW = block.width, startLeft = block.x;
@@ -5918,10 +5942,22 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         const onUp = () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
                         window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onUp);
                       }}
+                      onTouchStart={e => {
+                        const startW = block.width, startLeft = block.x;
+                        startNativeTouchDrag(e, (dx) => {
+                          const newW = Math.max(30, startW - dx);
+                          const newX = startLeft + (startW - newW);
+                          setAllNativeTextBlocks(prev => {
+                            const pageBlocks = prev.get(block.page) ?? [];
+                            const updated = pageBlocks.map((b: NativeTextBlock) => b.id === block.id ? { ...b, width: newW, x: newX } : b);
+                            const next = new Map(prev); next.set(block.page, updated); return next;
+                          });
+                        });
+                      }}
                     />
                     {/* Right dot — resize width */}
                     <div
-                      style={{ position: "absolute", right: -5, top: "50%", transform: "translateY(-50%)", width: 10, height: 10, backgroundColor: "#E63946", borderRadius: "50%", cursor: "ew-resize", zIndex: 35, border: "2px solid white" }}
+                      style={{ position: "absolute", right: -5, top: "50%", transform: "translateY(-50%)", width: 10, height: 10, backgroundColor: "#E63946", borderRadius: "50%", cursor: "ew-resize", zIndex: 35, border: "2px solid white", touchAction: "none" }}
                       onMouseDown={e => {
                         e.stopPropagation(); e.preventDefault();
                         const startX = e.clientX, startW = block.width;
@@ -5936,10 +5972,21 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         const onUp = () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
                         window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onUp);
                       }}
+                      onTouchStart={e => {
+                        const startW = block.width;
+                        startNativeTouchDrag(e, (dx) => {
+                          const newW = Math.max(30, startW + dx);
+                          setAllNativeTextBlocks(prev => {
+                            const pageBlocks = prev.get(block.page) ?? [];
+                            const updated = pageBlocks.map((b: NativeTextBlock) => b.id === block.id ? { ...b, width: newW } : b);
+                            const next = new Map(prev); next.set(block.page, updated); return next;
+                          });
+                        });
+                      }}
                     />
                     {/* Top dot — resize height from top + move */}
                     <div
-                      style={{ position: "absolute", top: -5, left: "50%", transform: "translateX(-50%)", width: 10, height: 10, backgroundColor: "#E63946", borderRadius: "50%", cursor: "ns-resize", zIndex: 35, border: "2px solid white" }}
+                      style={{ position: "absolute", top: -5, left: "50%", transform: "translateX(-50%)", width: 10, height: 10, backgroundColor: "#E63946", borderRadius: "50%", cursor: "ns-resize", zIndex: 35, border: "2px solid white", touchAction: "none" }}
                       onMouseDown={e => {
                         e.stopPropagation(); e.preventDefault();
                         const startY = e.clientY, startH = block.height, startTop = block.y;
@@ -5956,10 +6003,22 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         const onUp = () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
                         window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onUp);
                       }}
+                      onTouchStart={e => {
+                        const startH = block.height, startTop = block.y;
+                        startNativeTouchDrag(e, (_dx, dy) => {
+                          const newH = Math.max(14, startH - dy);
+                          const newY = startTop + (startH - newH);
+                          setAllNativeTextBlocks(prev => {
+                            const pageBlocks = prev.get(block.page) ?? [];
+                            const updated = pageBlocks.map((b: NativeTextBlock) => b.id === block.id ? { ...b, height: newH, y: newY } : b);
+                            const next = new Map(prev); next.set(block.page, updated); return next;
+                          });
+                        });
+                      }}
                     />
                     {/* Bottom dot — resize height */}
                     <div
-                      style={{ position: "absolute", bottom: -5, left: "50%", transform: "translateX(-50%)", width: 10, height: 10, backgroundColor: "#E63946", borderRadius: "50%", cursor: "ns-resize", zIndex: 35, border: "2px solid white" }}
+                      style={{ position: "absolute", bottom: -5, left: "50%", transform: "translateX(-50%)", width: 10, height: 10, backgroundColor: "#E63946", borderRadius: "50%", cursor: "ns-resize", zIndex: 35, border: "2px solid white", touchAction: "none" }}
                       onMouseDown={e => {
                         e.stopPropagation(); e.preventDefault();
                         const startY = e.clientY, startH = block.height;
@@ -5973,6 +6032,17 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                         };
                         const onUp = () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
                         window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onUp);
+                      }}
+                      onTouchStart={e => {
+                        const startH = block.height;
+                        startNativeTouchDrag(e, (_dx, dy) => {
+                          const newH = Math.max(14, startH + dy);
+                          setAllNativeTextBlocks(prev => {
+                            const pageBlocks = prev.get(block.page) ?? [];
+                            const updated = pageBlocks.map((b: NativeTextBlock) => b.id === block.id ? { ...b, height: newH } : b);
+                            const next = new Map(prev); next.set(block.page, updated); return next;
+                          });
+                        });
                       }}
                     />
                   </>)}
