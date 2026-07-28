@@ -733,8 +733,15 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       await task.promise;
     } catch (err: any) {
       // Cancel throws "RenderingCancelledException" — swallow it; a newer
-      // render is already starting. Any other error propagates.
-      if (err?.name !== "RenderingCancelledException") throw err;
+      // render is already starting.
+      if (err?.name === "RenderingCancelledException") return;
+      // Any other pdf.js render failure (e.g. iOS/WebKit throwing a TypeError
+      // inside drawImage/_scaleImage when downscaling a large inline image — a
+      // known canvas-limit issue we can't fix inside pdf.js). renderPage is
+      // fired from effects with no .catch, so re-throwing here became an
+      // UNHANDLED rejection: a render glitch turned into a reported crash.
+      // Degrade gracefully instead — keep whatever painted and move on.
+      console.warn("[renderPage] render failed (non-fatal):", err?.name, err?.message);
       return;
     } finally {
       if (mainRenderTaskRef.current === (task as any)) mainRenderTaskRef.current = null;
