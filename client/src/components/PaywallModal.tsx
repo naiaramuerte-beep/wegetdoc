@@ -127,13 +127,13 @@ function CardBrands() {
 // Pay. Flip back to false if OR_BIBED_11 reappears in production.
 const GPAY_ENABLED = true;
 
-// TEMPORARY CUT (2026-07-27): Google register is disabled INSIDE the paywall
-// (the document-carrying flow) because the mobile redirect could return a preview
-// WITHOUT the user's edits — someone could pay for a copy missing their work.
-// Email register is unaffected and works perfectly. This does NOT touch the
-// normal Google login on the login page / dashboard — paying customers keep
-// account access. Flip back to true once the tempKey-content root cause is fixed.
-const GOOGLE_IN_PAYWALL_ENABLED = false;
+// RE-ENABLED (2026-07-28): the resume root cause is fixed (the resume latch —
+// clearing pendingEditedPdf no longer re-loads the original) and verified by the
+// owner's smoke: edits survive the Google mobile redirect + modal close. The
+// temporary cut below is lifted. (The ?gauth test gate stays but is now inert
+// while this is true.) A separate, non-critical text-position precision issue
+// remains and is tracked independently.
+const GOOGLE_IN_PAYWALL_ENABLED = true;
 
 // Test gate: the paywall Google button stays hidden to the public, but appending
 // ?gauth=<secret> to the editor URL re-enables it for a controlled repro without
