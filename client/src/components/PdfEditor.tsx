@@ -1931,9 +1931,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // touch (the user could edit native text but not widen/narrow the box). This
   // sets up touchmove/touchend and reports the delta; each handle keeps its own
   // onMouseDown untouched (desktop unchanged).
-  const startNativeTouchDrag = (e: React.TouchEvent, onDelta: (dx: number, dy: number) => void) => {
+  const startNativeTouchDrag = (e: React.TouchEvent, onDelta: (dx: number, dy: number) => void, preventStart = true) => {
     e.stopPropagation();
-    e.preventDefault();
+    // Resize dots preventDefault on start (they only drag). The block MOVE passes
+    // preventStart=false so a plain tap still fires click/double-click (select /
+    // enter text editing) — scrolling during an actual drag is stopped by the
+    // touchmove preventDefault + touchAction:none below.
+    if (preventStart) e.preventDefault();
     const t0 = e.touches[0];
     if (!t0) return;
     const startX = t0.clientX, startY = t0.clientY;
@@ -5896,8 +5900,27 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                           window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onUp);
                         }
                       }}
+                      onTouchStart={e => {
+                        if (editingBlockId === block.id && typingBlockId !== block.id) {
+                          const startLeft = block.x, startTop = block.y;
+                          startNativeTouchDrag(e, (dx, dy) => {
+                            setAllNativeTextBlocks(prev => {
+                              const pageBlocks = prev.get(block.page) ?? [];
+                              const updated = pageBlocks.map((b: NativeTextBlock) =>
+                                b.id === block.id ? {
+                                  ...b, x: startLeft + dx, y: startTop + dy,
+                                  origX: b.origX ?? b.x, origY: b.origY ?? b.y,
+                                  origWidth: b.origWidth ?? b.width, origHeight: b.origHeight ?? b.height,
+                                } : b
+                              );
+                              const next = new Map(prev); next.set(block.page, updated); return next;
+                            });
+                          }, false);
+                        }
+                      }}
                       style={{
                         width: "100%", height: "100%",
+                        touchAction: editingBlockId === block.id && typingBlockId !== block.id ? "none" : undefined,
                         fontSize: block.fontSize,
                         fontFamily: block.fontFamily || "sans-serif",
                         fontWeight: (block.fontWeight || "normal") as any,
