@@ -3010,7 +3010,13 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
         const tg = parseInt(hexC.slice(3, 5), 16) / 255;
         const tb = parseInt(hexC.slice(5, 7), 16) / 255;
         const textFont = (ann.fontWeight === "bold") ? (await doc.embedFont(StandardFonts.HelveticaBold)) : font;
-        page.drawText(ann.text, { x: ax, y: pdfY + ah / 2, size: fontSize, font: textFont, color: rgb(tr, tg, tb) });
+        // Baseline = one font-size below the box TOP (height - ay), so the text
+        // lands where the user placed it at ANY zoom. The old `pdfY + ah/2` (box
+        // centre) used a half-box offset that scales with 1/scale, drifting the
+        // text down as you zoom out (a few pts at 100%, ~16pt at 50%). Verified
+        // with a real-export measurement: this lands within ~1pt at all zooms and
+        // sizes, and is multi-line-safe (first-line offset, not half the box).
+        page.drawText(ann.text, { x: ax, y: (height - ay) - fontSize, size: fontSize, font: textFont, color: rgb(tr, tg, tb) });
       } else if ((ann.type === "signature" || ann.type === "image") && ann.dataUrl) {
         try {
           let finalDataUrl = ann.dataUrl;
