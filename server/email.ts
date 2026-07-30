@@ -117,7 +117,7 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     signoff: "Un saludo,\nEquipo EditorPDF",
     manageBtn: "Gestionar suscripción",
     disclaimer: (date, url, price) =>
-      `Has activado un período de prueba de 48 horas por 0,50€. Si no cancelas antes del ${date}, tu suscripción se renovará automáticamente al plan mensual de ${price}/mes. Puedes cancelar en cualquier momento desde tu panel de Facturación: ${url}`,
+      `Has activado un período de prueba de 7 días por 0,50€. Si no cancelas antes del ${date}, tu suscripción se renovará automáticamente al plan mensual de ${price}/mes. Puedes cancelar en cualquier momento desde tu panel de Facturación: ${url}`,
   },
   en: {
     subject: `Welcome to ${brandName}! Here's everything you can do`,
@@ -154,7 +154,7 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     signoff: "Best regards,\nEditorPDF Team",
     manageBtn: "Manage subscription",
     disclaimer: (date, url, price) =>
-      `You've activated a 48-hour trial for €0.50. If you don't cancel before ${date}, your subscription will automatically renew at the monthly plan of ${price}/month. You can cancel anytime from your Billing dashboard: ${url}`,
+      `You've activated a 7-day trial for €0.50. If you don't cancel before ${date}, your subscription will automatically renew at the monthly plan of ${price}/month. You can cancel anytime from your Billing dashboard: ${url}`,
   },
   fr: {
     subject: `Bienvenue chez ${brandName} ! Voici tout ce que vous pouvez faire`,
@@ -191,7 +191,7 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     signoff: "Cordialement,\nL'équipe EditorPDF",
     manageBtn: "Gérer l'abonnement",
     disclaimer: (date, url, price) =>
-      `Vous avez activé une période d'essai de 48 heures pour 0,50€. Si vous n'annulez pas avant le ${date}, votre abonnement sera automatiquement renouvelé au tarif mensuel de ${price}/mois. Vous pouvez annuler à tout moment depuis votre tableau de Facturation : ${url}`,
+      `Vous avez activé une période d'essai de 7 jours pour 0,50€. Si vous n'annulez pas avant le ${date}, votre abonnement sera automatiquement renouvelé au tarif mensuel de ${price}/mois. Vous pouvez annuler à tout moment depuis votre tableau de Facturation : ${url}`,
   },
   de: {
     subject: `Willkommen bei ${brandName}! Hier ist alles, was Sie tun können`,
@@ -228,7 +228,7 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     signoff: "Mit freundlichen Grüßen,\nDas EditorPDF-Team",
     manageBtn: "Abonnement verwalten",
     disclaimer: (date, url, price) =>
-      `Sie haben eine 48-Stunden-Testphase für 0,50€ aktiviert. Wenn Sie nicht vor dem ${date} kündigen, wird Ihr Abonnement automatisch zum Monatsplan von ${price}/Monat verlängert. Sie können jederzeit über Ihr Abrechnungs-Dashboard kündigen: ${url}`,
+      `Sie haben eine 7-Tage-Testphase für 0,50€ aktiviert. Wenn Sie nicht vor dem ${date} kündigen, wird Ihr Abonnement automatisch zum Monatsplan von ${price}/Monat verlängert. Sie können jederzeit über Ihr Abrechnungs-Dashboard kündigen: ${url}`,
   },
   pt: {
     subject: `Bem-vindo ao ${brandName}! Aqui está tudo o que pode fazer`,
@@ -265,7 +265,7 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     signoff: "Com os melhores cumprimentos,\nEquipa EditorPDF",
     manageBtn: "Gerir subscrição",
     disclaimer: (date, url, price) =>
-      `Ativou um período de teste de 48 horas por 0,50€. Se não cancelar antes de ${date}, a sua subscrição será renovada automaticamente para o plano mensal de ${price}/mês. Pode cancelar a qualquer momento no seu painel de Faturação: ${url}`,
+      `Ativou um período de teste de 7 dias por 0,50€. Se não cancelar antes de ${date}, a sua subscrição será renovada automaticamente para o plano mensal de ${price}/mês. Pode cancelar a qualquer momento no seu painel de Faturação: ${url}`,
   },
   it: {
     subject: `Benvenuto in ${brandName}! Ecco tutto quello che puoi fare`,
@@ -302,7 +302,7 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     signoff: "Cordiali saluti,\nIl team EditorPDF",
     manageBtn: "Gestisci abbonamento",
     disclaimer: (date, url, price) =>
-      `Hai attivato un periodo di prova di 48 ore per 0,50€. Se non annulli prima del ${date}, il tuo abbonamento si rinnoverà automaticamente al piano mensile di ${price}/mese. Puoi annullare in qualsiasi momento dalla dashboard Fatturazione: ${url}`,
+      `Hai attivato un periodo di prova di 7 giorni per 0,50€. Se non annulli prima del ${date}, il tuo abbonamento si rinnoverà automaticamente al piano mensile di ${price}/mese. Puoi annullare in qualsiasi momento dalla dashboard Fatturazione: ${url}`,
   },
   nl: {
     subject: `Welkom bij ${brandName}! Hier is alles wat u kunt doen`,
@@ -339,7 +339,7 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     signoff: "Met vriendelijke groet,\nHet EditorPDF-team",
     manageBtn: "Abonnement beheren",
     disclaimer: (date, url, price) =>
-      `U heeft een proefperiode van 48 uur geactiveerd voor €0,50. Als u niet voor ${date} opzegt, wordt uw abonnement automatisch verlengd naar het maandabonnement van ${price}/maand. U kunt op elk moment opzeggen via uw Facturering-dashboard: ${url}`,
+      `U heeft een proefperiode van 7 dagen geactiveerd voor €0,50. Als u niet voor ${date} opzegt, wordt uw abonnement automatisch verlengd naar het maandabonnement van ${price}/maand. U kunt op elk moment opzeggen via uw Facturering-dashboard: ${url}`,
   },
   pl: {
     subject: `Witaj w ${brandName}! Oto co możesz zrobić`,
@@ -376,7 +376,7 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     signoff: "Pozdrawiamy,\nZespół EditorPDF",
     manageBtn: "Zarządzaj subskrypcją",
     disclaimer: (date, url, price) =>
-      `Aktywowałeś 48-godzinny okres próbny za 0,50€. Jeśli nie anulujesz przed ${date}, Twoja subskrypcja zostanie automatycznie odnowiona w planie miesięcznym za ${price}/mies. Możesz anulować w dowolnym momencie z panelu Płatności: ${url}`,
+      `Aktywowałeś 7-dniowy okres próbny za 0,50€. Jeśli nie anulujesz przed ${date}, Twoja subskrypcja zostanie automatycznie odnowiona w planie miesięcznym za ${price}/mies. Możesz anulować w dowolnym momencie z panelu Płatności: ${url}`,
   },
   ru: {
     subject: `Добро пожаловать в ${brandName}! Вот что вы можете делать`,
@@ -413,7 +413,7 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     signoff: "С уважением,\nКоманда EditorPDF",
     manageBtn: "Управление подпиской",
     disclaimer: (date, url, price) =>
-      `Вы активировали 48-часовой пробный период за 0,50€. Если вы не отмените до ${date}, ваша подписка автоматически продлится на месячный план ${price}/мес. Вы можете отменить в любое время в панели Оплаты: ${url}`,
+      `Вы активировали 7-дневный пробный период за 0,50€. Если вы не отмените до ${date}, ваша подписка автоматически продлится на месячный план ${price}/мес. Вы можете отменить в любое время в панели Оплаты: ${url}`,
   },
   uk: {
     subject: `Ласкаво просимо до ${brandName}! Ось що ви можете робити`,
@@ -450,7 +450,7 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     signoff: "З повагою,\nКоманда EditorPDF",
     manageBtn: "Керування підпискою",
     disclaimer: (date, url, price) =>
-      `Ви активували 48-годинний пробний період за 0,50€. Якщо ви не скасуєте до ${date}, ваша підписка автоматично подовжиться на місячний план ${price}/міс. Ви можете скасувати будь-коли в панелі Оплати: ${url}`,
+      `Ви активували 7-денний пробний період за 0,50€. Якщо ви не скасуєте до ${date}, ваша підписка автоматично подовжиться на місячний план ${price}/міс. Ви можете скасувати будь-коли в панелі Оплати: ${url}`,
   },
   ro: {
     subject: `Bun venit la ${brandName}! Iată tot ce poți face`,
@@ -487,7 +487,7 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     signoff: "Cu stimă,\nEchipa EditorPDF",
     manageBtn: "Gestionează abonamentul",
     disclaimer: (date, url, price) =>
-      `Ai activat o perioadă de probă de 48 de ore pentru 0,50€. Dacă nu anulezi înainte de ${date}, abonamentul se va reînnoi automat la planul lunar de ${price}/lună. Poți anula oricând din panoul Facturare: ${url}`,
+      `Ai activat o perioadă de probă de 7 zile pentru 0,50€. Dacă nu anulezi înainte de ${date}, abonamentul se va reînnoi automat la planul lunar de ${price}/lună. Poți anula oricând din panoul Facturare: ${url}`,
   },
   zh: {
     subject: `欢迎使用 ${brandName}！这是您可以做的一切`,
@@ -524,7 +524,7 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     signoff: "此致敬礼，\nEditorPDF 团队",
     manageBtn: "管理订阅",
     disclaimer: (date, url, price) =>
-      `您已激活 48 小时试用期，费用为 0.50€。如果您未在 ${date} 之前取消，您的订阅将自动续订为月度计划 ${price}/月。您可以随时从账单面板取消：${url}`,
+      `您已激活 7 天试用期，费用为 0.50€。如果您未在 ${date} 之前取消，您的订阅将自动续订为月度计划 ${price}/月。您可以随时从账单面板取消：${url}`,
   },
 };
 

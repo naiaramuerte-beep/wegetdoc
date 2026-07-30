@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { fillNotice } from "@shared/trial";
 
 /**
  * Live subscription price, sourced from `site_settings.subscription_price_eur`
@@ -20,7 +21,12 @@ export function usePricing() {
   });
   const price = q.data?.priceFormattedEs ?? "19,95€";
   const priceEur = q.data?.priceEur ?? 19.95;
+  const trialDays = q.data?.trialDays ?? 7;
   const withPrice = (s: string | undefined | null) =>
     (s ?? "").replace(/\{price\}/g, price);
-  return { price, priceEur, withPrice };
+  // For the checkout billing notice: also fills {days} (trial length) and
+  // {intro} (the €0,50 today), so the copy always matches the live config.
+  const withNotice = (s: string | undefined | null) =>
+    fillNotice(s, { intro: "0,50€", days: trialDays, price });
+  return { price, priceEur, trialDays, withPrice, withNotice };
 }

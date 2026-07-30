@@ -19,6 +19,7 @@ import {
   webhookEvents,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import { clampTrialDays } from "../shared/trial";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -179,6 +180,7 @@ export async function upsertSubscription(data: {
   currentPeriodStart?: Date;
   currentPeriodEnd?: Date;
   cancelAtPeriodEnd?: boolean;
+  trialDays?: number;
   renewalAttempts?: number;
   nextRenewalAt?: Date | null;
   // Dunning v2
@@ -529,6 +531,18 @@ export async function getActiveMonthlyPrice(): Promise<{ eur: number; formatted:
   const eur = Number.isFinite(n) && n > 0 ? n : 19.95;
   const formatted = `${eur.toFixed(2).replace(".", ",")}€`;
   return { eur, formatted };
+}
+
+/**
+ * Trial length in DAYS before the first full monthly charge, read from
+ * `site_settings.trial_days`. SINGLE SOURCE OF TRUTH — every alta path derives
+ * `currentPeriodEnd` from this, so the trial can change without a deploy (like
+ * the price). Default 7 (the new policy, up from 48h); clamped to [1,30] so a
+ * bad setting can never nuke billing. Existing subs are untouched — this only
+ * affects the offset applied when a NEW sub is created.
+ */
+export async function getTrialDays(): Promise<number> {
+  return clampTrialDays(await getSiteSetting("trial_days"));
 }
 
 // ─── Contact Messages ─────────────────────────────────────────
@@ -1091,6 +1105,7 @@ export async function recordCharge(opts: {
       errorDetail: opts.errorDetail ?? null,
       gclid: opts.gclid ?? null,
       gclidType: opts.gclidType ?? null,
+      deviceType: opts.deviceType ?? null,
     });
   } catch (err) {
     console.error("[recordCharge] failed:", err);
@@ -1730,7 +1745,8 @@ export async function createFakeTrialSub(userId: number) {
     return { success: false, error: "User already has an active sub" };
   }
   const now = new Date();
-  const trialEnd = new Date(Date.now() + 48 * 60 * 60 * 1000);
+  const trialDays = await getTrialDays();
+  const trialEnd = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000);
   const syntheticSubId = `fake_sub_qa_${userId}_${Date.now()}`;
   await upsertSubscription({
     userId,
@@ -1740,6 +1756,7 @@ export async function createFakeTrialSub(userId: number) {
     status: "active",
     currentPeriodStart: now,
     currentPeriodEnd: trialEnd,
+    trialDays,
     cancelAtPeriodEnd: false,
   });
   await markDocumentsPaid(userId);

@@ -132,11 +132,14 @@ export const appRouter = router({
       // "39.90" → "39,90" for de/es/fr/it/pl/pt/ro/ru/uk; "39.90" stays for en/zh/nl
       const decimals = priceEur.toFixed(2);
       const comma = decimals.replace(".", ",");
+      const { getTrialDays } = await import("./db");
+      const trialDays = await getTrialDays();
       return {
         priceEur,
         priceComma: comma,           // "39,90"
         priceDot: decimals,          // "39.90"
         priceFormattedEs: `${comma}€`, // "39,90€" — used everywhere in es-style copy
+        trialDays,                   // trial length in days (for the checkout billing notice)
       };
     }),
 
@@ -487,11 +490,12 @@ export const appRouter = router({
         }
         const txn = data?.payload?.transaction_id ?? "";
         const masked = data?.payload?.masked_card ?? "";
-        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge, setUserCountryIfEmpty } = await import("./db");
+        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge, setUserCountryIfEmpty, getTrialDays } = await import("./db");
         const now = new Date();
-        // 0,50 € intro buys a 2-day trial. After it expires the cron picks
-        // the sub up and charges 19,95 € MIT-R, which extends 30 days.
-        const periodEnd = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
+        // 0,50 € intro buys a trial of site_settings.trial_days. After it expires
+        // the cron picks the sub up and charges the MIT-R, which extends 30 days.
+        const trialDays = await getTrialDays();
+        const periodEnd = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000);
         await upsertSubscription({
           userId: ctx.user.id,
           // Store the merchant token we vaulted the card under (`usr-<userId>`),
@@ -507,6 +511,7 @@ export const appRouter = router({
           status: "trialing",
           currentPeriodStart: now,
           currentPeriodEnd: periodEnd,
+          trialDays,
           cancelAtPeriodEnd: false,
         });
         await markDocumentsPaid(ctx.user.id);
@@ -613,11 +618,12 @@ export const appRouter = router({
         }
         const txn = data?.payload?.transaction_id ?? "";
         const masked = data?.payload?.masked_card ?? "";
-        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge, setUserCountryIfEmpty } = await import("./db");
+        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge, setUserCountryIfEmpty, getTrialDays } = await import("./db");
         const now = new Date();
-        // 0,50 € intro buys a 2-day trial. After it expires the cron picks
-        // the sub up and charges 19,95 € MIT-R, which extends 30 days.
-        const periodEnd = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
+        // 0,50 € intro buys a trial of site_settings.trial_days. After it expires
+        // the cron picks the sub up and charges the MIT-R, which extends 30 days.
+        const trialDays = await getTrialDays();
+        const periodEnd = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000);
         await upsertSubscription({
           userId: ctx.user.id,
           // Store the merchant token we vaulted the card under (`usr-<userId>`),
@@ -633,6 +639,7 @@ export const appRouter = router({
           status: "trialing",
           currentPeriodStart: now,
           currentPeriodEnd: periodEnd,
+          trialDays,
           cancelAtPeriodEnd: false,
         });
         await markDocumentsPaid(ctx.user.id);

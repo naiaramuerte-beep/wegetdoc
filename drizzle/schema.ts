@@ -63,6 +63,10 @@ export const subscriptions = mysqlTable("subscriptions", {
   currentPeriodStart: timestamp("currentPeriodStart"),
   currentPeriodEnd: timestamp("currentPeriodEnd"),
   cancelAtPeriodEnd: boolean("cancelAtPeriodEnd").default(false).notNull(),
+  // Trial length (in days) applied when THIS sub was created — the value of
+  // site_settings.trial_days at alta time. Stored per-sub so we can compare the
+  // 1st-renewal acceptance by cohort (48h=2 vs 7 days). Null = pre-migration sub.
+  trialDays: int("trialDays"),
   // Dunning: number of consecutive failed renewal attempts + when the next
   // spaced retry is due. Lets us retry at +5/+7/+9 days (instead of hammering
   // the bank daily, which risks getting the merchant flagged) and give up after.
@@ -307,6 +311,9 @@ export const charges = mysqlTable("charges", {
   // conversion import — bypasses Safari/ITP + adblockers that eat gtag.
   gclid: varchar("gclid", { length: 512 }),
   gclidType: varchar("gclidType", { length: 16 }),
+  // Device class of the payer, derived from the User-Agent at charge time.
+  // NULL for MIT renewals (cron, no browser) and for pre-migration rows.
+  deviceType: mysqlEnum("deviceType", ["mobile", "desktop"]),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

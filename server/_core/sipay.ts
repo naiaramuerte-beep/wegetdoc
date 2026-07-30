@@ -206,6 +206,7 @@ export async function finalizeFastpayPayment(opts: {
     findUserIdFromPendingEvent,
     findGclidFromPendingEvent,
     findLangFromPendingEvent,
+    getTrialDays,
   } = await import("../db");
 
   const result = await confirmPayment(requestId);
@@ -276,8 +277,8 @@ export async function finalizeFastpayPayment(opts: {
   }
 
   const now = new Date();
-  const TRIAL_DAYS = 2;
-  const periodEnd = new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
+  const trialDays = await getTrialDays();
+  const periodEnd = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000);
 
   await upsertSubscription({
     userId: customUserId,
@@ -290,6 +291,7 @@ export async function finalizeFastpayPayment(opts: {
     status: "trialing",
     currentPeriodStart: now,
     currentPeriodEnd: periodEnd,
+    trialDays,
     cancelAtPeriodEnd: false,
   });
   await markDocumentsPaid(customUserId);
