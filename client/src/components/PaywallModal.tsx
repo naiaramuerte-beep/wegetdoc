@@ -5,7 +5,7 @@
  */
 import { useState, useEffect, useCallback, useRef } from "react";
 import { colors } from "@/lib/brand";
-import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield, FileText, ChevronDown, PenLine, Layers, ShieldCheck, AlertCircle } from "lucide-react";
+import { X, Check, Loader2, Mail, CreditCard, ArrowRight, Eye, EyeOff, Lock, Shield, FileText, ChevronDown, PenLine, Layers, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getStoredGclid } from "@/lib/gclid";
 import { shouldPersistDraft } from "@/lib/draftPersist";
@@ -330,7 +330,6 @@ function SipayCheckoutForm({
   converter?: { label: string; price: string };
 }) {
   const { t, lang } = useLanguage();
-  const { withNotice } = usePricing();
   const s = SIPAY_STRINGS[lang] ?? SIPAY_STRINGS.en;
   const fpLang = fastpayLang(lang);
   const sipayConfigQ = trpc.subscription.sipayConfig.useQuery();
@@ -616,18 +615,6 @@ function SipayCheckoutForm({
                 {converter ? converter.price : "0,50 €"}
               </p>
             </div>
-          </div>
-
-          {/* CRITICAL billing notice — the ONLY warning the buyer gets (there is
-              no pre-charge email). Deliberately prominent: right by the pay
-              action, visible without expanding anything, no small print. States
-              the three things — charged today, charged on day N, cancel-before. */}
-          <div className="mb-4 rounded-xl border px-3.5 py-3 flex items-start gap-2.5"
-               style={{ borderColor: "#FCD34D", background: "#FFFBEB" }}>
-            <AlertCircle className="w-[18px] h-[18px] flex-shrink-0 mt-px" style={{ color: "#B45309" }} />
-            <p className="text-[13px] font-semibold leading-snug" style={{ color: "#78350F" }}>
-              {withNotice(t.paywall_billing_notice)}
-            </p>
           </div>
 
           {/* FastPay button + loading + redirect overlay */}
