@@ -1142,16 +1142,20 @@ ${allUrls.map(u => `  <url>
     const code = String(req.query.code ?? req.body?.code ?? req.body?.payload?.code ?? "");
     console.warn("[Sipay] callback ko:", { query: req.query, body: req.body });
     // Persist the KO so it's no longer a blind spot — capture whatever Redsys
-    // sent (motive/code/order), same as every other payment path records.
+    // sent (motive/code/order), same as every other payment path records. This
+    // is an uncontrolled browser POST, so scrub it for PCI: redact card-data
+    // keys (CVV/cryptogram/PIN/track/expiry) and mask any Luhn-valid PAN before
+    // it ever touches the DB. We must never store card data in webhook_events.
     try {
       const { recordWebhookEvent } = await import("../db");
+      const { scrubSensitive } = await import("./scrub");
       await recordWebhookEvent({
         provider: "sipay",
         eventType: "fastpay_callback_ko",
         eventId: order || undefined,
         status: "error",
-        errorMessage: `${error}${code ? ` (code ${code})` : ""}`.slice(0, 500),
-        payload: { source: "callback", query: req.query, body: req.body },
+        errorMessage: scrubSensitive(`${error}${code ? ` (code ${code})` : ""}`).slice(0, 500),
+        payload: scrubSensitive({ source: "callback", query: req.query, body: req.body }),
       });
     } catch (e) {
       console.warn("[Sipay] callback ko: failed to record event:", e);
