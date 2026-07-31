@@ -1108,7 +1108,28 @@ export async function recordCharge(opts: {
       deviceType: opts.deviceType ?? null,
     });
   } catch (err) {
+    // A payment succeeded at Sipay but we couldn't persist the ledger row. This
+    // MUST be loud — a silent swallow here hid a 20h charges-table outage once
+    // (missing `deviceType` column). Surface it in the admin Webhooks tab + Sentry.
+    const detail = err instanceof Error ? err.message : String(err);
     console.error("[recordCharge] failed:", err);
+    try {
+      await recordWebhookEvent({
+        provider: opts.provider,
+        eventType: "charge_write_failed",
+        status: "error",
+        errorMessage: detail,
+        payload: {
+          userId: opts.userId, provider: opts.provider, amountCents: opts.amountCents,
+          status: opts.status ?? "ok", sipayTransactionId: opts.sipayTransactionId ?? null,
+          sipayOrder: opts.sipayOrder ?? null,
+        },
+      });
+    } catch { /* best-effort — never let logging break the payment path */ }
+    try {
+      const { Sentry } = await import("./_core/sentry");
+      Sentry.captureException(err, { tags: { area: "recordCharge" }, extra: { userId: opts.userId, provider: opts.provider, amountCents: opts.amountCents } });
+    } catch { /* best-effort */ }
   }
   // "Cha-ching" Telegram notification on every successful payment (altas 0,50 €
   // + renovaciones + wallets). Fire-and-forget — never awaited, never throws.
