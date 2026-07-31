@@ -342,6 +342,9 @@ function SipayCheckoutForm({
   const [retryNonce, setRetryNonce] = useState(0);
   const [redirecting, setRedirecting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  // Card iframe never appeared within the timeout (stale bundle no-op, network,
+  // adblock) → show a retry box instead of an infinite "Preparando…" skeleton.
+  const [fpError, setFpError] = useState(false);
   // Collapsed by default. The user picks "Tarjeta de crédito o débito" to
   // expand the FastPay iframe. Auto-opening on mount triggers FastPay's
   // mobile new-tab fallback in some scenarios; making the user opt-in keeps
@@ -406,6 +409,8 @@ function SipayCheckoutForm({
     if (!scriptReady || !sipayConfigQ.data?.key || !cardExpanded) return;
     const fp = (window as any).Fastpay;
     if (!fp) return;
+    // Fresh attempt starts clean — clear any previous timeout/error state.
+    setFpError(false);
 
     // Remove any leftover card iframe from a previous attempt BEFORE decorating
     // again — otherwise a retry stacks a SECOND card form on top of the first
@@ -446,8 +451,21 @@ function SipayCheckoutForm({
       }
     }, 600);
 
+    // Fail-safe: if no iframe has materialized after 9s (stale-bundle no-op,
+    // blocked network, adblock), stop the spinner and offer a retry instead of
+    // leaving the user on an infinite skeleton.
+    const failTimer = setTimeout(() => {
+      const iframe = document.querySelector(".fastpay-btn + iframe");
+      if (!iframe) {
+        console.warn("[Sipay] card iframe did not load within 9s — showing retry");
+        setFpError(true);
+        trackEvent("payment_failed", { method: "card", decline_reason: "iframe_load_timeout" });
+      }
+    }, 9000);
+
     return () => {
       clearTimeout(timer);
+      clearTimeout(failTimer);
       // FastPay injects its iframe as a sibling of .fastpay-btn (via the
       // bundle's loadAll → click path), so React's unmount of the button
       // doesn't carry it away. When the user collapses the row, the iframe
@@ -653,7 +671,16 @@ function SipayCheckoutForm({
                   new-tab fallback and matches the UX on mindmetric.io. */}
               <button
                 type="button"
-                onClick={() => setCardExpanded((v) => !v)}
+                onClick={() => {
+                  const opening = !cardExpanded;
+                  setCardExpanded(opening);
+                  // The FastPay bundle keeps an internal "iframe already created"
+                  // flag; on a second open it won't recreate the iframe → the form
+                  // sticks on "Preparando…". Bump the nonce so effect #1 tears down
+                  // window.Fastpay and reloads a FRESH bundle on EVERY open (the
+                  // same reset the decline-retry path already relies on).
+                  if (opening) { setFpError(false); setRetryNonce((n) => n + 1); }
+                }}
                 className="flex items-center justify-between gap-2 w-full px-4 rounded-xl text-white transition-all hover:brightness-95"
                 style={{ height: 52, background: "#1E66C9", boxShadow: "0 6px 16px -8px rgba(30,102,201,0.6)" }}
               >
@@ -702,6 +729,7 @@ function SipayCheckoutForm({
                     `:has(iframe)` hides the skeleton the instant the real
                     iframe appears (Chrome 105+ / Safari 15.4+ / FF 121+).
                     Older browsers see both stacked — not pretty but works. */}
+                {!fpError && (
                 <div className="fastpay-skel rounded-lg overflow-hidden" style={{ background: "#f7f8f9", border: "1px solid #e5e7eb" }}>
                   <div className="p-4 space-y-3 animate-pulse">
                     <div className="h-3 w-24 rounded bg-gray-200" />
@@ -717,6 +745,31 @@ function SipayCheckoutForm({
                     </div>
                   </div>
                 </div>
+                )}
+                {/* Timeout / load-failure fallback — never leave the user stuck on
+                    the skeleton. Retry bumps the nonce → fresh script + iframe. */}
+                {fpError && (
+                <div className="rounded-lg p-3 text-xs text-amber-900 bg-amber-50 border border-amber-200">
+                  <p className="font-semibold mb-1">
+                    {fpLang === "es" ? "No se pudo cargar el formulario de pago"
+                      : fpLang === "ca" ? "No s'ha pogut carregar el formulari de pagament"
+                      : "The payment form couldn't load"}
+                  </p>
+                  <p className="mb-2">
+                    {fpLang === "es" ? "Comprueba tu conexión (o desactiva bloqueadores) e inténtalo de nuevo."
+                      : fpLang === "ca" ? "Comprova la connexió (o desactiva bloquejadors) i torna-ho a provar."
+                      : "Check your connection (or disable ad blockers) and try again."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => { setFpError(false); setRetryNonce((n) => n + 1); }}
+                    className="w-full rounded-lg py-2 text-white text-xs font-semibold"
+                    style={{ backgroundColor: "#E63946" }}
+                  >
+                    {fpLang === "es" ? "Reintentar" : fpLang === "ca" ? "Torna-ho a provar" : "Retry"}
+                  </button>
+                </div>
+                )}
               <button
                 type="button"
                 data-key={sipayConfigQ.data.key}
