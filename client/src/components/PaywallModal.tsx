@@ -17,6 +17,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePricing } from "@/lib/usePricing";
 import { getAuthStrings } from "@/lib/authModalStrings";
 import { trackEvent } from "@/lib/track";
+import { stashPendingCheckout } from "@/lib/pendingCheckout";
 import { INTRO_CHARGE_EUR, INTRO_CHARGE_CURRENCY } from "@/lib/pricing";
 
 type PdfPayload =
@@ -345,6 +346,10 @@ function SipayCheckoutForm({
   // Card iframe never appeared within the timeout (stale bundle no-op, network,
   // adblock) → show a retry box instead of an infinite "Preparando…" skeleton.
   const [fpError, setFpError] = useState(false);
+  // When Apple/Google Pay fails (mostly Redsys 190, ~69% of wallet attempts), we
+  // don't dead-end on a generic error — we open the card form as an alternative,
+  // in the SAME modal so the document is never lost. Card approves ~75%.
+  const [walletFellBack, setWalletFellBack] = useState<"applepay" | "googlepay" | null>(null);
   // Collapsed by default. The user picks "Tarjeta de crédito o débito" to
   // expand the FastPay iframe. Auto-opening on mount triggers FastPay's
   // mobile new-tab fallback in some scenarios; making the user opt-in keeps
@@ -357,6 +362,16 @@ function SipayCheckoutForm({
   // retry the same token (one-shot). Without this, the effect re-fired on
   // every setRedirecting(false) → infinite loop spamming Sipay.
   const triedFastpayIdRef = useRef<string | null>(null);
+
+  // Wallet → card fallback: expand the FastPay card form (reusing the same
+  // fresh-bundle reload as a normal open) and remember which wallet bounced so
+  // we can show a clear "try card instead" banner.
+  const openCardFallback = (method: "applepay" | "googlepay") => {
+    setWalletFellBack(method);
+    setFpError(false);
+    setCardExpanded(true);
+    setRetryNonce((n) => n + 1);
+  };
 
   // 1) Inject FastPay bundle on every mount. We force a fresh script + reset
   //    window.Fastpay because the bundle keeps internal "iframe already
@@ -498,6 +513,10 @@ function SipayCheckoutForm({
           // (Redsys via Sipay). Last reliable signal we can fire from
           // the client before the redirect.
           trackEvent("3ds_started", { method: "card" });
+          // Remember this page (with its doc temp key) so if the 3DS fails at the
+          // bank (url_ko) or the confirm is rejected, /payment/retry can bring the
+          // user back to the SAME document with checkout reopened.
+          stashPendingCheckout();
           window.location.href = res.redirectUrl;
         } else {
           trackEvent("payment_failed", { method: "card", decline_reason: "no_3ds_url" });
@@ -650,6 +669,7 @@ function SipayCheckoutForm({
                 onSuccess={(txn) => {
                   window.location.href = `/payment/success?txn=${encodeURIComponent(txn)}&provider=sipay-apay`;
                 }}
+                onFailure={() => openCardFallback("applepay")}
               />
 
               {/* Google Pay button — active. `GPAY_ENABLED` is the kill switch
@@ -663,9 +683,24 @@ function SipayCheckoutForm({
                   onSuccess={(txn) => {
                     window.location.href = `/payment/success?txn=${encodeURIComponent(txn)}&provider=sipay-gpay`;
                   }}
+                  onFailure={() => openCardFallback("googlepay")}
                 />
               )}
 
+              {/* Wallet → card fallback banner. Shown when Apple/Google Pay
+                  bounced (mostly Redsys 190) and we auto-opened the card form. */}
+              {walletFellBack && (
+                <div className="rounded-xl border px-3.5 py-2.5 flex items-start gap-2 text-[13px]"
+                     style={{ borderColor: "#FCD34D", background: "#FFFBEB", color: "#78350F" }}>
+                  <span className="font-semibold leading-snug">
+                    {fpLang === "es"
+                      ? `No se pudo completar el pago con ${walletFellBack === "applepay" ? "Apple Pay" : "Google Pay"}. Prueba con tu tarjeta 👇`
+                      : fpLang === "ca"
+                      ? `No s'ha pogut completar el pagament amb ${walletFellBack === "applepay" ? "Apple Pay" : "Google Pay"}. Prova amb la teva targeta 👇`
+                      : `Couldn't complete ${walletFellBack === "applepay" ? "Apple Pay" : "Google Pay"}. Try your card instead 👇`}
+                  </span>
+                </div>
+              )}
               {/* Card / debit collapsible row — clicking it expands the FastPay
                   iframe inline. Keeping it collapsed by default avoids the mobile
                   new-tab fallback and matches the UX on mindmetric.io. */}
@@ -961,9 +996,11 @@ function SipayCheckoutForm({
 function ApplePayButton({
   amountCents,
   onSuccess,
+  onFailure,
 }: {
   amountCents: number;
   onSuccess: (transactionId: string) => void;
+  onFailure?: () => void;
 }) {
   const { lang } = useLanguage();
   const s = SIPAY_STRINGS[lang] ?? SIPAY_STRINGS.en;
@@ -1080,7 +1117,9 @@ function ApplePayButton({
             decline_reason: String(err?.message ?? "charge_failed").slice(0, 200),
           });
           try { session.completePayment(AP.STATUS_FAILURE); } catch {}
-          setError(s.authFailedBody);
+          // Wallet declined (mostly Redsys 190) → offer the card form instead of
+          // dead-ending on a generic error.
+          if (onFailure) onFailure(); else setError(s.authFailedBody);
           setSubmitting(false);
         }
       };
@@ -1153,10 +1192,12 @@ function GooglePayButton({
   sipayMerchantKey,
   amountCents,
   onSuccess,
+  onFailure,
 }: {
   sipayMerchantKey: string;
   amountCents: number;
   onSuccess: (transactionId: string) => void;
+  onFailure?: () => void;
 }) {
   const { lang } = useLanguage();
   const s = SIPAY_STRINGS[lang] ?? SIPAY_STRINGS.en;
@@ -1347,7 +1388,9 @@ function GooglePayButton({
                   method: "googlepay",
                   decline_reason: msg.slice(0, 200),
                 });
-                setError(s.authFailedBody); // localized user message; raw reason in the event
+                // Wallet declined (mostly Redsys 190) → offer the card form as an
+                // alternative instead of dead-ending on a generic error.
+                if (onFailure) onFailure(); else setError(s.authFailedBody);
               }
             } finally {
               setSubmitting(false);
@@ -1357,7 +1400,7 @@ function GooglePayButton({
         host.appendChild(button);
       })
       .catch((err: any) => console.warn("[GPay] isReadyToPay failed:", err?.message ?? err));
-  }, [scriptReady, sipayMerchantKey, amountCents, chargeMut, onSuccess]);
+  }, [scriptReady, sipayMerchantKey, amountCents, chargeMut, onSuccess, onFailure]);
 
   // Host stays mounted always so the ref is available when the isReadyToPay
   // effect runs. We hide it (display:none) until Google confirms the buyer can

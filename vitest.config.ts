@@ -14,6 +14,11 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["server/**/*.test.ts", "server/**/*.spec.ts"],
+    include: [
+      "server/**/*.test.ts",
+      "server/**/*.spec.ts",
+      // Pure client-side lib tests (no DOM env needed — globals are stubbed).
+      "client/src/**/*.test.ts",
+    ],
   },
 });

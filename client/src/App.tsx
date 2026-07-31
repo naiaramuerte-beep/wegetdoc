@@ -29,6 +29,7 @@ const Tools = lazy(() => import("./pages/Tools"));
 const Login = lazy(() => import("./pages/Login"));
 const Signup = lazy(() => import("./pages/Signup"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
+const PaymentRetry = lazy(() => import("./pages/PaymentRetry"));
 const InternalTest = lazy(() => import("./pages/InternalTest"));
 const LegalPage = lazy(() => import("./pages/LegalPage"));
 const CancelSubscription = lazy(() => import("./pages/CancelSubscription"));
@@ -142,6 +143,9 @@ function Router() {
       ))}
       {LANGUAGES.map(({ code }) => (
         <Route key={`${code}-payment`} path={`/${code}/payment/success`} component={PaymentSuccess} />
+      ))}
+      {LANGUAGES.map(({ code }) => (
+        <Route key={`${code}-payment-retry`} path={`/${code}/payment/retry`} component={PaymentRetry} />
       ))}
       {LANGUAGES.map(({ code }) => (
         <Route key={`${code}-privacy`} path={`/${code}/privacy`} component={() => <LegalPage slug="privacy" />} />
@@ -280,6 +284,7 @@ function Router() {
       <Route path="/gdpr" component={() => <Redirect to="/es/gdpr" />} />
       <Route path="/refund" component={() => <Redirect to="/es/refund" />} />
       <Route path="/payment/success" component={() => <Redirect to="/es/payment/success" />} />
+      <Route path="/payment/retry" component={() => <Redirect to={`/es/payment/retry${window.location.search}`} />} />
       <Route path="/cancelar-suscripcion" component={() => <Redirect to="/es/cancelar-suscripcion" />} />
       <Route path="/internal-test" component={InternalTest} />
       <Route path="/login" component={Login} />
