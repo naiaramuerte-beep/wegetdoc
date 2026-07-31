@@ -18,6 +18,7 @@ import { usePricing } from "@/lib/usePricing";
 import { getAuthStrings } from "@/lib/authModalStrings";
 import { trackEvent } from "@/lib/track";
 import { stashPendingCheckout } from "@/lib/pendingCheckout";
+import { APPLE_PAY_NETWORKS } from "@/lib/applePayNetworks";
 import { INTRO_CHARGE_EUR, INTRO_CHARGE_CURRENCY } from "@/lib/pricing";
 
 type PdfPayload =
@@ -1045,7 +1046,10 @@ function ApplePayButton({
       const request = {
         countryCode: "ES",
         currencyCode: "EUR",
-        supportedNetworks: ["visa", "masterCard", "amex", "maestro"],
+        // Visa/Amex dropped — 100% declined by the acquirer's Apple Pay path
+        // (see applePayNetworks.ts). Visa-only wallets fall through to the card
+        // form; Mastercard keeps working here.
+        supportedNetworks: APPLE_PAY_NETWORKS,
         merchantCapabilities: ["supports3DS"],
         total: {
           label: "EditorPDF",
