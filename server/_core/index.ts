@@ -1025,6 +1025,15 @@ ${allUrls.map(u => `  <url>
   // places. Registering GET-only was leaving every card payment as an orphan
   // (Sipay collected the 0,50 €, the POST 404'd, the sub was never created),
   // while Apple Pay / Google Pay worked because they never 3DS-redirect.
+  // Land 3DS failures on a real "try again" page (in the user's language) that
+  // keeps the document and reopens checkout — instead of a bare "/" with an
+  // opaque query param that renders nothing.
+  const SUPPORTED_LANGS = ["es", "en", "fr", "de", "pt", "it", "nl", "pl", "ru", "uk", "ro", "zh"];
+  const pickLang = (header: unknown): string => {
+    const first = String(header ?? "").split(",")[0].trim().slice(0, 2).toLowerCase();
+    return SUPPORTED_LANGS.includes(first) ? first : "es";
+  };
+
   const handleSipayCallbackOk = async (req: any, res: any) => {
     const requestId = String(req.query.request_id ?? req.body?.request_id ?? "");
     if (!requestId) return res.redirect("/?sipay=missing_request_id");
@@ -1036,7 +1045,7 @@ ${allUrls.map(u => `  <url>
       const deviceType = deviceFromUA(String(req.headers["user-agent"] ?? ""));
       const result = await finalizeFastpayPayment({ requestId, source: "callback", acceptLang, deviceType });
       if (!result.ok) {
-        return res.redirect(`/?sipay=confirm_failed&detail=${encodeURIComponent(result.errorMessage ?? "unknown")}`);
+        return res.redirect(`/${pickLang(acceptLang)}/payment/retry?reason=confirm_failed`);
       }
       // Capture the payer's country from Cloudflare's geo header for
       // revenue-by-country analytics (first payment wins).
@@ -1127,10 +1136,27 @@ ${allUrls.map(u => `  <url>
     }
   });
 
-  const handleSipayCallbackKo = (req: any, res: any) => {
-    const error = String(req.query.error ?? req.body?.error ?? "unknown");
+  const handleSipayCallbackKo = async (req: any, res: any) => {
+    const error = String(req.query.error ?? req.body?.error ?? req.body?.detail ?? "unknown");
+    const order = String(req.query.order ?? req.body?.order ?? "");
+    const code = String(req.query.code ?? req.body?.code ?? req.body?.payload?.code ?? "");
     console.warn("[Sipay] callback ko:", { query: req.query, body: req.body });
-    return res.redirect(`/?sipay_error=${encodeURIComponent(error)}`);
+    // Persist the KO so it's no longer a blind spot — capture whatever Redsys
+    // sent (motive/code/order), same as every other payment path records.
+    try {
+      const { recordWebhookEvent } = await import("../db");
+      await recordWebhookEvent({
+        provider: "sipay",
+        eventType: "fastpay_callback_ko",
+        eventId: order || undefined,
+        status: "error",
+        errorMessage: `${error}${code ? ` (code ${code})` : ""}`.slice(0, 500),
+        payload: { source: "callback", query: req.query, body: req.body },
+      });
+    } catch (e) {
+      console.warn("[Sipay] callback ko: failed to record event:", e);
+    }
+    return res.redirect(`/${pickLang(req.headers["accept-language"])}/payment/retry?reason=ko`);
   };
   app.get("/api/sipay/callback/ko", handleSipayCallbackKo);
   app.post("/api/sipay/callback/ko", handleSipayCallbackKo);
