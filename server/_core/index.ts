@@ -1396,7 +1396,7 @@ ${allUrls.map(u => `  <url>
               retryCount: 0, nextRetryAt: null, lastDeclineCode: null, declineCategory: null,
               renewalAttempts: 0, nextRenewalAt: null,
             });
-            await db.recordCharge({ userId: sub.userId, provider: "mit", amountCents, sipayTransactionId: txn, sipayOrder: order, sipayMaskedCard: masked, status: "ok" });
+            await db.recordCharge({ userId: sub.userId, provider: "mit", amountCents, sipayTransactionId: txn, sipayOrder: order, sipayMaskedCard: masked, status: "ok", cardCountry: (data as any)?.payload?.card_country ?? null });
             await db.recordWebhookEvent({ provider: "sipay", eventType: "mit_charge_ok", eventId: txn || order, status: "ok", durationMs: Date.now() - chargeStart, payload: data });
             results.push({ userId: sub.userId, subId: sub.id, ok: true, action: "charged", code: "0" });
           } else {

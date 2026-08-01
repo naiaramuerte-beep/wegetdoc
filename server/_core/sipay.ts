@@ -310,6 +310,7 @@ export async function finalizeFastpayPayment(opts: {
     gclid: pendingGclid?.gclid,
     gclidType: pendingGclid?.gclidType,
     deviceType: opts.deviceType ?? null,
+    cardCountry: data?.payload?.card_country ?? null,
   });
   await recordWebhookEvent({
     provider: "sipay",

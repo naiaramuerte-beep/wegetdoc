@@ -529,6 +529,7 @@ export const appRouter = router({
           gclid: input.gclid,
           gclidType: input.gclidType,
           deviceType: deviceFromUA(String(ctx.req?.headers?.["user-agent"] ?? "")),
+          cardCountry: data?.payload?.card_country ?? null,
         });
         await recordWebhookEvent({
           provider: "sipay",
@@ -657,6 +658,7 @@ export const appRouter = router({
           gclid: input.gclid,
           gclidType: input.gclidType,
           deviceType: deviceFromUA(String(ctx.req?.headers?.["user-agent"] ?? "")),
+          cardCountry: data?.payload?.card_country ?? null,
         });
         await recordWebhookEvent({
           provider: "sipay",

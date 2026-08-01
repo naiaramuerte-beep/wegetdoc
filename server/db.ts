@@ -1089,6 +1089,7 @@ export async function recordCharge(opts: {
   gclid?: string;
   gclidType?: string;
   deviceType?: "mobile" | "desktop" | null;
+  cardCountry?: string | number | null; // Sipay card_country (ISO numeric) for the Telegram flag
 }) {
   const db = await getDb();
   if (!db) return null;
@@ -1141,7 +1142,8 @@ export async function recordCharge(opts: {
         const m = await import("./_core/telegram");
         await m.notifySale({
           amountCents: opts.amountCents, provider: opts.provider, userId: opts.userId,
-          country: ctx.country, maskedCard: opts.sipayMaskedCard ?? null,
+          country: ctx.country, cardCountry: opts.cardCountry ?? null,
+          maskedCard: opts.sipayMaskedCard ?? null,
           todayCount: ctx.todayCount, todayTotalCents: ctx.todayTotalCents, hora,
           device: opts.deviceType ?? null,
         });
@@ -2030,6 +2032,7 @@ export async function upgradeTrialImmediately(userId: number) {
       sipayOrder: order,
       sipayMaskedCard: data?.payload?.masked_card ?? sub.sipayMaskedCard ?? "",
       status: "ok",
+      cardCountry: data?.payload?.card_country ?? null,
     });
     return { success: true as const, chargedAmountEur: price.eur };
   } catch (err: any) {

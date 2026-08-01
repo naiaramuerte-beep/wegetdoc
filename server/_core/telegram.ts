@@ -24,6 +24,39 @@ export function deviceFromUA(ua?: string | null): "mobile" | "desktop" | null {
     : "desktop";
 }
 
+/**
+ * ISO 3166-1 numeric → alpha-2. Sipay returns the card's issuing country as a
+ * numeric code (`card_country`, e.g. 724), which is present on every charge —
+ * unlike our browser-geo `users.country`, which is often empty. Covers the
+ * markets we see; unknown codes fall through to "".
+ */
+const NUMERIC_TO_ALPHA2: Record<number, string> = {
+  4:"AF",8:"AL",12:"DZ",20:"AD",24:"AO",32:"AR",36:"AU",40:"AT",48:"BH",50:"BD",
+  56:"BE",68:"BO",70:"BA",76:"BR",100:"BG",112:"BY",124:"CA",152:"CL",156:"CN",170:"CO",
+  188:"CR",191:"HR",196:"CY",203:"CZ",208:"DK",214:"DO",218:"EC",222:"SV",233:"EE",246:"FI",
+  250:"FR",268:"GE",275:"PS",276:"DE",280:"DE",288:"GH",300:"GR",320:"GT",324:"GN",340:"HN",
+  344:"HK",348:"HU",352:"IS",356:"IN",360:"ID",364:"IR",368:"IQ",372:"IE",376:"IL",380:"IT",
+  388:"JM",392:"JP",398:"KZ",400:"JO",404:"KE",410:"KR",414:"KW",417:"KG",422:"LB",428:"LV",
+  434:"LY",440:"LT",442:"LU",446:"MO",458:"MY",480:"MU",484:"MX",496:"MN",498:"MD",504:"MA",
+  516:"NA",524:"NP",528:"NL",554:"NZ",558:"NI",566:"NG",578:"NO",586:"PK",591:"PA",600:"PY",
+  604:"PE",608:"PH",616:"PL",620:"PT",630:"PR",634:"QA",642:"RO",643:"RU",682:"SA",686:"SN",
+  688:"RS",702:"SG",703:"SK",704:"VN",705:"SI",710:"ZA",716:"ZW",724:"ES",752:"SE",756:"CH",
+  760:"SY",764:"TH",784:"AE",788:"TN",792:"TR",795:"TM",800:"UG",804:"UA",807:"MK",818:"EG",
+  826:"GB",840:"US",854:"BF",858:"UY",860:"UZ",862:"VE",887:"YE",894:"ZM",
+};
+
+/**
+ * Resolve a 2-letter country code from the browser-geo value (preferred) or the
+ * card's numeric issuing country (fallback). Returns "" when neither is usable.
+ */
+export function resolveCountryCode(geo?: string | null, cardCountry?: string | number | null): string {
+  const g = (geo || "").trim().toUpperCase();
+  if (/^[A-Z]{2}$/.test(g)) return g;
+  const n = typeof cardCountry === "number" ? cardCountry : parseInt(String(cardCountry ?? ""), 10);
+  if (Number.isFinite(n) && NUMERIC_TO_ALPHA2[n]) return NUMERIC_TO_ALPHA2[n];
+  return "";
+}
+
 /** 2-letter ISO country → flag emoji (regional indicator letters). */
 function countryFlag(code?: string | null): string {
   const c = (code || "").trim().toUpperCase();
@@ -60,7 +93,8 @@ export async function notifySale(opts: {
   amountCents: number;
   provider: string; // fastpay | gpay | apay | mit
   userId?: number;
-  country?: string | null;
+  country?: string | null;          // browser geo (users.country), often empty
+  cardCountry?: string | number | null; // card issuing country from Sipay (reliable)
   maskedCard?: string | null;
   todayCount?: number;      // running total for today (incl. this sale)
   todayTotalCents?: number;
@@ -69,8 +103,11 @@ export async function notifySale(opts: {
 }): Promise<void> {
   const method = PROVIDER_LABEL[opts.provider] ?? opts.provider;
   const kind = opts.provider === "mit" ? "🔄 Renovación" : "🆕 Alta nueva";
-  const flag = countryFlag(opts.country);
-  const cname = countryName(opts.country);
+  // Prefer real browser geo; fall back to the card's issuing country (present on
+  // every Sipay charge) so the flag shows even when users.country is empty.
+  const cc = resolveCountryCode(opts.country, opts.cardCountry);
+  const flag = countryFlag(cc);
+  const cname = countryName(cc);
   const deviceLabel = opts.device === "mobile" ? "📱 Móvil" : opts.device === "desktop" ? "💻 PC" : "";
 
   const lines = [
