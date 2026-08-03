@@ -516,7 +516,9 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
       />
 
       {/* ══════ HERO — bundle variant A (centered upload) ══════ */}
-      <section className="relative pt-6 md:pt-[72px] pb-20 overflow-hidden">
+      {/* Tighter vertical rhythm so the ⭐ 4.8 trust line clears the fold: less
+          top whitespace above the squiggle + a smaller gap before the trust line. */}
+      <section className="relative pt-4 md:pt-9 pb-8 overflow-hidden">
         <div
           className="absolute inset-0 z-0 pointer-events-none"
           style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%, #F6F6F7 0%, transparent 70%)" }}
