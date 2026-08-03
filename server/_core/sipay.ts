@@ -185,6 +185,7 @@ export async function finalizeFastpayPayment(opts: {
   source: "callback" | "cron" | "admin";
   acceptLang?: string;
   deviceType?: "mobile" | "desktop" | null;
+  geoCountry?: string | null; // Cloudflare cf-ipcountry (2-letter) from the 3DS return — IP-geo fallback for the Telegram flag
 }): Promise<{
   ok: boolean;
   alreadyFinalized: boolean;
@@ -311,6 +312,7 @@ export async function finalizeFastpayPayment(opts: {
     gclidType: pendingGclid?.gclidType,
     deviceType: opts.deviceType ?? null,
     cardCountry: data?.payload?.card_country ?? null,
+    geoCountry: opts.geoCountry ?? null,
   });
   await recordWebhookEvent({
     provider: "sipay",

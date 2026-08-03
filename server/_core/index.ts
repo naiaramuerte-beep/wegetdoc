@@ -1043,7 +1043,7 @@ ${allUrls.map(u => `  <url>
       const { deviceFromUA } = await import("./telegram");
       const acceptLang = String(req.headers["accept-language"] ?? "");
       const deviceType = deviceFromUA(String(req.headers["user-agent"] ?? ""));
-      const result = await finalizeFastpayPayment({ requestId, source: "callback", acceptLang, deviceType });
+      const result = await finalizeFastpayPayment({ requestId, source: "callback", acceptLang, deviceType, geoCountry: String(req.headers["cf-ipcountry"] ?? "") });
       if (!result.ok) {
         return res.redirect(`/${pickLang(acceptLang)}/payment/retry?reason=confirm_failed`);
       }

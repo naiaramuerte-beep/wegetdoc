@@ -1090,6 +1090,7 @@ export async function recordCharge(opts: {
   gclidType?: string;
   deviceType?: "mobile" | "desktop" | null;
   cardCountry?: string | number | null; // Sipay card_country (ISO numeric) for the Telegram flag
+  geoCountry?: string | null;            // Cloudflare cf-ipcountry (2-letter) — IP-geo fallback so wallet sales (Apple/Google Pay) still show a flag when Sipay returns no card_country
 }) {
   const db = await getDb();
   if (!db) return null;
@@ -1142,7 +1143,7 @@ export async function recordCharge(opts: {
         const m = await import("./_core/telegram");
         await m.notifySale({
           amountCents: opts.amountCents, provider: opts.provider, userId: opts.userId,
-          country: ctx.country, cardCountry: opts.cardCountry ?? null,
+          country: ctx.country || opts.geoCountry || null, cardCountry: opts.cardCountry ?? null,
           maskedCard: opts.sipayMaskedCard ?? null,
           todayCount: ctx.todayCount, todayTotalCents: ctx.todayTotalCents, hora,
           device: opts.deviceType ?? null,
