@@ -94,7 +94,10 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
           scrolled || menuOpen ? "shadow-sm" : ""
         }`}
       >
-        <div className={`container flex items-center h-16 md:h-[68px] ${isFastDoc ? "md:grid md:grid-cols-[auto_1fr_auto]" : "justify-between"}`}>
+        {/* 3-column grid (1fr · auto · 1fr) so the centre nav is centred on the
+            PAGE, not in the leftover space between the (uneven-width) logo and
+            auth blocks. Mobile stays flex justify-between (logo + hamburger). */}
+        <div className={`container flex items-center justify-between h-16 md:h-[68px] md:grid ${isFastDoc ? "md:grid-cols-[auto_1fr_auto]" : "md:grid-cols-[1fr_auto_1fr]"}`}>
 
           {/* ── Logo ── */}
           {hideLogoLink ? (
@@ -129,7 +132,7 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
           </nav>
 
           {/* ── Right: Lang + Auth ── */}
-          <div className="hidden md:flex items-center gap-2 shrink-0">
+          <div className="hidden md:flex items-center gap-2 shrink-0 md:justify-self-end">
 
             {/* Language selector — pill with circular flag */}
             <div className="relative">
