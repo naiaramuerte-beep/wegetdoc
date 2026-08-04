@@ -83,7 +83,11 @@ export const subscriptions = mysqlTable("subscriptions", {
   retryCount: int("retryCount").default(0).notNull(),
   nextRetryAt: timestamp("nextRetryAt"),
   lastDeclineCode: varchar("lastDeclineCode", { length: 16 }),
-  declineCategory: mysqlEnum("declineCategory", ["soft", "hard", "unknown"]),
+  // 'blocked_provider': códigos que no cancelamos ni reintentamos (172/174 tras
+  // el cambio Sipay 19/07 — ver BLOCKED_PROVIDER_CODES en dunning.ts). blockedAt
+  // = cuándo se bloqueó, para la lista de recuperación cuando Sipay confirme.
+  declineCategory: mysqlEnum("declineCategory", ["soft", "hard", "unknown", "blocked_provider"]),
+  blockedAt: timestamp("blockedAt"),
   dunningLockedAt: timestamp("dunningLockedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

@@ -187,7 +187,8 @@ export async function upsertSubscription(data: {
   retryCount?: number;
   nextRetryAt?: Date | null;
   lastDeclineCode?: string | null;
-  declineCategory?: "soft" | "hard" | "unknown" | null;
+  declineCategory?: "soft" | "hard" | "unknown" | "blocked_provider" | null;
+  blockedAt?: Date | null;
   dunningLockedAt?: Date | null;
 }) {
   const db = await getDb();
@@ -950,7 +951,8 @@ const STRIPE_REVENUE_CACHE_MS = 60 * 1000;
  *   - cancelAtPeriodEnd = false
  *   - currentPeriodEnd <= now (vencidas)
  *   - nextRetryAt IS NULL (cobro original) OR nextRetryAt <= now (reintento due)
- *   - declineCategory <> 'hard' (los HARD ya se cancelaron, no se reintentan)
+ *   - declineCategory NOT IN ('hard','blocked_provider') (HARD ya cancelados;
+ *     blocked_provider = 172/174, ni cancelar ni reintentar por MIT)
  *   - no bloqueada por otra corrida del cron (lock idempotente)
  */
 export async function getSubsDueForRetry(now: Date = new Date(), lockStaleMs = 15 * 60 * 1000) {
@@ -979,7 +981,7 @@ export async function getSubsDueForRetry(now: Date = new Date(), lockStaleMs = 1
       AND ${subscriptions.status} IN ('trialing', 'active', 'past_due')
       AND ${subscriptions.currentPeriodEnd} <= ${now}
       AND (${subscriptions.nextRetryAt} IS NULL OR ${subscriptions.nextRetryAt} <= ${now})
-      AND (${subscriptions.declineCategory} IS NULL OR ${subscriptions.declineCategory} <> 'hard')
+      AND (${subscriptions.declineCategory} IS NULL OR ${subscriptions.declineCategory} NOT IN ('hard', 'blocked_provider'))
       AND (${subscriptions.dunningLockedAt} IS NULL OR ${subscriptions.dunningLockedAt} < ${lockCutoff})
     `);
 }

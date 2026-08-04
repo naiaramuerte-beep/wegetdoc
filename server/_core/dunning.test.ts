@@ -3,10 +3,15 @@ import { classifyDecline, decideNextRetry } from "./dunning";
 
 describe("classifyDecline", () => {
   it("HARD: cancela sin reintentos", () => {
-    for (const c of ["101", "121", "174", "191", "202"]) {
+    for (const c of ["101", "121", "173", "191", "202"]) {
       const r = classifyDecline(c);
       expect(r.category).toBe("hard");
       expect(r.maxRetries).toBe(0);
+    }
+  });
+  it("172/174 → blocked_provider (ni cancelar ni reintentar), 0 reintentos", () => {
+    for (const c of ["172", "174"]) {
+      expect(classifyDecline(c)).toMatchObject({ category: "blocked_provider", kind: "blocked_provider", maxRetries: 0 });
     }
   });
   it("116 fondos insuficientes → soft, máx 4", () => {
@@ -32,8 +37,17 @@ describe("classifyDecline", () => {
 describe("decideNextRetry — cancelaciones", () => {
   const base = { anchor: new Date(Date.UTC(2026, 0, 1, 10)), lastAttemptAt: new Date(Date.UTC(2026, 0, 1, 10)) };
   it("código HARD → cancela de inmediato", () => {
-    const d = decideNextRetry({ code: "174", retryCount: 0, ...base });
+    const d = decideNextRetry({ code: "173", retryCount: 0, ...base });
     expect(d.action).toBe("cancel");
+  });
+  it("172/174 → block (ni cancel ni retry), sin importar retryCount", () => {
+    for (const c of ["172", "174"]) {
+      for (const rc of [0, 1, 5]) {
+        const d = decideNextRetry({ code: c, retryCount: rc, ...base });
+        expect(d.action).toBe("block");
+        expect(d.category).toBe("blocked_provider");
+      }
+    }
   });
   it("190 agota a los 3 reintentos", () => {
     expect(decideNextRetry({ code: "190", retryCount: 3, ...base }).action).toBe("cancel");

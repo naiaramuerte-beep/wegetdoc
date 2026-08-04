@@ -1411,6 +1411,12 @@ ${allUrls.map(u => `  <url>
             if (decision.action === "cancel") {
               await db.upsertSubscription({ userId: sub.userId, status: "canceled", lastDeclineCode: code, declineCategory: decision.category, nextRetryAt: null });
               results.push({ userId: sub.userId, subId: sub.id, ok: false, action: "canceled", code, reason: decision.reason });
+            } else if (decision.action === "block") {
+              // 172/174 (blocked_provider): ni cancelar ni reintentar por MIT.
+              // Queda en past_due (sin acceso, como past_due normal) con blockedAt,
+              // fuera del cron (getSubsDueForRetry excluye blocked_provider).
+              await db.upsertSubscription({ userId: sub.userId, status: "past_due", lastDeclineCode: code, declineCategory: "blocked_provider", blockedAt: now, nextRetryAt: null });
+              results.push({ userId: sub.userId, subId: sub.id, ok: false, action: "blocked", code, reason: decision.reason });
             } else {
               await db.upsertSubscription({ userId: sub.userId, status: "past_due", retryCount: decision.retryNumber, nextRetryAt: decision.nextRetryAt, lastDeclineCode: code, declineCategory: decision.category });
               results.push({ userId: sub.userId, subId: sub.id, ok: false, action: "retry_scheduled", code, nextRetryAt: decision.nextRetryAt.toISOString() });
@@ -1426,7 +1432,7 @@ ${allUrls.map(u => `  <url>
             await db.recordPaymentAttempt({ subscriptionId: sub.id, userId: sub.userId, paymentMethod, amountCents, responseCode: "TECH", success: false, rawResponse: { error: msg } });
             if (decision.action === "cancel") {
               await db.upsertSubscription({ userId: sub.userId, status: "canceled", lastDeclineCode: "TECH", declineCategory: decision.category, nextRetryAt: null });
-            } else {
+            } else if (decision.action === "retry") {
               await db.upsertSubscription({ userId: sub.userId, status: "past_due", retryCount: decision.retryNumber, nextRetryAt: decision.nextRetryAt, lastDeclineCode: "TECH", declineCategory: decision.category });
             }
           } catch { /* best-effort */ }
