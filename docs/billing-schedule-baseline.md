@@ -18,9 +18,10 @@ Fuente: `scripts/baseline-renov-29-95.mjs` (conexión UTC vía `scripts/_db.mjs`
 
 ## Deploy
 
-- **Commit desplegado:** _(rellenar al hacer el deploy)_
-- **Fecha y hora EXACTAS del deploy:** _(rellenar — UTC y Madrid)_
-- **Frecuencia del cron tras el deploy:** `*/15 * * * *` (antes `0 7 * * *`).
+- **Commit del código:** `8d0b660` (backend; anclaje a la hora de la sub, conexión UTC, lock 45min). Desplegado 2026-08-04. Rollback: `ed6b5e4`.
+- **Cambio de frecuencia del cron en Railway:** `0 7 * * *` → `*/15 * * * *`.
+- **Fecha y hora EXACTAS del cambio:** **2026-08-04 19:47 Madrid = 17:47 UTC**.
+- Contexto: se cambió justo tras la corrida diaria de las 09:00 Madrid (que ya había vaciado la cola del día). Primer vencimiento posterior: sub#388, 21:12 Madrid del 2026-08-04.
 
 ## Medición (a hacer ~2 semanas después, ≥ 2026-08-18)
 
