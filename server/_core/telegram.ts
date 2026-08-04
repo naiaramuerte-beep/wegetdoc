@@ -16,6 +16,20 @@ const PROVIDER_LABEL: Record<string, string> = {
 
 const eur = (cents: number) => (cents / 100).toFixed(2).replace(".", ",") + " €";
 
+/**
+ * Method + kind labels for a sale alert. A "mit-upgrade-…" order is a user
+ * pressing "upgrade to monthly now" from the trial-limit paywall — an immediate
+ * trial→monthly conversion, NOT the daily cron's recurring renewal. Labelling
+ * the two distinctly lets the owner tell them apart at a glance in Telegram.
+ */
+export function saleLabels(provider: string, order?: string | null): { method: string; kind: string } {
+  const isUpgrade = provider === "mit" && (order || "").startsWith("mit-upgrade-");
+  if (isUpgrade) return { method: "Upgrade a mensual", kind: "⬆️ Desde trial" };
+  const method = PROVIDER_LABEL[provider] ?? provider;
+  const kind = provider === "mit" ? "🔄 Renovación" : "🆕 Alta nueva";
+  return { method, kind };
+}
+
 /** Rough device class from a User-Agent. null when unknown (e.g. MIT cron). */
 export function deviceFromUA(ua?: string | null): "mobile" | "desktop" | null {
   if (!ua) return null;
@@ -100,9 +114,9 @@ export async function notifySale(opts: {
   todayTotalCents?: number;
   hora?: string;            // HH:mm Madrid
   device?: "mobile" | "desktop" | null;
+  order?: string | null;    // sipay order — "mit-upgrade-…" marks a trial→monthly upgrade
 }): Promise<void> {
-  const method = PROVIDER_LABEL[opts.provider] ?? opts.provider;
-  const kind = opts.provider === "mit" ? "🔄 Renovación" : "🆕 Alta nueva";
+  const { method, kind } = saleLabels(opts.provider, opts.order);
   // Prefer real browser geo; fall back to the card's issuing country (present on
   // every Sipay charge) so the flag shows even when users.country is empty.
   const cc = resolveCountryCode(opts.country, opts.cardCountry);

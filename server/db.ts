@@ -1146,7 +1146,7 @@ export async function recordCharge(opts: {
           country: ctx.country || opts.geoCountry || null, cardCountry: opts.cardCountry ?? null,
           maskedCard: opts.sipayMaskedCard ?? null,
           todayCount: ctx.todayCount, todayTotalCents: ctx.todayTotalCents, hora,
-          device: opts.deviceType ?? null,
+          device: opts.deviceType ?? null, order: opts.sipayOrder ?? null,
         });
       } catch { /* notification is best-effort */ }
     })();
