@@ -15,10 +15,11 @@
  *    mañana (el cron corre 08:00–10:00 Madrid; aquí fijamos ~07:00 UTC).
  */
 
-export type DeclineCategory = "soft" | "hard" | "unknown";
+export type DeclineCategory = "soft" | "hard" | "unknown" | "blocked_provider";
 
 export type DeclineKind =
   | "hard"
+  | "blocked_provider"
   | "insufficient_funds"
   | "daily_limit"
   | "generic"
@@ -35,8 +36,28 @@ export type DeclineInfo = {
 // HARD → cancelar ya, sin reintentos.
 const HARD_CODES = new Set([
   "101", "102", "104", "106", "118", "121", "125", "129",
-  "172", "173", "174", "175", "180", "191", "202",
+  "173", "175", "180", "191", "202",
 ]);
+
+// ────────────────────────────────────────────────────────────────────────────
+// BLOQUEO TEMPORAL DE PROVEEDOR (reversible — ÚNICO sitio para tocar esto).
+//
+// 172 y 174 se dispararon ×4 justo cuando Sipay desplegó su cambio del 19/07/2026
+// (10 casos antes → 48 después; 0 en el hueco 17–18/07). Verificado en prod:
+//  - El 100% de esas tarjetas cobró su alta de 0,50€ pocos días antes (mediana
+//    4,5d) → estaban VIVAS; el fallo es del MIT, no de la tarjeta.
+//  - Fuerte agrupación por BIN (4441 11** ×16, 5168 74** ×7…) → rechazo sistémico
+//    a nivel emisor de la recurrencia, típico de exención MIT / autenticación.
+//  - Sipay NO define el código: devuelve texto genérico "authorization_error".
+//
+// Por eso NO los cancelamos (mataríamos MRR sobre tarjetas vivas) y tampoco los
+// reintentamos por MIT (si es autenticación, el MIT re-fallaría y solo sumaría
+// otra denegación a nuestro ratio). La sub queda en past_due marcada como
+// `blocked_provider` con `blockedAt`, sin acceso y sin reintento, a la espera de
+// que Sipay confirme qué son 172/174 y su arreglo. Para revertir: vaciar este
+// set (los códigos volverán a su clasificación normal) — no hay que tocar nada
+// más. 173/175 se dejan en HARD (no han aparecido y no hay decisión sobre ellos).
+const BLOCKED_PROVIDER_CODES = new Set(["172", "174"]);
 
 const INSUFFICIENT_FUNDS = "116";           // calendario completo, máx 4
 const DAILY_LIMIT_CODES = new Set(["181", "182"]); // +48h, máx 2
@@ -48,6 +69,7 @@ const TECHNICAL_CODES = new Set(["912", "9912", "TECH", "TIMEOUT"]);
 /** Clasifica el código Redsys en categoría + política de reintentos. */
 export function classifyDecline(code: string | null | undefined): DeclineInfo {
   const c = String(code ?? "").trim();
+  if (BLOCKED_PROVIDER_CODES.has(c)) return { category: "blocked_provider", kind: "blocked_provider", maxRetries: 0 };
   if (HARD_CODES.has(c)) return { category: "hard", kind: "hard", maxRetries: 0 };
   if (c === INSUFFICIENT_FUNDS) return { category: "soft", kind: "insufficient_funds", maxRetries: 4 };
   if (DAILY_LIMIT_CODES.has(c)) return { category: "soft", kind: "daily_limit", maxRetries: 2 };
@@ -60,6 +82,9 @@ export function classifyDecline(code: string | null | undefined): DeclineInfo {
 
 export type RetryDecision =
   | { action: "cancel"; category: DeclineCategory; reason: string }
+  // block: ni cancelar ni reintentar. La sub queda en past_due marcada como
+  // blocked_provider (ver BLOCKED_PROVIDER_CODES). No la coge más el cron.
+  | { action: "block"; category: DeclineCategory; reason: string }
   | { action: "retry"; category: DeclineCategory; nextRetryAt: Date; retryNumber: number };
 
 const HOUR = 3600 * 1000;
@@ -149,6 +174,10 @@ export function decideNextRetry(opts: {
   lastAttemptAt: Date;
 }): RetryDecision {
   const info = classifyDecline(opts.code);
+  if (info.category === "blocked_provider") {
+    // Ni cancelar ni reintentar por MIT — ver BLOCKED_PROVIDER_CODES.
+    return { action: "block", category: "blocked_provider", reason: `blocked_provider_${String(opts.code)}` };
+  }
   if (info.category === "hard") {
     return { action: "cancel", category: "hard", reason: `hard_code_${String(opts.code)}` };
   }
