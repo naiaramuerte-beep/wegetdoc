@@ -8,10 +8,12 @@
 // yet the acquirer does not relay them to Redsys for those schemes — an issue on
 // their side, not ours.
 //
-// Until the acquirer fixes Visa/Amex Apple Pay, we drop them from
-// supportedNetworks. Effect: a wallet with only a Visa/Amex card no longer shows
-// the Apple Pay button and the buyer falls through to the card form (manual Visa
-// entry works fine, ~75% approval), while Mastercard buyers keep paying via
-// Apple Pay exactly as before. Re-add "visa"/"amex" once the acquirer confirms
-// the fix.
-export const APPLE_PAY_NETWORKS: string[] = ["masterCard", "maestro"];
+// UPDATE 2026-08-04: Comercia activó Apple Pay + Google Pay en el terminal 1 del
+// comercio y confirmó MIT activo. Reactivamos SOLO Visa para verificar en
+// producción si eso arregla el defecto (una sola variable: Amex sigue fuera,
+// 0/2). REGLA DE REVERSIÓN: si los primeros 5 intentos de Apple Pay con Visa
+// fallan (190/180), se revierte este cambio; si alguno aprueba, la activación lo
+// ha arreglado y Visa se queda. Vigilancia: scripts/watch-apay-visa.mjs.
+//
+// Amex se mantiene fuera hasta que el acquirer lo confirme por separado.
+export const APPLE_PAY_NETWORKS: string[] = ["masterCard", "maestro", "visa"];
