@@ -19,6 +19,8 @@ import {
   webhookEvents,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import { dbConnectionConfig } from "./_core/dbConfig";
+import { DUNNING_LOCK_STALE_MS } from "./_core/dunning";
 import { clampTrialDays } from "../shared/trial";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -26,7 +28,9 @@ let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      // timezone:'Z' → mysql2 devuelve TIMESTAMP en UTC, no en la zona local del
+      // proceso (ver server/_core/dbConfig.ts). Crítico para el calendario de cobros.
+      _db = drizzle({ connection: dbConnectionConfig() });
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -955,7 +959,10 @@ const STRIPE_REVENUE_CACHE_MS = 60 * 1000;
  *     blocked_provider = 172/174, ni cancelar ni reintentar por MIT)
  *   - no bloqueada por otra corrida del cron (lock idempotente)
  */
-export async function getSubsDueForRetry(now: Date = new Date(), lockStaleMs = 15 * 60 * 1000) {
+// El WHERE de abajo es el espejo SQL de `isSubDueForRetry` (server/_core/dunning.ts),
+// que está unit-testeado. Si cambias uno, cambia el otro. lockStaleMs=45min para
+// que el cron cada 15 min no repesque una corrida colgada (anti-doble-cobro).
+export async function getSubsDueForRetry(now: Date = new Date(), lockStaleMs = DUNNING_LOCK_STALE_MS) {
   const db = await getDb();
   if (!db) return [];
   const lockCutoff = new Date(now.getTime() - lockStaleMs);
@@ -1032,9 +1039,11 @@ export async function sweepExpiredCancellations(now: Date = new Date(), dryRun =
 /**
  * Reclama una sub para el dunning de forma atómica (lock de idempotencia).
  * Devuelve true si ESTA corrida ganó el lock; false si otra ya la tenía.
- * El lock caduca a los `lockStaleMs` para no bloquear si el cron murió a media.
+ * El lock caduca a los `lockStaleMs` (45min) para no bloquear si el cron murió a
+ * media, pero MUY por encima del intervalo de 15 min → sin doble-cobro por solape.
+ * Lógica espejo (unit-testeada) en `canClaimDunning` (server/_core/dunning.ts).
  */
-export async function claimSubForDunning(subId: number, now: Date = new Date(), lockStaleMs = 15 * 60 * 1000): Promise<boolean> {
+export async function claimSubForDunning(subId: number, now: Date = new Date(), lockStaleMs = DUNNING_LOCK_STALE_MS): Promise<boolean> {
   const db = await getDb();
   if (!db) return false;
   const cutoff = new Date(now.getTime() - lockStaleMs);
