@@ -100,11 +100,13 @@ function madridWeekday(d: Date): number {
   return map[wd] ?? d.getUTCDay();
 }
 
-/** 1º día del mes siguiente al ancla, a las 07:00 UTC (alineación con nóminas). */
+/** 1º día del mes siguiente al ancla, a la MISMA hora que el ancla (alineación con
+ *  nóminas; se conserva la hora de la sub para no concentrar). */
 function firstOfNextMonth(anchor: Date): Date {
-  const y = anchor.getUTCFullYear();
-  const m = anchor.getUTCMonth();
-  return new Date(Date.UTC(y, m + 1, 1, 7, 0, 0, 0));
+  return new Date(Date.UTC(
+    anchor.getUTCFullYear(), anchor.getUTCMonth() + 1, 1,
+    anchor.getUTCHours(), anchor.getUTCMinutes(), 0, 0,
+  ));
 }
 
 /**
@@ -115,29 +117,22 @@ function r3MovesToMonthStart(anchor: Date): boolean {
   return firstOfNextMonth(anchor).getTime() <= addDays(anchor, 21).getTime();
 }
 
-/** 07:00 UTC del día UTC de `d` (≈09:00 Madrid, mismo día en ambas zonas). */
-function atMorningUtc(d: Date): Date {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 7, 0, 0, 0));
-}
-
 /**
- * Devuelve la mañana (07:00 UTC) del primer día hábil >= max(día de `target`, `min`)
- * que NO sea sáb/dom/lun (Madrid); esos se mueven a martes.
+ * Ancla el reintento a la HORA de `target` (= hora de vencimiento/alta de la sub)
+ * para NO concentrar todos los cobros a la vez. Solo mueve el DÍA: nunca antes de
+ * `min` (mínimo 24h desde el último intento) y evitando sáb/dom/lun (Madrid) → martes.
  *
- * Clave anti-bug: se calcula el día de la semana SIEMPRE sobre las 07:00 UTC
- * (≈09:00 Madrid). Si se usara una hora UTC nocturna, el día en Madrid cruzaría
- * a medianoche y el weekday saldría desplazado (un domingo leído como sábado,
- * etc.), colando fechas en lunes.
+ * El weekday se calcula sobre el instante REAL (con su hora exacta) vía
+ * Intl(Europe/Madrid), que resuelve bien horas nocturnas y DST. Un desplazamiento
+ * de días ENTEROS conserva la hora, así que el weekday de Madrid se mueve justo
+ * esos días. (El diseño previo forzaba 07:00 UTC para esquivar el rollover de zona;
+ * ahora se calcula la zona correctamente y se preserva la hora de la sub.)
  */
-function toBusinessMorning(target: Date, min: Date): Date {
-  const day07 = atMorningUtc(target);
-  // No antes del día del calendario ni antes del mínimo de 24h.
-  const floor = day07.getTime() >= min.getTime() ? day07 : min;
-  let base = atMorningUtc(floor);
-  if (base.getTime() < floor.getTime()) base = addDays(base, 1); // 07:00 ya pasó → mañana
-  const wd = madridWeekday(base);
+function toBusinessDay(target: Date, min: Date): Date {
+  const next = target.getTime() >= min.getTime() ? target : min;
+  const wd = madridWeekday(next);
   const add = wd === 6 ? 3 : wd === 0 ? 2 : wd === 1 ? 1 : 0; // Sáb/Dom/Lun → Mar
-  return addDays(base, add);
+  return add ? addDays(next, add) : next;
 }
 
 /** Fecha objetivo (antes de guardas y desplazamiento) para el reintento N. */
@@ -189,11 +184,58 @@ export function decideNextRetry(opts: {
 
   const target = targetForRetry(info, n, opts.anchor);
   const min = addHours(opts.lastAttemptAt, 24);   // mín 24h entre intentos (máx 1/día)
-  const next = toBusinessMorning(target, min);     // 07:00 UTC, no antes de min, sin finde/lunes
+  const next = toBusinessDay(target, min);         // hora de la sub, no antes de min, sin finde/lunes
 
   // Ventana máxima de 30 días desde el ancla (sobre la fecha final ya desplazada).
   if (next.getTime() > addDays(opts.anchor, 30).getTime()) {
     return { action: "cancel", category: info.category, reason: "beyond_30d" };
   }
   return { action: "retry", category: info.category, nextRetryAt: next, retryNumber: n };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Idempotencia del cron (anti-doble-cobro al pasar de lote diario a cada 15 min).
+//
+// Con ejecuciones cada 15 min dos corridas pueden solaparse. La garantía es DOBLE:
+//  1) `claimSubForDunning` (UPDATE atómico) — solo UNA corrida gana el claim.
+//  2) El cambio de estado tras cobrar (currentPeriodEnd +30d en OK / nextRetryAt
+//     futuro en fallo) — una vez procesada, la sub deja de estar "due".
+// El lock debe caducar MUY por encima del intervalo (15 min) para que una corrida
+// colgada no sea repescada por la siguiente: por eso 45 min.
+export const DUNNING_LOCK_STALE_MS = 45 * 60 * 1000;
+
+/**
+ * ¿Puede esta corrida reclamar la sub? Refleja el WHERE de `claimSubForDunning`
+ * y del lock en `getSubsDueForRetry` (server/db.ts). Puro, para testear la lógica.
+ * Reclama si el lock es null o más viejo que `staleMs`.
+ */
+export function canClaimDunning(dunningLockedAt: Date | null | undefined, now: Date, staleMs: number = DUNNING_LOCK_STALE_MS): boolean {
+  if (!dunningLockedAt) return true;
+  return dunningLockedAt.getTime() < now.getTime() - staleMs;
+}
+
+export type DueSubState = {
+  sipayToken?: string | null;
+  cancelAtPeriodEnd?: boolean | null;
+  status?: string | null;
+  currentPeriodEnd?: Date | null;
+  nextRetryAt?: Date | null;
+  declineCategory?: string | null;
+  dunningLockedAt?: Date | null;
+};
+
+/**
+ * Espejo EXACTO del WHERE de `getSubsDueForRetry` (server/db.ts). Puro, para
+ * testear que una sub ya cobrada (currentPeriodEnd futuro) o con reintento futuro
+ * o bloqueada/hard NO se re-selecciona → no se puede doble-cobrar.
+ */
+export function isSubDueForRetry(s: DueSubState, now: Date, staleMs: number = DUNNING_LOCK_STALE_MS): boolean {
+  if (!s.sipayToken) return false;
+  if (s.cancelAtPeriodEnd) return false;
+  if (!["trialing", "active", "past_due"].includes(String(s.status))) return false;
+  if (!s.currentPeriodEnd || s.currentPeriodEnd.getTime() > now.getTime()) return false; // aún no vence / ya cobrada (+30d)
+  if (s.nextRetryAt && s.nextRetryAt.getTime() > now.getTime()) return false;             // reintento programado a futuro
+  if (s.declineCategory === "hard" || s.declineCategory === "blocked_provider") return false;
+  if (!canClaimDunning(s.dunningLockedAt, now, staleMs)) return false;                     // lock fresco de otra corrida
+  return true;
 }

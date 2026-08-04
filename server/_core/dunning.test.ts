@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { classifyDecline, decideNextRetry } from "./dunning";
+import { classifyDecline, decideNextRetry, canClaimDunning, isSubDueForRetry, DUNNING_LOCK_STALE_MS } from "./dunning";
+
+const madridWd = (d: Date) =>
+  new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Madrid", weekday: "short" }).format(d);
 
 describe("classifyDecline", () => {
   it("HARD: cancela sin reintentos", () => {
@@ -151,5 +154,112 @@ describe("decideNextRetry — calendario y reglas de fecha", () => {
     const anchor = new Date(Date.UTC(2026, 0, 1, 10));
     const d = decideNextRetry({ code: "116", retryCount: 20, anchor, lastAttemptAt: anchor });
     expect(d.action).toBe("cancel"); // supera maxRetries → cancel
+  });
+});
+
+describe("decideNextRetry — anclaje a la HORA de la sub (no concentrar)", () => {
+  it("conserva la hora exacta del ancla cuando no hay finde de por medio", () => {
+    // miércoles 2026-01-07 14:37 UTC → R1 (+2d) = viernes 2026-01-09 14:37, hábil.
+    const anchor = new Date(Date.UTC(2026, 0, 7, 14, 37));
+    const d = decideNextRetry({ code: "190", retryCount: 0, anchor, lastAttemptAt: anchor });
+    expect(d.action).toBe("retry");
+    if (d.action === "retry") {
+      expect(d.nextRetryAt.getUTCHours()).toBe(14);
+      expect(d.nextRetryAt.getUTCMinutes()).toBe(37);
+      expect(madridWd(d.nextRetryAt)).toBe("Fri");
+    }
+  });
+
+  it("HORAS NOCTURNAS (23:00-01:00 UTC): weekday Madrid correcto y sin sáb/dom/lun", () => {
+    // Barremos horas nocturnas donde Madrid cruza medianoche (el viejo bug).
+    for (const [Y, M, D] of [[2026, 0, 5], [2026, 1, 27], [2026, 2, 28]] as const) {
+      for (const [h, m] of [[23, 0], [23, 30], [0, 0], [0, 30], [1, 0]] as const) {
+        const anchor = new Date(Date.UTC(Y, M, D, h, m));
+        for (const code of ["190", "116", "912"]) {
+          for (let rc = 0; rc < 4; rc++) {
+            const d = decideNextRetry({ code, retryCount: rc, anchor, lastAttemptAt: anchor });
+            if (d.action !== "retry") continue;
+            expect(["Sat", "Sun", "Mon"]).not.toContain(madridWd(d.nextRetryAt));
+            expect(d.nextRetryAt.getTime()).toBeGreaterThanOrEqual(anchor.getTime() + 24 * 3600 * 1000);
+          }
+        }
+      }
+    }
+  });
+
+  it("CAMBIO DE MES: R1 desde fin de mes cruza al mes siguiente sin romper reglas", () => {
+    // sábado 2026-01-31 12:00 → R1 (+2d) = lunes 2026-02-02 → martes 2026-02-03.
+    const anchor = new Date(Date.UTC(2026, 0, 31, 12, 0));
+    const d = decideNextRetry({ code: "190", retryCount: 0, anchor, lastAttemptAt: anchor });
+    expect(d.action).toBe("retry");
+    if (d.action === "retry") {
+      expect(d.nextRetryAt.getUTCMonth()).toBe(1); // febrero
+      expect(madridWd(d.nextRetryAt)).toBe("Tue");
+      expect(d.nextRetryAt.getUTCHours()).toBe(12); // hora preservada
+    }
+  });
+
+  it("REGRESIÓN nocturna+DST: ninguna next_retry_at en sáb/dom/lun, corra cuando corra", () => {
+    // Igual que el sweep de enero pero cruzando el cambio de hora de marzo (DST
+    // Madrid: último domingo de marzo) y con horas nocturnas incluidas.
+    const codes = ["116", "190", "181", "912", "999"];
+    let checked = 0;
+    for (let day = 0; day < 40; day++) {
+      for (const [h, m] of [[0, 0], [1, 0], [12, 0], [22, 30], [23, 59]] as const) {
+        const lastAttemptAt = new Date(Date.UTC(2026, 2, 1 + day, h, m)); // marzo→abril
+        const anchor = new Date(lastAttemptAt.getTime() - 3 * 24 * 3600 * 1000);
+        for (const code of codes) {
+          for (let rc = 0; rc < 4; rc++) {
+            const d = decideNextRetry({ code, retryCount: rc, anchor, lastAttemptAt });
+            if (d.action !== "retry") continue;
+            expect(["Sat", "Sun", "Mon"]).not.toContain(madridWd(d.nextRetryAt));
+            expect(d.nextRetryAt.getTime()).toBeGreaterThanOrEqual(lastAttemptAt.getTime() + 24 * 3600 * 1000);
+            checked++;
+          }
+        }
+      }
+    }
+    expect(checked).toBeGreaterThan(500);
+  });
+});
+
+describe("idempotencia — anti-doble-cobro (cron cada 15 min)", () => {
+  const now = new Date(Date.UTC(2026, 0, 15, 9, 0));
+  it("canClaimDunning: null reclama; lock fresco NO; lock caducado (>45min) SÍ", () => {
+    expect(canClaimDunning(null, now)).toBe(true);
+    expect(canClaimDunning(new Date(now.getTime() - 10 * 60 * 1000), now)).toBe(false); // 10min < 45
+    expect(canClaimDunning(new Date(now.getTime() - 44 * 60 * 1000), now)).toBe(false); // 44min < 45
+    expect(canClaimDunning(new Date(now.getTime() - 46 * 60 * 1000), now)).toBe(true);  // 46min > 45
+    expect(DUNNING_LOCK_STALE_MS).toBe(45 * 60 * 1000);
+  });
+
+  it("dos corridas solapadas: solo una puede reclamar (la 2ª ve lock fresco)", () => {
+    const claimedAt = now;                       // corrida A reclama
+    const runB = new Date(now.getTime() + 15 * 60 * 1000); // corrida B, 15 min después
+    expect(canClaimDunning(claimedAt, runB)).toBe(false);  // B NO puede (lock de 15min < 45)
+  });
+
+  const dueBase = {
+    sipayToken: "usr-1", cancelAtPeriodEnd: false, status: "past_due",
+    currentPeriodEnd: new Date(now.getTime() - 60 * 1000), nextRetryAt: null,
+    declineCategory: null as string | null, dunningLockedAt: null as Date | null,
+  };
+  it("isSubDueForRetry: sub vencida y libre → due", () => {
+    expect(isSubDueForRetry(dueBase, now)).toBe(true);
+  });
+  it("NO re-cobra: currentPeriodEnd futuro (ya cobrada +30d)", () => {
+    expect(isSubDueForRetry({ ...dueBase, currentPeriodEnd: new Date(now.getTime() + 30 * 864e5) }, now)).toBe(false);
+  });
+  it("NO re-cobra: nextRetryAt futuro (reintento programado)", () => {
+    expect(isSubDueForRetry({ ...dueBase, nextRetryAt: new Date(now.getTime() + 864e5) }, now)).toBe(false);
+  });
+  it("NO re-cobra: bloqueada (blocked_provider) ni hard", () => {
+    expect(isSubDueForRetry({ ...dueBase, declineCategory: "blocked_provider" }, now)).toBe(false);
+    expect(isSubDueForRetry({ ...dueBase, declineCategory: "hard" }, now)).toBe(false);
+  });
+  it("NO re-cobra: sin token, cancelAtPeriodEnd, o lock fresco de otra corrida", () => {
+    expect(isSubDueForRetry({ ...dueBase, sipayToken: null }, now)).toBe(false);
+    expect(isSubDueForRetry({ ...dueBase, cancelAtPeriodEnd: true }, now)).toBe(false);
+    expect(isSubDueForRetry({ ...dueBase, dunningLockedAt: new Date(now.getTime() - 5 * 60 * 1000) }, now)).toBe(false);
   });
 });
