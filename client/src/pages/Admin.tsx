@@ -80,12 +80,13 @@ function ConversionPanel({ q }: { q: { data?: any; isLoading: boolean; error?: a
   const eur = d ? (d.currentAmountCents / 100).toFixed(2).replace(".", ",") : "29,95";
   if (q.isLoading) return <div className="text-white/60 text-sm">Cargando conversión…</div>;
   if (!d) return <div className="text-white/60 text-sm">Sin datos.</div>;
-  const win = (w: any, title: string) => (
+  const win = (w: any, title: string, pending?: boolean) => (
     <div className="flex-1 bg-[#141416] border border-white/10 rounded-xl p-4">
       <div className="text-xs uppercase tracking-wide text-white/40 mb-2">{title}</div>
       <RateLine label={`Aprobado 1er intento (${eur}€)`} r={w.first} big />
-      <RateLine label="Aprobado final (con reintentos)" r={w.final} />
+      <RateLine label={`Aprobado final (con reintentos)${pending ? " *" : ""}`} r={w.final} />
       <RateLine label="Otros importes (final)" r={w.other} />
+      {pending && <p className="text-[10px] text-white/40 mt-1.5">* reintentos aún pendientes en ciclos recientes → el final solo subirá</p>}
     </div>
   );
   return (
@@ -97,7 +98,7 @@ function ConversionPanel({ q }: { q: { data?: any; isLoading: boolean; error?: a
           <span className="text-xs text-white/50">Baseline fija: <b className="text-white/80">35,3%</b> (2 sem. previas al 4-ago)</span>
         </div>
         <div className="flex flex-col md:flex-row gap-3">
-          {win(d.block1.d7, "Últimos 7 días")}
+          {win(d.block1.d7, "Últimos 7 días", true)}
           {win(d.block1.d30, "Últimos 30 días")}
         </div>
       </section>
