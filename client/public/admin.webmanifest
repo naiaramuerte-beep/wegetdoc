@@ -1,0 +1,16 @@
+{
+  "name": "EditorPDF Admin",
+  "short_name": "EP Admin",
+  "description": "Resumen de métricas de EditorPDF",
+  "start_url": "/es/admin/movil",
+  "scope": "/es/admin",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0b",
+  "theme_color": "#0a0a0b",
+  "icons": [
+    { "src": "/favicon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/favicon-256.png", "sizes": "256x256", "type": "image/png", "purpose": "any" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

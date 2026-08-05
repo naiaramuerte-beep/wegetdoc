@@ -91,6 +91,9 @@ function ConversionPanel({ q }: { q: { data?: any; isLoading: boolean; error?: a
   );
   return (
     <div className="space-y-6">
+      <a href="/es/admin/movil" className="inline-flex items-center gap-1.5 text-xs text-white/50 hover:text-white/80 underline">
+        📱 Vista móvil / instalar como app
+      </a>
       {/* BLOQUE 1 */}
       <section>
         <div className="flex items-center justify-between mb-2">
@@ -548,7 +551,7 @@ export default function Admin() {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#0f1117", color: "#e2e8f0" }}>
+    <div className="min-h-screen admin-root" style={{ backgroundColor: "#0f1117", color: "#e2e8f0" }}>
       {/* Header */}
       <div
         className="border-b px-6 py-4 flex items-center justify-between"

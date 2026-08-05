@@ -954,6 +954,12 @@ export const appRouter = router({
       };
     }),
 
+    // Resumen para la vista móvil del admin (hoy + últimos cobros/fallos).
+    mobileSummary: adminProcedure.query(async () => {
+      const { getAdminMobileSummary } = await import("./db");
+      return getAdminMobileSummary();
+    }),
+
     sipayProbe: adminProcedure.mutation(async () => {
       const { probeSandbox } = await import("./_core/sipay");
       const result = await probeSandbox({
