@@ -77,6 +77,45 @@ export async function getTrialConversionRows() {
   return { subs, charges };
 }
 
+// Resumen para la vista móvil del admin: hoy (altas/renovaciones/€) + últimos
+// cobros y últimos fallos con su código. Conexión UTC, día/hora en Europe/Madrid.
+export async function getAdminMobileSummary() {
+  const db = await getDb();
+  if (!db) return null;
+  const [todayRows]: any = await db.execute(sql`
+    SELECT
+      SUM(amountCents <= 100 AND status='ok') AS altas,
+      SUM(provider='mit' AND status='ok') AS renov,
+      SUM(CASE WHEN status='ok' THEN amountCents ELSE 0 END) AS totalCents
+    FROM charges
+    WHERE DATE(CONVERT_TZ(createdAt,'+00:00','+02:00')) = DATE(CONVERT_TZ(UTC_TIMESTAMP(),'+00:00','+02:00'))`);
+  const [okRows]: any = await db.execute(sql`
+    SELECT provider, amountCents, sipayMaskedCard,
+      DATE_FORMAT(CONVERT_TZ(createdAt,'+00:00','+02:00'),'%d/%m %H:%i') AS whenM
+    FROM charges WHERE status='ok' ORDER BY createdAt DESC LIMIT 8`);
+  const [failRows]: any = await db.execute(sql`
+    SELECT provider, amountCents, sipayMaskedCard, errorDetail,
+      DATE_FORMAT(CONVERT_TZ(createdAt,'+00:00','+02:00'),'%d/%m %H:%i') AS whenM
+    FROM charges WHERE status='failed' ORDER BY createdAt DESC LIMIT 8`);
+  const t = (todayRows as any[])[0] ?? {};
+  return {
+    today: {
+      altas: Number(t.altas ?? 0),
+      renovaciones: Number(t.renov ?? 0),
+      totalEur: Number(t.totalCents ?? 0) / 100,
+    },
+    recentCharges: (okRows as any[]).map((r) => ({
+      provider: String(r.provider), amountEur: Number(r.amountCents) / 100,
+      card: r.sipayMaskedCard ?? null, when: String(r.whenM),
+    })),
+    recentFailures: (failRows as any[]).map((r) => ({
+      provider: String(r.provider), amountEur: Number(r.amountCents) / 100,
+      card: r.sipayMaskedCard ?? null, when: String(r.whenM),
+      code: r.errorDetail ? String(r.errorDetail).split(":")[0] : "?",
+    })),
+  };
+}
+
 // ─── Users ────────────────────────────────────────────────────
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) throw new Error("User openId is required for upsert");

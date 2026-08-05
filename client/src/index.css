@@ -293,3 +293,17 @@
 @layer utilities {
   /* No overrides needed — single brand now */
 }
+
+/* Admin en movil: que las tablas anchas NO rompan la pagina. Red de seguridad
+   sin redisenar cada tabla — la tabla se vuelve scrollable en horizontal y la
+   raiz no desborda. Solo <768px. */
+@media (max-width: 767px) {
+  .admin-root { overflow-x: hidden; }
+  .admin-root table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+}

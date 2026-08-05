@@ -25,6 +25,7 @@ const EditorPage = lazy(() => import("./pages/EditorPage"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Admin = lazy(() => import("./pages/Admin"));
+const AdminMobile = lazy(() => import("./pages/AdminMobile"));
 const Tools = lazy(() => import("./pages/Tools"));
 const Login = lazy(() => import("./pages/Login"));
 const Signup = lazy(() => import("./pages/Signup"));
@@ -137,6 +138,9 @@ function Router() {
       ))}
       {LANGUAGES.map(({ code }) => (
         <Route key={`${code}-dashboard`} path={`/${code}/dashboard`} component={Dashboard} />
+      ))}
+      {LANGUAGES.map(({ code }) => (
+        <Route key={`${code}-admin-movil`} path={`/${code}/admin/movil`} component={AdminMobile} />
       ))}
       {LANGUAGES.map(({ code }) => (
         <Route key={`${code}-admin`} path={`/${code}/admin`} component={Admin} />
@@ -276,6 +280,7 @@ function Router() {
       <Route path="/precios" component={() => <Redirect to="/es/pricing" />} />
       <Route path="/tools" component={() => <Redirect to="/es/tools" />} />
       <Route path="/dashboard" component={() => <Redirect to="/es/dashboard" />} />
+      <Route path="/admin/movil" component={() => <Redirect to="/es/admin/movil" />} />
       <Route path="/admin" component={() => <Redirect to="/es/admin" />} />
       <Route path="/privacy" component={() => <Redirect to="/es/privacy" />} />
       <Route path="/terms" component={() => <Redirect to="/es/terms" />} />
