@@ -937,6 +937,23 @@ export const appRouter = router({
       return getAdminStats();
     }),
 
+    // Bloque "Conversión de trial a suscripción". Cálculos puros + testeados en
+    // server/_core/trialConversion.ts; datos vía getTrialConversionRows (UTC).
+    trialConversion: adminProcedure.query(async () => {
+      const { getTrialConversionRows, getActiveMonthlyPrice } = await import("./db");
+      const { buildCycles, block1, block2, block3 } = await import("./_core/trialConversion");
+      const [{ subs, charges }, price] = await Promise.all([getTrialConversionRows(), getActiveMonthlyPrice()]);
+      const nowMs = Date.now();
+      const currentAmountCents = Math.round(price.eur * 100);
+      return {
+        currentAmountCents,
+        priceEur: price.eur,
+        block1: block1(buildCycles(charges as any), { currentAmountCents, nowMs }),
+        block2: block2(subs as any, { nowMs }),
+        block3: block3(subs as any, { nowMs, windowDays: 30 }),
+      };
+    }),
+
     sipayProbe: adminProcedure.mutation(async () => {
       const { probeSandbox } = await import("./_core/sipay");
       const result = await probeSandbox({
