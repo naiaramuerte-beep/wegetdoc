@@ -53,6 +53,7 @@ export default function AdminMobile() {
 
   const conv = trpc.admin.trialConversion.useQuery(undefined, { enabled: isAdmin, refetchInterval: 60000 });
   const summary = trpc.admin.mobileSummary.useQuery(undefined, { enabled: isAdmin, refetchInterval: 60000 });
+  const liveQ = trpc.admin.liveVisitors.useQuery(undefined, { enabled: isAdmin, refetchInterval: 5000 });
 
   if (loading) return <div className="min-h-screen bg-[#0a0a0b] flex items-center justify-center text-white/60">Cargando…</div>;
   if (!isAuthenticated || !isAdmin) {
@@ -66,6 +67,7 @@ export default function AdminMobile() {
 
   const c = conv.data;
   const s = summary.data;
+  const live = liveQ.data;
   const cohorts = c?.block2 ?? [];
 
   return (
@@ -74,6 +76,30 @@ export default function AdminMobile() {
         <div className="font-extrabold tracking-tight">editor<span className="text-[#E63946]">pdf</span> · admin</div>
         <button onClick={() => navigate("/es/admin")} className="text-white/40 text-xs underline">escritorio</button>
       </header>
+
+      {/* VISITANTES EN DIRECTO */}
+      <Card title="Visitantes en directo">
+        <div className="flex items-center gap-3">
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+          </span>
+          <span className="text-4xl font-extrabold tabular-nums leading-none">{live ? live.count : "…"}</span>
+          <span className="text-white/45 text-sm">ahora mismo</span>
+        </div>
+        {live && live.count > 0 ? (
+          <div className="mt-3 space-y-1">
+            {live.paths.slice(0, 8).map((p: any) => (
+              <div key={p.path} className="flex items-center justify-between text-xs gap-2">
+                <span className="text-white/55 truncate">{p.path}</span>
+                <span className="tabular-nums text-white/80">{p.count}</span>
+              </div>
+            ))}
+          </div>
+        ) : live ? (
+          <div className="text-white/40 text-sm mt-2">Sin visitantes activos ahora mismo.</div>
+        ) : null}
+      </Card>
 
       {/* HOY */}
       <Card title="Hoy">
