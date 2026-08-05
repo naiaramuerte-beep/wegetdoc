@@ -39,6 +39,44 @@ export async function getDb() {
   return _db;
 }
 
+// Filas crudas para el bloque "Conversión de trial a suscripción" del admin.
+// Conexión ya en UTC (timezone 'Z', ver getDb). La semana de alta se agrupa en
+// Europe/Madrid con CONVERT_TZ (lunes de la semana). Los ms vienen de
+// UNIX_TIMESTAMP (epoch real, sin depender del parseo Date de mysql2). Los
+// cálculos y la exclusión de cuentas de prueba viven en server/_core/trialConversion.ts.
+export async function getTrialConversionRows() {
+  const db = await getDb();
+  if (!db) return { subs: [] as any[], charges: [] as any[] };
+  const [subRows]: any = await db.execute(sql`
+    SELECT s.userId, u.email, s.trialDays, s.cancelAtPeriodEnd, s.status, s.declineCategory,
+      DATE_FORMAT(DATE_SUB(DATE(CONVERT_TZ(s.createdAt,'+00:00','+02:00')),
+        INTERVAL WEEKDAY(CONVERT_TZ(s.createdAt,'+00:00','+02:00')) DAY), '%Y-%m-%d') AS altaWeek,
+      UNIX_TIMESTAMP(s.createdAt)*1000 AS createdAtMs,
+      UNIX_TIMESTAMP(s.currentPeriodEnd)*1000 AS periodEndMs,
+      (SELECT COUNT(*) FROM charges c WHERE c.userId=s.userId AND c.provider='mit' AND c.status='ok'
+         AND (c.sipayOrder IS NULL OR c.sipayOrder NOT LIKE 'mit-upgrade-%')) AS mitOk
+    FROM subscriptions s LEFT JOIN users u ON u.id=s.userId
+    WHERE s.createdAt >= (UTC_TIMESTAMP() - INTERVAL 70 DAY)`);
+  const [chargeRows]: any = await db.execute(sql`
+    SELECT userId, amountCents, (status='ok') AS ok,
+      UNIX_TIMESTAMP(createdAt)*1000 AS createdAtMs,
+      (sipayOrder LIKE 'mit-upgrade-%') AS isUpgrade
+    FROM charges WHERE provider='mit' AND createdAt >= (UTC_TIMESTAMP() - INTERVAL 60 DAY)`);
+  const subs = (subRows as any[]).map((r) => ({
+    userId: Number(r.userId), email: r.email ?? null,
+    trialDays: r.trialDays == null ? null : Number(r.trialDays),
+    cancelAtPeriodEnd: !!Number(r.cancelAtPeriodEnd), status: String(r.status),
+    declineCategory: r.declineCategory ?? null, altaWeek: String(r.altaWeek),
+    createdAtMs: Number(r.createdAtMs), periodEndMs: r.periodEndMs == null ? null : Number(r.periodEndMs),
+    mitOk: Number(r.mitOk),
+  }));
+  const charges = (chargeRows as any[]).map((r) => ({
+    userId: Number(r.userId), amountCents: Number(r.amountCents), ok: !!Number(r.ok),
+    createdAtMs: Number(r.createdAtMs), isUpgrade: !!Number(r.isUpgrade),
+  }));
+  return { subs, charges };
+}
+
 // ─── Users ────────────────────────────────────────────────────
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) throw new Error("User openId is required for upsert");

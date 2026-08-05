@@ -57,7 +57,123 @@ import BlogAdmin from "./BlogAdmin";
 import TrustpilotAdmin from "./TrustpilotAdmin";
 import PaywallModal from "@/components/PaywallModal";
 
-type AdminTab = "overview" | "billing" | "users" | "subscribers" | "documents" | "canceled" | "coupons" | "messages" | "webhooks" | "audit" | "legal" | "settings" | "blog" | "trustpilot";
+type AdminTab = "overview" | "billing" | "conversion" | "users" | "subscribers" | "documents" | "canceled" | "coupons" | "messages" | "webhooks" | "audit" | "legal" | "settings" | "blog" | "trustpilot";
+
+// ── Bloque "Conversión de trial a suscripción" ──────────────────────────────
+type CvRate = { ok: number; n: number; pct: number | null; insufficient: boolean };
+function RateLine({ label, r, big }: { label: string; r: CvRate; big?: boolean }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 py-1">
+      <span className={`text-white/60 ${big ? "text-sm" : "text-xs"}`}>{label}</span>
+      <span className="flex items-baseline gap-2">
+        <span className={`font-bold tabular-nums ${big ? "text-2xl text-white" : "text-base text-white/90"}`}>
+          {r.pct == null ? "—" : `${r.pct}%`}
+        </span>
+        <span className="text-xs text-white/50 tabular-nums">· {r.ok}/{r.n}</span>
+        {r.insufficient && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 whitespace-nowrap">muestra insuf.</span>}
+      </span>
+    </div>
+  );
+}
+function ConversionPanel({ q }: { q: { data?: any; isLoading: boolean; error?: any } }) {
+  const d = q.data;
+  const eur = d ? (d.currentAmountCents / 100).toFixed(2).replace(".", ",") : "29,95";
+  if (q.isLoading) return <div className="text-white/60 text-sm">Cargando conversión…</div>;
+  if (!d) return <div className="text-white/60 text-sm">Sin datos.</div>;
+  const win = (w: any, title: string, pending?: boolean) => (
+    <div className="flex-1 bg-[#141416] border border-white/10 rounded-xl p-4">
+      <div className="text-xs uppercase tracking-wide text-white/40 mb-2">{title}</div>
+      <RateLine label={`Aprobado 1er intento (${eur}€)`} r={w.first} big />
+      <RateLine label={`Aprobado final (con reintentos)${pending ? " *" : ""}`} r={w.final} />
+      <RateLine label="Otros importes (final)" r={w.other} />
+      {pending && <p className="text-[10px] text-white/40 mt-1.5">* reintentos aún pendientes en ciclos recientes → el final solo subirá</p>}
+    </div>
+  );
+  return (
+    <div className="space-y-6">
+      {/* BLOQUE 1 */}
+      <section>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-white font-semibold">Aceptación de MIT</h3>
+          <span className="text-xs text-white/50">Baseline fija: <b className="text-white/80">35,3%</b> (2 sem. previas al 4-ago)</span>
+        </div>
+        <div className="flex flex-col md:flex-row gap-3">
+          {win(d.block1.d7, "Últimos 7 días", true)}
+          {win(d.block1.d30, "Últimos 30 días")}
+        </div>
+      </section>
+
+      {/* BLOQUE 2 */}
+      <section>
+        <h3 className="text-white font-semibold mb-2">Trial → suscriptor de pago (por semana de alta)</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-white/90 border-collapse">
+            <thead>
+              <tr className="text-white/50 text-xs">
+                {["Semana", "Cohorte", "Altas", "Vencidas", "Cancel. pre-cobro", "Cobradas", "Fallidas", "Conversión"].map(h => (
+                  <th key={h} className="text-left font-medium py-2 px-2 border-b border-white/10">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {d.block2.map((r: any, i: number) => (
+                <tr key={i} className="border-b border-white/5">
+                  <td className="py-1.5 px-2 tabular-nums">{r.week}</td>
+                  <td className="py-1.5 px-2">
+                    <span className={`px-1.5 py-0.5 rounded text-xs ${r.cohort === "7d" ? "bg-blue-500/20 text-blue-300" : "bg-white/10 text-white/70"}`}>{r.cohort}</span>
+                    {r.inProgress && <span className="ml-1 text-[10px] px-1 py-0.5 rounded bg-emerald-500/15 text-emerald-300">en curso</span>}
+                  </td>
+                  <td className="py-1.5 px-2 tabular-nums">{r.altas}</td>
+                  <td className="py-1.5 px-2 tabular-nums text-white/60">{r.trialEnded}</td>
+                  <td className="py-1.5 px-2 tabular-nums text-amber-300/90">{r.canceledPre}</td>
+                  <td className="py-1.5 px-2 tabular-nums text-emerald-300">{r.paid}</td>
+                  <td className="py-1.5 px-2 tabular-nums text-red-300/80">{r.failed}</td>
+                  <td className="py-1.5 px-2 tabular-nums font-semibold">
+                    {r.convPct == null ? "—" : `${r.convPct}%`} <span className="text-white/40 text-xs">· {r.paid}/{r.altas}</span>
+                    {r.insufficient && <span className="ml-1 text-[10px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-300">n&lt;20</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-xs text-white/40 mt-1">48h y 7d son cohortes distintas (no se mezclan). "En curso" = aún quedan subs sin vencer el trial → la conversión subirá.</p>
+      </section>
+
+      {/* BLOQUE 3 */}
+      <section>
+        <h3 className="text-white font-semibold mb-2">Dónde se pierden (últimos 30 días)</h3>
+        <div className="bg-[#141416] border border-white/10 rounded-xl p-4">
+          {d.block3.total === 0 ? (
+            <div className="text-white/50 text-sm">Sin pérdidas registradas en la ventana.</div>
+          ) : (
+            <>
+              <div className="text-xs text-white/50 mb-2">Total no convertidas y perdidas: <b className="text-white/90">{d.block3.total}</b>
+                {d.block3.insufficient && <span className="ml-1 text-[10px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-300">muestra insuf.</span>}</div>
+              {([
+                ["Canceladas por el usuario (durante el trial)", d.block3.usuario, d.block3.pct?.usuario],
+                ["Código duro (tarjeta muerta)", d.block3.codigoDuro, d.block3.pct?.codigoDuro],
+                ["Bloqueadas (172/174 · blocked_provider)", d.block3.blockedProvider, d.block3.pct?.blockedProvider],
+                ["Reintentos agotados", d.block3.reintentosAgotados, d.block3.pct?.reintentosAgotados],
+              ] as [string, number, number | undefined][]).map(([label, n, pct]) => (
+                <div key={label} className="py-1">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-white/70">{label}</span>
+                    <span className="tabular-nums text-white/90"><b>{n}</b> <span className="text-white/40 text-xs">· {pct ?? 0}%</span></span>
+                  </div>
+                  <div className="h-1.5 rounded bg-white/5 mt-1 overflow-hidden">
+                    <div className="h-full bg-red-400/60 rounded" style={{ width: `${pct ?? 0}%` }} />
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      </section>
+      <p className="text-xs text-white/30">Cuentas de prueba internas excluidas · conexión UTC, agrupación Europe/Madrid.</p>
+    </div>
+  );
+}
 
 export default function Admin() {
   const [, navigate] = useLocation();
@@ -88,6 +204,10 @@ export default function Admin() {
   const billingQ = trpc.admin.billingStats.useQuery(
     { from: rangeFromISO, to: rangeToISO },
     { enabled: !!user && user.role === "admin" && tab === "billing" }
+  );
+  const conversionQ = trpc.admin.trialConversion.useQuery(
+    undefined,
+    { enabled: !!user && user.role === "admin" && tab === "conversion" }
   );
   const stripeRevQ = trpc.admin.stripeRevenue.useQuery(
     { from: rangeFromISO, to: rangeToISO },
@@ -348,6 +468,7 @@ export default function Admin() {
   const tabs: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
     { id: "overview", label: "Resumen", icon: <BarChart2 size={16} /> },
     { id: "billing", label: "Facturación & MRR", icon: <DollarSign size={16} /> },
+    { id: "conversion", label: "Conversión trial", icon: <TrendingUp size={16} /> },
     { id: "users", label: "Usuarios", icon: <Users size={16} /> },
     { id: "subscribers", label: "Suscriptores", icon: <Crown size={16} /> },
     { id: "documents", label: "Documentos", icon: <FileText size={16} /> },
@@ -1710,6 +1831,9 @@ export default function Admin() {
               </div>
             </div>
           )}
+
+          {/* ── CONVERSIÓN TRIAL ── */}
+          {tab === "conversion" && <ConversionPanel q={conversionQ} />}
 
           {/* ── USERS ── */}
           {tab === "users" && (
