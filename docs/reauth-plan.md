@@ -68,7 +68,18 @@ Este documento es el **plan B**: re-autorizar manualmente las que no recupere.
 
 Subs que ya matamos por un código que creemos mal clasificado. **63 en total, las
 63 con al menos un cobro OK histórico** → tarjeta demostrablemente viva.
-Proyectado si se recuperan todas: **1.886,85 €/mes** a 29,95 €.
+
+**Valor recuperable (a 29,95 €/mes):**
+
+| | €/mes | Supuesto |
+|---|---|---|
+| **Realista** | **~604 €/mes** | 63 × 29,95 € × **32 %** de renovación efectiva |
+| Techo teórico | 1.886,85 €/mes | 63 × 29,95 €, recuperación del **100 %** — no va a pasar |
+
+⚠️ **Usar SIEMPRE la cifra realista (~604 €/mes) en correos, informes y
+decisiones.** El techo teórico solo vale como cota superior. Aparte, la tasa de
+recuperación del propio email de re-auth (abrir + completar 3DS) se estimó en
+20-40 %, así que el 32 % ya es un supuesto optimista compuesto.
 
 | Código | Subs | Motivo de la sospecha |
 |---|---|---|

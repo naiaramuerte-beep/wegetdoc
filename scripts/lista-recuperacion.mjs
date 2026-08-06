@@ -58,6 +58,11 @@ console.log("=== OLA DE RE-AUTORIZACIÓN — canceladas por código mal clasific
 for (const [c, n] of Object.entries(porCodigo).sort()) console.log(`  código ${c}: ${n} subs`);
 console.log(`  TOTAL: ${rows.length} subs`);
 console.log(`  con cobro OK histórico (tarjeta viva): ${vivas}/${rows.length}`);
-console.log(`  recurrente proyectado si se recuperan todas: ${(rows.length * 29.95).toFixed(2)} €/mes`);
+// OJO: la cifra que vale es la REALISTA. El techo teórico (100% de recuperación)
+// se coló una vez en el plan como si fuera el valor esperado — no repetirlo.
+const TASA_RENOV = 0.32;                     // renovación efectiva observada
+const techo = rows.length * 29.95;
+console.log(`  recurrente REALISTA (${(TASA_RENOV * 100).toFixed(0)}% renovación): ${(techo * TASA_RENOV).toFixed(2)} €/mes  ← usar esta`);
+console.log(`  techo teórico (100% recuperación, NO usar como previsión): ${techo.toFixed(2)} €/mes`);
 console.log(`  CSV: ${out}`);
 await db.end();
