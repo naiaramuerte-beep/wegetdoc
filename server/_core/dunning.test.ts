@@ -5,12 +5,17 @@ const madridWd = (d: Date) =>
   new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Madrid", weekday: "short" }).format(d);
 
 describe("classifyDecline", () => {
-  it("HARD: cancela sin reintentos", () => {
-    for (const c of ["101", "121", "173", "191", "202"]) {
+  it("HARD: cancela sin reintentos (muerte VERIFICABLE de la tarjeta)", () => {
+    // 101 caducada · 129 CVV incorrecto · 202 fraude con retirada · 125 no
+    // efectiva · 191 caducidad errónea. Ninguno es recuperable con un reintento.
+    for (const c of ["101", "102", "104", "106", "118", "125", "129", "173", "175", "180", "191", "202"]) {
       const r = classifyDecline(c);
-      expect(r.category).toBe("hard");
+      expect(r.category, `código ${c} debe seguir en HARD`).toBe("hard");
       expect(r.maxRetries).toBe(0);
     }
+  });
+  it("121 YA NO es HARD → soft 'límite excedido', máx 2", () => {
+    expect(classifyDecline("121")).toMatchObject({ category: "soft", kind: "limit_exceeded", maxRetries: 2 });
   });
   it("172/174 → blocked_provider (ni cancelar ni reintentar), 0 reintentos", () => {
     for (const c of ["172", "174"]) {
@@ -67,6 +72,101 @@ describe("decideNextRetry — cancelaciones", () => {
   it("no mapeado agota a los 2", () => {
     expect(decideNextRetry({ code: "999", retryCount: 2, ...base }).action).toBe("cancel");
     expect(decideNextRetry({ code: "999", retryCount: 0, ...base }).action).toBe("retry");
+  });
+  it("121 ya NO cancela al primer intento — reintenta", () => {
+    const d = decideNextRetry({ code: "121", retryCount: 0, ...base });
+    expect(d.action).toBe("retry");
+  });
+  it("121 agota a los 2 reintentos", () => {
+    // Ancla a mitad de mes para que R2 quepa en la ventana de 30d (con ancla el
+    // día 1 de un mes de 31, R2 se sale — ver el test del caso borde de abajo).
+    const mid = { anchor: new Date(Date.UTC(2026, 3, 15, 17, 42)), lastAttemptAt: new Date(Date.UTC(2026, 3, 15, 17, 42)) };
+    expect(decideNextRetry({ code: "121", retryCount: 2, ...mid }).action).toBe("cancel");
+    expect(decideNextRetry({ code: "121", retryCount: 1, ...mid }).action).toBe("retry");
+  });
+});
+
+describe("121 (límite excedido) — reintento alineado al inicio de mes", () => {
+  const at = (d: Date) => d.toISOString();
+
+  it("R1 cae el día 1 del mes siguiente, a la MISMA hora que la sub", () => {
+    // ancla: miércoles 2026-04-15 a las 17:42 UTC → R1 = viernes 2026-05-01 17:42
+    const anchor = new Date(Date.UTC(2026, 3, 15, 17, 42));
+    const d = decideNextRetry({ code: "121", retryCount: 0, anchor, lastAttemptAt: anchor });
+    expect(d.action).toBe("retry");
+    if (d.action !== "retry") return;
+    expect(at(d.nextRetryAt)).toBe(at(new Date(Date.UTC(2026, 4, 1, 17, 42))));
+    expect(d.retryNumber).toBe(1);
+  });
+
+  it("si el día 1 cae en finde/lunes se mueve a martes (regla de siempre)", () => {
+    // ancla 2026-02-10 → día 1 siguiente = domingo 2026-03-01 → martes 2026-03-03
+    const anchor = new Date(Date.UTC(2026, 1, 10, 9, 0));
+    const d = decideNextRetry({ code: "121", retryCount: 0, anchor, lastAttemptAt: anchor });
+    expect(d.action).toBe("retry");
+    if (d.action !== "retry") return;
+    expect(madridWd(d.nextRetryAt)).toBe("Tue");
+    expect(at(d.nextRetryAt)).toBe(at(new Date(Date.UTC(2026, 2, 3, 9, 0))));
+  });
+
+  it("R2 es la red de seguridad 5 días después de R1", () => {
+    const anchor = new Date(Date.UTC(2026, 3, 15, 17, 42));
+    const d = decideNextRetry({ code: "121", retryCount: 1, anchor, lastAttemptAt: anchor });
+    expect(d.action).toBe("retry");
+    if (d.action !== "retry") return;
+    // R1 = 2026-05-01 (viernes); R2 = +5d = 2026-05-06 (miércoles), no se desplaza
+    expect(at(d.nextRetryAt)).toBe(at(new Date(Date.UTC(2026, 4, 6, 17, 42))));
+  });
+
+  it("CASO BORDE: ancla el día 1 de un mes de 31 días NO se cancela por ventana", () => {
+    // El día 1 del mes siguiente estaría a +31d → fuera de la ventana de 30d.
+    // El tope de +27d debe evitar el cancel espurio.
+    const anchor = new Date(Date.UTC(2026, 6, 1, 12, 0)); // jueves 2026-07-01
+    const d = decideNextRetry({ code: "121", retryCount: 0, anchor, lastAttemptAt: anchor });
+    expect(d.action, "no debe cancelar por beyond_30d").toBe("retry");
+    if (d.action !== "retry") return;
+    const dias = (d.nextRetryAt.getTime() - anchor.getTime()) / 864e5;
+    expect(dias).toBeLessThanOrEqual(30);
+    expect(dias).toBeGreaterThanOrEqual(27);
+  });
+
+  it("CASO BORDE: con ancla a principio de mes, R2 se sale de la ventana y cancela", () => {
+    // Comportamiento ACEPTADO por diseño: R1 (el tiro principal) siempre se da;
+    // R2 es solo red de seguridad y puede no caber. Lo importante es que R1 vaya.
+    const anchor = new Date(Date.UTC(2026, 0, 1, 10)); // jueves 2026-01-01
+    expect(decideNextRetry({ code: "121", retryCount: 0, anchor, lastAttemptAt: anchor }).action).toBe("retry");
+    expect(decideNextRetry({ code: "121", retryCount: 1, anchor, lastAttemptAt: anchor }).action).toBe("cancel");
+  });
+
+  it("respeta el mínimo de 24h desde el último intento", () => {
+    // ancla muy antigua: el día 1 ya pasó; el mínimo manda.
+    const anchor = new Date(Date.UTC(2026, 3, 15, 10, 0));
+    const lastAttemptAt = new Date(Date.UTC(2026, 4, 1, 10, 0)); // el mismo día 1
+    const d = decideNextRetry({ code: "121", retryCount: 0, anchor, lastAttemptAt });
+    if (d.action !== "retry") return;
+    expect(d.nextRetryAt.getTime()).toBeGreaterThanOrEqual(lastAttemptAt.getTime() + 24 * 3600 * 1000);
+  });
+
+  it("nunca supera la ventana de 30 días desde el ancla", () => {
+    for (let dia = 1; dia <= 28; dia++) {
+      for (const mes of [0, 1, 3, 6, 10]) {
+        const anchor = new Date(Date.UTC(2026, mes, dia, 11, 0));
+        const d = decideNextRetry({ code: "121", retryCount: 0, anchor, lastAttemptAt: anchor });
+        if (d.action !== "retry") continue;
+        const dias = (d.nextRetryAt.getTime() - anchor.getTime()) / 864e5;
+        expect(dias, `ancla ${anchor.toISOString()}`).toBeLessThanOrEqual(30);
+      }
+    }
+  });
+
+  it("R1 nunca se cancela por ventana, sea cual sea el día del ancla", () => {
+    for (let dia = 1; dia <= 28; dia++) {
+      for (const mes of [0, 1, 3, 6, 10]) {
+        const anchor = new Date(Date.UTC(2026, mes, dia, 11, 0));
+        const d = decideNextRetry({ code: "121", retryCount: 0, anchor, lastAttemptAt: anchor });
+        expect(d.action, `ancla ${anchor.toISOString()} debería reintentar`).toBe("retry");
+      }
+    }
   });
 });
 
