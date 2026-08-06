@@ -21,6 +21,7 @@ export type DeclineKind =
   | "hard"
   | "blocked_provider"
   | "insufficient_funds"
+  | "limit_exceeded"
   | "daily_limit"
   | "generic"
   | "technical"
@@ -34,8 +35,15 @@ export type DeclineInfo = {
 };
 
 // HARD → cancelar ya, sin reintentos.
+//
+// CRITERIO DE ADMISIÓN (regla dura, 2026-08-06): un código entra aquí SOLO si es
+// una muerte VERIFICABLE de la tarjeta — caducada, CVV incorrecto, fraude,
+// inexistente/no efectiva. Todo lo demás va a soft, o a bloqueado hasta que el
+// proveedor confirme la semántica. Motivo: cancelar es irreversible y mata MRR
+// sobre tarjetas vivas; equivocarse en la otra dirección solo cuesta un reintento.
+// Ya nos ha pasado dos veces (172/174 y 121) con códigos mal clasificados.
 const HARD_CODES = new Set([
-  "101", "102", "104", "106", "118", "121", "125", "129",
+  "101", "102", "104", "106", "118", "125", "129",
   "173", "175", "180", "191", "202",
 ]);
 
@@ -59,6 +67,34 @@ const HARD_CODES = new Set([
 // más. 173/175 se dejan en HARD (no han aparecido y no hay decisión sobre ellos).
 const BLOCKED_PROVIDER_CODES = new Set(["172", "174"]);
 
+// ────────────────────────────────────────────────────────────────────────────
+// LÍMITE EXCEDIDO (reversible — ÚNICO sitio para tocar esto).
+//
+// 121 estaba en HARD_CODES y cancelaba al primer intento. La forense en prod
+// (scripts/forense-121-full.mjs, 12 denegaciones / 8 usuarios, 3-jul→6-ago 2026)
+// lo desmiente:
+//  - 8/8 tarjetas VIVAS: todas cobraron su alta de 0,50 € (mediana 2,7 días antes).
+//  - 0/12 caducadas (caducidades 0632, 0828, 0631, 1127, 0930, 1128, 0531) → 121
+//    NO puede ser "tarjeta caducada", que es la única lectura que lo haría HARD.
+//  - Sin agrupación por BIN, mezcla VISA/Mastercard → no es sistémico del
+//    adquirente (a diferencia de 172/174).
+//  - Las 8 subs murieron en `plan=trial`: canceladas antes de cobrar un solo mes.
+//
+// Sipay NO documenta el código (devuelve un genérico "authorization_error") y las
+// fuentes públicas se contradicen. La hipótesis de trabajo es **límite excedido**,
+// que es la lectura más citada y la única compatible con "tarjeta viva pero
+// denegada de forma persistente durante días" (u=53700 recibió 121 cuatro días
+// seguidos sin aprobar nunca — reintentar al día siguiente NO sirve).
+//
+// Por eso el reintento principal se alinea al **día 1 del mes siguiente** (cuando
+// un límite de ciclo mensual se resetea), con las reglas de calendario de siempre
+// (hora de la sub, sin sáb/dom/lun → martes, ventana de 30 días).
+//
+// PARA REVERTIR: vaciar este set y devolver "121" a HARD_CODES. No hay que tocar
+// nada más. PENDIENTE: que Sipay confirme la semántica exacta de 121 (consulta
+// preparada en docs/sipay-consulta-121.md).
+const LIMIT_EXCEEDED_CODES = new Set(["121"]);
+
 const INSUFFICIENT_FUNDS = "116";           // calendario completo, máx 4
 const DAILY_LIMIT_CODES = new Set(["181", "182"]); // +48h, máx 2
 const GENERIC_DECLINE = "190";              // calendario, máx 3
@@ -70,6 +106,9 @@ const TECHNICAL_CODES = new Set(["912", "9912", "TECH", "TIMEOUT"]);
 export function classifyDecline(code: string | null | undefined): DeclineInfo {
   const c = String(code ?? "").trim();
   if (BLOCKED_PROVIDER_CODES.has(c)) return { category: "blocked_provider", kind: "blocked_provider", maxRetries: 0 };
+  // Antes que HARD_CODES: si algún día se devuelve un código a HARD, el set de
+  // arriba manda y este de abajo deja de aplicar sin ambigüedad.
+  if (LIMIT_EXCEEDED_CODES.has(c)) return { category: "soft", kind: "limit_exceeded", maxRetries: 2 };
   if (HARD_CODES.has(c)) return { category: "hard", kind: "hard", maxRetries: 0 };
   if (c === INSUFFICIENT_FUNDS) return { category: "soft", kind: "insufficient_funds", maxRetries: 4 };
   if (DAILY_LIMIT_CODES.has(c)) return { category: "soft", kind: "daily_limit", maxRetries: 2 };
@@ -141,6 +180,23 @@ function targetForRetry(info: DeclineInfo, n: number, anchor: Date): Date {
   if (info.kind === "technical" && n === 1) return addHours(anchor, 24);
   // Límite diario (181/182): a +48h por intento.
   if (info.kind === "daily_limit") return addHours(anchor, 48 * n);
+
+  // Límite excedido (121): el reintento PRINCIPAL (R1) se alinea al día 1 del mes
+  // siguiente, que es cuando se resetea un límite de ciclo mensual. R2 es una red
+  // de seguridad 5 días después.
+  //
+  // Tope de seguridad: si el ancla cae a principios de mes, el día 1 siguiente
+  // puede estar a 28-31 días, y con el desplazamiento a martes se saldría de la
+  // ventana de 30 días → decideNextRetry lo cancelaría, justo lo que queremos
+  // evitar. Por eso R1 se clampa a +27d (deja margen para el salto de hasta 3
+  // días de toBusinessDay). R2 sí puede caer fuera y cancelar: ya se dio el tiro
+  // principal.
+  if (info.kind === "limit_exceeded") {
+    const tope = addDays(anchor, 27);
+    const monthStart = firstOfNextMonth(anchor);
+    const r1 = monthStart.getTime() <= tope.getTime() ? monthStart : tope;
+    return n === 1 ? r1 : addDays(r1, 5);
+  }
 
   // Calendario base por número de reintento (días desde el ancla).
   const baseDays: Record<number, number> = { 1: 2, 2: 5, 3: 10, 4: 14 };
