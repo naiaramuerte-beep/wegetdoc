@@ -15,10 +15,7 @@ export type EventName =
   | "3ds_started"
   | "payment_success"
   | "payment_failed"
-  | "pay_canceled"
-  // Server refused a second signup charge because this account already paid
-  // minutes ago. Not a failure — the buyer keeps their file and their money.
-  | "payment_duplicate_blocked";
+  | "pay_canceled";
 
 export type EventParams = Record<string, string | number | undefined>;
 

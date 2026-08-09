@@ -335,8 +335,6 @@ function SipayCheckoutForm({
   const { t, lang } = useLanguage();
   const s = SIPAY_STRINGS[lang] ?? SIPAY_STRINGS.en;
   const fpLang = fastpayLang(lang);
-  // Alta amount comes from the server, same value it will actually charge.
-  const { introCents, introPrice } = usePricing();
   const sipayConfigQ = trpc.subscription.sipayConfig.useQuery();
   const initMut = trpc.subscription.sipayCheckoutInit.useMutation();
   const [scriptReady, setScriptReady] = useState(false);
@@ -513,16 +511,8 @@ function SipayCheckoutForm({
     setAuthError(null);
     const cardGc = getStoredGclid();
     initMut
-      .mutateAsync({ fastpayRequestId: fpId, amountCents: introCents, gclid: cardGc?.id, gclidType: cardGc?.type, lang })
+      .mutateAsync({ fastpayRequestId: fpId, amountCents: 50, gclid: cardGc?.id, gclidType: cardGc?.type, lang })
       .then((res) => {
-        if ((res as { duplicate?: boolean }).duplicate) {
-          // Server refused to start a second checkout because this account
-          // already paid its signup minutes ago (double-tap / back button).
-          // Not an error — send them to their file instead of to 3DS again.
-          trackEvent("payment_duplicate_blocked", { method: "card" });
-          window.location.href = `/payment/success?txn=${encodeURIComponent(res.order || "")}&provider=sipay`;
-          return;
-        }
         if (res.redirectUrl) {
           // User is about to leave our domain for the bank's 3DS page
           // (Redsys via Sipay). Last reliable signal we can fire from
@@ -642,7 +632,7 @@ function SipayCheckoutForm({
                   </span>
                   <span className="text-sm font-semibold text-slate-900 truncate">{converter ? converter.label : t.paywall_your_doc}</span>
                 </span>
-                <span className="text-sm font-extrabold text-slate-900 flex-shrink-0">{converter ? converter.price : introPrice}</span>
+                <span className="text-sm font-extrabold text-slate-900 flex-shrink-0">{converter ? converter.price : "0,50 €"}</span>
               </div>
               {[
                 { icon: PenLine, label: t.paywall_feat_edit },
@@ -664,7 +654,7 @@ function SipayCheckoutForm({
             <div className="flex items-baseline justify-between pt-3 border-t" style={{ borderColor: "#e5e7eb" }}>
               <p className="text-sm font-semibold text-slate-700">{t.paywall_total_today}</p>
               <p className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                {converter ? converter.price : introPrice}
+                {converter ? converter.price : "0,50 €"}
               </p>
             </div>
           </div>
@@ -680,7 +670,7 @@ function SipayCheckoutForm({
                   PassKit JS API exists AND the buyer has at least one Apple
                   Pay-enabled card linked to the device. */}
               <ApplePayButton
-                amountCents={introCents}
+                amountCents={50}
                 onSuccess={(txn) => {
                   window.location.href = `/payment/success?txn=${encodeURIComponent(txn)}&provider=sipay-apay`;
                 }}
@@ -694,7 +684,7 @@ function SipayCheckoutForm({
               {GPAY_ENABLED && (
                 <GooglePayButton
                   sipayMerchantKey={sipayConfigQ.data.key}
-                  amountCents={introCents}
+                  amountCents={50}
                   onSuccess={(txn) => {
                     window.location.href = `/payment/success?txn=${encodeURIComponent(txn)}&provider=sipay-gpay`;
                   }}
@@ -1045,11 +1035,6 @@ function ApplePayButton({
   if (!ready) return null;
 
   const handleClick = () => {
-    // First line of defence against double charges: an impatient second tap
-    // while the first sheet is still open must not open a second one. The
-    // server guard (openAltaGuard) is the authoritative check, but stopping
-    // it here means the buyer never sees two sheets in the first place.
-    if (submitting) return;
     // User pressed the Apple Pay button — real click on our DOM, no
     // proxy needed (unlike card, where the click lives in Sipay's iframe).
     trackEvent("pay_clicked", { method: "applepay" });
@@ -1236,11 +1221,6 @@ function GooglePayButton({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const hostRef = useRef<HTMLDivElement | null>(null);
-  // Google's button is created inside a useEffect, so its onClick closes over
-  // the `submitting` value from the render that mounted it and would always
-  // read `false`. A ref gives the handler the live value.
-  const submittingRef = useRef(false);
-  useEffect(() => { submittingRef.current = submitting; }, [submitting]);
   const chargeMut = trpc.subscription.sipayGpayCharge.useMutation();
 
   // 1) Load Google's pay.js once.
@@ -1357,9 +1337,6 @@ function GooglePayButton({
           buttonRadius: 12,
           buttonSizeMode: "fill",
           onClick: async () => {
-            // Google renders this button itself, so React's disabled state
-            // does not apply to it — the double-tap guard has to be explicit.
-            if (submittingRef.current) return;
             // User pressed Google's standardized GPay button — real
             // click on our DOM (the button is OURS even though Google
             // creates it; it's not inside a cross-origin iframe).
