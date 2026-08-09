@@ -40,11 +40,47 @@ const [[base]] = await db.query(
             AND (TIME(createdAt) >= TIME(DATE_SUB(UTC_TIMESTAMP(), INTERVAL ${MIN} MINUTE))
               OR TIME(createdAt) <= TIME(UTC_TIMESTAMP()))))`);
 const esperado = base.dias ? base.n / base.dias : 0;
+// Intentos de checkout en la ventana. ESTE es el dato que decide si hay
+// bloqueo: sin intentos no puede haber nada bloqueado, por muchas altas que
+// falten. La primera versión de este script gritaba "POSIBLE BLOQUEO TOTAL"
+// un domingo por la mañana en el que sencillamente nadie había pulsado pagar.
+const [[intentos]] = await db.query(
+  `SELECT COUNT(*) n FROM webhook_events
+    WHERE eventType IN ('gpay_init_started','apay_init_started','fastpay_init_started')
+      AND ${VENTANA}`);
+
+// Y la referencia se toma del MISMO día de la semana, no de los 7 anteriores:
+// un domingo comparado contra una media que incluye el viernes siempre parece
+// una catástrofe. En este sitio el viernes hace ×17 lo que hace el domingo.
+const [[mismoDia]] = await db.query(
+  `SELECT COUNT(*) n, COUNT(DISTINCT DATE(CONVERT_TZ(createdAt,'+00:00','Europe/Madrid'))) dias
+     FROM charges
+    WHERE provider<>'mit' AND status='ok'
+      AND createdAt >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 28 DAY)
+      AND createdAt < DATE_SUB(UTC_TIMESTAMP(), INTERVAL ${MIN} MINUTE)
+      AND DAYOFWEEK(CONVERT_TZ(createdAt,'+00:00','Europe/Madrid'))
+          = DAYOFWEEK(CONVERT_TZ(UTC_TIMESTAMP(),'+00:00','Europe/Madrid'))
+      AND HOUR(CONVERT_TZ(createdAt,'+00:00','Europe/Madrid'))
+          = HOUR(CONVERT_TZ(UTC_TIMESTAMP(),'+00:00','Europe/Madrid'))`);
+const esperadoDia = mismoDia.dias ? mismoDia.n / mismoDia.dias : 0;
+
 console.log(`  altas en la ventana:      ${act.n}  (${act.u} usuarios distintos, ${eur(act.cents)})`);
-console.log(`  esperado en esta franja:  ${esperado.toFixed(1)}  (media de ${base.dias} días previos)`);
-if (esperado > 0 && act.n === 0) console.log(`  🚨 CERO altas donde se esperaban ~${esperado.toFixed(1)} — POSIBLE BLOQUEO TOTAL, plantear rollback`);
-else if (esperado >= 3 && act.n < esperado * 0.4) console.log(`  ⚠️ caída fuerte (${((100 * act.n) / esperado).toFixed(0)}% de lo normal) — vigilar de cerca`);
-else console.log(`  ✅ dentro de lo normal`);
+console.log(`  intentos de pago:         ${intentos.n}`);
+console.log(`  esperado, mismo día/hora: ${esperadoDia.toFixed(1)}  (media de ${mismoDia.dias} ${mismoDia.dias === 1 ? "semana" : "semanas"})`);
+console.log(`  esperado, franja 7 días:  ${esperado.toFixed(1)}  (contaminado por días fuertes — solo de contexto)`);
+
+if (intentos.n === 0) {
+  console.log(`  ℹ️  sin intentos de pago en la ventana → esto es TRÁFICO, no bloqueo.`);
+  console.log(`      El candado no puede bloquear lo que nadie intenta. No es motivo de rollback.`);
+} else if (act.n === 0) {
+  console.log(`  🚨 ${intentos.n} intentos y CERO altas — mira los códigos abajo antes de nada.`);
+  console.log(`      Si son 190/authorization_error es el problema conocido de los wallets, NO el candado.`);
+  console.log(`      Si son otra cosa, o si hay bloqueos inesperados en el punto 4 → rollback.`);
+} else if (esperadoDia >= 3 && act.n < esperadoDia * 0.4) {
+  console.log(`  ⚠️ caída fuerte (${((100 * act.n) / esperadoDia).toFixed(0)}% de lo normal para este día) — vigilar`);
+} else {
+  console.log(`  ✅ dentro de lo normal`);
+}
 
 const [porMetodo] = await db.query(
   `SELECT provider, COUNT(*) n FROM charges
