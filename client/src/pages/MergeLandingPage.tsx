@@ -289,8 +289,8 @@ export default function MergeLandingPage() {
         onChange={handleFileInput}
       />
 
-      <section className="relative pt-16 md:pt-[72px] pb-20 overflow-hidden flex-1">
-        <div className="container mx-auto max-w-5xl px-4 py-10 md:py-20">
+      <section className="relative pt-6 md:pt-10 pb-20 overflow-hidden flex-1">
+        <div className="container mx-auto max-w-5xl px-4 pt-0 pb-10 md:pb-20">
           <p className="text-center text-[12px] font-semibold tracking-[0.18em] uppercase mb-3" style={{ color: ACCENT }}>
             {eyebrow}
           </p>
