@@ -745,7 +745,11 @@ export default function Home({ overrides }: { overrides?: HomeOverrides } = {}) 
             </p>
           </div>
 
-          <div className="flex flex-col gap-12">
+          {/* max-w-5xl: same content width as "how it works", features and
+              testimonials. Without it this grid used the full 1280px container
+              and stuck out ~96px on each side compared to every other block on
+              the page — the section read as misaligned on desktop. */}
+          <div className="flex flex-col gap-12 max-w-5xl mx-auto">
             {TOOL_CATEGORIES.map((cat) => (
               <div key={cat.titleKey}>
                 <div className="flex items-center gap-4 mb-5 flex-wrap">
