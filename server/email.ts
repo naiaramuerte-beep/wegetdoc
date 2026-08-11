@@ -879,28 +879,18 @@ export async function sendTrialWelcomeEmail({
           <p style="margin:0 0 12px;color:${ink};font-size:13px;font-weight:700;">
             ${termsBlock.title}
           </p>
-          <!-- El importe del primer cobro, en grande y con la fecha al lado.
-               Un cliente que ve esto sin buscarlo no se sorprende cuando le
-               llega el cargo, que es la mitad de las reclamaciones. -->
-          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 14px;">
-            <tr><td style="background:#ffffff;border:2px solid ${accent};border-radius:10px;padding:14px 16px;">
-              <p style="margin:0 0 2px;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.04em;font-weight:700;">
-                ${termsBlock.chargeLabel}
-              </p>
-              <p style="margin:0;color:${ink};font-size:22px;font-weight:800;line-height:1.25;">
-                ${termsBlock.chargeAmount}
-              </p>
-              <p style="margin:2px 0 0;color:${ink};font-size:14px;font-weight:700;">
-                ${termsBlock.chargeWhen}
-              </p>
-              <p style="margin:6px 0 0;color:#475569;font-size:12px;line-height:1.5;">
-                ${termsBlock.chargeAfter}
-              </p>
-            </td></tr>
-          </table>
           <ul style="margin:0;padding-left:18px;">
             ${termsBlock.lines.map((l) => `<li style="margin:5px 0;color:#475569;font-size:12px;line-height:1.6;">${l}</li>`).join("")}
           </ul>
+          <!-- Lo último del correo: el cargo que viene. Una línea, sin caja ni
+               tipografía grande — basta con que el importe y la fecha vayan en
+               negrita y no haya nada detrás que los tape. -->
+          <p style="margin:14px 0 0;padding-left:10px;border-left:3px solid ${accent};color:#475569;font-size:12px;line-height:1.6;">
+            ${termsBlock.chargeLabel}
+            <b style="color:${ink};">${termsBlock.chargeAmount}</b> ·
+            <b style="color:${ink};">${termsBlock.chargeWhen}</b><br />
+            ${termsBlock.chargeAfter}
+          </p>
           <p style="margin:10px 0 0;color:${muted};font-size:9px;">
             © 2026 ${brandName} — <a href="${cancelUrl}" style="color:${muted};text-decoration:underline;">${s.manageBtn}</a>
           </p>
