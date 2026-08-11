@@ -123,7 +123,7 @@ function ConversionPanel({ q }: { q: { data?: any; isLoading: boolean; error?: a
                 <tr key={i} className="border-b border-white/5">
                   <td className="py-1.5 px-2 tabular-nums">{r.week}</td>
                   <td className="py-1.5 px-2">
-                    <span className={`px-1.5 py-0.5 rounded text-xs ${r.cohort === "7d" ? "bg-blue-500/20 text-blue-300" : "bg-white/10 text-white/70"}`}>{r.cohort}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-xs ${r.cohort === "24h" ? "bg-red-500/20 text-red-300" : r.cohort === "7d" ? "bg-blue-500/20 text-blue-300" : "bg-white/10 text-white/70"}`}>{r.cohort}</span>
                     {r.inProgress && <span className="ml-1 text-[10px] px-1 py-0.5 rounded bg-emerald-500/15 text-emerald-300">en curso</span>}
                   </td>
                   <td className="py-1.5 px-2 tabular-nums">{r.altas}</td>
@@ -140,7 +140,7 @@ function ConversionPanel({ q }: { q: { data?: any; isLoading: boolean; error?: a
             </tbody>
           </table>
         </div>
-        <p className="text-xs text-white/40 mt-1">48h y 7d son cohortes distintas (no se mezclan). "En curso" = aún quedan subs sin vencer el trial → la conversión subirá.</p>
+        <p className="text-xs text-white/40 mt-1">24h, 48h y 7d son cohortes distintas (no se mezclan). "En curso" = aún quedan subs sin vencer el trial → la conversión subirá.</p>
       </section>
 
       {/* BLOQUE 3 */}
@@ -1013,7 +1013,7 @@ export default function Admin() {
                     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
                       {[
                         { label: "Pagando recurrente",  value: (billing as any).payingSubscriptions ?? 0,  color: "#10b981", icon: <CreditCard size={18} />, sub: "Plan monthly/annual" },
-                        { label: "En trial (48h)",      value: billing.trialingSubscriptions,  color: "#E63946", icon: <Zap size={18} />, sub: "Convertirán en 48h" },
+                        { label: "En trial (24h)",      value: billing.trialingSubscriptions,  color: "#E63946", icon: <Zap size={18} />, sub: "Convertirán en 24h" },
                         { label: "Cobro fallido",       value: (billing as any).pastDueSubscriptions ?? 0, color: "#ef4444", icon: <RotateCcw size={18} />, sub: "Pendiente reintento" },
                         { label: "Por cancelar",        value: billing.subsAboutToCancel,      color: "#f59e0b", icon: <AlertTriangle size={18} />, sub: "Cancel at period end" },
                         { label: "Canceladas total",    value: billing.canceledSubscriptions,  color: "#ef4444", icon: <UserX size={18} /> },
@@ -2850,7 +2850,7 @@ export default function Admin() {
                     {[
                       { key: "site_name", label: "Nombre del sitio", placeholder: brandName },
                       { key: "support_email", label: "Email de soporte", placeholder: "soporte@editorpdf.net" },
-                      { key: "trial_price_eur", label: "Precio prueba 48h (€)", placeholder: "0.50" },
+                      { key: "trial_price_eur", label: "Precio prueba 24h (€)", placeholder: "0.50" },
                       { key: "promo_banner_text", label: "Texto del banner promocional", placeholder: "¡Oferta especial! 20% de descuento…" },
                       { key: "promo_banner_level", label: "Nivel del banner (info / warning / success)", placeholder: "info" },
                     ].map((setting) => {
