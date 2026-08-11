@@ -24,15 +24,24 @@ describe("buildTermsBlock — condiciones del email post-pago", () => {
       const b = buildTermsBlock(lang, VARS);
       const texto = b.lines.join(" ");
 
+      const todo = [b.title, b.chargeLabel, b.chargeAmount, b.chargeWhen, b.chargeAfter, texto].join(" ");
+
       it("no deja ningún placeholder sin rellenar", () => {
-        expect(texto).not.toMatch(/\{(date|price|intro|cancel|terms)\}/);
-        expect(b.title).not.toMatch(/\{/);
+        expect(todo).not.toMatch(/\{(date|price|intro|cancel|terms)\}/);
       });
-      it("dice la fecha y la hora exactas del primer cobro", () => {
-        expect(texto).toContain(VARS.date);
+      it("saca el importe del primer cobro a su propio campo, no a una viñeta", () => {
+        // El recuadro destacado del email se pinta con estos tres campos: si
+        // alguno llega vacío, el cliente ve el correo sin la cifra que va a
+        // pagar — que es justo lo que el bloque existe para evitar.
+        expect(b.chargeAmount).toBe(VARS.price);
+        expect(b.chargeWhen).toBe(VARS.date);
+        expect(b.chargeLabel.trim().length).toBeGreaterThan(3);
       });
-      it("dice el importe del primer cobro y el del alta", () => {
-        expect(texto).toContain(VARS.price);
+      it("dice qué pasa después del primer cobro, con el importe mensual", () => {
+        expect(b.chargeAfter).toContain(VARS.price);
+        expect(b.chargeAfter.length).toBeGreaterThan(10);
+      });
+      it("dice el importe ya pagado por la prueba", () => {
         expect(texto).toContain(VARS.intro);
       });
       it("enlaza la cancelación y los términos, con texto de enlace visible", () => {
@@ -43,20 +52,20 @@ describe("buildTermsBlock — condiciones del email post-pago", () => {
           expect(m[1].trim().length).toBeGreaterThan(2);
         }
       });
-      it("tiene título y cuatro condiciones", () => {
+      it("tiene título y tres condiciones bajo el recuadro", () => {
         expect(b.title.length).toBeGreaterThan(5);
-        expect(b.lines).toHaveLength(4);
+        expect(b.lines).toHaveLength(3);
       });
       it("no ha quedado ninguna mención al plazo viejo de 7 días", () => {
-        expect(texto).not.toMatch(/7\s*(días|dias|days|jours|Tage|giorni|dagen|dni|дней|днів|zile|天)/i);
-        expect(texto).not.toMatch(/7-(day|Tage|dnio|денн)/i);
+        expect(todo).not.toMatch(/7\s*(días|dias|days|jours|Tage|giorni|dagen|dni|дней|днів|zile|天)/i);
+        expect(todo).not.toMatch(/7-(day|Tage|dnio|денн)/i);
       });
     });
   }
 
   it("cae al español ante un idioma desconocido, sin romperse", () => {
     const b = buildTermsBlock("xx", VARS);
-    expect(b.lines).toHaveLength(4);
+    expect(b.lines).toHaveLength(3);
     expect(b.title).toBe(buildTermsBlock("es", VARS).title);
   });
 });

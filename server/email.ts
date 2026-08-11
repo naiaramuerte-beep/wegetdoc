@@ -108,7 +108,14 @@ type WelcomeStrings = {
    * date and time), how to stop it, and where the full terms are. A customer
    * who can read this has no reason to ask their bank instead of us.
    */
-  terms: (v: TermsVars) => { title: string; lines: string[] };
+  terms: (v: TermsVars) => {
+    title: string;
+    /** Small label above the amount, e.g. "Se te cobrará". */
+    chargeLabel: string;
+    /** What happens after the first charge. */
+    chargeAfter: string;
+    lines: string[];
+  };
   /** Anchor text for the terms link inside the conditions block. */
   termsLabel: string;
   manageBtn: string;
@@ -152,9 +159,10 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     manageBtn: "Gestionar suscripción",
     terms: () => ({
       title: "Condiciones de tu suscripción",
+      chargeLabel: "Se te cobrará",
+      chargeAfter: "Después, {price} al mes hasta que canceles.",
       lines: [
         "Has contratado una <b>prueba de 24 horas por {intro}</b>, ya abonados.",
-        "<b>Primer cobro de {price}: el {date}</b> (hora peninsular española). A partir de ahí, {price} al mes hasta que canceles.",
         "<b>Cancela cuando quieras</b> desde tu cuenta: {cancel}. Si cancelas antes de esa fecha y hora, no se te cobra nada más.",
         "Condiciones completas: {terms}.",
       ],
@@ -197,9 +205,10 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     manageBtn: "Manage subscription",
     terms: () => ({
       title: "Your subscription terms",
+      chargeLabel: "You will be charged",
+      chargeAfter: "After that, {price} per month until you cancel.",
       lines: [
         "You purchased a <b>24-hour trial for {intro}</b>, already paid.",
-        "<b>First charge of {price}: on {date}</b> (Madrid time). After that, {price} per month until you cancel.",
         "<b>Cancel any time</b> from your account: {cancel}. Cancel before that date and time and you won't be charged again.",
         "Full terms: {terms}.",
       ],
@@ -242,9 +251,10 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     manageBtn: "Gérer l'abonnement",
     terms: () => ({
       title: "Conditions de votre abonnement",
+      chargeLabel: "Vous serez prélevé de",
+      chargeAfter: "Ensuite, {price} par mois jusqu'à votre annulation.",
       lines: [
         "Vous avez souscrit un <b>essai de 24 heures pour {intro}</b>, déjà réglés.",
-        "<b>Premier prélèvement de {price} : le {date}</b> (heure de Madrid). Ensuite, {price} par mois jusqu'à votre annulation.",
         "<b>Annulez à tout moment</b> depuis votre compte : {cancel}. Si vous annulez avant cette date et cette heure, rien ne vous sera facturé.",
         "Conditions complètes : {terms}.",
       ],
@@ -287,9 +297,10 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     manageBtn: "Abonnement verwalten",
     terms: () => ({
       title: "Bedingungen deines Abonnements",
+      chargeLabel: "Dir werden berechnet",
+      chargeAfter: "Danach {price} pro Monat, bis du kündigst.",
       lines: [
         "Du hast eine <b>24-Stunden-Testphase für {intro}</b> gebucht, bereits bezahlt.",
-        "<b>Erste Abbuchung von {price}: am {date}</b> (Madrider Zeit). Danach {price} pro Monat, bis du kündigst.",
         "<b>Jederzeit kündbar</b> in deinem Konto: {cancel}. Kündigst du vor diesem Zeitpunkt, wird nichts weiter abgebucht.",
         "Vollständige Bedingungen: {terms}.",
       ],
@@ -332,9 +343,10 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     manageBtn: "Gerir subscrição",
     terms: () => ({
       title: "Condições da tua subscrição",
+      chargeLabel: "Vais ser cobrado",
+      chargeAfter: "Depois, {price} por mês até cancelares.",
       lines: [
         "Contrataste um <b>teste de 24 horas por {intro}</b>, já pagos.",
-        "<b>Primeira cobrança de {price}: a {date}</b> (hora de Madrid). A partir daí, {price} por mês até cancelares.",
         "<b>Cancela quando quiseres</b> na tua conta: {cancel}. Se cancelares antes dessa data e hora, não te cobramos mais nada.",
         "Condições completas: {terms}.",
       ],
@@ -377,9 +389,10 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     manageBtn: "Gestisci abbonamento",
     terms: () => ({
       title: "Condizioni del tuo abbonamento",
+      chargeLabel: "Ti verranno addebitati",
+      chargeAfter: "Poi {price} al mese fino all'annullamento.",
       lines: [
         "Hai attivato una <b>prova di 24 ore per {intro}</b>, già pagati.",
-        "<b>Primo addebito di {price}: il {date}</b> (ora di Madrid). Da lì in poi, {price} al mese fino all'annullamento.",
         "<b>Annulla quando vuoi</b> dal tuo account: {cancel}. Se annulli prima di quella data e ora, non ti verrà addebitato altro.",
         "Condizioni complete: {terms}.",
       ],
@@ -422,9 +435,10 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     manageBtn: "Abonnement beheren",
     terms: () => ({
       title: "Voorwaarden van je abonnement",
+      chargeLabel: "Er wordt afgeschreven",
+      chargeAfter: "Daarna {price} per maand totdat je opzegt.",
       lines: [
         "Je hebt een <b>proefperiode van 24 uur voor {intro}</b> afgesloten, al betaald.",
-        "<b>Eerste afschrijving van {price}: op {date}</b> (tijd in Madrid). Daarna {price} per maand totdat je opzegt.",
         "<b>Zeg op wanneer je wilt</b> via je account: {cancel}. Zeg je op vóór dat moment, dan wordt er niets meer afgeschreven.",
         "Volledige voorwaarden: {terms}.",
       ],
@@ -467,9 +481,10 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     manageBtn: "Zarządzaj subskrypcją",
     terms: () => ({
       title: "Warunki Twojej subskrypcji",
+      chargeLabel: "Zostanie pobrane",
+      chargeAfter: "Następnie {price} miesięcznie, dopóki nie anulujesz.",
       lines: [
         "Wykupiłeś <b>próbę 24-godzinną za {intro}</b>, już opłaconą.",
-        "<b>Pierwsze obciążenie {price}: {date}</b> (czas madrycki). Następnie {price} miesięcznie, dopóki nie anulujesz.",
         "<b>Anuluj w dowolnym momencie</b> na swoim koncie: {cancel}. Jeśli anulujesz przed tą datą i godziną, nic więcej nie pobierzemy.",
         "Pełne warunki: {terms}.",
       ],
@@ -512,9 +527,10 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     manageBtn: "Управление подпиской",
     terms: () => ({
       title: "Условия вашей подписки",
+      chargeLabel: "С вас спишется",
+      chargeAfter: "Далее — {price} в месяц до отмены.",
       lines: [
         "Вы оформили <b>пробный период на 24 часа за {intro}</b>, уже оплачено.",
-        "<b>Первое списание {price}: {date}</b> (мадридское время). Далее — {price} в месяц до отмены.",
         "<b>Отменить можно в любой момент</b> в личном кабинете: {cancel}. Если отмените до этой даты и времени, больше ничего не спишется.",
         "Полные условия: {terms}.",
       ],
@@ -557,9 +573,10 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     manageBtn: "Керування підпискою",
     terms: () => ({
       title: "Умови вашої підписки",
+      chargeLabel: "З вас спишеться",
+      chargeAfter: "Далі — {price} на місяць до скасування.",
       lines: [
         "Ви оформили <b>пробний період на 24 години за {intro}</b>, уже сплачено.",
-        "<b>Перше списання {price}: {date}</b> (за мадридським часом). Далі — {price} на місяць до скасування.",
         "<b>Скасувати можна будь-коли</b> в особистому кабінеті: {cancel}. Якщо скасуєте до цієї дати й часу, більше нічого не спишеться.",
         "Повні умови: {terms}.",
       ],
@@ -602,9 +619,10 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     manageBtn: "Gestionează abonamentul",
     terms: () => ({
       title: "Condițiile abonamentului tău",
+      chargeLabel: "Ți se va percepe",
+      chargeAfter: "După aceea, {price} pe lună până când anulezi.",
       lines: [
         "Ai achiziționat o <b>probă de 24 de ore pentru {intro}</b>, deja plătiți.",
-        "<b>Prima taxare de {price}: pe {date}</b> (ora Madridului). După aceea, {price} pe lună până când anulezi.",
         "<b>Anulează oricând</b> din contul tău: {cancel}. Dacă anulezi înainte de acea dată și oră, nu ți se mai percepe nimic.",
         "Condiții complete: {terms}.",
       ],
@@ -647,9 +665,10 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     manageBtn: "管理订阅",
     terms: () => ({
       title: "您的订阅条款",
+      chargeLabel: "将向您收取",
+      chargeAfter: "之后每月 {price}，直至您取消。",
       lines: [
         "您购买了 <b>24 小时试用，费用 {intro}</b>，已支付。",
-        "<b>首次扣款 {price}：{date}</b>（马德里时间）。之后每月 {price}，直至您取消。",
         "<b>随时可取消</b>，在您的账户中操作：{cancel}。在该日期和时间之前取消，将不再扣款。",
         "完整条款：{terms}。",
       ],
@@ -672,13 +691,29 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
 export function buildTermsBlock(
   lang: string,
   vars: TermsVars,
-): { title: string; lines: string[] } {
+): {
+  title: string;
+  chargeLabel: string;
+  chargeAmount: string;
+  chargeWhen: string;
+  chargeAfter: string;
+  lines: string[];
+} {
   const s = WELCOME_STRINGS[WELCOME_STRINGS[lang] ? lang : "es"];
   const link = (href: string, label: string) =>
     `<a href="${href}" style="color:#E63946;text-decoration:underline;">${label}</a>`;
   const raw = s.terms(vars);
+  const fill = (l: string) => l
+    .replace(/\{date\}/g, vars.date)
+    .replace(/\{price\}/g, vars.price)
+    .replace(/\{intro\}/g, vars.intro);
   return {
     title: raw.title,
+    chargeLabel: raw.chargeLabel,
+    // El importe y la fecha, sin marcado: van dentro del recuadro destacado.
+    chargeAmount: vars.price,
+    chargeWhen: vars.date,
+    chargeAfter: fill(raw.chargeAfter),
     lines: raw.lines.map((l) => l
       .replace(/\{date\}/g, `<b>${vars.date}</b>`)
       .replace(/\{price\}/g, vars.price)
@@ -841,9 +876,28 @@ export async function sendTrialWelcomeEmail({
 
         <!-- Subscription conditions: legible, not buried -->
         <tr><td style="background:#fafafa;padding:22px 40px;border-top:1px solid #e2e8f0;">
-          <p style="margin:0 0 10px;color:${ink};font-size:13px;font-weight:700;">
+          <p style="margin:0 0 12px;color:${ink};font-size:13px;font-weight:700;">
             ${termsBlock.title}
           </p>
+          <!-- El importe del primer cobro, en grande y con la fecha al lado.
+               Un cliente que ve esto sin buscarlo no se sorprende cuando le
+               llega el cargo, que es la mitad de las reclamaciones. -->
+          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 14px;">
+            <tr><td style="background:#ffffff;border:2px solid ${accent};border-radius:10px;padding:14px 16px;">
+              <p style="margin:0 0 2px;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.04em;font-weight:700;">
+                ${termsBlock.chargeLabel}
+              </p>
+              <p style="margin:0;color:${ink};font-size:22px;font-weight:800;line-height:1.25;">
+                ${termsBlock.chargeAmount}
+              </p>
+              <p style="margin:2px 0 0;color:${ink};font-size:14px;font-weight:700;">
+                ${termsBlock.chargeWhen}
+              </p>
+              <p style="margin:6px 0 0;color:#475569;font-size:12px;line-height:1.5;">
+                ${termsBlock.chargeAfter}
+              </p>
+            </td></tr>
+          </table>
           <ul style="margin:0;padding-left:18px;">
             ${termsBlock.lines.map((l) => `<li style="margin:5px 0;color:#475569;font-size:12px;line-height:1.6;">${l}</li>`).join("")}
           </ul>
