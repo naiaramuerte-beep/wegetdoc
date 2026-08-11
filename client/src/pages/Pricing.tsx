@@ -38,30 +38,26 @@ export default function Pricing() {
     { name: t.pricing_feature_protect ?? "Protect documents", trial: true, monthly: true },
   ];
 
+  // Las cuatro preguntas que de verdad decide el comprador antes de pagar:
+  // cuándo se le cobra, cómo lo para, si puede recuperar el dinero y qué se
+  // lleva. En ese orden — la de cobro primero porque es la que genera las
+  // reclamaciones cuando nadie la contesta a tiempo.
   const pricingFaqs = [
     {
-      question: t.pricing_faq_q1 ?? "Can I try all features during the trial?",
-      answer: t.pricing_faq_a1 ?? "During the 48-hour trial you have access to basic editing features. For unlimited access, you'll need the monthly plan.",
+      question: t.pricing_faq_q2 ?? "When am I charged?",
+      answer: withPrice(t.pricing_faq_a2 ?? "Exactly 24 hours after your purchase, {price} is charged and the subscription becomes monthly."),
     },
     {
-      question: t.pricing_faq_q2 ?? "What happens after the 48-hour trial?",
-      answer: t.pricing_faq_a2 ?? "After the trial, your plan automatically renews to the monthly plan. You can cancel anytime before the trial ends.",
+      question: t.pricing_faq_q4 ?? "How do I cancel?",
+      answer: t.pricing_faq_a4 ?? "Sign in, open the Billing section and press Cancel subscription. Two clicks, no penalty.",
     },
     {
-      question: t.pricing_faq_q3 ?? "Is there any commitment with the monthly subscription?",
-      answer: t.pricing_faq_a3 ?? "No long-term commitment. Cancel your monthly subscription anytime and you'll retain access until the end of the billing period.",
+      question: t.pricing_faq_q5 ?? "Can I get a refund?",
+      answer: t.pricing_faq_a5 ?? "Yes. You have 14 calendar days from purchase to withdraw and get your money back.",
     },
     {
-      question: t.pricing_faq_q4 ?? "Can I cancel my subscription at any time?",
-      answer: t.pricing_faq_a4 ?? "Yes, you can cancel anytime from your account settings. No cancellation penalties.",
-    },
-    {
-      question: t.pricing_faq_q5 ?? "Can I request a refund for an unused subscription?",
-      answer: t.pricing_faq_a5 ?? "We evaluate refund requests case by case. Contact our support team and we'll do our best to help.",
-    },
-    {
-      question: t.faq_q7,
-      answer: t.faq_a7,
+      question: t.pricing_faq_q1 ?? "What does the trial include?",
+      answer: t.pricing_faq_a1 ?? "Full access to every tool for 24 hours, including 2 document downloads.",
     },
   ];
 
@@ -97,6 +93,24 @@ export default function Pricing() {
           >
             {t.pricing_subtitle}
           </p>
+
+          {/* Resumen de la oferta en una línea, antes de cualquier tabla: lo que
+              se paga hoy, lo que se paga después y cómo pararlo. Es lo que el
+              comprador viene a buscar, y verlo aquí evita la sorpresa (y la
+              reclamación) del primer cargo mensual. */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm">
+            <span
+              className="inline-flex items-center rounded-full px-4 py-2 font-bold text-white"
+              style={{ backgroundColor: "#E63946" }}
+            >
+              {t.pricing_summary_intro}
+            </span>
+            <span className="font-semibold" style={{ color: "#0f172a" }}>
+              {withPrice(t.pricing_summary_then)}
+            </span>
+            <span style={{ color: "#64748b" }}>·</span>
+            <span style={{ color: "#64748b" }}>{t.pricing_summary_cancel}</span>
+          </div>
         </div>
       </section>
 

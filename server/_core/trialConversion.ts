@@ -23,7 +23,8 @@ export type ChargeRow = {
 export type SubRow = {
   userId: number;
   email: string | null;
-  trialDays: number | null; // null|2 = cohorte 48h; 7 = cohorte 7d
+  trialDays: number | null;  // LEGACY: null|2 = cohorte 48h; 7 = cohorte 7d
+  trialHours: number | null; // 24 = cohorte 24h (altas desde el 11-ago-2026)
   cancelAtPeriodEnd: boolean;
   status: string;
   declineCategory: string | null;
@@ -33,8 +34,26 @@ export type SubRow = {
   mitOk: number; // nº de cobros MIT OK del usuario (>0 = convirtió a pago)
 };
 
-export const cohortOf = (trialDays: number | null): "48h" | "7d" | "otro" =>
-  trialDays == null || trialDays === 2 ? "48h" : trialDays === 7 ? "7d" : "otro";
+/** Etiqueta de cohorte de una sub.
+ *
+ *  `trialHours` manda cuando está: es lo que escriben las altas desde que la
+ *  prueba se mide en horas (24h). Solo si viene vacío se cae a `trialDays`, que
+ *  es lo único que tienen las subs antiguas — y ahí null significa 48h, porque
+ *  esa cohorte se creó antes de que existiera la columna. Mezclar los dos
+ *  campos en el orden contrario metería todas las altas nuevas en "48h".
+ */
+export const cohortOf = (
+  trialDays: number | null,
+  trialHours: number | null = null,
+): "24h" | "48h" | "7d" | "otro" => {
+  if (trialHours != null) {
+    if (trialHours === 24) return "24h";
+    if (trialHours === 48) return "48h";
+    if (trialHours === 168) return "7d";
+    return "otro";
+  }
+  return trialDays == null || trialDays === 2 ? "48h" : trialDays === 7 ? "7d" : "otro";
+};
 
 // ── Ciclos de renovación a partir de los cargos MIT ──────────────────────────
 export type Cycle = { userId: number; amountCents: number; firstAtMs: number; firstOk: boolean; cycleOk: boolean };
@@ -105,7 +124,7 @@ export function block2(subs: SubRow[], opts: { nowMs: number }): CohortRow[] {
   const real = subs.filter((s) => !isTestEmail(s.email));
   const groups = new Map<string, SubRow[]>();
   for (const s of real) {
-    const key = `${s.altaWeek}|${cohortOf(s.trialDays)}`;
+    const key = `${s.altaWeek}|${cohortOf(s.trialDays, s.trialHours)}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(s);
   }

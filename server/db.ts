@@ -21,7 +21,7 @@ import {
 import { ENV } from "./_core/env";
 import { dbConnectionConfig } from "./_core/dbConfig";
 import { DUNNING_LOCK_STALE_MS } from "./_core/dunning";
-import { clampTrialDays } from "../shared/trial";
+import { clampTrialHours, trialEndFrom } from "../shared/trial";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -48,7 +48,7 @@ export async function getTrialConversionRows() {
   const db = await getDb();
   if (!db) return { subs: [] as any[], charges: [] as any[] };
   const [subRows]: any = await db.execute(sql`
-    SELECT s.userId, u.email, s.trialDays, s.cancelAtPeriodEnd, s.status, s.declineCategory,
+    SELECT s.userId, u.email, s.trialDays, s.trialHours, s.cancelAtPeriodEnd, s.status, s.declineCategory,
       DATE_FORMAT(DATE_SUB(DATE(CONVERT_TZ(s.createdAt,'+00:00','+02:00')),
         INTERVAL WEEKDAY(CONVERT_TZ(s.createdAt,'+00:00','+02:00')) DAY), '%Y-%m-%d') AS altaWeek,
       UNIX_TIMESTAMP(s.createdAt)*1000 AS createdAtMs,
@@ -65,6 +65,7 @@ export async function getTrialConversionRows() {
   const subs = (subRows as any[]).map((r) => ({
     userId: Number(r.userId), email: r.email ?? null,
     trialDays: r.trialDays == null ? null : Number(r.trialDays),
+    trialHours: r.trialHours == null ? null : Number(r.trialHours),
     cancelAtPeriodEnd: !!Number(r.cancelAtPeriodEnd), status: String(r.status),
     declineCategory: r.declineCategory ?? null, altaWeek: String(r.altaWeek),
     createdAtMs: Number(r.createdAtMs), periodEndMs: r.periodEndMs == null ? null : Number(r.periodEndMs),
@@ -262,6 +263,8 @@ export async function upsertSubscription(data: {
   currentPeriodEnd?: Date;
   cancelAtPeriodEnd?: boolean;
   trialDays?: number;
+  /** Trial length in hours for this sub — the cohort tag (24 = post-2026-08-11). */
+  trialHours?: number;
   renewalAttempts?: number;
   nextRenewalAt?: Date | null;
   // Dunning v2
@@ -616,15 +619,18 @@ export async function getActiveMonthlyPrice(): Promise<{ eur: number; formatted:
 }
 
 /**
- * Trial length in DAYS before the first full monthly charge, read from
- * `site_settings.trial_days`. SINGLE SOURCE OF TRUTH — every alta path derives
+ * Trial length in HOURS before the first full monthly charge, read from
+ * `site_settings.trial_hours`. SINGLE SOURCE OF TRUTH — every alta path derives
  * `currentPeriodEnd` from this, so the trial can change without a deploy (like
- * the price). Default 7 (the new policy, up from 48h); clamped to [1,30] so a
- * bad setting can never nuke billing. Existing subs are untouched — this only
- * affects the offset applied when a NEW sub is created.
+ * the price). Default 24 (the policy since 2026-08-11, down from 7 days);
+ * clamped to [1,720] so a bad setting can never nuke billing.
+ *
+ * NOTHING RETROACTIVE. This is only the offset applied when a NEW sub is
+ * created: subs already on 7 days keep their stored `currentPeriodEnd` and are
+ * never recomputed.
  */
-export async function getTrialDays(): Promise<number> {
-  return clampTrialDays(await getSiteSetting("trial_days"));
+export async function getTrialHours(): Promise<number> {
+  return clampTrialHours(await getSiteSetting("trial_hours"));
 }
 
 // ─── Contact Messages ─────────────────────────────────────────
@@ -1857,8 +1863,8 @@ export async function createFakeTrialSub(userId: number) {
     return { success: false, error: "User already has an active sub" };
   }
   const now = new Date();
-  const trialDays = await getTrialDays();
-  const trialEnd = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000);
+  const trialHours = await getTrialHours();
+  const trialEnd = trialEndFrom(now, trialHours);
   const syntheticSubId = `fake_sub_qa_${userId}_${Date.now()}`;
   await upsertSubscription({
     userId,
@@ -1868,7 +1874,7 @@ export async function createFakeTrialSub(userId: number) {
     status: "active",
     currentPeriodStart: now,
     currentPeriodEnd: trialEnd,
-    trialDays,
+    trialHours,
     cancelAtPeriodEnd: false,
   });
   await markDocumentsPaid(userId);

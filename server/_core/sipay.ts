@@ -21,6 +21,7 @@
  * iterate on the format in one pass.
  */
 
+import { trialEndFrom } from "@shared/trial";
 import crypto from "crypto";
 import { ENV } from "./env";
 
@@ -207,7 +208,7 @@ export async function finalizeFastpayPayment(opts: {
     findUserIdFromPendingEvent,
     findGclidFromPendingEvent,
     findLangFromPendingEvent,
-    getTrialDays,
+    getTrialHours,
   } = await import("../db");
 
   const result = await confirmPayment(requestId);
@@ -278,8 +279,8 @@ export async function finalizeFastpayPayment(opts: {
   }
 
   const now = new Date();
-  const trialDays = await getTrialDays();
-  const periodEnd = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000);
+  const trialHours = await getTrialHours();
+  const periodEnd = trialEndFrom(now, trialHours);
 
   await upsertSubscription({
     userId: customUserId,
@@ -292,7 +293,7 @@ export async function finalizeFastpayPayment(opts: {
     status: "trialing",
     currentPeriodStart: now,
     currentPeriodEnd: periodEnd,
-    trialDays,
+    trialHours,
     cancelAtPeriodEnd: false,
   });
   await markDocumentsPaid(customUserId);

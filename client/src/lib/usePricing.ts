@@ -21,12 +21,14 @@ export function usePricing() {
   });
   const price = q.data?.priceFormattedEs ?? "19,95€";
   const priceEur = q.data?.priceEur ?? 19.95;
-  const trialDays = q.data?.trialDays ?? 7;
+  // Trial length in HOURS (24 since 2026-08-11). Falls back to the policy value
+  // while the query is in flight so the copy never renders a raw placeholder.
+  const trialHours = q.data?.trialHours ?? 24;
   const withPrice = (s: string | undefined | null) =>
     (s ?? "").replace(/\{price\}/g, price);
-  // For the checkout billing notice: also fills {days} (trial length) and
+  // For the checkout billing notice: also fills {hours} (trial length) and
   // {intro} (the €0,50 today), so the copy always matches the live config.
   const withNotice = (s: string | undefined | null) =>
-    fillNotice(s, { intro: "0,50€", days: trialDays, price });
-  return { price, priceEur, trialDays, withPrice, withNotice };
+    fillNotice(s, { intro: "0,50€", hours: trialHours, price });
+  return { price, priceEur, trialHours, withPrice, withNotice };
 }

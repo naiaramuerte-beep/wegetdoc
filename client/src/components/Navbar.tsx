@@ -39,6 +39,9 @@ export default function Navbar({ compact, hideLogoLink }: { compact?: boolean; h
 
   const allNavLinks = [
     { href: `/${lang}/#how-it-works`, label: t.nav_how_it_works },
+    // Precios en el menú, no solo en el pie: el visitante tiene que poder ver
+    // qué se le va a cobrar sin llegar antes a la pasarela de pago.
+    { href: `/${lang}/pricing`, label: t.nav_pricing },
     { href: `/${lang}/#faq`, label: t.nav_faq },
     { href: "#contact", label: t.nav_contact, onClick: () => setContactOpen(true) },
   ];

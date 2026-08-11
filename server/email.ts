@@ -16,6 +16,18 @@ const resend = process.env.RESEND_API_KEY
 // From keeps deliverability + reputation under a single address.
 const FROM_ADDRESS = `${brandName} <support@editorpdf.net>`;
 const FROM_ADDRESS_VERIFIED = FROM_ADDRESS;
+
+/**
+ * Intro (alta) amount as shown in the subscription-conditions block.
+ *
+ * Mirrors what the checkout actually charges — `amountCents: 50` in the three
+ * Sipay paths and the `data-amount="50"` of the FastPay iframe. It is written
+ * here rather than imported because `client/src/lib/pricing.ts` lives behind a
+ * client-only path alias. If the intro price ever moves, this string moves with
+ * it: an email that states a figure we did not charge is a chargeback waiting
+ * to happen.
+ */
+const INTRO_FORMATTED = "0,50€";
 const REPLY_TO_ADDRESS = "support@editorpdf.net";
 
 // Common headers added to every transactional email. They tell Gmail/Outlook
@@ -61,6 +73,19 @@ function htmlToText(html: string): string {
  * Multilingual via STRINGS map; falls back to English when an unknown
  * lang code is passed.
  */
+type TermsVars = {
+  /** First-charge moment, already formatted and localized (with the hour). */
+  date: string;
+  /** Live monthly price, formatted (e.g. "29,95€"). */
+  price: string;
+  /** Intro amount already paid, formatted (e.g. "0,50€"). */
+  intro: string;
+  /** Deep link to the billing tab, where cancelling takes two clicks. */
+  cancelUrl: string;
+  /** Full terms and conditions. */
+  termsUrl: string;
+};
+
 type WelcomeStrings = {
   subject: string;
   greeting: (name: string) => string;
@@ -77,7 +102,22 @@ type WelcomeStrings = {
   helpLine: string;
   helpReply: string;
   signoff: string;
-  disclaimer: (trialEndDate: string, cancelUrl: string, price: string) => string;
+  /**
+   * Post-payment conditions block. Spelled out rather than buried in 9px grey:
+   * what was bought (24 h trial), WHEN the first monthly charge lands (exact
+   * date and time), how to stop it, and where the full terms are. A customer
+   * who can read this has no reason to ask their bank instead of us.
+   */
+  terms: (v: TermsVars) => {
+    title: string;
+    /** Small label above the amount, e.g. "Se te cobrará". */
+    chargeLabel: string;
+    /** What happens after the first charge. */
+    chargeAfter: string;
+    lines: string[];
+  };
+  /** Anchor text for the terms link inside the conditions block. */
+  termsLabel: string;
   manageBtn: string;
 };
 
@@ -115,9 +155,18 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpLine: "¿Necesitas ayuda?",
     helpReply: "Responde a este email — te respondemos en menos de 24 horas.",
     signoff: "Un saludo,\nEquipo EditorPDF",
+    termsLabel: "Términos y condiciones",
     manageBtn: "Gestionar suscripción",
-    disclaimer: (date, url, price) =>
-      `Has activado un período de prueba de 7 días por 0,50€. Si no cancelas antes del ${date}, tu suscripción se renovará automáticamente al plan mensual de ${price}/mes. Puedes cancelar en cualquier momento desde tu panel de Facturación: ${url}`,
+    terms: () => ({
+      title: "Condiciones de tu suscripción",
+      chargeLabel: "Se te cobrará",
+      chargeAfter: "Después, {price} al mes hasta que canceles.",
+      lines: [
+        "Has contratado una <b>prueba de 24 horas por {intro}</b>, ya abonados.",
+        "<b>Cancela cuando quieras</b> desde tu cuenta: {cancel}. Si cancelas antes de esa fecha y hora, no se te cobra nada más.",
+        "Condiciones completas: {terms}.",
+      ],
+    }),
   },
   en: {
     subject: `Welcome to ${brandName}! Here's everything you can do`,
@@ -152,9 +201,18 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpLine: "Need help?",
     helpReply: "Just reply to this email — we respond within 24 hours.",
     signoff: "Best regards,\nEditorPDF Team",
+    termsLabel: "Terms and conditions",
     manageBtn: "Manage subscription",
-    disclaimer: (date, url, price) =>
-      `You've activated a 7-day trial for €0.50. If you don't cancel before ${date}, your subscription will automatically renew at the monthly plan of ${price}/month. You can cancel anytime from your Billing dashboard: ${url}`,
+    terms: () => ({
+      title: "Your subscription terms",
+      chargeLabel: "You will be charged",
+      chargeAfter: "After that, {price} per month until you cancel.",
+      lines: [
+        "You purchased a <b>24-hour trial for {intro}</b>, already paid.",
+        "<b>Cancel any time</b> from your account: {cancel}. Cancel before that date and time and you won't be charged again.",
+        "Full terms: {terms}.",
+      ],
+    }),
   },
   fr: {
     subject: `Bienvenue chez ${brandName} ! Voici tout ce que vous pouvez faire`,
@@ -189,9 +247,18 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpLine: "Besoin d'aide ?",
     helpReply: "Répondez simplement à cet email — réponse sous 24 heures.",
     signoff: "Cordialement,\nL'équipe EditorPDF",
+    termsLabel: "Conditions générales",
     manageBtn: "Gérer l'abonnement",
-    disclaimer: (date, url, price) =>
-      `Vous avez activé une période d'essai de 7 jours pour 0,50€. Si vous n'annulez pas avant le ${date}, votre abonnement sera automatiquement renouvelé au tarif mensuel de ${price}/mois. Vous pouvez annuler à tout moment depuis votre tableau de Facturation : ${url}`,
+    terms: () => ({
+      title: "Conditions de votre abonnement",
+      chargeLabel: "Vous serez prélevé de",
+      chargeAfter: "Ensuite, {price} par mois jusqu'à votre annulation.",
+      lines: [
+        "Vous avez souscrit un <b>essai de 24 heures pour {intro}</b>, déjà réglés.",
+        "<b>Annulez à tout moment</b> depuis votre compte : {cancel}. Si vous annulez avant cette date et cette heure, rien ne vous sera facturé.",
+        "Conditions complètes : {terms}.",
+      ],
+    }),
   },
   de: {
     subject: `Willkommen bei ${brandName}! Hier ist alles, was Sie tun können`,
@@ -226,9 +293,18 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpLine: "Brauchen Sie Hilfe?",
     helpReply: "Antworten Sie einfach auf diese E-Mail — Antwort innerhalb von 24 Stunden.",
     signoff: "Mit freundlichen Grüßen,\nDas EditorPDF-Team",
+    termsLabel: "Allgemeine Geschäftsbedingungen",
     manageBtn: "Abonnement verwalten",
-    disclaimer: (date, url, price) =>
-      `Sie haben eine 7-Tage-Testphase für 0,50€ aktiviert. Wenn Sie nicht vor dem ${date} kündigen, wird Ihr Abonnement automatisch zum Monatsplan von ${price}/Monat verlängert. Sie können jederzeit über Ihr Abrechnungs-Dashboard kündigen: ${url}`,
+    terms: () => ({
+      title: "Bedingungen deines Abonnements",
+      chargeLabel: "Dir werden berechnet",
+      chargeAfter: "Danach {price} pro Monat, bis du kündigst.",
+      lines: [
+        "Du hast eine <b>24-Stunden-Testphase für {intro}</b> gebucht, bereits bezahlt.",
+        "<b>Jederzeit kündbar</b> in deinem Konto: {cancel}. Kündigst du vor diesem Zeitpunkt, wird nichts weiter abgebucht.",
+        "Vollständige Bedingungen: {terms}.",
+      ],
+    }),
   },
   pt: {
     subject: `Bem-vindo ao ${brandName}! Aqui está tudo o que pode fazer`,
@@ -263,9 +339,18 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpLine: "Precisa de ajuda?",
     helpReply: "Basta responder a este email — respondemos em menos de 24 horas.",
     signoff: "Com os melhores cumprimentos,\nEquipa EditorPDF",
+    termsLabel: "Termos e condições",
     manageBtn: "Gerir subscrição",
-    disclaimer: (date, url, price) =>
-      `Ativou um período de teste de 7 dias por 0,50€. Se não cancelar antes de ${date}, a sua subscrição será renovada automaticamente para o plano mensal de ${price}/mês. Pode cancelar a qualquer momento no seu painel de Faturação: ${url}`,
+    terms: () => ({
+      title: "Condições da tua subscrição",
+      chargeLabel: "Vais ser cobrado",
+      chargeAfter: "Depois, {price} por mês até cancelares.",
+      lines: [
+        "Contrataste um <b>teste de 24 horas por {intro}</b>, já pagos.",
+        "<b>Cancela quando quiseres</b> na tua conta: {cancel}. Se cancelares antes dessa data e hora, não te cobramos mais nada.",
+        "Condições completas: {terms}.",
+      ],
+    }),
   },
   it: {
     subject: `Benvenuto in ${brandName}! Ecco tutto quello che puoi fare`,
@@ -300,9 +385,18 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpLine: "Hai bisogno di aiuto?",
     helpReply: "Rispondi a questa email — ti rispondiamo entro 24 ore.",
     signoff: "Cordiali saluti,\nIl team EditorPDF",
+    termsLabel: "Termini e condizioni",
     manageBtn: "Gestisci abbonamento",
-    disclaimer: (date, url, price) =>
-      `Hai attivato un periodo di prova di 7 giorni per 0,50€. Se non annulli prima del ${date}, il tuo abbonamento si rinnoverà automaticamente al piano mensile di ${price}/mese. Puoi annullare in qualsiasi momento dalla dashboard Fatturazione: ${url}`,
+    terms: () => ({
+      title: "Condizioni del tuo abbonamento",
+      chargeLabel: "Ti verranno addebitati",
+      chargeAfter: "Poi {price} al mese fino all'annullamento.",
+      lines: [
+        "Hai attivato una <b>prova di 24 ore per {intro}</b>, già pagati.",
+        "<b>Annulla quando vuoi</b> dal tuo account: {cancel}. Se annulli prima di quella data e ora, non ti verrà addebitato altro.",
+        "Condizioni complete: {terms}.",
+      ],
+    }),
   },
   nl: {
     subject: `Welkom bij ${brandName}! Hier is alles wat u kunt doen`,
@@ -337,9 +431,18 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpLine: "Hulp nodig?",
     helpReply: "Reageer gewoon op deze e-mail — antwoord binnen 24 uur.",
     signoff: "Met vriendelijke groet,\nHet EditorPDF-team",
+    termsLabel: "Algemene voorwaarden",
     manageBtn: "Abonnement beheren",
-    disclaimer: (date, url, price) =>
-      `U heeft een proefperiode van 7 dagen geactiveerd voor €0,50. Als u niet voor ${date} opzegt, wordt uw abonnement automatisch verlengd naar het maandabonnement van ${price}/maand. U kunt op elk moment opzeggen via uw Facturering-dashboard: ${url}`,
+    terms: () => ({
+      title: "Voorwaarden van je abonnement",
+      chargeLabel: "Er wordt afgeschreven",
+      chargeAfter: "Daarna {price} per maand totdat je opzegt.",
+      lines: [
+        "Je hebt een <b>proefperiode van 24 uur voor {intro}</b> afgesloten, al betaald.",
+        "<b>Zeg op wanneer je wilt</b> via je account: {cancel}. Zeg je op vóór dat moment, dan wordt er niets meer afgeschreven.",
+        "Volledige voorwaarden: {terms}.",
+      ],
+    }),
   },
   pl: {
     subject: `Witaj w ${brandName}! Oto co możesz zrobić`,
@@ -374,9 +477,18 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpLine: "Potrzebujesz pomocy?",
     helpReply: "Po prostu odpowiedz na tę wiadomość — odpowiadamy w mniej niż 24 godziny.",
     signoff: "Pozdrawiamy,\nZespół EditorPDF",
+    termsLabel: "Regulamin",
     manageBtn: "Zarządzaj subskrypcją",
-    disclaimer: (date, url, price) =>
-      `Aktywowałeś 7-dniowy okres próbny za 0,50€. Jeśli nie anulujesz przed ${date}, Twoja subskrypcja zostanie automatycznie odnowiona w planie miesięcznym za ${price}/mies. Możesz anulować w dowolnym momencie z panelu Płatności: ${url}`,
+    terms: () => ({
+      title: "Warunki Twojej subskrypcji",
+      chargeLabel: "Zostanie pobrane",
+      chargeAfter: "Następnie {price} miesięcznie, dopóki nie anulujesz.",
+      lines: [
+        "Wykupiłeś <b>próbę 24-godzinną za {intro}</b>, już opłaconą.",
+        "<b>Anuluj w dowolnym momencie</b> na swoim koncie: {cancel}. Jeśli anulujesz przed tą datą i godziną, nic więcej nie pobierzemy.",
+        "Pełne warunki: {terms}.",
+      ],
+    }),
   },
   ru: {
     subject: `Добро пожаловать в ${brandName}! Вот что вы можете делать`,
@@ -411,9 +523,18 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpLine: "Нужна помощь?",
     helpReply: "Просто ответьте на это письмо — мы отвечаем менее чем за 24 часа.",
     signoff: "С уважением,\nКоманда EditorPDF",
+    termsLabel: "Условия обслуживания",
     manageBtn: "Управление подпиской",
-    disclaimer: (date, url, price) =>
-      `Вы активировали 7-дневный пробный период за 0,50€. Если вы не отмените до ${date}, ваша подписка автоматически продлится на месячный план ${price}/мес. Вы можете отменить в любое время в панели Оплаты: ${url}`,
+    terms: () => ({
+      title: "Условия вашей подписки",
+      chargeLabel: "С вас спишется",
+      chargeAfter: "Далее — {price} в месяц до отмены.",
+      lines: [
+        "Вы оформили <b>пробный период на 24 часа за {intro}</b>, уже оплачено.",
+        "<b>Отменить можно в любой момент</b> в личном кабинете: {cancel}. Если отмените до этой даты и времени, больше ничего не спишется.",
+        "Полные условия: {terms}.",
+      ],
+    }),
   },
   uk: {
     subject: `Ласкаво просимо до ${brandName}! Ось що ви можете робити`,
@@ -448,9 +569,18 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpLine: "Потрібна допомога?",
     helpReply: "Просто дайте відповідь на цей лист — ми відповідаємо менш ніж за 24 години.",
     signoff: "З повагою,\nКоманда EditorPDF",
+    termsLabel: "Умови обслуговування",
     manageBtn: "Керування підпискою",
-    disclaimer: (date, url, price) =>
-      `Ви активували 7-денний пробний період за 0,50€. Якщо ви не скасуєте до ${date}, ваша підписка автоматично подовжиться на місячний план ${price}/міс. Ви можете скасувати будь-коли в панелі Оплати: ${url}`,
+    terms: () => ({
+      title: "Умови вашої підписки",
+      chargeLabel: "З вас спишеться",
+      chargeAfter: "Далі — {price} на місяць до скасування.",
+      lines: [
+        "Ви оформили <b>пробний період на 24 години за {intro}</b>, уже сплачено.",
+        "<b>Скасувати можна будь-коли</b> в особистому кабінеті: {cancel}. Якщо скасуєте до цієї дати й часу, більше нічого не спишеться.",
+        "Повні умови: {terms}.",
+      ],
+    }),
   },
   ro: {
     subject: `Bun venit la ${brandName}! Iată tot ce poți face`,
@@ -485,9 +615,18 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpLine: "Ai nevoie de ajutor?",
     helpReply: "Răspunde la acest e-mail — îți răspundem în mai puțin de 24 de ore.",
     signoff: "Cu stimă,\nEchipa EditorPDF",
+    termsLabel: "Termeni și condiții",
     manageBtn: "Gestionează abonamentul",
-    disclaimer: (date, url, price) =>
-      `Ai activat o perioadă de probă de 7 zile pentru 0,50€. Dacă nu anulezi înainte de ${date}, abonamentul se va reînnoi automat la planul lunar de ${price}/lună. Poți anula oricând din panoul Facturare: ${url}`,
+    terms: () => ({
+      title: "Condițiile abonamentului tău",
+      chargeLabel: "Ți se va percepe",
+      chargeAfter: "După aceea, {price} pe lună până când anulezi.",
+      lines: [
+        "Ai achiziționat o <b>probă de 24 de ore pentru {intro}</b>, deja plătiți.",
+        "<b>Anulează oricând</b> din contul tău: {cancel}. Dacă anulezi înainte de acea dată și oră, nu ți se mai percepe nimic.",
+        "Condiții complete: {terms}.",
+      ],
+    }),
   },
   zh: {
     subject: `欢迎使用 ${brandName}！这是您可以做的一切`,
@@ -522,9 +661,18 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
     helpLine: "需要帮助？",
     helpReply: "直接回复此邮件——我们将在 24 小时内回复您。",
     signoff: "此致敬礼，\nEditorPDF 团队",
+    termsLabel: "服务条款",
     manageBtn: "管理订阅",
-    disclaimer: (date, url, price) =>
-      `您已激活 7 天试用期，费用为 0.50€。如果您未在 ${date} 之前取消，您的订阅将自动续订为月度计划 ${price}/月。您可以随时从账单面板取消：${url}`,
+    terms: () => ({
+      title: "您的订阅条款",
+      chargeLabel: "将向您收取",
+      chargeAfter: "之后每月 {price}，直至您取消。",
+      lines: [
+        "您购买了 <b>24 小时试用，费用 {intro}</b>，已支付。",
+        "<b>随时可取消</b>，在您的账户中操作：{cancel}。在该日期和时间之前取消，将不再扣款。",
+        "完整条款：{terms}。",
+      ],
+    }),
   },
 };
 
@@ -532,6 +680,52 @@ const WELCOME_STRINGS: Record<string, WelcomeStrings> = {
  * Send the trial-welcome email. `lang` defaults to "es" when not provided
  * or unknown. `trialEndDate` is rendered locally per-language.
  */
+/**
+ * Build the subscription-conditions block for one language.
+ *
+ * Exported so the 12 translations can be asserted in a test: this text states
+ * when we will take money and how to stop us, and a placeholder left unfilled
+ * or a broken link here is the difference between an informed customer and a
+ * chargeback. Sending a real email to check it is not a test.
+ */
+export function buildTermsBlock(
+  lang: string,
+  vars: TermsVars,
+): {
+  title: string;
+  chargeLabel: string;
+  chargeAmount: string;
+  chargeWhen: string;
+  chargeAfter: string;
+  lines: string[];
+} {
+  const s = WELCOME_STRINGS[WELCOME_STRINGS[lang] ? lang : "es"];
+  const link = (href: string, label: string) =>
+    `<a href="${href}" style="color:#E63946;text-decoration:underline;">${label}</a>`;
+  const raw = s.terms(vars);
+  const fill = (l: string) => l
+    .replace(/\{date\}/g, vars.date)
+    .replace(/\{price\}/g, vars.price)
+    .replace(/\{intro\}/g, vars.intro);
+  return {
+    title: raw.title,
+    chargeLabel: raw.chargeLabel,
+    // El importe y la fecha, sin marcado: van dentro del recuadro destacado.
+    chargeAmount: vars.price,
+    chargeWhen: vars.date,
+    chargeAfter: fill(raw.chargeAfter),
+    lines: raw.lines.map((l) => l
+      .replace(/\{date\}/g, `<b>${vars.date}</b>`)
+      .replace(/\{price\}/g, vars.price)
+      .replace(/\{intro\}/g, vars.intro)
+      .replace(/\{cancel\}/g, link(vars.cancelUrl, s.manageBtn))
+      .replace(/\{terms\}/g, link(vars.termsUrl, s.termsLabel))),
+  };
+}
+
+/** Languages that have a full welcome-email translation. */
+export const WELCOME_LANGS = Object.keys(WELCOME_STRINGS);
+
 export async function sendTrialWelcomeEmail({
   to,
   name,
@@ -556,11 +750,18 @@ export async function sendTrialWelcomeEmail({
     it: "it-IT", nl: "nl-NL", pl: "pl-PL", ru: "ru-RU", uk: "uk-UA",
     ro: "ro-RO", zh: "zh-CN",
   };
+  // La zona horaria se FIJA a Europe/Madrid y se dice en el texto. Sin el
+  // `timeZone` explícito, `toLocaleDateString` usa la del proceso — que en
+  // Railway es UTC — y el email prometería una hora dos horas antes de la real.
+  // Sobre una promesa de cobro con hora exacta, eso es una discrepancia que el
+  // cliente acabaría discutiendo con su banco.
   const formattedDate = trialEndDate.toLocaleDateString(localeMap[langCode] ?? "es-ES", {
-    day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
+    day: "numeric", month: "long", year: "numeric",
+    hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid",
   });
   const editorUrl = `https://editorpdf.net/${langCode}/`;
   const cancelUrl = `https://editorpdf.net/${langCode}/dashboard?tab=billing`;
+  const termsUrl = `https://editorpdf.net/${langCode}/terms`;
   // Live monthly price so the auto-renew disclaimer states the exact amount
   // the customer will be charged (anti-chargeback transparency).
   const { getActiveMonthlyPrice } = await import("./db");
@@ -569,6 +770,13 @@ export async function sendTrialWelcomeEmail({
   const ink = "#0A0A0B";
   const accent = "#E63946";
   const muted = "#94a3b8";
+
+  // Los enlaces se montan aquí y no en las traducciones: así una traducción no
+  // puede romper una URL ni quedarse con un enlace viejo.
+  const termsBlock = buildTermsBlock(langCode, {
+    date: formattedDate, price: priceFormatted, intro: INTRO_FORMATTED,
+    cancelUrl, termsUrl,
+  });
 
   const renderList = (items: string[]) => items.map((it) =>
     `<li style="margin:6px 0;color:#475569;font-size:14px;line-height:1.6;">${it}</li>`
@@ -666,10 +874,22 @@ export async function sendTrialWelcomeEmail({
           </p>
         </td></tr>
 
-        <!-- Footer with low-contrast trial disclaimer -->
-        <tr><td style="background:#fafafa;padding:18px 40px;border-top:1px solid #e2e8f0;">
-          <p style="margin:0;color:${muted};font-size:9px;line-height:1.55;">
-            ${s.disclaimer(formattedDate, cancelUrl, priceFormatted)}
+        <!-- Subscription conditions: legible, not buried -->
+        <tr><td style="background:#fafafa;padding:22px 40px;border-top:1px solid #e2e8f0;">
+          <p style="margin:0 0 12px;color:${ink};font-size:13px;font-weight:700;">
+            ${termsBlock.title}
+          </p>
+          <ul style="margin:0;padding-left:18px;">
+            ${termsBlock.lines.map((l) => `<li style="margin:5px 0;color:#475569;font-size:12px;line-height:1.6;">${l}</li>`).join("")}
+          </ul>
+          <!-- Lo último del correo: el cargo que viene. Una línea, sin caja ni
+               tipografía grande — basta con que el importe y la fecha vayan en
+               negrita y no haya nada detrás que los tape. -->
+          <p style="margin:14px 0 0;padding-left:10px;border-left:3px solid ${accent};color:#475569;font-size:12px;line-height:1.6;">
+            ${termsBlock.chargeLabel}
+            <b style="color:${ink};">${termsBlock.chargeAmount}</b> ·
+            <b style="color:${ink};">${termsBlock.chargeWhen}</b><br />
+            ${termsBlock.chargeAfter}
           </p>
           <p style="margin:10px 0 0;color:${muted};font-size:9px;">
             © 2026 ${brandName} — <a href="${cancelUrl}" style="color:${muted};text-decoration:underline;">${s.manageBtn}</a>

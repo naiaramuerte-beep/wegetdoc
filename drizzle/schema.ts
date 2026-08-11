@@ -63,10 +63,16 @@ export const subscriptions = mysqlTable("subscriptions", {
   currentPeriodStart: timestamp("currentPeriodStart"),
   currentPeriodEnd: timestamp("currentPeriodEnd"),
   cancelAtPeriodEnd: boolean("cancelAtPeriodEnd").default(false).notNull(),
-  // Trial length (in days) applied when THIS sub was created — the value of
-  // site_settings.trial_days at alta time. Stored per-sub so we can compare the
-  // 1st-renewal acceptance by cohort (48h=2 vs 7 days). Null = pre-migration sub.
+  // LEGACY trial length in days, written by signups before the 24 h policy
+  // (2 = the 48 h cohort, 7 = the 7-day one). Nothing writes it any more; it is
+  // kept so those cohorts stay identifiable. Null = pre-migration sub.
   trialDays: int("trialDays"),
+  // Trial length (in HOURS) applied when THIS sub was created — the value of
+  // site_settings.trial_hours at alta time. This is the live cohort tag: 24 for
+  // every signup from 2026-08-11 on. Stored per-sub so 1st-renewal acceptance
+  // can be compared across cohorts (24h vs 7d vs 48h) long after the setting
+  // changes again. Null = sub created before hours existed, read trialDays.
+  trialHours: int("trialHours"),
   // Dunning: number of consecutive failed renewal attempts + when the next
   // spaced retry is due. Lets us retry at +5/+7/+9 days (instead of hammering
   // the bank daily, which risks getting the merchant flagged) and give up after.

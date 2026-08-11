@@ -133,6 +133,17 @@ function Router() {
       {LANGUAGES.map(({ code }) => (
         <Route key={`${code}-pricing`} path={`/${code}/pricing`} component={Pricing} />
       ))}
+      {/* /precios es el alias en castellano de la página de precios. Redirige a
+          /pricing en lugar de renderizar la misma página en dos URLs: el
+          contenido duplicado en dos rutas sin canonical por ruta (el index.html
+          lleva uno fijo a la home) reparte señales entre ambas y no suma nada. */}
+      {LANGUAGES.map(({ code }) => (
+        <Route
+          key={`${code}-precios`}
+          path={`/${code}/precios`}
+          component={() => <Redirect to={`/${code}/pricing`} />}
+        />
+      ))}
       {LANGUAGES.map(({ code }) => (
         <Route key={`${code}-tools`} path={`/${code}/tools`} component={Tools} />
       ))}
