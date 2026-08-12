@@ -2888,6 +2888,7 @@ export default function Admin() {
                     { key: "flag_blog_enabled", label: "Blog habilitado", desc: "Ruta /blog y enlaces del footer." },
                     { key: "flag_promo_banner", label: "Banner promocional visible", desc: "Anuncio superior en todas las landings." },
                     { key: "flag_ads_tracking", label: "Google Ads conversion tracking", desc: "Dispara eventos de gtag en /payment/success." },
+                    { key: "flag_recovery_emails", label: "Emails de recuperación (no-pagadores)", desc: "APAGADO desde el 12-ago: 1.195 envíos → 5 pagos, y se comían la cuota diaria de Resend que necesita el email de bienvenida. La retención de documentos sigue corriendo igual." },
                   ].map((flag) => {
                     const current = settingsQ.data?.find((s) => s.key === flag.key)?.value === "true";
                     return (

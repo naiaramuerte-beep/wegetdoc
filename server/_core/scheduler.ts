@@ -68,8 +68,12 @@ export function startInternalSchedulers(port: number): void {
   setInterval(() => { void checkSummary(); }, 5 * 60 * 1000);
   void checkSummary(); // also check right after boot (covers a restart at 23:xx)
 
-  // ── Recovery emails every 25 min ──────────────────────────────────────────
+  // ── Retención de documentos cada 25 min ───────────────────────────────────
+  // El endpoint se sigue llamando "recovery-emails" por compatibilidad, pero
+  // desde el 12-ago-2026 su trabajo habitual es la retención: los envíos a
+  // no-pagadores están detrás de `flag_recovery_emails` y apagados. Solo
+  // recibe correo quien paga.
   setInterval(() => { void hit("/api/cron/recovery-emails"); }, 25 * 60 * 1000);
 
-  console.log("[scheduler] internal schedulers started (daily summary @23:00 Madrid + recovery /25min)");
+  console.log("[scheduler] internal schedulers started (daily summary @23:00 Madrid + retención /25min)");
 }
