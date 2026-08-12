@@ -57,7 +57,7 @@ import BlogAdmin from "./BlogAdmin";
 import TrustpilotAdmin from "./TrustpilotAdmin";
 import PaywallModal from "@/components/PaywallModal";
 
-type AdminTab = "overview" | "billing" | "conversion" | "users" | "subscribers" | "documents" | "canceled" | "coupons" | "messages" | "webhooks" | "audit" | "legal" | "settings" | "blog" | "trustpilot";
+type AdminTab = "overview" | "billing" | "consent" | "conversion" | "users" | "subscribers" | "documents" | "canceled" | "coupons" | "messages" | "webhooks" | "audit" | "legal" | "settings" | "blog" | "trustpilot";
 
 // ── Bloque "Conversión de trial a suscripción" ──────────────────────────────
 type CvRate = { ok: number; n: number; pct: number | null; insufficient: boolean };
@@ -479,6 +479,7 @@ export default function Admin() {
     { id: "coupons", label: "Cupones", icon: <TrendingUp size={16} /> },
     { id: "messages", label: "Mensajes", icon: <MessageSquare size={16} /> },
     { id: "webhooks", label: "Webhooks", icon: <Webhook size={16} /> },
+    { id: "consent", label: "Consentimiento", icon: <ShieldCheck size={16} /> },
     { id: "audit", label: "Audit log", icon: <ClipboardList size={16} /> },
     { id: "legal", label: "Páginas legales", icon: <BookOpen size={16} /> },
     { id: "settings", label: "Ajustes", icon: <Settings size={16} /> },
@@ -2412,6 +2413,13 @@ export default function Admin() {
                                   </select>
                                 </div>
                               )}
+                              {/* Borrador con los datos reales de ESTE cliente:
+                                  cuándo aceptó, desde qué IP, qué se le cobró y
+                                  cuándo. No envía nada — rellena el textarea. */}
+                              <DraftButton
+                                msgId={msg.id}
+                                onDraft={(texto) => setReplyDraft((prev) => ({ ...prev, [msg.id]: texto }))}
+                              />
                               <textarea
                                 value={replyDraft[msg.id] ?? ""}
                                 onChange={(e) => setReplyDraft((prev) => ({ ...prev, [msg.id]: e.target.value }))}
@@ -2638,6 +2646,8 @@ export default function Admin() {
           )}
 
           {/* ── AUDIT LOG (S1) ── */}
+          {tab === "consent" && <ConsentTab />}
+
           {tab === "audit" && (
             <div className="space-y-4">
               <div>
@@ -3858,5 +3868,248 @@ function CouponsTab({ couponsQ, createCouponMut, deleteCouponMut }: { couponsQ: 
   );
 }
 
+/**
+ * Expediente de consentimiento — lo que se le manda al banco ante un contracargo.
+ *
+ * Busca por email y saca, para esa persona concreta: qué aceptó, cuándo, desde
+ * qué IP y navegador, en qué idioma, con qué importes vigentes, y el texto
+ * íntegro de los Términos tal y como estaban ESE día. Lo último es lo que
+ * distingue una prueba de una captura de pantalla hecha hoy.
+ */
+function ConsentTab() {
+  const [email, setEmail] = useState("");
+  const [buscado, setBuscado] = useState("");
+  const q = trpc.admin.consentDossier.useQuery(
+    { email: buscado },
+    { enabled: buscado.length > 3 },
+  );
+  const d: any = q.data;
 
+  const fecha = (v: any) =>
+    v ? new Date(v).toLocaleString("es-ES", { dateStyle: "medium", timeStyle: "medium", timeZone: "Europe/Madrid" }) : "—";
+  const eur = (c: any) => (c == null ? "—" : `${(Number(c) / 100).toFixed(2).replace(".", ",")} €`);
 
+  const copiar = () => {
+    if (!d?.found) return;
+    const lineas = [
+      `EXPEDIENTE DE CONSENTIMIENTO — ${d.user.email}`,
+      `Cuenta creada: ${fecha(d.user.createdAt)} (hora de Madrid)`,
+      "",
+      "CONSENTIMIENTOS REGISTRADOS",
+      ...d.consents.map((c: any) => [
+        `· ${c.event === "register" ? "Registro" : "Autorización de pago"} — ${fecha(c.createdAt)} (Madrid)`,
+        `  IP: ${c.ip ?? "—"}   Navegador: ${c.userAgent ?? "—"}`,
+        `  Idioma mostrado: ${c.lang ?? "—"}`,
+        c.introCents != null ? `  Importe inicial: ${eur(c.introCents)} · Recurrente: ${eur(c.recurringCents)}/mes · Prueba: ${c.trialHours ?? "—"} h` : null,
+        c.textShown ? `  Texto aceptado: "${c.textShown}"` : null,
+        c.termsHash ? `  Términos vigentes (SHA-256): ${c.termsHash}` : null,
+      ].filter(Boolean).join("\n")),
+      "",
+      "COBROS",
+      ...d.charges.map((c: any) => `· ${fecha(c.createdAt)} — ${eur(c.amountCents)} ${c.provider} ${c.status}${c.sipayTransactionId ? ` · txn ${c.sipayTransactionId}` : ""}`),
+    ];
+    void navigator.clipboard.writeText(lineas.join("\n"));
+    toast.success("Expediente copiado al portapapeles");
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-lg font-semibold text-white">Expediente de consentimiento</h2>
+        <p className="text-xs text-gray-400 mt-0.5">
+          Qué aceptó un cliente concreto, cuándo y desde dónde — con el texto de los Términos tal y como estaban ese día.
+          Para responder a un banco ante un contracargo.
+        </p>
+      </div>
+
+      <div className="flex gap-2">
+        <input
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") setBuscado(email.trim()); }}
+          placeholder="email del cliente"
+          className="flex-1 rounded-lg px-3 py-2 text-sm text-white outline-none border"
+          style={{ backgroundColor: "#0d1117", borderColor: "#1e2433" }}
+        />
+        <button
+          onClick={() => setBuscado(email.trim())}
+          className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
+          style={{ backgroundColor: "#E63946" }}
+        >
+          Buscar
+        </button>
+      </div>
+
+      {q.isLoading && buscado && <p className="text-xs text-gray-400">Buscando…</p>}
+      {d && !d.found && <p className="text-sm text-amber-400">No hay ningún cliente con ese email.</p>}
+
+      {d?.found && (
+        <div className="space-y-4">
+          <div className="rounded-xl border p-4 flex items-start justify-between gap-4"
+               style={{ borderColor: "#1e2433", backgroundColor: "#131720" }}>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-white truncate">{d.user.email}</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {d.user.name ?? "—"} · cuenta creada {fecha(d.user.createdAt)} · idioma {d.user.language ?? "—"}
+              </p>
+            </div>
+            <button onClick={copiar}
+              className="shrink-0 px-3 py-2 rounded-lg text-xs font-semibold text-white border"
+              style={{ borderColor: "#1e2433", backgroundColor: "#0d1117" }}>
+              Copiar expediente
+            </button>
+          </div>
+
+          {d.consents.length === 0 && (
+            <div className="rounded-xl border p-4 text-sm text-amber-400"
+                 style={{ borderColor: "#3f2d0d", backgroundColor: "#1c1608" }}>
+              Sin consentimientos registrados. Este cliente es anterior al 12-ago-2026, cuando se empezó a guardar la prueba.
+              Para su caso solo hay la evidencia indirecta: el email de bienvenida y los Términos publicados.
+            </div>
+          )}
+
+          {d.consents.map((c: any) => (
+            <div key={c.id} className="rounded-xl border p-4 space-y-2"
+                 style={{ borderColor: "#1e2433", backgroundColor: "#131720" }}>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded text-[11px] font-semibold"
+                      style={c.event === "payment"
+                        ? { backgroundColor: "rgba(230,57,70,0.15)", color: "#fca5a5" }
+                        : { backgroundColor: "rgba(255,255,255,0.08)", color: "#cbd5e1" }}>
+                  {c.event === "payment" ? "Autorización de pago" : "Registro"}
+                </span>
+                <span className="text-xs text-gray-300">{fecha(c.createdAt)} <span className="text-gray-500">Madrid</span></span>
+              </div>
+              {c.textShown && (
+                <p className="text-sm text-white leading-relaxed border-l-2 pl-3" style={{ borderColor: "#E63946" }}>
+                  “{c.textShown}”
+                </p>
+              )}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-gray-400">
+                <span>IP: <span className="text-gray-200">{c.ip ?? "—"}</span></span>
+                <span>Idioma: <span className="text-gray-200">{c.lang ?? "—"}</span></span>
+                {c.introCents != null && <span>Cobro inicial: <span className="text-gray-200">{eur(c.introCents)}</span></span>}
+                {c.recurringCents != null && <span>Recurrente: <span className="text-gray-200">{eur(c.recurringCents)}/mes</span></span>}
+                {c.trialHours != null && <span>Prueba: <span className="text-gray-200">{c.trialHours} h</span></span>}
+                {c.provider && <span>Método: <span className="text-gray-200">{c.provider}</span></span>}
+              </div>
+              {c.userAgent && <p className="text-[11px] text-gray-500 break-all">{c.userAgent}</p>}
+              {c.termsHash && d.snapshots?.[c.termsHash] && (
+                <details className="text-[11px]">
+                  <summary className="cursor-pointer text-gray-400 hover:text-gray-200">
+                    Términos vigentes ese día (SHA-256 {String(c.termsHash).slice(0, 12)}…)
+                  </summary>
+                  <pre className="mt-2 p-3 rounded-lg overflow-auto max-h-72 whitespace-pre-wrap text-gray-300"
+                       style={{ backgroundColor: "#0d1117" }}>
+                    {d.snapshots[c.termsHash].content}
+                  </pre>
+                </details>
+              )}
+            </div>
+          ))}
+
+          {d.charges?.length > 0 && (
+            <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#1e2433", backgroundColor: "#131720" }}>
+              <p className="px-4 py-2.5 text-xs font-semibold text-white border-b" style={{ borderColor: "#1e2433" }}>Cobros</p>
+              <table className="w-full text-xs">
+                <tbody>
+                  {d.charges.map((c: any) => (
+                    <tr key={c.id} className="border-b last:border-0" style={{ borderColor: "#1e2433" }}>
+                      <td className="px-4 py-2 text-gray-300">{fecha(c.createdAt)}</td>
+                      <td className="px-4 py-2 text-white font-semibold">{eur(c.amountCents)}</td>
+                      <td className="px-4 py-2 text-gray-400">{c.provider}</td>
+                      <td className="px-4 py-2">
+                        <span className={c.status === "ok" ? "text-emerald-400" : c.status === "refunded" ? "text-amber-400" : "text-red-400"}>
+                          {c.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 text-gray-500 font-mono text-[10px]">{c.sipayTransactionId ?? ""}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Etiqueta legible de cada tipo de queja, con el color que indica la urgencia. */
+const DRAFT_KINDS: Record<string, { label: string; color: string; bg: string; nota?: string }> = {
+  refund_within_withdrawal: {
+    label: "Pide reembolso · dentro de los 14 días", color: "#fca5a5", bg: "rgba(230,57,70,0.15)",
+    nota: "Dentro del plazo de desistimiento: nuestros Términos y la ley de consumo obligan a devolver. Discutirlo acaba en contracargo, que cuesta más y penaliza el ratio con el banco.",
+  },
+  refund_outside_withdrawal: {
+    label: "Pide reembolso · fuera de plazo", color: "#fcd34d", bg: "rgba(252,211,77,0.12)",
+    nota: "Fuera de los 14 días. El borrador explica los hechos y ofrece cancelar; el reembolso queda a tu criterio.",
+  },
+  unaware: { label: "No sabía que se le cobraba", color: "#93c5fd", bg: "rgba(147,197,253,0.12)",
+    nota: "La queja más común. Suele cerrarse enseñando cuándo aceptó y qué correo recibió." },
+  cancel: { label: "Quiere cancelar", color: "#a7f3d0", bg: "rgba(167,243,208,0.12)" },
+  chargeback_threat: {
+    label: "Amenaza con el banco", color: "#fca5a5", bg: "rgba(230,57,70,0.2)",
+    nota: "Prioritario. Resolverlo hoy es más barato que la disputa, ganes o pierdas.",
+  },
+  other: { label: "Otro", color: "#cbd5e1", bg: "rgba(255,255,255,0.08)" },
+};
+
+/**
+ * Genera el borrador de respuesta bajo demanda y lo vuelca en el textarea.
+ *
+ * La consulta es `enabled: false` a propósito: no se pide nada hasta que el
+ * admin pulsa, para no lanzar una consulta por cada mensaje de la lista.
+ */
+function DraftButton({ msgId, onDraft }: { msgId: number; onDraft: (t: string) => void }) {
+  const [info, setInfo] = useState<any>(null);
+  const q = trpc.admin.draftReply.useQuery({ id: msgId }, { enabled: false });
+
+  const generar = async () => {
+    try {
+      const r = await q.refetch();
+      if (!r.data) { toast.error("No se pudo generar el borrador"); return; }
+      setInfo(r.data);
+      onDraft(r.data.draft);
+      if (!r.data.usuarioEncontrado) toast.warning("No hay cuenta con ese email — el borrador va sin datos de compra");
+    } catch {
+      toast.error("No se pudo generar el borrador");
+    }
+  };
+
+  const k = info ? DRAFT_KINDS[info.kind] ?? DRAFT_KINDS.other : null;
+
+  return (
+    <div className="space-y-2">
+      <button
+        onClick={generar}
+        disabled={q.isFetching}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors disabled:opacity-60"
+        style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
+      >
+        {q.isFetching ? <><Loader2 size={12} className="animate-spin" /> Generando…</> : <>⚖️ Borrador con pruebas</>}
+      </button>
+
+      {info && k && (
+        <div className="rounded-lg border p-2.5 space-y-1.5" style={{ borderColor: "#1e2433", backgroundColor: "#0f1117" }}>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="px-2 py-0.5 rounded text-[11px] font-semibold" style={{ color: k.color, backgroundColor: k.bg }}>
+              {k.label}
+            </span>
+            {info.diasDesdeCompra != null && (
+              <span className="text-[11px] text-gray-400">{info.diasDesdeCompra} días desde la compra</span>
+            )}
+            <span className="text-[11px]" style={{ color: info.tieneConsentimiento ? "#6ee7b7" : "#fcd34d" }}>
+              {info.tieneConsentimiento ? "✓ consentimiento registrado" : "⚠ sin consentimiento registrado (cliente anterior al 12-ago)"}
+            </span>
+          </div>
+          {k.nota && <p className="text-[11px] text-gray-400 leading-relaxed">{k.nota}</p>}
+          <p className="text-[10px] text-gray-500">
+            Revísalo y edítalo antes de enviar. Nada sale automáticamente.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}

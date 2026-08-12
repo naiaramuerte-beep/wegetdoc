@@ -1472,6 +1472,13 @@ export default function PaywallModal({
   const [emailLoading, setEmailLoading] = useState(false);
   const [googleRedirecting, setGoogleRedirecting] = useState(false); // spinner on the Google button while we upload the edited PDF + full-page redirect
   const registerMutation = trpc.auth.register.useMutation();
+  // La MISMA frase que se pinta debajo del botón, montada como texto plano para
+  // mandarla al servidor. Se construye de las mismas piezas que el JSX para que
+  // la prueba guardada no pueda divergir de lo que el usuario tuvo delante.
+  const consentTextOf = (st: typeof s) =>
+    `${st.gdprPrefix} ${st.termsLinkLabel}${st.gdprAnd}${st.privacyLinkLabel}${st.gdprSuffix}`;
+
+
   const loginMutation = trpc.auth.login.useMutation();
   const { refresh } = useAuth();
 
@@ -1776,7 +1783,7 @@ export default function PaywallModal({
     setEmailLoading(true);
     try {
       if (emailMode === "register") {
-        await registerMutation.mutateAsync({ email: emailInput.trim(), password: passwordInput, name: nameInput.trim() || undefined });
+        await registerMutation.mutateAsync({ email: emailInput.trim(), password: passwordInput, name: nameInput.trim() || undefined, consentText: consentTextOf(s), lang });
       } else {
         await loginMutation.mutateAsync({ email: emailInput.trim(), password: passwordInput });
       }

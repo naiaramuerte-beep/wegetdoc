@@ -348,3 +348,58 @@ export const auditLog = mysqlTable("audit_log", {
 
 export type AuditLog = typeof auditLog.$inferSelect;
 export type InsertAuditLog = typeof auditLog.$inferInsert;
+
+/**
+ * Consentimiento del cliente, guardado en el momento en que lo da.
+ *
+ * Existe para poder responder a un contracargo con algo más que "nuestra web lo
+ * pone": qué vio ESA persona, ese día, a esa hora, en qué idioma y desde qué
+ * navegador. Un banco no acepta una captura de pantalla hecha hoy de una página
+ * que pudo cambiar desde entonces.
+ *
+ * `textShown` guarda la frase literal que se le renderizó, y `termsHash` apunta
+ * a la versión de los Términos vigente en ese instante (ver `legalSnapshots`),
+ * de modo que la prueba sigue siendo válida aunque los textos se reescriban
+ * después. Es una tabla de solo-inserción: no se actualiza ni se borra nada.
+ */
+export const consents = mysqlTable("consents", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  /** register = al crear la cuenta · payment = al autorizar el cobro. */
+  event: mysqlEnum("event", ["register", "payment"]).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  ip: varchar("ip", { length: 64 }),
+  userAgent: varchar("userAgent", { length: 512 }),
+  lang: varchar("lang", { length: 8 }),
+  /** La frase exacta que se le mostró, ya traducida. */
+  textShown: text("textShown"),
+  /** SHA-256 del contenido de los Términos vigente en ese momento. */
+  termsHash: varchar("termsHash", { length: 64 }),
+  /** Importes vigentes en el momento del consentimiento, en céntimos. */
+  introCents: int("introCents"),
+  recurringCents: int("recurringCents"),
+  trialHours: int("trialHours"),
+  provider: varchar("provider", { length: 16 }),
+  sipayOrder: varchar("sipayOrder", { length: 128 }),
+});
+
+export type Consent = typeof consents.$inferSelect;
+export type InsertConsent = typeof consents.$inferInsert;
+
+/**
+ * Archivo de las versiones de los textos legales, deduplicado por hash.
+ *
+ * Cada consentimiento apunta aquí en lugar de copiar los ~10 KB del texto, así
+ * que miles de filas de `consents` comparten un puñado de snapshots. Sirve para
+ * demostrar meses después qué decían exactamente los Términos el día que un
+ * cliente concreto los aceptó.
+ */
+export const legalSnapshots = mysqlTable("legal_snapshots", {
+  hash: varchar("hash", { length: 64 }).primaryKey(),
+  slug: varchar("slug", { length: 64 }).notNull(),
+  title: varchar("title", { length: 256 }),
+  content: text("content"),
+  capturedAt: timestamp("capturedAt").defaultNow().notNull(),
+});
+
+export type LegalSnapshot = typeof legalSnapshots.$inferSelect;

@@ -4,6 +4,8 @@ import {
   InsertUser,
   InsertBlogPost,
   auditLog,
+  consents,
+  legalSnapshots,
   blogPosts,
   charges,
   contactMessages,
@@ -658,6 +660,108 @@ export async function getActiveMonthlyPrice(): Promise<{ eur: number; formatted:
  */
 export async function getTrialHours(): Promise<number> {
   return clampTrialHours(await getSiteSetting("trial_hours"));
+}
+
+// ─── Consentimiento del cliente (defensa ante contracargos) ─────────────────
+
+/**
+ * Guarda el consentimiento tal y como se dio: momento, IP, navegador, idioma y
+ * la frase literal que se mostró.
+ *
+ * Nunca lanza. Un fallo escribiendo la prueba no puede tumbar un registro ni un
+ * cobro — se pierde la prueba de ESE caso, que es malo, pero perder la venta o
+ * dejar a medias un pago ya autorizado es peor.
+ *
+ * También archiva la versión de los Términos vigente para que la prueba siga
+ * siendo válida cuando esos textos cambien. El archivo se deduplica por hash:
+ * miles de consentimientos comparten un puñado de versiones.
+ */
+export async function recordConsent(input: {
+  userId: number;
+  event: "register" | "payment";
+  ip?: string | null;
+  userAgent?: string | null;
+  lang?: string | null;
+  textShown?: string | null;
+  introCents?: number | null;
+  recurringCents?: number | null;
+  trialHours?: number | null;
+  provider?: string | null;
+  sipayOrder?: string | null;
+}): Promise<void> {
+  try {
+    const db = await getDb();
+    if (!db) return;
+    const termsHash = await snapshotLegalPage("terms");
+    await db.insert(consents).values({
+      userId: input.userId,
+      event: input.event,
+      ip: (input.ip ?? "").slice(0, 64) || null,
+      userAgent: (input.userAgent ?? "").slice(0, 512) || null,
+      lang: (input.lang ?? "").slice(0, 8) || null,
+      textShown: input.textShown ?? null,
+      termsHash,
+      introCents: input.introCents ?? null,
+      recurringCents: input.recurringCents ?? null,
+      trialHours: input.trialHours ?? null,
+      provider: (input.provider ?? "").slice(0, 16) || null,
+      sipayOrder: (input.sipayOrder ?? "").slice(0, 128) || null,
+    });
+  } catch (err: any) {
+    console.warn("[consent] no se pudo registrar:", err?.message ?? err);
+  }
+}
+
+/**
+ * Archiva la versión actual de una página legal y devuelve su hash.
+ * Si esa versión exacta ya está archivada, no reescribe nada.
+ */
+async function snapshotLegalPage(slug: string): Promise<string | null> {
+  try {
+    const db = await getDb();
+    if (!db) return null;
+    const page = await getLegalPage(slug);
+    if (!page?.content) return null;
+    const crypto = await import("node:crypto");
+    const hash = crypto.createHash("sha256").update(String(page.content)).digest("hex");
+    const existing = await db.select({ hash: legalSnapshots.hash })
+      .from(legalSnapshots).where(eq(legalSnapshots.hash, hash)).limit(1);
+    if (!existing.length) {
+      await db.insert(legalSnapshots).values({
+        hash, slug, title: page.title ?? null, content: String(page.content),
+      });
+    }
+    return hash;
+  } catch {
+    return null; // la prueba se guarda igual, solo sin el texto archivado
+  }
+}
+
+/** Cargos de un usuario, el más reciente primero — el dinero que respalda el expediente. */
+export async function getChargesForUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(charges)
+    .where(eq(charges.userId, userId))
+    .orderBy(desc(charges.createdAt));
+}
+
+/** Consentimientos de un usuario, el más reciente primero. */
+export async function getConsentsForUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(consents)
+    .where(eq(consents.userId, userId))
+    .orderBy(desc(consents.createdAt));
+}
+
+/** Texto archivado de una versión concreta de los Términos. */
+export async function getLegalSnapshot(hash: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(legalSnapshots)
+    .where(eq(legalSnapshots.hash, hash)).limit(1);
+  return rows[0] ?? null;
 }
 
 // ─── Contact Messages ─────────────────────────────────────────
@@ -2329,6 +2433,49 @@ export async function findGclidFromPendingEvent(opts: {
  * browser Accept-Language, which can differ. Stashed at sipayCheckoutInit,
  * read back here (callback) and by the reconciliation cron.
  */
+/**
+ * Gemelo de findLangFromPendingEvent: recupera los datos del COMPRADOR (IP,
+ * navegador y la frase de consentimiento que tenía delante) del evento
+ * `fastpay_3ds_pending`.
+ *
+ * Hace falta porque el cobro con tarjeta se cierra en el callback del 3DS, que
+ * llega desde Redsys y no desde el navegador del cliente: si tomáramos la IP de
+ * esa petición estaríamos guardando como prueba la del banco.
+ */
+export async function findConsentFromPendingEvent(opts: {
+  order?: string;
+  requestId?: string;
+}): Promise<{ ip: string | null; userAgent: string | null; consentText: string | null } | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const candidates = [opts.order, opts.requestId].filter(
+    (v): v is string => typeof v === "string" && v.length > 0,
+  );
+  if (candidates.length === 0) return null;
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const rows = await db
+    .select({ payload: webhookEvents.payload })
+    .from(webhookEvents)
+    .where(and(
+      eq(webhookEvents.eventType, "fastpay_3ds_pending"),
+      gte(webhookEvents.receivedAt, since),
+      inArray(webhookEvents.eventId, candidates),
+    ))
+    .orderBy(desc(webhookEvents.receivedAt))
+    .limit(1);
+  if (rows.length === 0) return null;
+  try {
+    const p: any = rows[0].payload ? JSON.parse(rows[0].payload as string) : null;
+    return {
+      ip: p?.ip ?? null,
+      userAgent: p?.userAgent ?? null,
+      consentText: p?.consentText ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function findLangFromPendingEvent(opts: {
   order?: string;
   requestId?: string;
