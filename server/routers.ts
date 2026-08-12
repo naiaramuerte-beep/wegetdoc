@@ -1206,6 +1206,67 @@ export const appRouter = router({
      * UI can show it was answered. Body is mandatory; we trim it to keep
      * empty replies out of the audit log.
      */
+    /**
+     * Borrador de respuesta a una queja, con los datos reales del cliente.
+     *
+     * NO envía nada: devuelve texto para que el admin lo lea, lo corrija y
+     * decida. Ver server/_core/supportDraft.ts.
+     */
+    draftReply: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const msg = await getContactMessageById(input.id);
+        if (!msg) throw new TRPCError({ code: "NOT_FOUND", message: "Mensaje no encontrado" });
+        const { getUserByEmail, getConsentsForUser, getChargesForUser, getActiveSubscription } = await import("./db");
+        const { classifyComplaint, buildSupportDraft } = await import("./_core/supportDraft");
+
+        const user = await getUserByEmail(msg.email);
+        const charges = user ? await getChargesForUser(user.id) : [];
+        const consents = user ? await getConsentsForUser(user.id) : [];
+        const sub = user ? await getActiveSubscription(user.id) : null;
+        // El primer cargo marca el inicio del plazo de desistimiento.
+        const primerCargo = charges.length ? new Date(charges[charges.length - 1].createdAt) : null;
+        const kind = classifyComplaint(msg.message ?? "", primerCargo);
+
+        const draft = buildSupportDraft(kind, {
+          name: msg.name ?? null,
+          email: msg.email,
+          message: msg.message ?? "",
+          lang: (user?.language || "es").slice(0, 2),
+          charges: charges.map((c) => ({
+            amountCents: c.amountCents, createdAt: c.createdAt,
+            status: c.status, refundedCents: c.refundedCents,
+          })),
+          consents: consents.map((c) => ({
+            event: c.event, createdAt: c.createdAt, ip: c.ip,
+            lang: c.lang, textShown: c.textShown,
+          })),
+          trialEnd: sub?.currentPeriodEnd ?? null,
+          trialHours: (sub as any)?.trialHours ?? null,
+          // El correo de bienvenida sale justo tras el alta; su marca temporal
+          // es la del primer cargo, que es lo que dispara el envío.
+          welcomeSentAt: primerCargo,
+        });
+
+        const dias = primerCargo
+          ? Math.floor((Date.now() - primerCargo.getTime()) / (24 * 3600 * 1000))
+          : null;
+        return {
+          kind,
+          draft,
+          lang: (user?.language || "es").slice(0, 2),
+          diasDesdeCompra: dias,
+          tieneConsentimiento: consents.length > 0,
+          usuarioEncontrado: !!user,
+          userId: user?.id ?? null,
+          charges: charges.map((c) => ({
+            id: c.id, amountCents: c.amountCents, createdAt: c.createdAt,
+            status: c.status, provider: c.provider,
+            sipayTransactionId: c.sipayTransactionId,
+          })),
+        };
+      }),
+
     replyToMessage: adminProcedure
       .input(z.object({ id: z.number(), body: z.string().min(1).max(5000) }))
       .mutation(async ({ ctx, input }) => {

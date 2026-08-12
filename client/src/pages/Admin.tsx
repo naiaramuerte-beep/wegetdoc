@@ -2413,6 +2413,13 @@ export default function Admin() {
                                   </select>
                                 </div>
                               )}
+                              {/* Borrador con los datos reales de ESTE cliente:
+                                  cuándo aceptó, desde qué IP, qué se le cobró y
+                                  cuándo. No envía nada — rellena el textarea. */}
+                              <DraftButton
+                                msgId={msg.id}
+                                onDraft={(texto) => setReplyDraft((prev) => ({ ...prev, [msg.id]: texto }))}
+                              />
                               <textarea
                                 value={replyDraft[msg.id] ?? ""}
                                 onChange={(e) => setReplyDraft((prev) => ({ ...prev, [msg.id]: e.target.value }))}
@@ -4023,6 +4030,84 @@ function ConsentTab() {
               </table>
             </div>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Etiqueta legible de cada tipo de queja, con el color que indica la urgencia. */
+const DRAFT_KINDS: Record<string, { label: string; color: string; bg: string; nota?: string }> = {
+  refund_within_withdrawal: {
+    label: "Pide reembolso · dentro de los 14 días", color: "#fca5a5", bg: "rgba(230,57,70,0.15)",
+    nota: "Dentro del plazo de desistimiento: nuestros Términos y la ley de consumo obligan a devolver. Discutirlo acaba en contracargo, que cuesta más y penaliza el ratio con el banco.",
+  },
+  refund_outside_withdrawal: {
+    label: "Pide reembolso · fuera de plazo", color: "#fcd34d", bg: "rgba(252,211,77,0.12)",
+    nota: "Fuera de los 14 días. El borrador explica los hechos y ofrece cancelar; el reembolso queda a tu criterio.",
+  },
+  unaware: { label: "No sabía que se le cobraba", color: "#93c5fd", bg: "rgba(147,197,253,0.12)",
+    nota: "La queja más común. Suele cerrarse enseñando cuándo aceptó y qué correo recibió." },
+  cancel: { label: "Quiere cancelar", color: "#a7f3d0", bg: "rgba(167,243,208,0.12)" },
+  chargeback_threat: {
+    label: "Amenaza con el banco", color: "#fca5a5", bg: "rgba(230,57,70,0.2)",
+    nota: "Prioritario. Resolverlo hoy es más barato que la disputa, ganes o pierdas.",
+  },
+  other: { label: "Otro", color: "#cbd5e1", bg: "rgba(255,255,255,0.08)" },
+};
+
+/**
+ * Genera el borrador de respuesta bajo demanda y lo vuelca en el textarea.
+ *
+ * La consulta es `enabled: false` a propósito: no se pide nada hasta que el
+ * admin pulsa, para no lanzar una consulta por cada mensaje de la lista.
+ */
+function DraftButton({ msgId, onDraft }: { msgId: number; onDraft: (t: string) => void }) {
+  const [info, setInfo] = useState<any>(null);
+  const q = trpc.admin.draftReply.useQuery({ id: msgId }, { enabled: false });
+
+  const generar = async () => {
+    try {
+      const r = await q.refetch();
+      if (!r.data) { toast.error("No se pudo generar el borrador"); return; }
+      setInfo(r.data);
+      onDraft(r.data.draft);
+      if (!r.data.usuarioEncontrado) toast.warning("No hay cuenta con ese email — el borrador va sin datos de compra");
+    } catch {
+      toast.error("No se pudo generar el borrador");
+    }
+  };
+
+  const k = info ? DRAFT_KINDS[info.kind] ?? DRAFT_KINDS.other : null;
+
+  return (
+    <div className="space-y-2">
+      <button
+        onClick={generar}
+        disabled={q.isFetching}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors disabled:opacity-60"
+        style={{ borderColor: "#1e2433", color: "#e2e8f0", backgroundColor: "#0f1117" }}
+      >
+        {q.isFetching ? <><Loader2 size={12} className="animate-spin" /> Generando…</> : <>⚖️ Borrador con pruebas</>}
+      </button>
+
+      {info && k && (
+        <div className="rounded-lg border p-2.5 space-y-1.5" style={{ borderColor: "#1e2433", backgroundColor: "#0f1117" }}>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="px-2 py-0.5 rounded text-[11px] font-semibold" style={{ color: k.color, backgroundColor: k.bg }}>
+              {k.label}
+            </span>
+            {info.diasDesdeCompra != null && (
+              <span className="text-[11px] text-gray-400">{info.diasDesdeCompra} días desde la compra</span>
+            )}
+            <span className="text-[11px]" style={{ color: info.tieneConsentimiento ? "#6ee7b7" : "#fcd34d" }}>
+              {info.tieneConsentimiento ? "✓ consentimiento registrado" : "⚠ sin consentimiento registrado (cliente anterior al 12-ago)"}
+            </span>
+          </div>
+          {k.nota && <p className="text-[11px] text-gray-400 leading-relaxed">{k.nota}</p>}
+          <p className="text-[10px] text-gray-500">
+            Revísalo y edítalo antes de enviar. Nada sale automáticamente.
+          </p>
         </div>
       )}
     </div>
