@@ -461,7 +461,11 @@ export const appRouter = router({
           eventId: order,
           status: "ok",
           durationMs: 0,
-          payload: { userId: ctx.user.id, amountCents: input.amountCents },
+          // `lang` = la edición de idioma en la que compró. Se registra aquí
+          // para poder reconstruirlo después: hasta el 12-ago-2026 los eventos
+          // de wallet no lo guardaban y no quedaba rastro de en qué idioma
+          // había que escribir a ese cliente.
+          payload: { userId: ctx.user.id, amountCents: input.amountCents, lang: input.lang ?? null },
         });
         const result = await chargeApplePay({
           amountCents: input.amountCents,
@@ -491,7 +495,7 @@ export const appRouter = router({
         }
         const txn = data?.payload?.transaction_id ?? "";
         const masked = data?.payload?.masked_card ?? "";
-        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge, setUserCountryIfEmpty, getTrialHours } = await import("./db");
+        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge, setUserCountryIfEmpty, setUserLanguage, getTrialHours } = await import("./db");
         const now = new Date();
         // 0,50 € intro buys a trial of site_settings.trial_hours. After it expires
         // the cron picks the sub up and charges the MIT-R, which extends 30 days.
@@ -543,6 +547,10 @@ export const appRouter = router({
         });
         try {
           const acceptLang = String(ctx.req?.headers?.["accept-language"] ?? "").split(",")[0]?.split("-")[0] ?? "es";
+          // Guardar el idioma de la página en la que compró, para que lo que se
+          // le mande DESPUÉS (reenvío, soporte, aviso de impago) no acabe en
+          // castellano por defecto. Ver setUserLanguage en db.ts.
+          void setUserLanguage(ctx.user.id, input.lang || acceptLang);
           const { sendTrialWelcomeEmail } = await import("./email");
           const u = await getUserById(ctx.user.id);
           if (u?.email) {
@@ -592,7 +600,7 @@ export const appRouter = router({
           eventId: order,
           status: "ok",
           durationMs: 0,
-          payload: { userId: ctx.user.id, amountCents: input.amountCents, credType: input.credType, cardNetwork: input.cardNetwork, assurance: input.assurance },
+          payload: { userId: ctx.user.id, amountCents: input.amountCents, lang: input.lang ?? null, credType: input.credType, cardNetwork: input.cardNetwork, assurance: input.assurance },
         });
         const result = await chargeGpay({
           amountCents: input.amountCents,
@@ -621,7 +629,7 @@ export const appRouter = router({
         }
         const txn = data?.payload?.transaction_id ?? "";
         const masked = data?.payload?.masked_card ?? "";
-        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge, setUserCountryIfEmpty, getTrialHours } = await import("./db");
+        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge, setUserCountryIfEmpty, setUserLanguage, getTrialHours } = await import("./db");
         const now = new Date();
         // 0,50 € intro buys a trial of site_settings.trial_hours. After it expires
         // the cron picks the sub up and charges the MIT-R, which extends 30 days.
@@ -673,6 +681,10 @@ export const appRouter = router({
         });
         try {
           const acceptLang = String(ctx.req?.headers?.["accept-language"] ?? "").split(",")[0]?.split("-")[0] ?? "es";
+          // Guardar el idioma de la página en la que compró, para que lo que se
+          // le mande DESPUÉS (reenvío, soporte, aviso de impago) no acabe en
+          // castellano por defecto. Ver setUserLanguage en db.ts.
+          void setUserLanguage(ctx.user.id, input.lang || acceptLang);
           const { sendTrialWelcomeEmail } = await import("./email");
           const u = await getUserById(ctx.user.id);
           if (u?.email) {
@@ -720,7 +732,11 @@ export const appRouter = router({
           eventId: order,
           status: "ok",
           durationMs: 0,
-          payload: { userId: ctx.user.id, amountCents: input.amountCents },
+          // `lang` = la edición de idioma en la que compró. Se registra aquí
+          // para poder reconstruirlo después: hasta el 12-ago-2026 los eventos
+          // de wallet no lo guardaban y no quedaba rastro de en qué idioma
+          // había que escribir a ese cliente.
+          payload: { userId: ctx.user.id, amountCents: input.amountCents, lang: input.lang ?? null },
         });
         const result = await createCheckoutFastpay({
           amountCents: input.amountCents,

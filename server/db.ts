@@ -237,6 +237,33 @@ export async function userHasActiveSubscription(userId: number): Promise<boolean
  * Powers revenue-by-country in the admin. Skips empty values and Cloudflare's
  * placeholders (XX = unknown, T1 = Tor).
  */
+/**
+ * Persist the language the buyer was actually browsing in (the `/xx/` prefix of
+ * the page they paid from).
+ *
+ * Until 2026-08-12 nobody ever wrote `users.language`: 2.557 of 2.562 rows sat
+ * at the "es" default, including buyers on gmx.at and gmx.de. The welcome email
+ * itself was fine — it takes the language from the checkout call — but anything
+ * sent LATER (a resend, a support reply, a dunning notice) read the column and
+ * would have written to an Austrian in Spanish. A charge notice nobody can read
+ * is a charge notice that did not happen.
+ *
+ * Overwrites on every alta rather than filling only when empty, unlike the
+ * country: the country of a card does not change, but a person can perfectly
+ * well come back through a different language edition, and the most recent one
+ * is the better guess.
+ */
+export async function setUserLanguage(userId: number, lang: string | undefined | null) {
+  const db = await getDb();
+  if (!db) return;
+  const code = (lang || "").trim().slice(0, 2).toLowerCase();
+  // Only the languages the site actually publishes — a stray "xx" would make
+  // the email templates fall back to Spanish anyway, but silently.
+  const SUPPORTED = ["es", "en", "fr", "de", "pt", "it", "nl", "pl", "ru", "uk", "ro", "zh"];
+  if (!SUPPORTED.includes(code)) return;
+  await db.update(users).set({ language: code }).where(eq(users.id, userId));
+}
+
 export async function setUserCountryIfEmpty(userId: number, country: string) {
   const db = await getDb();
   if (!db) return;

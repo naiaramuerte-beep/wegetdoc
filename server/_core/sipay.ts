@@ -331,6 +331,9 @@ export async function finalizeFastpayPayment(opts: {
       // init), then the browser Accept-Language, then Spanish.
       const langFromPage = await findLangFromPendingEvent({ order, requestId });
       const lang = langFromPage || (acceptLang ?? "").split(",")[0]?.split("-")[0] || "es";
+      // Persistir el idioma de la página, igual que en los wallets, para todo
+      // lo que se le mande a este cliente más adelante.
+      void (await import("../db")).setUserLanguage(customUserId, lang);
       const { sendTrialWelcomeEmail } = await import("../email");
       sendTrialWelcomeEmail({ to: u.email, name: u.name ?? u.email, lang, trialEndDate: periodEnd })
         .catch((err: any) => console.warn("[Sipay] welcome email failed:", err?.message ?? err));
