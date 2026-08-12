@@ -1370,7 +1370,8 @@ export async function recordCharge(opts: {
           amountCents: opts.amountCents, provider: opts.provider, userId: opts.userId,
           country: ctx.country || opts.geoCountry || null, cardCountry: opts.cardCountry ?? null,
           maskedCard: opts.sipayMaskedCard ?? null,
-          todayCount: ctx.todayCount, todayTotalCents: ctx.todayTotalCents, hora,
+          todayCount: ctx.todayCount, todayTotalCents: ctx.todayTotalCents,
+          todayAltas: ctx.todayAltas, todayRenov: ctx.todayRenov, hora,
           device: opts.deviceType ?? null, order: opts.sipayOrder ?? null,
         });
       } catch { /* notification is best-effort */ }
@@ -1394,16 +1395,38 @@ function madridDayStartUtc(now: Date = new Date()): Date {
 }
 
 /** Country + today's running sales total, for the enriched Telegram sale alert. */
-export async function getSaleContext(userId: number): Promise<{ country: string | null; todayCount: number; todayTotalCents: number }> {
+export async function getSaleContext(userId: number): Promise<{
+  country: string | null;
+  todayCount: number;
+  todayTotalCents: number;
+  todayAltas: number;
+  todayRenov: number;
+}> {
   const db = await getDb();
-  if (!db) return { country: null, todayCount: 0, todayTotalCents: 0 };
+  const vacio = { country: null, todayCount: 0, todayTotalCents: 0, todayAltas: 0, todayRenov: 0 };
+  if (!db) return vacio;
   const start = madridDayStartUtc();
   const [u] = await db.select({ country: users.country }).from(users).where(eq(users.id, userId)).limit(1);
+  // Altas y renovaciones se cuentan por separado: 20 ventas en un día no dicen
+  // lo mismo si son 20 altas nuevas que si son 20 cobros de clientes que ya
+  // estaban. Los `mit-upgrade-*` son upgrades disparados por el propio usuario,
+  // no cobros del cron, así que cuentan como alta.
   const [agg] = await db.select({
     n: sql<number>`count(*)`,
     s: sql<number>`coalesce(sum(${charges.amountCents}),0)`,
+    renov: sql<number>`sum(case when ${charges.provider} = 'mit'
+                                 and coalesce(${charges.sipayOrder},'') not like 'mit-upgrade-%'
+                            then 1 else 0 end)`,
   }).from(charges).where(and(eq(charges.status, "ok"), gte(charges.createdAt, start)));
-  return { country: u?.country ?? null, todayCount: Number(agg?.n ?? 0), todayTotalCents: Number(agg?.s ?? 0) };
+  const total = Number(agg?.n ?? 0);
+  const renov = Number(agg?.renov ?? 0);
+  return {
+    country: u?.country ?? null,
+    todayCount: total,
+    todayTotalCents: Number(agg?.s ?? 0),
+    todayAltas: total - renov,
+    todayRenov: renov,
+  };
 }
 
 /** Full breakdown of today's (Madrid) successful sales — for the 23:00 summary. */
