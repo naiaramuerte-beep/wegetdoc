@@ -315,6 +315,30 @@ export async function finalizeFastpayPayment(opts: {
     cardCountry: data?.payload?.card_country ?? null,
     geoCountry: opts.geoCountry ?? null,
   });
+  // Prueba de consentimiento del cobro. En tarjeta el dinero se mueve aquí, en
+  // el callback del 3DS, no en la llamada del navegador — así que la IP y el
+  // navegador que se guardan son los que quedaron anotados al iniciar el
+  // checkout, no los de esta petición, que viene de Redsys y no del comprador.
+  try {
+    const { recordConsent, getActiveMonthlyPrice, findConsentFromPendingEvent, findLangFromPendingEvent } = await import("../db");
+    const pendingConsent = await findConsentFromPendingEvent({ order, requestId });
+    // El idioma se relee aquí en vez de reusar el de más abajo: aquel se calcula
+    // dentro del bloque del email de bienvenida, que va después de este punto.
+    const consentLang = await findLangFromPendingEvent({ order, requestId });
+    void recordConsent({
+      userId: customUserId,
+      event: "payment",
+      ip: pendingConsent?.ip ?? null,
+      userAgent: pendingConsent?.userAgent ?? null,
+      lang: consentLang,
+      textShown: pendingConsent?.consentText ?? null,
+      introCents: amountCents,
+      recurringCents: Math.round((await getActiveMonthlyPrice()).eur * 100),
+      trialHours,
+      provider: "fastpay",
+      sipayOrder: order,
+    });
+  } catch { /* la prueba no puede tumbar un cobro ya autorizado */ }
   await recordWebhookEvent({
     provider: "sipay",
     eventType: "fastpay_intro_charge",
