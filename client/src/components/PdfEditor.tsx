@@ -2369,6 +2369,18 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const c = signCanvasRef.current!;
     c.getContext("2d")!.clearRect(0, 0, c.width, c.height);
   };
+  /**
+   * Pliega la hoja de herramientas en móvil después de insertar una firma.
+   *
+   * En el teléfono la hoja tapa el PDF, así que al insertar la firma el usuario
+   * no veía dónde había caído ni podía arrastrarla hasta cerrar el panel a mano.
+   * En escritorio el panel es una barra lateral que no tapa nada, y dejarlo
+   * abierto permite encadenar varias firmas seguidas: allí no se toca. Mismo
+   * criterio que el guard de la edición de texto nativo.
+   */
+  const collapseMobilePanelAfterInsert = () => {
+    if (window.innerWidth < 768) setShowMobilePanel(false);
+  };
   const placeSignature = () => {
     const c = signCanvasRef.current!;
     const dataUrl = c.toDataURL();
@@ -2400,6 +2412,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     const dataUrl = c.toDataURL();
     addAnnotation({ type: "signature", dataUrl, x: 100, y: 100, width: Math.max(220, signName.length * 32), height: 90, page: currentPage });
     toast.success(t.editor_sign_added ?? "Signature added. Drag it to position.");
+    collapseMobilePanelAfterInsert();
   };
 
   // Generate electronic signature block (name + date + legal text rendered to canvas)
@@ -3893,6 +3906,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                   onPlaceSignature={(dataUrl) => {
                     addAnnotation({ type: "signature", dataUrl, x: 100, y: 100, width: 200, height: 80, page: currentPage });
                     toast.success(t.editor_sign_added ?? "Firma añadida. Arrástrala para posicionarla.");
+                    collapseMobilePanelAfterInsert();
                   }}
                   clearLabel={t.editor_cancel_btn ?? "Limpiar"}
                   placeLabel={t.editor_sign_insert_btn ?? "Insertar firma"}
@@ -3975,6 +3989,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
                           const h = w / aspect;
                           addAnnotation({ type: "signature", dataUrl, x: 100, y: 100, width: w, height: h, page: currentPage });
                           toast.success(t.editor_sign_image_added ?? "Imagen de firma añadida. Arrástrala para posicionarla.");
+                          collapseMobilePanelAfterInsert();
                         };
                         img.src = dataUrl;
                       };
