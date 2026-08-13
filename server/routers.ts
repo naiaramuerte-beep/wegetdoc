@@ -149,14 +149,21 @@ export const appRouter = router({
       // "39.90" → "39,90" for de/es/fr/it/pl/pt/ro/ru/uk; "39.90" stays for en/zh/nl
       const decimals = priceEur.toFixed(2);
       const comma = decimals.replace(".", ",");
-      const { getTrialHours } = await import("./db");
+      const { getTrialHours, getIntroPriceCents } = await import("./db");
       const trialHours = await getTrialHours();
+      // The alta amount is now decided server-side (see _core/altaGuard.ts).
+      // Publish it so the wallet sheets and the price card show exactly what
+      // we are going to charge — a buyer must never see 0,50 € on the Apple
+      // Pay sheet and be charged something else.
+      const introCents = await getIntroPriceCents();
       return {
         priceEur,
         priceComma: comma,           // "39,90"
         priceDot: decimals,          // "39.90"
         priceFormattedEs: `${comma}€`, // "39,90€" — used everywhere in es-style copy
         trialHours,                  // trial length in HOURS (for the checkout billing notice)
+        introCents,                  // alta amount in cents — authoritative
+        introFormattedEs: `${(introCents / 100).toFixed(2).replace(".", ",")} €`,
       };
     }),
 
@@ -482,6 +489,39 @@ export const appRouter = router({
         consentText: z.string().max(1000).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
+        // Idempotency + server-side price. See _core/altaGuard.ts — the client
+        // no longer decides either whether we charge or how much.
+        const { openAltaGuard, recordAltaBlocked, recordAltaPriceMismatch } = await import("./_core/altaGuard");
+        const guard = await openAltaGuard(ctx.user.id);
+        if (!guard.ok) {
+          await recordAltaBlocked({
+            userId: ctx.user.id, method: "apay", reason: guard.reason,
+            existingChargeId: guard.existing?.id, clientAmountCents: input.amountCents,
+          });
+          if (guard.reason === "already_paid" && guard.existing) {
+            // Already paid: hand back the ORIGINAL charge so the buyer lands on
+            // the success page with their file, without paying twice.
+            return {
+              transactionId: guard.existing.sipayTransactionId ?? "",
+              maskedCard: guard.existing.sipayMaskedCard ?? "",
+              cardBrand: "",
+              order: guard.existing.sipayOrder ?? "",
+              duplicate: true,
+            };
+          }
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Ya hay un pago en curso para esta cuenta. Espera unos segundos.",
+          });
+        }
+        if (input.amountCents !== guard.amountCents) {
+          await recordAltaPriceMismatch({
+            userId: ctx.user.id, method: "apay",
+            clientAmountCents: input.amountCents, serverAmountCents: guard.amountCents,
+          });
+        }
+        const amountCents = guard.amountCents;
+        try {
         const { chargeApplePay } = await import("./_core/sipay");
         const order = `apay-${ctx.user.id}-${Date.now()}`;
         const startedAt = Date.now();
@@ -498,10 +538,10 @@ export const appRouter = router({
           // para poder reconstruirlo después: hasta el 12-ago-2026 los eventos
           // de wallet no lo guardaban y no quedaba rastro de en qué idioma
           // había que escribir a ese cliente.
-          payload: { userId: ctx.user.id, amountCents: input.amountCents, lang: input.lang ?? null },
+          payload: { userId: ctx.user.id, amountCents, lang: input.lang ?? null },
         });
         const result = await chargeApplePay({
-          amountCents: input.amountCents,
+          amountCents,
           tokenApay: input.tokenApay,
           requestId: input.requestId,
           order,
@@ -559,7 +599,7 @@ export const appRouter = router({
         await recordCharge({
           userId: ctx.user.id,
           provider: "apay",
-          amountCents: input.amountCents,
+          amountCents,
           sipayTransactionId: txn,
           sipayOrder: order,
           sipayMaskedCard: masked,
@@ -614,7 +654,13 @@ export const appRouter = router({
           maskedCard: masked,
           cardBrand: data?.payload?.card_brand ?? "",
           order,
+          duplicate: false,
         };
+        } finally {
+          // Released only after recordCharge has written the ledger row, so a
+          // request arriving right behind this one sees the charge in the DB.
+          guard.release();
+        }
       }),
 
     // Google Pay one-shot authorization. Front-end gets the encrypted token
@@ -641,6 +687,36 @@ export const appRouter = router({
         consentText: z.string().max(1000).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
+        // Idempotency + server-side price. See _core/altaGuard.ts.
+        const { openAltaGuard, recordAltaBlocked, recordAltaPriceMismatch } = await import("./_core/altaGuard");
+        const guard = await openAltaGuard(ctx.user.id);
+        if (!guard.ok) {
+          await recordAltaBlocked({
+            userId: ctx.user.id, method: "gpay", reason: guard.reason,
+            existingChargeId: guard.existing?.id, clientAmountCents: input.amountCents,
+          });
+          if (guard.reason === "already_paid" && guard.existing) {
+            return {
+              transactionId: guard.existing.sipayTransactionId ?? "",
+              maskedCard: guard.existing.sipayMaskedCard ?? "",
+              cardBrand: "",
+              order: guard.existing.sipayOrder ?? "",
+              duplicate: true,
+            };
+          }
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Ya hay un pago en curso para esta cuenta. Espera unos segundos.",
+          });
+        }
+        if (input.amountCents !== guard.amountCents) {
+          await recordAltaPriceMismatch({
+            userId: ctx.user.id, method: "gpay",
+            clientAmountCents: input.amountCents, serverAmountCents: guard.amountCents,
+          });
+        }
+        const amountCents = guard.amountCents;
+        try {
         const { chargeGpay } = await import("./_core/sipay");
         const order = `gpay-${ctx.user.id}-${Date.now()}`;
         const startedAt = Date.now();
@@ -651,10 +727,10 @@ export const appRouter = router({
           eventId: order,
           status: "ok",
           durationMs: 0,
-          payload: { userId: ctx.user.id, amountCents: input.amountCents, lang: input.lang ?? null, credType: input.credType, cardNetwork: input.cardNetwork, assurance: input.assurance },
+          payload: { userId: ctx.user.id, amountCents, lang: input.lang ?? null, credType: input.credType, cardNetwork: input.cardNetwork, assurance: input.assurance },
         });
         const result = await chargeGpay({
-          amountCents: input.amountCents,
+          amountCents,
           tokenGpay: input.token,
           order,
           token: `usr-${ctx.user.id}`,
@@ -711,7 +787,7 @@ export const appRouter = router({
         await recordCharge({
           userId: ctx.user.id,
           provider: "gpay",
-          amountCents: input.amountCents,
+          amountCents,
           sipayTransactionId: txn,
           sipayOrder: order,
           sipayMaskedCard: masked,
@@ -766,7 +842,11 @@ export const appRouter = router({
           maskedCard: masked,
           cardBrand: data?.payload?.card_brand ?? "",
           order,
+          duplicate: false,
         };
+        } finally {
+          guard.release();
+        }
       }),
 
     // Phase 1 — wire FastPay token into all-in-one and return the 3DS URL
@@ -787,6 +867,44 @@ export const appRouter = router({
         consentText: z.string().max(1000).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
+        // Idempotency + server-side price. See _core/altaGuard.ts.
+        //
+        // The card path differs from the wallets: money moves in the 3DS
+        // callback, not here. So the lock only covers this init call, and the
+        // real protection is the DB probe — which is enough, because in every
+        // duplicate we observed in production the FIRST card charge had already
+        // landed in `charges` before the second checkout was started (closest
+        // pair 2,3 min apart). A user whose first attempt was DECLINED has no
+        // charge row, so their retry is correctly allowed straight through.
+        const { openAltaGuard, recordAltaBlocked, recordAltaPriceMismatch } = await import("./_core/altaGuard");
+        const guard = await openAltaGuard(ctx.user.id);
+        if (!guard.ok) {
+          await recordAltaBlocked({
+            userId: ctx.user.id, method: "fastpay", reason: guard.reason,
+            existingChargeId: guard.existing?.id, clientAmountCents: input.amountCents,
+          });
+          if (guard.reason === "already_paid" && guard.existing) {
+            // No redirectUrl → the client must NOT send the buyer to 3DS again.
+            return {
+              requestId: "",
+              redirectUrl: "",
+              order: guard.existing.sipayOrder ?? "",
+              duplicate: true,
+            };
+          }
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Ya hay un pago en curso para esta cuenta. Espera unos segundos.",
+          });
+        }
+        if (input.amountCents !== guard.amountCents) {
+          await recordAltaPriceMismatch({
+            userId: ctx.user.id, method: "fastpay",
+            clientAmountCents: input.amountCents, serverAmountCents: guard.amountCents,
+          });
+        }
+        const amountCents = guard.amountCents;
+        try {
         const { createCheckoutFastpay } = await import("./_core/sipay");
         const { recordWebhookEvent, setUserCountryIfEmpty } = await import("./db");
         // Capture payer country here (direct browser request → reliable geo)
@@ -805,10 +923,10 @@ export const appRouter = router({
           // para poder reconstruirlo después: hasta el 12-ago-2026 los eventos
           // de wallet no lo guardaban y no quedaba rastro de en qué idioma
           // había que escribir a ese cliente.
-          payload: { userId: ctx.user.id, amountCents: input.amountCents, lang: input.lang ?? null },
+          payload: { userId: ctx.user.id, amountCents, lang: input.lang ?? null },
         });
         const result = await createCheckoutFastpay({
-          amountCents: input.amountCents,
+          amountCents,
           fastpayRequestId: input.fastpayRequestId,
           token,
           order,
@@ -849,7 +967,7 @@ export const appRouter = router({
             userId: ctx.user.id,
             order,
             requestId: sipayRequestId,
-            amountCents: input.amountCents,
+            amountCents,
             ...(input.lang ? { lang: input.lang } : {}),
             ...(input.gclid ? { gclid: input.gclid, gclidType: input.gclidType ?? "gclid" } : {}),
             // Datos del COMPRADOR para la prueba de consentimiento. Se anotan
@@ -866,7 +984,11 @@ export const appRouter = router({
           requestId: sipayRequestId,
           redirectUrl: data?.payload?.url ?? "",
           order,
+          duplicate: false,
         };
+        } finally {
+          guard.release();
+        }
       }),
 
   }),

@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, isNotNull, isNull, like, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull, isNull, like, lt, ne, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
@@ -761,6 +761,64 @@ export async function getLegalSnapshot(hash: string) {
   if (!db) return null;
   const rows = await db.select().from(legalSnapshots)
     .where(eq(legalSnapshots.hash, hash)).limit(1);
+  return rows[0] ?? null;
+}
+
+/**
+ * Intro (alta) price in CENTS, read from `site_settings.intro_price_eur`.
+ *
+ * SINGLE SOURCE OF TRUTH for what we charge on signup. Before this existed the
+ * amount travelled from the browser (`amountCents` in the tRPC input) and the
+ * server charged whatever it was handed — a client-controlled price. Every alta
+ * path now derives the amount from here and ignores the client's number.
+ *
+ * Clamped to [1, 500] cents so a fat-fingered setting can never charge someone
+ * 500 € on signup; a bad/missing value falls back to the historical 0,50 €.
+ */
+export async function getIntroPriceCents(): Promise<number> {
+  const raw = await getSiteSetting("intro_price_eur");
+  const n = Number((raw ?? "").replace(",", "."));
+  if (!Number.isFinite(n) || n <= 0) return 50;
+  const cents = Math.round(n * 100);
+  return Math.min(500, Math.max(1, cents));
+}
+
+/**
+ * Most recent SUCCESSFUL alta charge for a user inside a time window.
+ *
+ * This is the idempotency probe for signup. Audit of 2026-08-07 found 25 users
+ * charged 2-3 times for the same alta (28 extra charges) because none of the
+ * three checkout paths asked "did this user already pay?" before charging.
+ *
+ * The window matters. Real accidental duplicates in production sat between
+ * 54 s and 43 min apart (impatient double-taps, wallet sheet reopened, user
+ * retrying after a slow response). Legitimate REPURCHASES — someone whose sub
+ * lapsed and who signs up again — were never closer than 2,9 DAYS. There is
+ * nothing in between, so a window of a couple of hours separates the two cases
+ * cleanly without ever blocking a genuine new signup.
+ */
+export async function findRecentAltaCharge(userId: number, withinMinutes: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const since = new Date(Date.now() - withinMinutes * 60 * 1000);
+  const rows = await db.select({
+    id: charges.id,
+    provider: charges.provider,
+    amountCents: charges.amountCents,
+    sipayTransactionId: charges.sipayTransactionId,
+    sipayOrder: charges.sipayOrder,
+    sipayMaskedCard: charges.sipayMaskedCard,
+    createdAt: charges.createdAt,
+  })
+    .from(charges)
+    .where(and(
+      eq(charges.userId, userId),
+      eq(charges.status, "ok"),
+      ne(charges.provider, "mit"),
+      gte(charges.createdAt, since),
+    ))
+    .orderBy(desc(charges.createdAt))
+    .limit(1);
   return rows[0] ?? null;
 }
 
