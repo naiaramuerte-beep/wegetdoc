@@ -112,6 +112,8 @@ export async function notifySale(opts: {
   maskedCard?: string | null;
   todayCount?: number;      // running total for today (incl. this sale)
   todayTotalCents?: number;
+  todayAltas?: number;      // de ese total, cuántas son altas nuevas
+  todayRenov?: number;      // y cuántas cobros recurrentes
   hora?: string;            // HH:mm Madrid
   device?: "mobile" | "desktop" | null;
   order?: string | null;    // sipay order — "mit-upgrade-…" marks a trial→monthly upgrade
@@ -135,7 +137,12 @@ export async function notifySale(opts: {
   ].filter(Boolean).join(" · ");
   if (geoTime) lines.push(geoTime);
   if (typeof opts.todayCount === "number" && typeof opts.todayTotalCents === "number") {
-    lines.push(`📊 Hoy: <b>${opts.todayCount}</b> ventas · <b>${eur(opts.todayTotalCents)}</b>`);
+    // Desglosado, porque 20 ventas no dicen lo mismo si son 20 clientes nuevos
+    // que si son 20 cobros de gente que ya estaba.
+    const desglose = typeof opts.todayAltas === "number" && typeof opts.todayRenov === "number"
+      ? `🆕 <b>${opts.todayAltas}</b> altas · 🔄 <b>${opts.todayRenov}</b> renovaciones`
+      : `<b>${opts.todayCount}</b> ventas`;
+    lines.push(`📊 Hoy: ${desglose} · <b>${eur(opts.todayTotalCents)}</b>`);
   }
   const idCard = [
     opts.userId ? `👤 ${opts.userId}` : "",

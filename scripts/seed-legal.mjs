@@ -29,23 +29,29 @@ El acceso a las funcionalidades avanzadas de la Plataforma requiere la creación
 
 ### 3.1 Periodo de prueba inicial
 
-La contratación del servicio incluye un **periodo de prueba de 7 días** con un coste inicial de **0,50 EUR** (impuestos incluidos). Durante este periodo, el usuario dispondrá de acceso completo a todas las funcionalidades avanzadas de la Plataforma.
+Las condiciones del periodo de prueba y de la renovación son, en todo caso, **las mostradas al usuario durante el proceso de compra**. En la fecha de la última actualización de este documento, dichas condiciones son: **periodo de prueba de 24 horas** con un coste inicial de **0,50 EUR** (impuestos incluidos) y, a su término, **{price}/mes** hasta la cancelación.
+
+Durante el periodo de prueba el usuario dispondrá de acceso completo a todas las funcionalidades avanzadas de la Plataforma. El periodo de prueba comienza en el momento en que se confirma el pago inicial y finaliza exactamente **24 horas después**; la fecha y la hora concretas se comunican al usuario por correo electrónico inmediatamente después de la compra y están disponibles en todo momento en su panel de control.
 
 ### 3.2 Cobro recurrente y autorización expresa
 
-**AVISO IMPORTANTE:** Al formalizar el pago inicial de 0,50 EUR, el usuario **otorga autorización expresa** para que IQBOOST efectúe un cargo periódico de **{price}/mes** (impuestos incluidos) en el medio de pago registrado una vez concluido el periodo de prueba de 7 días. Dicho cargo se repetirá mensualmente de forma automática hasta que el usuario proceda a la cancelación de su suscripción.
+**AVISO IMPORTANTE:** Al formalizar el pago inicial de 0,50 EUR, el usuario **otorga autorización expresa** para que IQBOOST efectúe un cargo periódico de **{price}/mes** (impuestos incluidos) en el medio de pago registrado una vez concluido el periodo de prueba de 24 horas. Dicho cargo se repetirá mensualmente de forma automática hasta que el usuario proceda a la cancelación de su suscripción.
 
 El importe mensual se cargará en el mismo medio de pago utilizado en la transacción inicial, salvo que el usuario cancele antes de la finalización del periodo de prueba.
 
 ### 3.3 Procedimiento de cancelación
 
-El usuario podrá dar de baja su suscripción en cualquier momento **con anterioridad a la finalización del periodo de prueba de 7 días** sin que se genere cargo adicional alguno. Si la cancelación se produce una vez iniciado un ciclo de facturación mensual, esta surtirá efecto al término del periodo ya abonado, sin derecho a devolución proporcional.
+El usuario podrá dar de baja su suscripción en cualquier momento **con anterioridad a la finalización del periodo de prueba de 24 horas** sin que se genere cargo adicional alguno. Si la cancelación se produce una vez iniciado un ciclo de facturación mensual, esta surtirá efecto al término del periodo ya abonado, sin derecho a devolución proporcional.
 
 Para proceder a la cancelación, el usuario deberá acceder a su panel de control en [editorpdf.net/dashboard](https://editorpdf.net/dashboard), dirigirse a la sección **Facturación** y pulsar **Cancelar suscripción**.
 
-### 3.4 Política de devoluciones
+### 3.4 Derecho de desistimiento y devoluciones
 
-Los importes abonados no serán objeto de reembolso, excepto en los supuestos contemplados por la normativa vigente en materia de protección del consumidor (Directiva 2011/83/UE). El derecho de desistimiento de 14 días naturales no será aplicable una vez que la prestación del servicio digital haya dado comienzo con el consentimiento expreso del usuario.
+El usuario dispone de un **derecho de desistimiento de 14 días naturales** desde la contratación, **con reembolso del importe abonado**, sin necesidad de justificar su decisión y sin penalización alguna.
+
+IQBOOST reconoce este derecho **aunque la prestación del servicio digital ya haya comenzado**, renunciando expresamente a la excepción que la normativa de consumo permitiría invocar en ese supuesto (Directiva 2011/83/UE y Real Decreto Legislativo 1/2007). Es decir: haber usado la Plataforma durante el periodo de prueba no priva al usuario de su derecho a desistir.
+
+Para ejercerlo basta con solicitarlo desde el panel de control o escribir a support@editorpdf.net indicando el correo electrónico de la cuenta. El reembolso se efectuará en el mismo medio de pago empleado en la compra, sin coste para el usuario, en un plazo máximo de 14 días naturales desde la recepción de la solicitud.
 
 ### 3.5 Tarifas y modificaciones de precio
 

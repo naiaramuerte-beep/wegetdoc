@@ -21,7 +21,9 @@ export function usePricing() {
   });
   const price = q.data?.priceFormattedEs ?? "19,95€";
   const priceEur = q.data?.priceEur ?? 19.95;
-  const trialDays = q.data?.trialDays ?? 7;
+  // Trial length in HOURS (24 since 2026-08-11). Falls back to the policy value
+  // while the query is in flight so the copy never renders a raw placeholder.
+  const trialHours = q.data?.trialHours ?? 24;
   // Alta amount. The server decides what it charges (see _core/altaGuard.ts);
   // this is the same number so the wallet sheets and the price card can never
   // show one figure while we take another. 50 while the query is in flight —
@@ -30,9 +32,9 @@ export function usePricing() {
   const introPrice = q.data?.introFormattedEs ?? "0,50 €";
   const withPrice = (s: string | undefined | null) =>
     (s ?? "").replace(/\{price\}/g, price);
-  // For the checkout billing notice: also fills {days} (trial length) and
+  // For the checkout billing notice: also fills {hours} (trial length) and
   // {intro} (the €0,50 today), so the copy always matches the live config.
   const withNotice = (s: string | undefined | null) =>
-    fillNotice(s, { intro: introPrice.replace(" ", ""), days: trialDays, price });
-  return { price, priceEur, trialDays, introCents, introPrice, withPrice, withNotice };
+    fillNotice(s, { intro: introPrice.replace(" ", ""), hours: trialHours, price });
+  return { price, priceEur, trialHours, introCents, introPrice, withPrice, withNotice };
 }

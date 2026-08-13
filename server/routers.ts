@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { trialEndFrom } from "@shared/trial";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { deviceFromUA } from "./_core/telegram";
 import { systemRouter } from "./_core/systemRouter";
@@ -8,6 +9,8 @@ import { TRPCError } from "@trpc/server";
 import bcrypt from "bcryptjs";
 import {
   getActiveSubscription,
+  recordConsent,
+  getActiveMonthlyPrice,
   userHasActiveSubscription,
   cancelSubscriptionDb,
   getAllUsers,
@@ -90,6 +93,20 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   return next({ ctx });
 });
 
+/**
+ * IP real del cliente. Detrás de Cloudflare y Railway la conexión llega desde
+ * un proxy, así que `req.ip` sería la del proxy — inútil como prueba. Se lee la
+ * cabecera de Cloudflare primero y se cae a la cadena de X-Forwarded-For.
+ */
+function clientIpOf(req: any): string {
+  return String(
+    req?.headers?.["cf-connecting-ip"]
+      ?? String(req?.headers?.["x-forwarded-for"] ?? "").split(",")[0]
+      ?? req?.ip
+      ?? "",
+  ).trim().slice(0, 64);
+}
+
 export const appRouter = router({
   system: systemRouter,
 
@@ -132,8 +149,8 @@ export const appRouter = router({
       // "39.90" → "39,90" for de/es/fr/it/pl/pt/ro/ru/uk; "39.90" stays for en/zh/nl
       const decimals = priceEur.toFixed(2);
       const comma = decimals.replace(".", ",");
-      const { getTrialDays, getIntroPriceCents } = await import("./db");
-      const trialDays = await getTrialDays();
+      const { getTrialHours, getIntroPriceCents } = await import("./db");
+      const trialHours = await getTrialHours();
       // The alta amount is now decided server-side (see _core/altaGuard.ts).
       // Publish it so the wallet sheets and the price card show exactly what
       // we are going to charge — a buyer must never see 0,50 € on the Apple
@@ -144,7 +161,7 @@ export const appRouter = router({
         priceComma: comma,           // "39,90"
         priceDot: decimals,          // "39.90"
         priceFormattedEs: `${comma}€`, // "39,90€" — used everywhere in es-style copy
-        trialDays,                   // trial length in days (for the checkout billing notice)
+        trialHours,                  // trial length in HOURS (for the checkout billing notice)
         introCents,                  // alta amount in cents — authoritative
         introFormattedEs: `${(introCents / 100).toFixed(2).replace(".", ",")} €`,
       };
@@ -201,6 +218,11 @@ export const appRouter = router({
         email: z.string().email(),
         password: z.string().min(6),
         name: z.string().min(1).max(128).optional(),
+        // Frase de aceptación que el cliente tenía delante al pulsar el botón,
+        // ya traducida. Se guarda literal: en una disputa lo que vale es lo que
+        // vio esa persona, no lo que hoy diga la web.
+        consentText: z.string().max(1000).optional(),
+        lang: z.string().max(8).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const existing = await getUserByEmail(input.email);
@@ -219,6 +241,16 @@ export const appRouter = router({
         const token = await sdk.createSessionToken(user.openId, { name: user.name ?? "", expiresInMs: ONE_YEAR_MS });
         const cookieOptions = getSessionCookieOptions(ctx.req);
         ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+        // Prueba de consentimiento. No se espera: si falla, se pierde la prueba
+        // de este registro, pero la cuenta se crea igual.
+        void recordConsent({
+          userId: user.id,
+          event: "register",
+          ip: clientIpOf(ctx.req),
+          userAgent: String(ctx.req?.headers?.["user-agent"] ?? ""),
+          lang: input.lang ?? null,
+          textShown: input.consentText ?? null,
+        });
         return { success: true, user: { id: user.id, email: user.email, name: user.name, role: user.role } };
       }),
 
@@ -453,6 +485,8 @@ export const appRouter = router({
         gclid: z.string().max(512).optional(),
         gclidType: z.string().max(16).optional(),
         lang: z.string().max(8).optional(),
+        // Frase de aceptación que el comprador tenía delante al autorizar.
+        consentText: z.string().max(1000).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         // Idempotency + server-side price. See _core/altaGuard.ts — the client
@@ -500,7 +534,11 @@ export const appRouter = router({
           eventId: order,
           status: "ok",
           durationMs: 0,
-          payload: { userId: ctx.user.id, amountCents },
+          // `lang` = la edición de idioma en la que compró. Se registra aquí
+          // para poder reconstruirlo después: hasta el 12-ago-2026 los eventos
+          // de wallet no lo guardaban y no quedaba rastro de en qué idioma
+          // había que escribir a ese cliente.
+          payload: { userId: ctx.user.id, amountCents, lang: input.lang ?? null },
         });
         const result = await chargeApplePay({
           amountCents,
@@ -530,12 +568,12 @@ export const appRouter = router({
         }
         const txn = data?.payload?.transaction_id ?? "";
         const masked = data?.payload?.masked_card ?? "";
-        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge, setUserCountryIfEmpty, getTrialDays } = await import("./db");
+        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge, setUserCountryIfEmpty, setUserLanguage, getTrialHours } = await import("./db");
         const now = new Date();
-        // 0,50 € intro buys a trial of site_settings.trial_days. After it expires
+        // 0,50 € intro buys a trial of site_settings.trial_hours. After it expires
         // the cron picks the sub up and charges the MIT-R, which extends 30 days.
-        const trialDays = await getTrialDays();
-        const periodEnd = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000);
+        const trialHours = await getTrialHours();
+        const periodEnd = trialEndFrom(now, trialHours);
         await upsertSubscription({
           userId: ctx.user.id,
           // Store the merchant token we vaulted the card under (`usr-<userId>`),
@@ -551,7 +589,7 @@ export const appRouter = router({
           status: "trialing",
           currentPeriodStart: now,
           currentPeriodEnd: periodEnd,
-          trialDays,
+          trialHours,
           cancelAtPeriodEnd: false,
         });
         await markDocumentsPaid(ctx.user.id);
@@ -572,6 +610,22 @@ export const appRouter = router({
           cardCountry: data?.payload?.card_country ?? null,
           geoCountry: String(ctx.req?.headers?.["cf-ipcountry"] ?? ""),
         });
+        // Prueba de consentimiento del cobro: qué aceptó, cuándo, desde dónde y
+        // con qué importes vigentes. No se espera — perder la prueba es malo,
+        // pero dejar a medias un pago ya autorizado es peor.
+        void recordConsent({
+          userId: ctx.user.id,
+          event: "payment",
+          ip: clientIpOf(ctx.req),
+          userAgent: String(ctx.req?.headers?.["user-agent"] ?? ""),
+          lang: input.lang ?? null,
+          textShown: input.consentText ?? null,
+          introCents: input.amountCents,
+          recurringCents: Math.round((await getActiveMonthlyPrice()).eur * 100),
+          trialHours,
+          provider: "apay",
+          sipayOrder: order,
+        });
         await recordWebhookEvent({
           provider: "sipay",
           eventType: "apay_intro_charge",
@@ -582,6 +636,10 @@ export const appRouter = router({
         });
         try {
           const acceptLang = String(ctx.req?.headers?.["accept-language"] ?? "").split(",")[0]?.split("-")[0] ?? "es";
+          // Guardar el idioma de la página en la que compró, para que lo que se
+          // le mande DESPUÉS (reenvío, soporte, aviso de impago) no acabe en
+          // castellano por defecto. Ver setUserLanguage en db.ts.
+          void setUserLanguage(ctx.user.id, input.lang || acceptLang);
           const { sendTrialWelcomeEmail } = await import("./email");
           const u = await getUserById(ctx.user.id);
           if (u?.email) {
@@ -625,6 +683,8 @@ export const appRouter = router({
         credType: z.string().max(24).optional(),
         cardNetwork: z.string().max(24).optional(),
         assurance: z.string().max(256).optional(),
+        // Frase de aceptación que el comprador tenía delante al autorizar.
+        consentText: z.string().max(1000).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         // Idempotency + server-side price. See _core/altaGuard.ts.
@@ -667,7 +727,7 @@ export const appRouter = router({
           eventId: order,
           status: "ok",
           durationMs: 0,
-          payload: { userId: ctx.user.id, amountCents, credType: input.credType, cardNetwork: input.cardNetwork, assurance: input.assurance },
+          payload: { userId: ctx.user.id, amountCents, lang: input.lang ?? null, credType: input.credType, cardNetwork: input.cardNetwork, assurance: input.assurance },
         });
         const result = await chargeGpay({
           amountCents,
@@ -696,12 +756,12 @@ export const appRouter = router({
         }
         const txn = data?.payload?.transaction_id ?? "";
         const masked = data?.payload?.masked_card ?? "";
-        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge, setUserCountryIfEmpty, getTrialDays } = await import("./db");
+        const { upsertSubscription, markDocumentsPaid, recordWebhookEvent, recordCharge, setUserCountryIfEmpty, setUserLanguage, getTrialHours } = await import("./db");
         const now = new Date();
-        // 0,50 € intro buys a trial of site_settings.trial_days. After it expires
+        // 0,50 € intro buys a trial of site_settings.trial_hours. After it expires
         // the cron picks the sub up and charges the MIT-R, which extends 30 days.
-        const trialDays = await getTrialDays();
-        const periodEnd = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000);
+        const trialHours = await getTrialHours();
+        const periodEnd = trialEndFrom(now, trialHours);
         await upsertSubscription({
           userId: ctx.user.id,
           // Store the merchant token we vaulted the card under (`usr-<userId>`),
@@ -717,7 +777,7 @@ export const appRouter = router({
           status: "trialing",
           currentPeriodStart: now,
           currentPeriodEnd: periodEnd,
-          trialDays,
+          trialHours,
           cancelAtPeriodEnd: false,
         });
         await markDocumentsPaid(ctx.user.id);
@@ -738,6 +798,22 @@ export const appRouter = router({
           cardCountry: data?.payload?.card_country ?? null,
           geoCountry: String(ctx.req?.headers?.["cf-ipcountry"] ?? ""),
         });
+        // Prueba de consentimiento del cobro: qué aceptó, cuándo, desde dónde y
+        // con qué importes vigentes. No se espera — perder la prueba es malo,
+        // pero dejar a medias un pago ya autorizado es peor.
+        void recordConsent({
+          userId: ctx.user.id,
+          event: "payment",
+          ip: clientIpOf(ctx.req),
+          userAgent: String(ctx.req?.headers?.["user-agent"] ?? ""),
+          lang: input.lang ?? null,
+          textShown: input.consentText ?? null,
+          introCents: input.amountCents,
+          recurringCents: Math.round((await getActiveMonthlyPrice()).eur * 100),
+          trialHours,
+          provider: "gpay",
+          sipayOrder: order,
+        });
         await recordWebhookEvent({
           provider: "sipay",
           eventType: "gpay_intro_charge",
@@ -748,6 +824,10 @@ export const appRouter = router({
         });
         try {
           const acceptLang = String(ctx.req?.headers?.["accept-language"] ?? "").split(",")[0]?.split("-")[0] ?? "es";
+          // Guardar el idioma de la página en la que compró, para que lo que se
+          // le mande DESPUÉS (reenvío, soporte, aviso de impago) no acabe en
+          // castellano por defecto. Ver setUserLanguage en db.ts.
+          void setUserLanguage(ctx.user.id, input.lang || acceptLang);
           const { sendTrialWelcomeEmail } = await import("./email");
           const u = await getUserById(ctx.user.id);
           if (u?.email) {
@@ -783,6 +863,8 @@ export const appRouter = router({
         gclid: z.string().max(512).optional(),
         gclidType: z.string().max(16).optional(),
         lang: z.string().max(8).optional(),
+        // Frase de aceptación que el comprador tenía delante al autorizar.
+        consentText: z.string().max(1000).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         // Idempotency + server-side price. See _core/altaGuard.ts.
@@ -837,7 +919,11 @@ export const appRouter = router({
           eventId: order,
           status: "ok",
           durationMs: 0,
-          payload: { userId: ctx.user.id, amountCents },
+          // `lang` = la edición de idioma en la que compró. Se registra aquí
+          // para poder reconstruirlo después: hasta el 12-ago-2026 los eventos
+          // de wallet no lo guardaban y no quedaba rastro de en qué idioma
+          // había que escribir a ese cliente.
+          payload: { userId: ctx.user.id, amountCents, lang: input.lang ?? null },
         });
         const result = await createCheckoutFastpay({
           amountCents,
@@ -884,6 +970,13 @@ export const appRouter = router({
             amountCents,
             ...(input.lang ? { lang: input.lang } : {}),
             ...(input.gclid ? { gclid: input.gclid, gclidType: input.gclidType ?? "gclid" } : {}),
+            // Datos del COMPRADOR para la prueba de consentimiento. Se anotan
+            // aquí porque el cobro de tarjeta se cierra en el callback del 3DS,
+            // que llega desde Redsys: allí la IP y el navegador ya no son los
+            // suyos y no valdrían como prueba.
+            ip: clientIpOf(ctx.req),
+            userAgent: String(ctx.req?.headers?.["user-agent"] ?? "").slice(0, 512),
+            ...(input.consentText ? { consentText: input.consentText } : {}),
           },
         });
 
@@ -1235,6 +1328,67 @@ export const appRouter = router({
      * UI can show it was answered. Body is mandatory; we trim it to keep
      * empty replies out of the audit log.
      */
+    /**
+     * Borrador de respuesta a una queja, con los datos reales del cliente.
+     *
+     * NO envía nada: devuelve texto para que el admin lo lea, lo corrija y
+     * decida. Ver server/_core/supportDraft.ts.
+     */
+    draftReply: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const msg = await getContactMessageById(input.id);
+        if (!msg) throw new TRPCError({ code: "NOT_FOUND", message: "Mensaje no encontrado" });
+        const { getUserByEmail, getConsentsForUser, getChargesForUser, getActiveSubscription } = await import("./db");
+        const { classifyComplaint, buildSupportDraft } = await import("./_core/supportDraft");
+
+        const user = await getUserByEmail(msg.email);
+        const charges = user ? await getChargesForUser(user.id) : [];
+        const consents = user ? await getConsentsForUser(user.id) : [];
+        const sub = user ? await getActiveSubscription(user.id) : null;
+        // El primer cargo marca el inicio del plazo de desistimiento.
+        const primerCargo = charges.length ? new Date(charges[charges.length - 1].createdAt) : null;
+        const kind = classifyComplaint(msg.message ?? "", primerCargo);
+
+        const draft = buildSupportDraft(kind, {
+          name: msg.name ?? null,
+          email: msg.email,
+          message: msg.message ?? "",
+          lang: (user?.language || "es").slice(0, 2),
+          charges: charges.map((c) => ({
+            amountCents: c.amountCents, createdAt: c.createdAt,
+            status: c.status, refundedCents: c.refundedCents,
+          })),
+          consents: consents.map((c) => ({
+            event: c.event, createdAt: c.createdAt, ip: c.ip,
+            lang: c.lang, textShown: c.textShown,
+          })),
+          trialEnd: sub?.currentPeriodEnd ?? null,
+          trialHours: (sub as any)?.trialHours ?? null,
+          // El correo de bienvenida sale justo tras el alta; su marca temporal
+          // es la del primer cargo, que es lo que dispara el envío.
+          welcomeSentAt: primerCargo,
+        });
+
+        const dias = primerCargo
+          ? Math.floor((Date.now() - primerCargo.getTime()) / (24 * 3600 * 1000))
+          : null;
+        return {
+          kind,
+          draft,
+          lang: (user?.language || "es").slice(0, 2),
+          diasDesdeCompra: dias,
+          tieneConsentimiento: consents.length > 0,
+          usuarioEncontrado: !!user,
+          userId: user?.id ?? null,
+          charges: charges.map((c) => ({
+            id: c.id, amountCents: c.amountCents, createdAt: c.createdAt,
+            status: c.status, provider: c.provider,
+            sipayTransactionId: c.sipayTransactionId,
+          })),
+        };
+      }),
+
     replyToMessage: adminProcedure
       .input(z.object({ id: z.number(), body: z.string().min(1).max(5000) }))
       .mutation(async ({ ctx, input }) => {
@@ -1555,6 +1709,36 @@ export const appRouter = router({
       .input(z.object({ userId: z.number() }))
       .query(async ({ input }) => {
         return getUserTimeline(input.userId);
+      }),
+
+    /**
+     * Expediente de consentimiento de un cliente, para responder a un banco.
+     *
+     * Devuelve qué aceptó, cuándo, desde qué IP y navegador, en qué idioma, con
+     * qué importes vigentes — y el texto íntegro de los Términos tal y como
+     * estaban ESE día, no como están hoy.
+     */
+    consentDossier: adminProcedure
+      .input(z.object({ email: z.string().email() }))
+      .query(async ({ input }) => {
+        const { getUserByEmail, getConsentsForUser, getLegalSnapshot, getChargesForUser } = await import("./db");
+        const user = await getUserByEmail(input.email);
+        if (!user) return { found: false as const };
+        const consents = await getConsentsForUser(user.id);
+        // Un solo snapshot suele cubrir todos los consentimientos del cliente;
+        // se piden una vez por hash distinto en vez de uno por fila.
+        const hashes = Array.from(new Set(consents.map((c) => c.termsHash).filter(Boolean))) as string[];
+        const snapshots = Object.fromEntries(
+          (await Promise.all(hashes.map(async (h) => [h, await getLegalSnapshot(h)] as const)))
+            .filter(([, v]) => v),
+        );
+        return {
+          found: true as const,
+          user: { id: user.id, email: user.email, name: user.name, createdAt: user.createdAt, language: user.language },
+          consents,
+          snapshots,
+          charges: await getChargesForUser(user.id),
+        };
       }),
 
     // ── Live visitors counter (real-time, in-memory) ──────────

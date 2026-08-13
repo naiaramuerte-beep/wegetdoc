@@ -19,7 +19,7 @@ const termsContent = `
 <h2>4. Modelo de suscripcion y precios</h2>
 <p>editorpdf.net opera mediante un modelo de suscripcion con las siguientes condiciones:</p>
 <ul>
-  <li><strong>Periodo de prueba:</strong> El usuario puede acceder al servicio completo durante 7 días por un coste de 0,50 EUR.</li>
+  <li><strong>Periodo de prueba:</strong> El usuario puede acceder al servicio completo durante 24 horas por un coste de 0,50 EUR.</li>
   <li><strong>Suscripcion mensual:</strong> Tras finalizar el periodo de prueba, la suscripcion se renueva automaticamente a un precio de {price} al mes.</li>
   <li>La renovacion es automatica salvo que el usuario cancele su suscripcion antes de que finalice el periodo de facturacion vigente.</li>
 </ul>
@@ -229,8 +229,8 @@ const cookiesContent = `
 
 const refundContent = `
 <h2>1. Derecho de reembolso</h2>
-<p>En editorpdf.net queremos que nuestros usuarios esten satisfechos con el servicio. Por ello, ofrecemos un <strong>periodo de reembolso de 7 dias naturales</strong> contados desde la fecha del primer cargo realizado en su metodo de pago.</p>
-<p>Este derecho aplica tanto al cargo del periodo de prueba (0,50 EUR) como al primer cargo de la suscripcion mensual ({price}) si este se produce dentro de los 7 dias posteriores al inicio del uso del servicio.</p>
+<p>En editorpdf.net queremos que nuestros usuarios esten satisfechos con el servicio. Por ello, ofrecemos un <strong>periodo de desistimiento de 14 dias naturales</strong> contados desde la fecha del primer cargo realizado en su metodo de pago.</p>
+<p>Este derecho aplica tanto al cargo del periodo de prueba (0,50 EUR) como al primer cargo de la suscripcion mensual ({price}) si este se produce dentro de los 14 dias posteriores al inicio del uso del servicio.</p>
 
 <h2>2. Como solicitar un reembolso</h2>
 <p>Para solicitar un reembolso, envie un correo electronico a <a href="mailto:morteapps@outlook.com">morteapps@outlook.com</a> con la siguiente informacion:</p>
@@ -255,7 +255,7 @@ const refundContent = `
 <h2>5. Excepciones</h2>
 <p>No se concedera reembolso en los siguientes supuestos:</p>
 <ul>
-  <li><strong>Solicitud fuera de plazo:</strong> cuando hayan transcurrido mas de 7 dias naturales desde el primer cargo.</li>
+  <li><strong>Solicitud fuera de plazo:</strong> cuando hayan transcurrido mas de 14 dias naturales desde el primer cargo.</li>
   <li><strong>Uso abusivo:</strong> cuando se detecte que el usuario ha utilizado el servicio de forma intensiva durante el periodo de prueba con la intencion manifiesta de obtener un reembolso tras haber aprovechado las prestaciones del servicio.</li>
   <li><strong>Reembolsos previos:</strong> cuando el usuario ya haya obtenido un reembolso anteriormente por el mismo servicio (un reembolso por usuario).</li>
   <li><strong>Incumplimiento de los Terminos de Servicio:</strong> cuando la cuenta haya sido suspendida por infraccion de nuestros <a href="/legal/terms">Terminos de Servicio</a>.</li>
@@ -266,7 +266,7 @@ const refundContent = `
 
 <h2>7. Derecho de desistimiento legal</h2>
 <p>De conformidad con la normativa europea de proteccion al consumidor, el usuario tiene derecho a desistir de la contratacion en el plazo de 14 dias naturales desde la celebracion del contrato. No obstante, al tratarse de un servicio de contenido digital cuya prestacion comienza con el consentimiento expreso del usuario, este acepta la perdida del derecho de desistimiento una vez que haya accedido al servicio, conforme al articulo 103.m) del Real Decreto Legislativo 1/2007.</p>
-<p>En cualquier caso, la politica de reembolso de 7 dias descrita anteriormente resulta de aplicacion preferente cuando sus condiciones sean mas favorables para el usuario.</p>
+<p>En cualquier caso, la politica de desistimiento de 14 dias descrita anteriormente resulta de aplicacion preferente cuando sus condiciones sean mas favorables para el usuario.</p>
 
 <h2>8. Contacto</h2>
 <p>Para cualquier duda o consulta sobre reembolsos, no dude en ponerse en contacto con nosotros:</p>

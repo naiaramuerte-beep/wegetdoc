@@ -21,6 +21,7 @@
  * iterate on the format in one pass.
  */
 
+import { trialEndFrom } from "@shared/trial";
 import crypto from "crypto";
 import { ENV } from "./env";
 
@@ -207,7 +208,7 @@ export async function finalizeFastpayPayment(opts: {
     findUserIdFromPendingEvent,
     findGclidFromPendingEvent,
     findLangFromPendingEvent,
-    getTrialDays,
+    getTrialHours,
   } = await import("../db");
 
   const result = await confirmPayment(requestId);
@@ -278,8 +279,8 @@ export async function finalizeFastpayPayment(opts: {
   }
 
   const now = new Date();
-  const trialDays = await getTrialDays();
-  const periodEnd = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000);
+  const trialHours = await getTrialHours();
+  const periodEnd = trialEndFrom(now, trialHours);
 
   await upsertSubscription({
     userId: customUserId,
@@ -292,7 +293,7 @@ export async function finalizeFastpayPayment(opts: {
     status: "trialing",
     currentPeriodStart: now,
     currentPeriodEnd: periodEnd,
-    trialDays,
+    trialHours,
     cancelAtPeriodEnd: false,
   });
   await markDocumentsPaid(customUserId);
@@ -314,6 +315,30 @@ export async function finalizeFastpayPayment(opts: {
     cardCountry: data?.payload?.card_country ?? null,
     geoCountry: opts.geoCountry ?? null,
   });
+  // Prueba de consentimiento del cobro. En tarjeta el dinero se mueve aquí, en
+  // el callback del 3DS, no en la llamada del navegador — así que la IP y el
+  // navegador que se guardan son los que quedaron anotados al iniciar el
+  // checkout, no los de esta petición, que viene de Redsys y no del comprador.
+  try {
+    const { recordConsent, getActiveMonthlyPrice, findConsentFromPendingEvent, findLangFromPendingEvent } = await import("../db");
+    const pendingConsent = await findConsentFromPendingEvent({ order, requestId });
+    // El idioma se relee aquí en vez de reusar el de más abajo: aquel se calcula
+    // dentro del bloque del email de bienvenida, que va después de este punto.
+    const consentLang = await findLangFromPendingEvent({ order, requestId });
+    void recordConsent({
+      userId: customUserId,
+      event: "payment",
+      ip: pendingConsent?.ip ?? null,
+      userAgent: pendingConsent?.userAgent ?? null,
+      lang: consentLang,
+      textShown: pendingConsent?.consentText ?? null,
+      introCents: amountCents,
+      recurringCents: Math.round((await getActiveMonthlyPrice()).eur * 100),
+      trialHours,
+      provider: "fastpay",
+      sipayOrder: order,
+    });
+  } catch { /* la prueba no puede tumbar un cobro ya autorizado */ }
   await recordWebhookEvent({
     provider: "sipay",
     eventType: "fastpay_intro_charge",
@@ -330,6 +355,9 @@ export async function finalizeFastpayPayment(opts: {
       // init), then the browser Accept-Language, then Spanish.
       const langFromPage = await findLangFromPendingEvent({ order, requestId });
       const lang = langFromPage || (acceptLang ?? "").split(",")[0]?.split("-")[0] || "es";
+      // Persistir el idioma de la página, igual que en los wallets, para todo
+      // lo que se le mande a este cliente más adelante.
+      void (await import("../db")).setUserLanguage(customUserId, lang);
       const { sendTrialWelcomeEmail } = await import("../email");
       sendTrialWelcomeEmail({ to: u.email, name: u.name ?? u.email, lang, trialEndDate: periodEnd })
         .catch((err: any) => console.warn("[Sipay] welcome email failed:", err?.message ?? err));

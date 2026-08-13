@@ -4,6 +4,8 @@ import {
   InsertUser,
   InsertBlogPost,
   auditLog,
+  consents,
+  legalSnapshots,
   blogPosts,
   charges,
   contactMessages,
@@ -21,7 +23,7 @@ import {
 import { ENV } from "./_core/env";
 import { dbConnectionConfig } from "./_core/dbConfig";
 import { DUNNING_LOCK_STALE_MS } from "./_core/dunning";
-import { clampTrialDays } from "../shared/trial";
+import { clampTrialHours, trialEndFrom } from "../shared/trial";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -48,7 +50,7 @@ export async function getTrialConversionRows() {
   const db = await getDb();
   if (!db) return { subs: [] as any[], charges: [] as any[] };
   const [subRows]: any = await db.execute(sql`
-    SELECT s.userId, u.email, s.trialDays, s.cancelAtPeriodEnd, s.status, s.declineCategory,
+    SELECT s.userId, u.email, s.trialDays, s.trialHours, s.cancelAtPeriodEnd, s.status, s.declineCategory,
       DATE_FORMAT(DATE_SUB(DATE(CONVERT_TZ(s.createdAt,'+00:00','+02:00')),
         INTERVAL WEEKDAY(CONVERT_TZ(s.createdAt,'+00:00','+02:00')) DAY), '%Y-%m-%d') AS altaWeek,
       UNIX_TIMESTAMP(s.createdAt)*1000 AS createdAtMs,
@@ -65,6 +67,7 @@ export async function getTrialConversionRows() {
   const subs = (subRows as any[]).map((r) => ({
     userId: Number(r.userId), email: r.email ?? null,
     trialDays: r.trialDays == null ? null : Number(r.trialDays),
+    trialHours: r.trialHours == null ? null : Number(r.trialHours),
     cancelAtPeriodEnd: !!Number(r.cancelAtPeriodEnd), status: String(r.status),
     declineCategory: r.declineCategory ?? null, altaWeek: String(r.altaWeek),
     createdAtMs: Number(r.createdAtMs), periodEndMs: r.periodEndMs == null ? null : Number(r.periodEndMs),
@@ -236,6 +239,33 @@ export async function userHasActiveSubscription(userId: number): Promise<boolean
  * Powers revenue-by-country in the admin. Skips empty values and Cloudflare's
  * placeholders (XX = unknown, T1 = Tor).
  */
+/**
+ * Persist the language the buyer was actually browsing in (the `/xx/` prefix of
+ * the page they paid from).
+ *
+ * Until 2026-08-12 nobody ever wrote `users.language`: 2.557 of 2.562 rows sat
+ * at the "es" default, including buyers on gmx.at and gmx.de. The welcome email
+ * itself was fine — it takes the language from the checkout call — but anything
+ * sent LATER (a resend, a support reply, a dunning notice) read the column and
+ * would have written to an Austrian in Spanish. A charge notice nobody can read
+ * is a charge notice that did not happen.
+ *
+ * Overwrites on every alta rather than filling only when empty, unlike the
+ * country: the country of a card does not change, but a person can perfectly
+ * well come back through a different language edition, and the most recent one
+ * is the better guess.
+ */
+export async function setUserLanguage(userId: number, lang: string | undefined | null) {
+  const db = await getDb();
+  if (!db) return;
+  const code = (lang || "").trim().slice(0, 2).toLowerCase();
+  // Only the languages the site actually publishes — a stray "xx" would make
+  // the email templates fall back to Spanish anyway, but silently.
+  const SUPPORTED = ["es", "en", "fr", "de", "pt", "it", "nl", "pl", "ru", "uk", "ro", "zh"];
+  if (!SUPPORTED.includes(code)) return;
+  await db.update(users).set({ language: code }).where(eq(users.id, userId));
+}
+
 export async function setUserCountryIfEmpty(userId: number, country: string) {
   const db = await getDb();
   if (!db) return;
@@ -262,6 +292,8 @@ export async function upsertSubscription(data: {
   currentPeriodEnd?: Date;
   cancelAtPeriodEnd?: boolean;
   trialDays?: number;
+  /** Trial length in hours for this sub — the cohort tag (24 = post-2026-08-11). */
+  trialHours?: number;
   renewalAttempts?: number;
   nextRenewalAt?: Date | null;
   // Dunning v2
@@ -616,15 +648,120 @@ export async function getActiveMonthlyPrice(): Promise<{ eur: number; formatted:
 }
 
 /**
- * Trial length in DAYS before the first full monthly charge, read from
- * `site_settings.trial_days`. SINGLE SOURCE OF TRUTH — every alta path derives
+ * Trial length in HOURS before the first full monthly charge, read from
+ * `site_settings.trial_hours`. SINGLE SOURCE OF TRUTH — every alta path derives
  * `currentPeriodEnd` from this, so the trial can change without a deploy (like
- * the price). Default 7 (the new policy, up from 48h); clamped to [1,30] so a
- * bad setting can never nuke billing. Existing subs are untouched — this only
- * affects the offset applied when a NEW sub is created.
+ * the price). Default 24 (the policy since 2026-08-11, down from 7 days);
+ * clamped to [1,720] so a bad setting can never nuke billing.
+ *
+ * NOTHING RETROACTIVE. This is only the offset applied when a NEW sub is
+ * created: subs already on 7 days keep their stored `currentPeriodEnd` and are
+ * never recomputed.
  */
-export async function getTrialDays(): Promise<number> {
-  return clampTrialDays(await getSiteSetting("trial_days"));
+export async function getTrialHours(): Promise<number> {
+  return clampTrialHours(await getSiteSetting("trial_hours"));
+}
+
+// ─── Consentimiento del cliente (defensa ante contracargos) ─────────────────
+
+/**
+ * Guarda el consentimiento tal y como se dio: momento, IP, navegador, idioma y
+ * la frase literal que se mostró.
+ *
+ * Nunca lanza. Un fallo escribiendo la prueba no puede tumbar un registro ni un
+ * cobro — se pierde la prueba de ESE caso, que es malo, pero perder la venta o
+ * dejar a medias un pago ya autorizado es peor.
+ *
+ * También archiva la versión de los Términos vigente para que la prueba siga
+ * siendo válida cuando esos textos cambien. El archivo se deduplica por hash:
+ * miles de consentimientos comparten un puñado de versiones.
+ */
+export async function recordConsent(input: {
+  userId: number;
+  event: "register" | "payment";
+  ip?: string | null;
+  userAgent?: string | null;
+  lang?: string | null;
+  textShown?: string | null;
+  introCents?: number | null;
+  recurringCents?: number | null;
+  trialHours?: number | null;
+  provider?: string | null;
+  sipayOrder?: string | null;
+}): Promise<void> {
+  try {
+    const db = await getDb();
+    if (!db) return;
+    const termsHash = await snapshotLegalPage("terms");
+    await db.insert(consents).values({
+      userId: input.userId,
+      event: input.event,
+      ip: (input.ip ?? "").slice(0, 64) || null,
+      userAgent: (input.userAgent ?? "").slice(0, 512) || null,
+      lang: (input.lang ?? "").slice(0, 8) || null,
+      textShown: input.textShown ?? null,
+      termsHash,
+      introCents: input.introCents ?? null,
+      recurringCents: input.recurringCents ?? null,
+      trialHours: input.trialHours ?? null,
+      provider: (input.provider ?? "").slice(0, 16) || null,
+      sipayOrder: (input.sipayOrder ?? "").slice(0, 128) || null,
+    });
+  } catch (err: any) {
+    console.warn("[consent] no se pudo registrar:", err?.message ?? err);
+  }
+}
+
+/**
+ * Archiva la versión actual de una página legal y devuelve su hash.
+ * Si esa versión exacta ya está archivada, no reescribe nada.
+ */
+async function snapshotLegalPage(slug: string): Promise<string | null> {
+  try {
+    const db = await getDb();
+    if (!db) return null;
+    const page = await getLegalPage(slug);
+    if (!page?.content) return null;
+    const crypto = await import("node:crypto");
+    const hash = crypto.createHash("sha256").update(String(page.content)).digest("hex");
+    const existing = await db.select({ hash: legalSnapshots.hash })
+      .from(legalSnapshots).where(eq(legalSnapshots.hash, hash)).limit(1);
+    if (!existing.length) {
+      await db.insert(legalSnapshots).values({
+        hash, slug, title: page.title ?? null, content: String(page.content),
+      });
+    }
+    return hash;
+  } catch {
+    return null; // la prueba se guarda igual, solo sin el texto archivado
+  }
+}
+
+/** Cargos de un usuario, el más reciente primero — el dinero que respalda el expediente. */
+export async function getChargesForUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(charges)
+    .where(eq(charges.userId, userId))
+    .orderBy(desc(charges.createdAt));
+}
+
+/** Consentimientos de un usuario, el más reciente primero. */
+export async function getConsentsForUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(consents)
+    .where(eq(consents.userId, userId))
+    .orderBy(desc(consents.createdAt));
+}
+
+/** Texto archivado de una versión concreta de los Términos. */
+export async function getLegalSnapshot(hash: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(legalSnapshots)
+    .where(eq(legalSnapshots.hash, hash)).limit(1);
+  return rows[0] ?? null;
 }
 
 /**
@@ -1291,7 +1428,8 @@ export async function recordCharge(opts: {
           amountCents: opts.amountCents, provider: opts.provider, userId: opts.userId,
           country: ctx.country || opts.geoCountry || null, cardCountry: opts.cardCountry ?? null,
           maskedCard: opts.sipayMaskedCard ?? null,
-          todayCount: ctx.todayCount, todayTotalCents: ctx.todayTotalCents, hora,
+          todayCount: ctx.todayCount, todayTotalCents: ctx.todayTotalCents,
+          todayAltas: ctx.todayAltas, todayRenov: ctx.todayRenov, hora,
           device: opts.deviceType ?? null, order: opts.sipayOrder ?? null,
         });
       } catch { /* notification is best-effort */ }
@@ -1315,16 +1453,38 @@ function madridDayStartUtc(now: Date = new Date()): Date {
 }
 
 /** Country + today's running sales total, for the enriched Telegram sale alert. */
-export async function getSaleContext(userId: number): Promise<{ country: string | null; todayCount: number; todayTotalCents: number }> {
+export async function getSaleContext(userId: number): Promise<{
+  country: string | null;
+  todayCount: number;
+  todayTotalCents: number;
+  todayAltas: number;
+  todayRenov: number;
+}> {
   const db = await getDb();
-  if (!db) return { country: null, todayCount: 0, todayTotalCents: 0 };
+  const vacio = { country: null, todayCount: 0, todayTotalCents: 0, todayAltas: 0, todayRenov: 0 };
+  if (!db) return vacio;
   const start = madridDayStartUtc();
   const [u] = await db.select({ country: users.country }).from(users).where(eq(users.id, userId)).limit(1);
+  // Altas y renovaciones se cuentan por separado: 20 ventas en un día no dicen
+  // lo mismo si son 20 altas nuevas que si son 20 cobros de clientes que ya
+  // estaban. Los `mit-upgrade-*` son upgrades disparados por el propio usuario,
+  // no cobros del cron, así que cuentan como alta.
   const [agg] = await db.select({
     n: sql<number>`count(*)`,
     s: sql<number>`coalesce(sum(${charges.amountCents}),0)`,
+    renov: sql<number>`sum(case when ${charges.provider} = 'mit'
+                                 and coalesce(${charges.sipayOrder},'') not like 'mit-upgrade-%'
+                            then 1 else 0 end)`,
   }).from(charges).where(and(eq(charges.status, "ok"), gte(charges.createdAt, start)));
-  return { country: u?.country ?? null, todayCount: Number(agg?.n ?? 0), todayTotalCents: Number(agg?.s ?? 0) };
+  const total = Number(agg?.n ?? 0);
+  const renov = Number(agg?.renov ?? 0);
+  return {
+    country: u?.country ?? null,
+    todayCount: total,
+    todayTotalCents: Number(agg?.s ?? 0),
+    todayAltas: total - renov,
+    todayRenov: renov,
+  };
 }
 
 /** Full breakdown of today's (Madrid) successful sales — for the 23:00 summary. */
@@ -1915,8 +2075,8 @@ export async function createFakeTrialSub(userId: number) {
     return { success: false, error: "User already has an active sub" };
   }
   const now = new Date();
-  const trialDays = await getTrialDays();
-  const trialEnd = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000);
+  const trialHours = await getTrialHours();
+  const trialEnd = trialEndFrom(now, trialHours);
   const syntheticSubId = `fake_sub_qa_${userId}_${Date.now()}`;
   await upsertSubscription({
     userId,
@@ -1926,7 +2086,7 @@ export async function createFakeTrialSub(userId: number) {
     status: "active",
     currentPeriodStart: now,
     currentPeriodEnd: trialEnd,
-    trialDays,
+    trialHours,
     cancelAtPeriodEnd: false,
   });
   await markDocumentsPaid(userId);
@@ -2354,6 +2514,49 @@ export async function findGclidFromPendingEvent(opts: {
  * browser Accept-Language, which can differ. Stashed at sipayCheckoutInit,
  * read back here (callback) and by the reconciliation cron.
  */
+/**
+ * Gemelo de findLangFromPendingEvent: recupera los datos del COMPRADOR (IP,
+ * navegador y la frase de consentimiento que tenía delante) del evento
+ * `fastpay_3ds_pending`.
+ *
+ * Hace falta porque el cobro con tarjeta se cierra en el callback del 3DS, que
+ * llega desde Redsys y no desde el navegador del cliente: si tomáramos la IP de
+ * esa petición estaríamos guardando como prueba la del banco.
+ */
+export async function findConsentFromPendingEvent(opts: {
+  order?: string;
+  requestId?: string;
+}): Promise<{ ip: string | null; userAgent: string | null; consentText: string | null } | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const candidates = [opts.order, opts.requestId].filter(
+    (v): v is string => typeof v === "string" && v.length > 0,
+  );
+  if (candidates.length === 0) return null;
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const rows = await db
+    .select({ payload: webhookEvents.payload })
+    .from(webhookEvents)
+    .where(and(
+      eq(webhookEvents.eventType, "fastpay_3ds_pending"),
+      gte(webhookEvents.receivedAt, since),
+      inArray(webhookEvents.eventId, candidates),
+    ))
+    .orderBy(desc(webhookEvents.receivedAt))
+    .limit(1);
+  if (rows.length === 0) return null;
+  try {
+    const p: any = rows[0].payload ? JSON.parse(rows[0].payload as string) : null;
+    return {
+      ip: p?.ip ?? null,
+      userAgent: p?.userAgent ?? null,
+      consentText: p?.consentText ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function findLangFromPendingEvent(opts: {
   order?: string;
   requestId?: string;

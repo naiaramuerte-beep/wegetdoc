@@ -1190,13 +1190,34 @@ ${allUrls.map(u => `  <url>
       const HOUR = 3600 * 1000, DAY = 24 * HOUR, RETENTION_DAYS = 7;
       const since = new Date(now.getTime() - RETENTION_DAYS * DAY);
 
+      // ¿Se mandan correos de recuperación? APAGADO salvo que alguien ponga
+      // `flag_recovery_emails = "true"` a mano.
+      //
+      // Por qué se apagó (medido el 2026-08-12 con scripts/recovery-atribucion.mjs
+      // sobre 19 días): 1.195 usuarios recibieron el correo y pagaron 5 — 3 de
+      // ellos dentro de las 24 h siguientes, o sea 1,50 € atribuibles y ninguna
+      // renovación después. A cambio, esos envíos se comían los 200 correos de
+      // la cuota diaria de Resend entre las 02:00 y las 03:34, y a partir de ahí
+      // fallaba con 429 todo lo demás — incluido el correo de bienvenida, que es
+      // el que dice al cliente cuándo se le va a cobrar. Cambiábamos el aviso de
+      // cobro de todas las altas del día por 1,50 €.
+      //
+      // La RETENCIÓN sigue corriendo pase lo que pase: borrar los documentos sin
+      // pagar de más de 7 días es lo que hace honesta la urgencia que anunciamos
+      // y lo que evita que R2 crezca sin fin. Por eso el interruptor apaga los
+      // envíos, no el cron.
+      const emailsOn = (await db.getSiteSetting("flag_recovery_emails")) === "true";
+
       // Throttle: cap sends per run so we drain the backlog gradually instead of
       // blasting hundreds at once (protects domain reputation / deliverability).
       // Override with ?max=N. New daily abandons are few, so this only matters
       // for the first backlog drain.
       const MAX_PER_RUN = Math.max(1, Math.min(500, Number(req.query.max) || 50));
 
-      const [docs, paidUsers] = await Promise.all([db.getPendingRecoveryDocs(since), db.getPaidUserIds()]);
+      const [docs, paidUsers] = await Promise.all([
+        emailsOn ? db.getPendingRecoveryDocs(since) : Promise.resolve([]),
+        db.getPaidUserIds(),
+      ]);
       const seenUser = new Set<number>();
       const results: Array<{ userId: number; docId: number; email: string; stage: number; doc: string }> = [];
 
@@ -1239,8 +1260,8 @@ ${allUrls.map(u => `  <url>
       let deletedCount = 0;
       if (!dry) { try { deletedCount = (await db.deleteExpiredPendingDocs(since)).length; } catch { /* best-effort */ } }
 
-      console.log(`[recovery cron] ${dry ? "DRY " : ""}sent=${results.length} deleted=${deletedCount}`);
-      return res.json({ dry, sent: results.length, deleted: deletedCount, results });
+      console.log(`[recovery cron] ${dry ? "DRY " : ""}${emailsOn ? `sent=${results.length}` : "emails=OFF (solo a quien paga)"} deleted=${deletedCount}`);
+      return res.json({ dry, emailsEnabled: emailsOn, sent: results.length, deleted: deletedCount, results });
     } catch (err: any) {
       console.error("[recovery cron] fatal:", err?.message ?? err);
       return res.status(500).json({ error: "cron_exception", detail: err?.message ?? String(err) });
