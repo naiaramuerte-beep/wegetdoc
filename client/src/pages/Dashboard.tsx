@@ -733,7 +733,7 @@ function TeamTab() {
 // ─── Billing Tab ──────────────────────────────────────────────
 function BillingTab() {
   const { t } = useLanguage();
-  const { price } = usePricing();
+  const { price: tarifa } = usePricing();
   const { user } = useAuth();
   const { data: subData, isLoading } = trpc.subscription.status.useQuery();
   const utils = trpc.useUtils();
@@ -766,6 +766,13 @@ function BillingTab() {
 
   const isPremium = subData?.isPremium ?? false;
   const sub = subData?.subscription;
+  // El precio que se le enseña al cliente es EL SUYO (el que aceptó y se le
+  // cobra), no la tarifa vigente para altas nuevas. Si sube el precio, quien ya
+  // estaba dentro sigue viendo el suyo. Sin anclaje (filas antiguas) cae a la
+  // tarifa, que es lo que se le cobra en ese caso.
+  const price = sub?.recurringCents
+    ? `${(sub.recurringCents / 100).toFixed(2).replace(".", ",")} €`
+    : tarifa;
 
   const expiryDateStr = sub?.currentPeriodEnd
     ? new Date(sub.currentPeriodEnd).toLocaleDateString(undefined, {

@@ -1401,10 +1401,13 @@ ${allUrls.map(u => `  <url>
       }
 
       const due = await db.getSubsDueForRetry(now);
-      // Price from site_settings so the A/B toggle drives recurring charges too.
+      // El ajuste global es el precio de las ALTAS NUEVAS. A cada suscripción se
+      // le cobra el importe que ACEPTÓ, anclado en su fila (migración 0025):
+      // subir el precio no puede cambiarle el recibo a quien ya está dentro.
+      const { resolveRenewalAmountCents } = await import("./renewalPrice");
       const priceStr = await db.getSiteSetting?.("subscription_price_eur").catch(() => null);
       const priceEur = Number(priceStr ?? "19.95");
-      const amountCents = Math.round(priceEur * 100);
+      const globalCents = Math.round(priceEur * 100);
       const results: Array<{ userId: number; subId: number; ok: boolean; action?: string; code?: string; nextRetryAt?: string | null; reason?: string }> = [];
 
       for (const sub of due) {
@@ -1418,10 +1421,19 @@ ${allUrls.map(u => `  <url>
         const paymentMethod = sub.sipayProvider ?? "mit";
         const order = `mit-${sub.userId}-${Date.now()}`;
         const chargeStart = Date.now();
+        const { amountCents, source: precioDe } = resolveRenewalAmountCents({
+          pinnedCents: sub.recurringCents, globalCents,
+        });
         try {
           if (dryRun) {
-            // No cobramos: solo mostramos a quién tocaría cobrar ahora.
-            results.push({ userId: sub.userId, subId: sub.id, ok: true, action: "dry-run", code: sub.lastDeclineCode ?? undefined });
+            // No cobramos: solo mostramos a quién tocaría cobrar ahora, CON el
+            // importe y de dónde sale — así una subida de precio se comprueba
+            // antes de cobrarla (`?dry=1` enseña quién pagaría cuánto).
+            results.push({
+              userId: sub.userId, subId: sub.id, ok: true,
+              action: `dry-run ${(amountCents / 100).toFixed(2)}€ (${precioDe === "pinned" ? "anclado" : "global"})`,
+              code: sub.lastDeclineCode ?? undefined,
+            });
             continue;
           }
           const result = await createMITRecurring({ amountCents, token: sub.sipayToken!, order, custom_01: String(sub.userId) });

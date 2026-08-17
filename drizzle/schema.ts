@@ -73,6 +73,14 @@ export const subscriptions = mysqlTable("subscriptions", {
   // can be compared across cohorts (24h vs 7d vs 48h) long after the setting
   // changes again. Null = sub created before hours existed, read trialDays.
   trialHours: int("trialHours"),
+  // Precio recurrente que ACEPTÓ el dueño de esta suscripción, en céntimos —
+  // el valor de site_settings.subscription_price_eur en el momento del alta.
+  // El cron de renovación cobra esto, no el ajuste global, para que subir el
+  // precio afecte solo a las altas nuevas: cobrarle 39,95 € a quien autorizó
+  // 29,95 € es un contracargo perdido de antemano y desmiente el expediente de
+  // `consents`. Null = fila anterior a la migración 0025 → cae al ajuste global
+  // (el backfill las fija con lo que consintieron).
+  recurringCents: int("recurringCents"),
   // Dunning: number of consecutive failed renewal attempts + when the next
   // spaced retry is due. Lets us retry at +5/+7/+9 days (instead of hammering
   // the bank daily, which risks getting the merchant flagged) and give up after.
