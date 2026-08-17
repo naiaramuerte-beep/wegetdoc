@@ -281,6 +281,10 @@ export async function finalizeFastpayPayment(opts: {
   const now = new Date();
   const trialHours = await getTrialHours();
   const periodEnd = trialEndFrom(now, trialHours);
+  // Precio recurrente anclado a esta suscripción: el cron le cobrará SIEMPRE
+  // este importe, así que subir el precio solo afecta a las altas nuevas. Es el
+  // mismo número que queda en su expediente de consentimiento, más abajo.
+  const recurringCentsNow = Math.round((await (await import("../db")).getActiveMonthlyPrice()).eur * 100);
 
   await upsertSubscription({
     userId: customUserId,
@@ -294,6 +298,7 @@ export async function finalizeFastpayPayment(opts: {
     currentPeriodStart: now,
     currentPeriodEnd: periodEnd,
     trialHours,
+    recurringCents: recurringCentsNow,
     cancelAtPeriodEnd: false,
   });
   await markDocumentsPaid(customUserId);
@@ -320,7 +325,7 @@ export async function finalizeFastpayPayment(opts: {
   // navegador que se guardan son los que quedaron anotados al iniciar el
   // checkout, no los de esta petición, que viene de Redsys y no del comprador.
   try {
-    const { recordConsent, getActiveMonthlyPrice, findConsentFromPendingEvent, findLangFromPendingEvent } = await import("../db");
+    const { recordConsent, findConsentFromPendingEvent, findLangFromPendingEvent } = await import("../db");
     const pendingConsent = await findConsentFromPendingEvent({ order, requestId });
     // El idioma se relee aquí en vez de reusar el de más abajo: aquel se calcula
     // dentro del bloque del email de bienvenida, que va después de este punto.
@@ -333,7 +338,7 @@ export async function finalizeFastpayPayment(opts: {
       lang: consentLang,
       textShown: pendingConsent?.consentText ?? null,
       introCents: amountCents,
-      recurringCents: Math.round((await getActiveMonthlyPrice()).eur * 100),
+      recurringCents: recurringCentsNow,
       trialHours,
       provider: "fastpay",
       sipayOrder: order,

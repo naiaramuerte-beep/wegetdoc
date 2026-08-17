@@ -294,6 +294,12 @@ export async function upsertSubscription(data: {
   trialDays?: number;
   /** Trial length in hours for this sub — the cohort tag (24 = post-2026-08-11). */
   trialHours?: number;
+  /**
+   * Precio recurrente que aceptó esta persona, en céntimos (migración 0025).
+   * Se escribe en el alta y NO se toca al renovar: subir el precio global no
+   * puede cambiarle el recibo a quien ya autorizó otro importe.
+   */
+  recurringCents?: number;
   renewalAttempts?: number;
   nextRenewalAt?: Date | null;
   // Dunning v2
@@ -1252,6 +1258,10 @@ export async function getSubsDueForRetry(now: Date = new Date(), lockStaleMs = D
     retryCount: subscriptions.retryCount,
     lastDeclineCode: subscriptions.lastDeclineCode,
     declineCategory: subscriptions.declineCategory,
+    // Precio que aceptó esta persona: el cron cobra ESTO, no el ajuste global
+    // (migración 0025). Sin traerlo aquí, una subida de precio le llegaría a
+    // todos los que ya están dentro.
+    recurringCents: subscriptions.recurringCents,
   }).from(subscriptions)
     .where(sql`
       ${subscriptions.sipayToken} IS NOT NULL

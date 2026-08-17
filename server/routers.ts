@@ -394,6 +394,11 @@ export const appRouter = router({
               status: sub.status,
               currentPeriodEnd: sub.currentPeriodEnd,
               cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
+              // Lo que paga ESTA persona, no el precio de tarifa. Desde que el
+              // precio se ancla por suscripción (migración 0025), enseñarle el
+              // global a un cliente antiguo sería mentirle en su propio panel:
+              // vería 39,95 € cobrando 29,95 €. Null = fila sin anclar todavía.
+              recurringCents: sub.recurringCents ?? null,
             }
           : null,
       };
@@ -574,6 +579,10 @@ export const appRouter = router({
         // the cron picks the sub up and charges the MIT-R, which extends 30 days.
         const trialHours = await getTrialHours();
         const periodEnd = trialEndFrom(now, trialHours);
+        // El precio recurrente vigente AHORA queda anclado a esta suscripción y
+        // es el que se le cobrará siempre: una subida posterior es solo para
+        // altas nuevas. Es el mismo importe que se guarda en su consentimiento.
+        const recurringCents = Math.round((await getActiveMonthlyPrice()).eur * 100);
         await upsertSubscription({
           userId: ctx.user.id,
           // Store the merchant token we vaulted the card under (`usr-<userId>`),
@@ -590,6 +599,7 @@ export const appRouter = router({
           currentPeriodStart: now,
           currentPeriodEnd: periodEnd,
           trialHours,
+          recurringCents,
           cancelAtPeriodEnd: false,
         });
         await markDocumentsPaid(ctx.user.id);
@@ -621,7 +631,7 @@ export const appRouter = router({
           lang: input.lang ?? null,
           textShown: input.consentText ?? null,
           introCents: input.amountCents,
-          recurringCents: Math.round((await getActiveMonthlyPrice()).eur * 100),
+          recurringCents,
           trialHours,
           provider: "apay",
           sipayOrder: order,
@@ -762,6 +772,9 @@ export const appRouter = router({
         // the cron picks the sub up and charges the MIT-R, which extends 30 days.
         const trialHours = await getTrialHours();
         const periodEnd = trialEndFrom(now, trialHours);
+        // Precio recurrente anclado a esta suscripción (ver el camino de Apple
+        // Pay): las subidas posteriores son solo para altas nuevas.
+        const recurringCents = Math.round((await getActiveMonthlyPrice()).eur * 100);
         await upsertSubscription({
           userId: ctx.user.id,
           // Store the merchant token we vaulted the card under (`usr-<userId>`),
@@ -778,6 +791,7 @@ export const appRouter = router({
           currentPeriodStart: now,
           currentPeriodEnd: periodEnd,
           trialHours,
+          recurringCents,
           cancelAtPeriodEnd: false,
         });
         await markDocumentsPaid(ctx.user.id);
@@ -809,7 +823,7 @@ export const appRouter = router({
           lang: input.lang ?? null,
           textShown: input.consentText ?? null,
           introCents: input.amountCents,
-          recurringCents: Math.round((await getActiveMonthlyPrice()).eur * 100),
+          recurringCents,
           trialHours,
           provider: "gpay",
           sipayOrder: order,

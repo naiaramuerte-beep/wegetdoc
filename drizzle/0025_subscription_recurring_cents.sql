@@ -1,0 +1,15 @@
+-- Precio recurrente ANCLADO a cada suscripción, en céntimos.
+--
+-- Hasta ahora el cron de renovación leía un único importe de
+-- `site_settings.subscription_price_eur` y se lo cobraba a TODAS. Con eso, subir
+-- el precio le cambiaba el recibo a quien ya estaba dentro: cobrarle 39,95 € a
+-- quien autorizó 29,95 € es un contracargo con la razón de su parte, y encima
+-- contradice el expediente de consentimiento que guardamos en `consents`.
+--
+-- Con esta columna cada suscripción recuerda lo que su dueño aceptó. El ajuste
+-- global pasa a ser solo el precio de las ALTAS NUEVAS.
+--
+-- Aditiva y NULL: las filas viejas siguen cayendo al ajuste global hasta que el
+-- backfill (scripts/backfill-precio-anclado.mjs) las fija. Orden obligatorio:
+-- migración → backfill → subir el precio.
+ALTER TABLE `subscriptions` ADD COLUMN `recurringCents` int NULL;
