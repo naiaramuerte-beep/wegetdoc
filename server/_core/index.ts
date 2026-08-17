@@ -115,6 +115,34 @@ async function startServer() {
     res.status(204).end();
   });
 
+  // Traza del retorno de Google en móvil. El resume tiene DOS finales que dejaban
+  // al cliente en la pantalla de subir PDF sin una sola línea en el servidor: que
+  // no se pueda recuperar el PDF editado (barrera) y que el poll de sesión agote
+  // los 15 s. Sin esto solo se veía el `[temp-io] DOWNLOAD 200` y después silencio,
+  // así que no se podía distinguir "se abrió el pago" de "se fue a la home".
+  //
+  // La ruta va bajo /api/documents/ a propósito: `/api/ev/...` lo bloquean los
+  // bloqueadores de anuncios, y un aviso perdido es justo lo que estamos arreglando.
+  app.post("/api/documents/resume-trace", async (req, res) => {
+    res.set("Cache-Control", "no-store");
+    try {
+      const { deviceFromUA } = await import("./telegram");
+      const device = deviceFromUA(String(req.headers["user-agent"] ?? "")) ?? "unknown";
+      const step = String((req.query.step ?? req.body?.step) ?? "?").slice(0, 40);
+      const detail = String((req.query.detail ?? req.body?.detail) ?? "").slice(0, 200);
+      let userId = 0;
+      try {
+        const { sdk } = await import("./sdk");
+        const user = await sdk.authenticateRequest(req);
+        userId = user.id;
+      } catch { /* sin cookie todavía: el propio 0 es el dato */ }
+      console.log(`[resume-trace] step=${step} device=${device} userId=${userId} ${detail}`);
+    } catch (err: any) {
+      console.error("[resume-trace] error:", err?.message ?? err);
+    }
+    res.status(204).end();
+  });
+
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));

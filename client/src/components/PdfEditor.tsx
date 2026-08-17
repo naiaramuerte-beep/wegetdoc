@@ -29,7 +29,7 @@ import { colors } from "@/lib/brand";
 // requires but WebKit < 18.4 doesn't ship natively.
 import { pdfjsCompatOpts } from "@/lib/pdfjs-safe";
 import { pickPaywallUploadSource } from "@/lib/paywallUploadSource";
-import { canOpenResumePaywall } from "@/lib/resumeTicket";
+import { canOpenResumePaywall, recoverEditedPdf } from "@/lib/resumeTicket";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import { PDFDocument, PDFDict, PDFName, PDFRef, PDFStream, rgb, StandardFonts, degrees } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
@@ -883,6 +883,26 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
   // start a polling interval that waits for isAuthenticated to become true.
   // This avoids the React useEffect dependency race condition entirely.
   const autoResumeTriggeredRef = useRef(false);
+  // Traza del resume contra el servidor. El único final que se veía en los logs
+  // era el paywall abierto; cuando la barrera o el timeout mandaban al usuario a
+  // la home no quedaba rastro y desde fuera parecía "la web ha dejado de
+  // funcionar". Fire-and-forget: nunca bloquea ni rompe el flujo.
+  const traceResume = (step: string, detail = "") => {
+    try {
+      const qs = `step=${encodeURIComponent(step)}&detail=${encodeURIComponent(detail)}`;
+      fetch(`/api/documents/resume-trace?${qs}`, {
+        method: "POST", credentials: "include", keepalive: true,
+      }).catch(() => {});
+    } catch { /* nunca estorba al resume */ }
+  };
+  /** Recupera el PDF editado del almacén temporal, con reintentos (ver resumeTicket.ts). */
+  const fetchTempPdfWithRetry = (tempKey: string) =>
+    recoverEditedPdf({
+      tempKey,
+      fetchImpl: (url) => fetch(url, { cache: "no-store" }),
+      log: (m) => console.log(m),
+      trace: (step, detail) => traceResume(step, detail ?? ""),
+    });
   const isAuthenticatedRef = useRef(isAuthenticated);
   const pdfDocRef = useRef(pdfDoc);
   const pendingEditedPdfRef = useRef(pendingEditedPdf);
@@ -902,6 +922,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
     if (!hasPendingPaywall || autoResumeTriggeredRef.current) return;
 
     console.log("[autoResume] Detected pending action, starting poll...");
+    traceResume("start", `tk=${pendingEditedPdfRef.current ? "sí" : "no"}`);
 
     // Poll every 300ms until isAuthenticated is true
     // (auth.me query takes ~100-300ms to resolve after page load)
@@ -934,6 +955,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
 
       if (attempts >= maxAttempts) {
         console.log("[autoResume] Timed out waiting for auth/pdf");
+        traceResume("timeout", `authed=${authed} tk=${pendingEditedPdfRef.current ? "sí" : "no"}`);
         clearInterval(interval);
         sessionStorage.removeItem("cloudpdf_pending_action");
         setPreparingResume(false);
@@ -975,18 +997,8 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
           // Without this, `out` stays null, the `if (out)` was skipped, and the
           // "Preparando…" toast never dismissed → stuck forever (the exact bug).
           const pe = pendingEditedPdfRef.current;
-          if (!out && pe) {
-            const tk = pe.tempKey;
-            if (tk.startsWith("base64:")) {
-              const bin = atob(tk.slice(7));
-              const arr = new Uint8Array(bin.length);
-              for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-              out = arr;
-            } else {
-              const resp = await fetch(`/api/documents/temp-download/${encodeURIComponent(tk)}`);
-              if (resp.ok) out = new Uint8Array(await resp.arrayBuffer());
-            }
-          }
+          if (!out && pe) out = await fetchTempPdfWithRetry(pe.tempKey);
+          traceResume("premium", out ? `bytes=${out.byteLength}` : "sin_pdf");
           if (out) {
             triggerDownload(out);
             toast.success(t.editor_toast_download_success ?? "PDF downloaded successfully", { id: "dl" });
@@ -1023,31 +1035,26 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       let recoveredEditedPreview = false;
       if (currentPendingEdited) {
         // Resume: recover the edited PDF from temp storage (never the base).
-        try {
-          const tempKey = currentPendingEdited.tempKey;
-          let pdfBytes: Uint8Array | null = null;
-          if (tempKey.startsWith("base64:")) {
-            const b64 = tempKey.slice(7);
-            const bin = atob(b64);
-            const arr = new Uint8Array(bin.length);
-            for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-            pdfBytes = arr;
-          } else {
-            const resp = await fetch(`/api/documents/temp-download/${encodeURIComponent(tempKey)}`);
-            console.log(`[pre-redirect-guard] temp-download ${tempKey}: HTTP ${resp.status}`);
-            if (resp.ok) pdfBytes = new Uint8Array(await resp.arrayBuffer());
-          }
-          console.log(`[pre-redirect-guard] preview rebuild from tempKey: ${pdfBytes ? `${pdfBytes.byteLength}B` : "FAILED (empty preview)"}`);
-          if (pdfBytes) {
-            recoveredEditedPreview = true;
+        // Con reintentos: un corte del cuerpo a mitad de descarga hacía saltar la
+        // barrera y mandaba al usuario a la home a "subir el PDF otra vez".
+        const pdfBytes = await fetchTempPdfWithRetry(currentPendingEdited.tempKey);
+        console.log(`[pre-redirect-guard] preview rebuild from tempKey: ${pdfBytes ? `${pdfBytes.byteLength}B` : "FAILED (empty preview)"}`);
+        if (pdfBytes) {
+          // Se marca ANTES de cualquier trabajo pesado: el PDF ya está en mano, y
+          // que falle el preview o la miniatura no puede costarle la venta.
+          recoveredEditedPreview = true;
+          traceResume("recovered", `bytes=${pdfBytes.byteLength}`);
+          try {
             setPdfDataForPaywall({
               base64: uint8ToBase64(pdfBytes),
               name: currentPendingEdited.name,
               size: pdfBytes.byteLength,
             });
             generateAnnotatedThumbnail(pdfBytes).then(t => { if (t) setPaywallThumbnail(t); });
+          } catch (e: any) {
+            traceResume("preview_error", String(e?.message ?? e).slice(0, 80));
           }
-        } catch {}
+        }
       } else if (currentPdfBytes) {
         // Normal in-editor flow (no resume): build from the live document.
         try {
@@ -1068,6 +1075,7 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       // preview counts — a loaded base (currentPdfBytes) must NOT satisfy it.
       if (!canOpenResumePaywall({ hasEditorBytes: !currentPendingEdited && !!currentPdfBytes, recoveredEditedPreview })) {
         console.error("[pre-redirect-guard] BARRIER: edited draft not recovered on resume — NOT opening paywall");
+        traceResume("barrier", `tk=${currentPendingEdited ? "sí" : "no"} editorBytes=${!!currentPdfBytes}`);
         setPreparingResume(false);
         toast.error(
           "No pudimos recuperar tu documento editado. Vuelve a editarlo antes de continuar.",
@@ -1084,6 +1092,9 @@ export default function PdfEditor({ initialTool, initialFile, fullscreen, initia
       try {
         fetch("/api/ev/paywall?resume=1", { method: "POST", credentials: "include", keepalive: true }).catch(() => {});
       } catch {}
+      // El mismo aviso por la ruta que los bloqueadores no filtran, para poder
+      // comparar "abiertos" contra "barrera"/"timeout" en el mismo log.
+      traceResume("opened", `tk=${currentPendingEdited ? "sí" : "no"}`);
 
       // Auto-save document in background (so it's in the user's account even if they don't pay)
       if (currentPendingEdited) {
