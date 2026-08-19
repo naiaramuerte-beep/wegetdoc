@@ -2316,14 +2316,16 @@ export async function upgradeTrialImmediately(userId: number) {
         status: "failed",
         errorDetail: String(detail).slice(0, 500),
       });
-      // Card-style errors get a distinct code so the UI can offer "try a
-      // different card" — anything else is a generic SIPAY_ERROR.
-      const cardCodes = new Set(["card_declined", "expired_card", "incorrect_cvc", "insufficient_funds", "do_not_honor"]);
-      const isCardIssue = cardCodes.has(String(detail));
+      // Si el cobro contra la tarjeta guardada se rechaza, al cliente hay que
+      // ofrecerle meter una tarjeta a mano: ese pago lleva 3DS y se aprueba
+      // donde el MIT no. La clasificación vive en upgradeOutcome.ts con sus
+      // tests — antes comparaba con motivos de STRIPE (`card_declined`…), y como
+      // Sipay dice `authorization_error`, la salida no se ofrecía NUNCA.
+      const { classifyUpgradeFailure } = await import("./_core/upgradeOutcome");
       return {
         success: false as const,
         error: String(detail),
-        code: (isCardIssue ? "CARD_ERROR" : "SIPAY_ERROR") as "CARD_ERROR" | "SIPAY_ERROR",
+        code: classifyUpgradeFailure({ detail: String(detail), responseCode: code }),
       };
     }
     const newStart = new Date();
