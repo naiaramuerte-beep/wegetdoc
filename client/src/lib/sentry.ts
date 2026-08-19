@@ -47,6 +47,33 @@ const DENY_URLS = [
   /sipay\.es/,
 ];
 
+/**
+ * ¿Es un desbordamiento de pila de código que NO es nuestro?
+ *
+ * Caso real (19-ago-2026, Sentry `38a57ab4`): `RangeError: Maximum call stack
+ * size exceeded` en `/es/dashboard?tab=billing` desde Chrome iOS, con TODOS los
+ * marcos apuntando al documento (`/es/dashboard:187`, `:194`, `:224`) y NINGUNO
+ * a `/assets/`. Nuestro código va entero en ficheros con hash bajo /assets/, así
+ * que un stack sin un solo marco nuestro es de un script inyectado en la página
+ * —Hotjar recorre el DOM recursivamente, que es la causa típica en iOS, donde la
+ * pila es más pequeña— o de una extensión del navegador. No lo podemos arreglar
+ * y nos gasta la cuota.
+ *
+ * Deliberadamente estrecho: exige las DOS condiciones (mensaje de desbordamiento
+ * Y ningún marco propio). Un desbordamiento de verdad en nuestro código lleva
+ * siempre algún marco de /assets/, así que se sigue reportando.
+ */
+export function esDesbordamientoDeTerceros(event: {
+  exception?: { values?: Array<{ value?: string; stacktrace?: { frames?: Array<{ filename?: string }> } }> };
+}): boolean {
+  const values = event.exception?.values ?? [];
+  const mensaje = values.map((v) => v?.value ?? "").join(" ");
+  if (!/maximum call stack size exceeded|too much recursion/i.test(mensaje)) return false;
+  const frames = values.flatMap((v) => v?.stacktrace?.frames ?? []);
+  if (frames.length === 0) return false; // sin pila no se puede afirmar nada
+  return !frames.some((f) => /\/assets\//.test(f?.filename ?? ""));
+}
+
 export function initSentry() {
   if (!DSN) return;
 
@@ -83,6 +110,9 @@ export function initSentry() {
             return null;
           }
         }
+        // Desbordamiento de pila sin un solo marco nuestro: script inyectado
+        // (Hotjar recorre el DOM recursivamente) o extensión del navegador.
+        if (esDesbordamientoDeTerceros(event)) return null;
       } catch {
         /* best-effort — never let filtering throw */
       }
