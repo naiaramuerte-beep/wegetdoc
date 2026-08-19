@@ -859,6 +859,26 @@ function BillingTab() {
         </div>
       </div>
 
+      {/* Impago: decirle QUÉ pasó y darle dónde arreglarlo. Aquí aterriza el
+          enlace del correo de cobro fallido. Sin esto, el cliente entraba en su
+          cuenta, no veía ninguna explicación y se iba (198 casos). */}
+      {subData?.pastDue && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+          <AlertCircle size={20} className="text-red-500 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-red-800">{t.dash_payment_failed_title}</p>
+            <p className="text-sm text-red-700 mt-0.5">{t.dash_payment_failed_body}</p>
+          </div>
+          <Button
+            className="bg-[#E63946] hover:bg-[#C72738] text-white shrink-0"
+            onClick={openInlineCheckout}
+          >
+            <CreditCard size={16} className="mr-2" />
+            {t.dash_payment_failed_cta}
+          </Button>
+        </div>
+      )}
+
       {/* En prueba: dejarle pasar al plan mensual cuando ÉL quiera.
           Antes no podía: como premium no veía el botón de suscribirse, y la
           pantalla de mejora sólo aparecía al agotar las descargas. */}

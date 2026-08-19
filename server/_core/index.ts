@@ -1377,6 +1377,63 @@ ${allUrls.map(u => `  <url>
     }
   });
 
+  /**
+   * Avisa al cliente de que su cobro ha fallado, con un enlace donde pagar.
+   *
+   * Una sola vez por ciclo de facturación: la marca es el propio evento
+   * `renewal_failed_mail` en `webhook_events`, con el vencimiento dentro del id,
+   * así que no hace falta ninguna columna nueva y el cron puede correr cada 15
+   * minutos sin repetir correos.
+   *
+   * El enlace lleva el auto-login firmado (mismo mecanismo que el correo de
+   * recuperación) para que el cliente no se tope con un muro de login: aterriza
+   * directamente en su facturación, donde está el botón de pagar.
+   */
+  async function avisarImpago(
+    db: typeof import("../db"),
+    userId: number,
+    subId: number,
+    amountCents: number,
+    anchor: Date,
+  ): Promise<boolean> {
+    const { ENV } = await import("./env");
+    if (!ENV.cronSecret) return false;
+    const marca = `impago-${subId}-${anchor.toISOString().slice(0, 10)}`;
+    if (await db.webhookEventExists?.(marca)) return false;
+
+    const user = await db.getUserById(userId);
+    if (!user?.email) return false;
+    const lang = (user.language || "es").slice(0, 2);
+
+    const crypto = await import("crypto");
+    const next = `/${lang}/dashboard?tab=billing`;
+    const exp = Date.now() + 14 * 24 * 60 * 60 * 1000; // 14 días para reaccionar
+    const sig = crypto.createHmac("sha256", ENV.cronSecret).update(`${userId}.${exp}.${next}`).digest("hex").slice(0, 32);
+    const payUrl = `https://www.editorpdf.net/api/recovery/login?u=${userId}&exp=${exp}&next=${encodeURIComponent(next)}&sig=${sig}`;
+
+    let importe: string;
+    try {
+      importe = new Intl.NumberFormat(lang, { style: "currency", currency: "EUR" }).format(amountCents / 100);
+    } catch {
+      importe = `${(amountCents / 100).toFixed(2)} €`;
+    }
+
+    const { sendRenewalFailedEmail } = await import("../emailImpago");
+    const ok = await sendRenewalFailedEmail({ to: user.email, lang, amountFormatted: importe, payUrl });
+    // El evento se escribe SIEMPRE que se intentó: si Resend falla, tampoco
+    // queremos reintentar el mismo correo cada 15 minutos.
+    await db.recordWebhookEvent({
+      provider: "sipay",
+      eventType: "renewal_failed_mail",
+      eventId: marca,
+      status: ok ? "ok" : "error",
+      errorMessage: ok ? undefined : "resend_failed",
+      durationMs: 0,
+      payload: { userId, subId, amountCents, lang, sent: ok },
+    });
+    return ok;
+  }
+
   app.post("/api/cron/sipay-renew", async (req, res) => {
     const secret = String(req.headers["x-cron-secret"] ?? "");
     const { ENV } = await import("./env");
@@ -1483,6 +1540,13 @@ ${allUrls.map(u => `  <url>
               results.push({ userId: sub.userId, subId: sub.id, ok: false, action: "retry_scheduled", code, nextRetryAt: decision.nextRetryAt.toISOString() });
             }
             await db.recordWebhookEvent({ provider: "sipay", eventType: "mit_charge_failed", eventId: order, status: "error", errorMessage: `${code}:${String(detail)}`, durationMs: Date.now() - chargeStart, payload: data ?? result.raw });
+            // Avisar al cliente. Hasta hoy esto NO existía: el cobro fallaba, el
+            // cron reintentaba y la suscripción se cancelaba sola sin que el
+            // cliente supiera nada — 198 en impago y cero avisos. La mayoría de
+            // estos rechazos son un banco denegando un cargo sin autenticación a
+            // alguien que sí tiene fondos, y pagando desde la web con 3DS entran.
+            // Una sola vez por ciclo: la marca es el propio evento en la BD.
+            try { await avisarImpago(db, sub.userId, sub.id, amountCents, anchor); } catch { /* nunca romper el cron por un correo */ }
           }
         } catch (err: any) {
           const msg = err?.message ?? String(err);
