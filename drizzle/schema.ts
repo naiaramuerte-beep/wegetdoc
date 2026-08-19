@@ -39,17 +39,14 @@ export type InsertUser = typeof users.$inferInsert;
 /**
  * Subscriptions table — tracks subscriptions per user.
  *
- * Stripe columns are kept for backward compatibility (legacy active subs
- * pre-Sipay migration still reference them). New subs created through
- * the Sipay flow populate the sipay* columns instead. Phase 5 cleanup
- * drops the stripe* columns once all legacy subs have rolled off.
+ * El cobro va por Sipay: `sipayToken` es lo que se recobra cada mes por MIT-R,
+ * y `sipayOrder` + `sipayTransactionId` dan idempotencia y rastro de auditoría.
+ * Las columnas de la pasarela anterior se borraron en la migración 0026 (no
+ * contenían ningún dato real).
  */
 export const subscriptions = mysqlTable("subscriptions", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
-  stripeCustomerId: varchar("stripeCustomerId", { length: 128 }),
-  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 128 }),
-  stripeSessionId: varchar("stripeSessionId", { length: 128 }),
   // Sipay (FastPay / Apple Pay / Google Pay) — tokenized recurring billing.
   // sipayToken is what we re-use in MIT-R charges every month.
   // sipayOrder + sipayTransactionId give us idempotency + audit links.
@@ -287,13 +284,13 @@ export type BlogPost = typeof blogPosts.$inferSelect;
 export type InsertBlogPost = typeof blogPosts.$inferInsert;
 
 /**
- * Webhook events — persisted log of Stripe (or other) webhook deliveries so
+ * Webhook events — registro de lo que devuelve la pasarela en cada operación, para que
  * the admin can trace whether events arrived and were processed successfully.
  * Capped retention: keep last ~500 rows via periodic pruning (future job).
  */
 export const webhookEvents = mysqlTable("webhook_events", {
   id: int("id").autoincrement().primaryKey(),
-  provider: varchar("provider", { length: 32 }).default("stripe").notNull(),
+  provider: varchar("provider", { length: 32 }).default("sipay").notNull(),
   eventId: varchar("eventId", { length: 128 }),
   eventType: varchar("eventType", { length: 128 }).notNull(),
   status: mysqlEnum("status", ["ok", "error"]).notNull(),

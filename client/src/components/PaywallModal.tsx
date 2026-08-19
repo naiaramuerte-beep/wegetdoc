@@ -1,7 +1,7 @@
 /*
  * PaywallModal — Sipay (FastPay + 3DS Redsys) payment with PDF preview.
  * Two-column layout: PDF preview (left) + payment form (right).
- * Stripe was retired from the public paywall.
+ * La pasarela es Sipay: FastPay (tarjeta), Apple Pay y Google Pay.
  */
 import { useState, useEffect, useCallback, useRef } from "react";
 import { colors } from "@/lib/brand";
@@ -46,7 +46,7 @@ interface PaywallModalProps {
    * to charge €19.99 immediately). Falls back to the full checkout if the
    * saved card is declined.
    */
-  reason?: "trial-limit";
+  reason?: "trial-limit" | "upgrade-now";
   /**
    * When the parent passes this prop and the user is NOT already
    * authenticated, the modal mounts and immediately triggers the Google
@@ -98,7 +98,7 @@ function CardBrands() {
       </svg>
 
       {/* American Express — blue tile with white centered "AMEX" wordmark,
-          matching the compact version Stripe/Adyen use in their payment-method
+          matching the compact version the big gateways use in their payment-method
           selectors. The full "AMERICAN EXPRESS" arc is illegible at 36px so we
           use the shorter form people instantly recognize. */}
       <svg width="36" height="24" viewBox="0 0 750 471" xmlns="http://www.w3.org/2000/svg" aria-label="American Express">
@@ -1480,10 +1480,7 @@ export default function PaywallModal({
   const s = getAuthStrings(lang);
   const { price, withPrice } = usePricing();
   const { isAuthenticated } = useAuth();
-  // Stripe was retired from the public paywall. Sipay is now the only provider
-  // shown to customers; the backend Stripe code stays around so the admin
-  // panel keeps reading historical data + the cron still services subscribers
-  // that paid through Stripe before the migration.
+  // Sipay es la única pasarela: FastPay (tarjeta), Apple Pay y Google Pay.
   const paymentProvider: "sipay" = "sipay";
   const { savePdfToSession, setPendingPaywall, pendingFile, pendingEditedPdf, clearPendingEditedPdf, saveEditedPdfToSession } = usePdfFile();
   const [step, setStep] = useState<Step>(isAuthenticated ? "plans" : "auth-choice");
@@ -1509,6 +1506,10 @@ export default function PaywallModal({
   // IMPORTANT: these MUST be called unconditionally, before any early
   // return, or React hits error #310 (hook count changes between renders).
   const [upgradeFallbackToCheckout, setUpgradeFallbackToCheckout] = useState(false);
+  // Un mismo paso sirve para dos entradas: quedarse sin descargas de la prueba, o
+  // querer pagar el mensual por voluntad propia desde el panel. Lo segundo no
+  // tenía botón en ninguna parte: quien quería pagar antes de tiempo no podía.
+  const esVistaUpgrade = reason === "trial-limit" || reason === "upgrade-now";
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
   const upgradeTrialNowMut = trpc.subscription.upgradeTrialNow.useMutation();
   const utils2 = trpc.useUtils();
@@ -1846,14 +1847,14 @@ export default function PaywallModal({
         return;
       }
       // Server distinguishes recoverable card issues from everything else.
-      // Only fall back to the full Stripe checkout when entering a different
+      // Sólo se ofrece el formulario de tarjeta cuando meter otra tarjeta
       // card might actually fix the problem.
       const code = (r as any).code;
       if (code === "CARD_ERROR") {
         toast.error(r.error || "La tarjeta fue rechazada. Introduce otra.");
         setUpgradeFallbackToCheckout(true);
       } else {
-        // FAKE_QA_SUB / NO_SUB / NO_STRIPE_ID / STRIPE_ERROR → show inline.
+        // Sin suscripción, sin token o avería nuestra → se explica en el propio modal.
         setUpgradeError(r.error || "No pudimos activar tu suscripción ahora mismo.");
       }
     } catch (err) {
@@ -1900,7 +1901,7 @@ export default function PaywallModal({
         </button>
 
         {/* ── Trial-limit reached (1-click upgrade) ── */}
-        {reason === "trial-limit" && !upgradeFallbackToCheckout && (
+        {esVistaUpgrade && !upgradeFallbackToCheckout && (
           <div className="p-8">
             <div className="text-center mb-6">
               <div className="w-14 h-14 rounded-2xl bg-[#0A0A0B] flex items-center justify-center mx-auto mb-4 relative">
@@ -1908,7 +1909,9 @@ export default function PaywallModal({
                 <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#E63946] ring-2 ring-white" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                {(t as any).paywall_trial_limit_title ?? "Has usado tus 2 PDFs del trial"}
+                {reason === "upgrade-now"
+                  ? t.dash_subscribe_now
+                  : ((t as any).paywall_trial_limit_title ?? "Has usado tus 2 PDFs del trial")}
               </h2>
               <p className="text-sm text-gray-500">
                 {withPrice((t as any).paywall_trial_limit_body) || `Activa tu suscripción mensual por ${price} para seguir procesando PDFs sin límite.`}
@@ -1957,7 +1960,7 @@ export default function PaywallModal({
             subtitle about social/email, email + password form FIRST,
             then a divider, then Google as alternative. Same DB writes
             underneath as before — only ordering + copy changed. */}
-        {reason !== "trial-limit" && currentStep === "auth-choice" && (
+        {!esVistaUpgrade && currentStep === "auth-choice" && (
           <div className="p-8">
             <div className="mb-5">
               <p className="text-xs font-semibold text-gray-400 mb-2">
@@ -2050,8 +2053,8 @@ export default function PaywallModal({
           </div>
         )}
 
-        {/* ── Payment step ── Sipay only (Stripe retired) ── */}
-        {(reason !== "trial-limit" || upgradeFallbackToCheckout) && currentStep === "plans" && (
+        {/* ── Paso del pago ── */}
+        {(!esVistaUpgrade || upgradeFallbackToCheckout) && currentStep === "plans" && (
           <SipayCheckoutForm
             onSuccess={handlePaymentSuccess}
             onClose={onClose}

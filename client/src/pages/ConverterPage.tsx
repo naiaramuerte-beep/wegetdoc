@@ -5,7 +5,7 @@
    Flow:
      1. User uploads a PDF
      2. Fake "Converting…" progress (~4s) — no real API call yet
-     3. PaywallModal opens (handles auth + Stripe payment)
+     3. PaywallModal opens (handles auth + payment)
      4. On payment success: real call to /api/convert/pdf-to/:format,
         autodownload the result, then navigate to /payment/success
    ============================================================= */
@@ -317,7 +317,7 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
     setShowPaywall(true);
   };
 
-  // ── Step 4: after Stripe payment → real conversion + autodownload ──
+  // ── Paso 4: tras el pago → conversión real + descarga automática ──
   const handlePaymentSuccess = async (transactionId?: string) => {
     setShowPaywall(false);
     if (!file) return;
@@ -691,7 +691,7 @@ export default function ConverterPage({ target }: { target: ConverterTarget }) {
 
       <Footer />
 
-      {/* Paywall (auth + Stripe). Opens after the fake conversion finishes. */}
+      {/* Modal de registro + pago. Se abre al terminar la conversión simulada. */}
       <PaywallModal
         isOpen={showPaywall}
         onClose={() => {

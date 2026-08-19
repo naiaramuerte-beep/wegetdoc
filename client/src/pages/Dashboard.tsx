@@ -726,7 +726,7 @@ function TeamTab() {
   );
 }
 
-// Dashboard inline Stripe checkout was removed when we migrated to Sipay.
+// El pago del panel se hace con el modal compartido (Sipay).
 // The "Subscribe" button now opens the shared PaywallModal (FastPay /
 // Apple Pay / Google Pay / card), matching the editor experience.
 
@@ -739,6 +739,11 @@ function BillingTab() {
   const utils = trpc.useUtils();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
+  // Quien está en la prueba y quiere pagar YA el mensual no tenía dónde hacerlo:
+  // cuenta como premium, así que no veía el botón de suscribirse, y el paso de
+  // mejora sólo se le ofrecía al chocar con el límite de descargas. Si alguien
+  // quiere pagar, hay que dejarle.
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const handleSipayComplete = useCallback(async () => {
     await utils.subscription.status.invalidate();
@@ -766,6 +771,7 @@ function BillingTab() {
 
   const isPremium = subData?.isPremium ?? false;
   const sub = subData?.subscription;
+  const enPrueba = sub?.plan === "trial";
   // El precio que se le enseña al cliente es EL SUYO (el que aceptó y se le
   // cobra), no la tarifa vigente para altas nuevas. Si sube el precio, quien ya
   // estaba dentro sigue viendo el suyo. Sin anclaje (filas antiguas) cae a la
@@ -853,6 +859,27 @@ function BillingTab() {
         </div>
       </div>
 
+      {/* En prueba: dejarle pasar al plan mensual cuando ÉL quiera.
+          Antes no podía: como premium no veía el botón de suscribirse, y la
+          pantalla de mejora sólo aparecía al agotar las descargas. */}
+      {enPrueba && !sub?.cancelAtPeriodEnd && (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-slate-800">{t.dash_subscribe_now}</p>
+            <p className="text-sm text-slate-500 mt-0.5">
+              {t.dash_trial_plan} · {price}{t.dash_per_month}
+            </p>
+          </div>
+          <Button
+            className="bg-[#E63946] hover:bg-[#C72738] text-white shrink-0"
+            onClick={() => setShowUpgrade(true)}
+          >
+            <CreditCard size={16} className="mr-2" />
+            {t.dash_subscribe_now}
+          </Button>
+        </div>
+      )}
+
       {/* Already canceled — info banner */}
       {isPremium && sub?.cancelAtPeriodEnd && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-start gap-3">
@@ -924,6 +951,16 @@ function BillingTab() {
         isOpen={showPaywall && !isPremium}
         onClose={() => setShowPaywall(false)}
         onPaymentSuccess={handleSipayComplete}
+      />
+
+      {/* Pasar al mensual por voluntad propia. Cobra contra la tarjeta guardada;
+          si el banco la rechaza, el propio modal ofrece meter otra (arreglo de
+          hoy) en vez de dejar al cliente sin forma de pagar. */}
+      <PaywallModal
+        isOpen={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        onPaymentSuccess={async () => { setShowUpgrade(false); await handleSipayComplete(); }}
+        reason="upgrade-now"
       />
 
 
