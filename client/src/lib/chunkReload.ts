@@ -27,6 +27,32 @@ function looksLikeChunkError(message: string): boolean {
   );
 }
 
+/**
+ * Envuelve un `import()` de ruta para recargar si el chunk no se puede traer.
+ *
+ * Por qué hace falta además del filtro de mensajes: **Safari no dice ninguna de
+ * esas frases**. Cuando a un iPhone se le queda un chunk viejo tras un deploy,
+ * el error es un escueto `TypeError: Load failed`, que es lo que Safari usa para
+ * CUALQUIER fetch fallido. Visto en producción el 19-ago en `/de/editor` con iOS
+ * 16.7 (Sentry `a247de20`): el usuario se quedaba con el editor roto y sin
+ * recarga automática, porque el patrón no coincidía.
+ *
+ * Y no se puede arreglar metiendo "Load failed" en la lista: eso recargaría la
+ * página ante cualquier petición de red fallida, por ejemplo al perder cobertura
+ * a mitad de una subida. Aquí, en cambio, sabemos con certeza que lo que falló
+ * fue la carga de un chunk, así que se recarga sin mirar el mensaje.
+ */
+export function lazySafe<T>(cargar: () => Promise<T>): () => Promise<T> {
+  return () =>
+    cargar().catch((err) => {
+      maybeReload();
+      // Se relanza igual: si la recarga no llega a ocurrir (cooldown de 30 s),
+      // React sigue viendo el error y muestra su pantalla de fallo en vez de
+      // quedarse colgado para siempre.
+      throw err;
+    });
+}
+
 export function isChunkErrorMessage(message: string | undefined | null): boolean {
   if (!message) return false;
   return looksLikeChunkError(message);
