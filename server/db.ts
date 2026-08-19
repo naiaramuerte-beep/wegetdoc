@@ -1445,6 +1445,12 @@ export async function recordCharge(opts: {
           todayCount: ctx.todayCount, todayTotalCents: ctx.todayTotalCents,
           todayAltas: ctx.todayAltas, todayRenov: ctx.todayRenov, hora,
           device: opts.deviceType ?? null, order: opts.sipayOrder ?? null,
+          // Solo en recurrentes: cuántos intentos de ESTE ciclo se rechazaron
+          // antes de que entrara éste. Es lo que separa "cobro limpio" de
+          // "rescatado al tercer intento" en el aviso.
+          fallosPrevios: opts.provider === "mit" && opts.userId
+            ? await contarFallosDelCiclo(opts.userId, (await getLatestSubscription(opts.userId))?.currentPeriodStart)
+            : 0,
         });
       } catch { /* notification is best-effort */ }
     })();
@@ -2375,6 +2381,24 @@ export async function upgradeTrialImmediately(userId: number) {
  * Persist a webhook delivery so admins can audit what the gateway sent us
  * and whether our handler succeeded. Call from the webhook handler.
  */
+/**
+ * Cobros de renovación RECHAZADOS de este ciclo, antes del que se está
+ * registrando ahora. Es lo que permite decir en el aviso de Telegram si la venta
+ * entró a la primera o la hemos rescatado en el tercer intento — que no valen lo
+ * mismo: si la mayoría de los ingresos son rescates, el problema es la pasarela.
+ *
+ * El ciclo se delimita con `currentPeriodStart`, que en un cobro correcto es
+ * exactamente el vencimiento anterior (el cron lo fija así al extender +30 días).
+ */
+export async function contarFallosDelCiclo(userId: number, desde: Date | null | undefined): Promise<number> {
+  const db = await getDb();
+  if (!db || !desde) return 0;
+  const rows = await db.select({ n: sql<number>`count(*)` }).from(charges)
+    .where(sql`${charges.userId} = ${userId} AND ${charges.amountCents} >= 1000
+               AND ${charges.status} <> 'ok' AND ${charges.createdAt} >= ${desde}`);
+  return Number(rows[0]?.n ?? 0);
+}
+
 /**
  * ¿Existe ya un evento con este `eventId`?
  *
