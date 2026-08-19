@@ -232,6 +232,23 @@ export async function userHasActiveSubscription(userId: number): Promise<boolean
 }
 
 /**
+ * La última suscripción del usuario, en el estado en que esté.
+ *
+ * `getActiveSubscription` devuelve null cuando la suscripción está en impago, y
+ * por eso el panel del cliente no podía decirle NADA: ni que el cobro falló, ni
+ * cuánto se le intentó cobrar. Un impago silencioso es un cliente que se va sin
+ * saber que podía arreglarlo — hoy hay 198 así.
+ */
+export async function getLatestSubscription(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(subscriptions)
+    .where(eq(subscriptions.userId, userId))
+    .orderBy(desc(subscriptions.createdAt)).limit(1);
+  return result[0] ?? null;
+}
+
+/**
  * Persist the payer's country (ISO-3166 alpha-2 from Cloudflare's cf-ipcountry
  * header) on the user, but only if we don't already have one — first payment
  * wins, so we never overwrite a real value with a later VPN/roaming hit.
@@ -2358,6 +2375,21 @@ export async function upgradeTrialImmediately(userId: number) {
  * Persist a webhook delivery so admins can audit what the gateway sent us
  * and whether our handler succeeded. Call from the webhook handler.
  */
+/**
+ * ¿Existe ya un evento con este `eventId`?
+ *
+ * Sirve de marca de idempotencia sin añadir columnas: el aviso de impago la usa
+ * para no repetir el mismo correo cada 15 minutos, metiendo el ciclo de
+ * facturación dentro del propio id (`impago-<subId>-<vencimiento>`).
+ */
+export async function webhookEventExists(eventId: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db || !eventId) return false;
+  const rows = await db.select({ id: webhookEvents.id }).from(webhookEvents)
+    .where(eq(webhookEvents.eventId, eventId)).limit(1);
+  return rows.length > 0;
+}
+
 export async function recordWebhookEvent(opts: {
   provider?: string;
   eventId?: string;

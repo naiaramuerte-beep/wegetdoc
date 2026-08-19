@@ -385,8 +385,23 @@ export const appRouter = router({
       }
       const isPremium = await userHasActiveSubscription(ctx.user.id);
       const sub = await getActiveSubscription(ctx.user.id);
+      // Impago: `getActiveSubscription` devuelve null, así que sin esto el panel
+      // no puede contarle al cliente que su cobro falló ni ofrecerle arreglarlo.
+      // Era el agujero de los 198 en past_due a los que nadie avisaba.
+      let impago: { amountDueCents: number; declineCode: string | null } | null = null;
+      if (!sub) {
+        const { getLatestSubscription } = await import("./db");
+        const ultima = await getLatestSubscription(ctx.user.id);
+        if (ultima && ultima.status === "past_due") {
+          impago = {
+            amountDueCents: ultima.recurringCents ?? Math.round((await getActiveMonthlyPrice()).eur * 100),
+            declineCode: ultima.lastDeclineCode ?? null,
+          };
+        }
+      }
       return {
         isPremium,
+        pastDue: impago,
         subscription: sub
           ? {
               plan: sub.plan,
