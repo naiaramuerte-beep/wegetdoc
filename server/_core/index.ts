@@ -189,7 +189,7 @@ async function startServer() {
     res.setHeader("X-XSS-Protection", "1; mode=block");
     // Referrer policy
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-    // Permissions policy — disable unnecessary browser features (payment allowed for Stripe)
+    // Permissions policy — disable unnecessary browser features (payment allowed for the wallets)
     res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
     // Strict Transport Security (HSTS) — force HTTPS for 1 year
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");

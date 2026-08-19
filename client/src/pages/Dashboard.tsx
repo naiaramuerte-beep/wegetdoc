@@ -726,7 +726,7 @@ function TeamTab() {
   );
 }
 
-// Dashboard inline Stripe checkout was removed when we migrated to Sipay.
+// El pago del panel se hace con el modal compartido (Sipay).
 // The "Subscribe" button now opens the shared PaywallModal (FastPay /
 // Apple Pay / Google Pay / card), matching the editor experience.
 

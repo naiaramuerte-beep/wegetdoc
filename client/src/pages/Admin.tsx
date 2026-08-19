@@ -212,7 +212,7 @@ export default function Admin() {
     undefined,
     { enabled: !!user && user.role === "admin" && tab === "conversion" }
   );
-  const stripeRevQ = trpc.admin.stripeRevenue.useQuery(
+  const revenueQ = trpc.admin.revenue.useQuery(
     { from: rangeFromISO, to: rangeToISO },
     { enabled: !!user && user.role === "admin" && tab === "billing", staleTime: 60 * 1000 }
   );
@@ -245,11 +245,11 @@ export default function Admin() {
       utils.admin.pendingOrphanPayments.invalidate();
       utils.admin.subscribedUsers.invalidate();
       utils.admin.billingStats.invalidate();
-      utils.admin.stripeRevenue.invalidate();
+      utils.admin.revenue.invalidate();
     },
     onError: (err) => toast.error(err.message || "Error reconciliando pago"),
   });
-  const chargesQ = trpc.admin.stripeCharges.useQuery({ limit: 50 }, {
+  const chargesQ = trpc.admin.charges.useQuery({ limit: 50 }, {
     enabled: !!user && user.role === "admin" && tab === "billing",
   });
   const gclidConvQ = trpc.admin.gclidConversions.useQuery(undefined, {
@@ -258,8 +258,8 @@ export default function Admin() {
   const refundMut = trpc.admin.refundCharge.useMutation({
     onSuccess: (r) => {
       toast.success(`Reembolso OK: ${formatEur(r.amountEur)} (${r.id})`);
-      utils.admin.stripeCharges.invalidate();
-      utils.admin.stripeRevenue.invalidate();
+      utils.admin.charges.invalidate();
+      utils.admin.revenue.invalidate();
     },
     onError: (err) => toast.error(err.message || "Error al reembolsar"),
   });
@@ -287,7 +287,7 @@ export default function Admin() {
   const createFakeSubMut = trpc.admin.createFakeTrialSub.useMutation({
     onSuccess: (r) => {
       if (!r.success) toast.error(r.error || "No se pudo crear");
-      else toast.success(`Sub trial falsa creada (ID: ${(r as any).stripeSubscriptionId ?? r}). Ahora eres "trial". Prueba el flujo.`);
+      else toast.success(`Sub trial falsa creada (pedido: ${(r as any).fakeOrder ?? r}). Ahora eres "trial". Prueba el flujo.`);
     },
     onError: (err) => toast.error(err.message || "Error"),
   });
@@ -296,7 +296,6 @@ export default function Admin() {
     onError: (err) => toast.error(err.message || "Error"),
   });
   const [previewPaywallReason, setPreviewPaywallReason] = useState<"standard" | "trial-limit" | null>(null);
-  // createCouponMut / deleteCouponMut removed with the Stripe coupon system.
   const createCouponMut = { mutate: () => {}, isPending: false } as any;
   const deleteCouponMut = { mutate: () => {}, isPending: false } as any;
   const cancelReasonsQ = trpc.admin.cancelReasons.useQuery(undefined, { enabled: !!user && user.role === "admin" && tab === "billing" });
@@ -571,7 +570,7 @@ export default function Admin() {
           onClick={() => {
             utils.admin.stats.invalidate();
             utils.admin.billingStats.invalidate();
-            utils.admin.stripeRevenue.invalidate();
+            utils.admin.revenue.invalidate();
             utils.admin.subsAboutToCancel.invalidate();
             utils.admin.pastDueSubs.invalidate();
           }}
@@ -850,7 +849,7 @@ export default function Admin() {
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Ingresos reales (Sipay)</p>
-                      {stripeRevQ.isLoading && (
+                      {revenueQ.isLoading && (
                         <span className="text-[10px] text-gray-500 inline-flex items-center gap-1">
                           <RefreshCw size={10} className="animate-spin" /> consultando…
                         </span>
@@ -860,29 +859,29 @@ export default function Admin() {
                       {[
                         {
                           label: "Ingresos brutos",
-                          value: stripeRevQ.data ? formatEur(stripeRevQ.data.grossEur) : "—",
+                          value: revenueQ.data ? formatEur(revenueQ.data.grossEur) : "—",
                           sub: "Cobros antes de comisiones",
                           icon: <DollarSign size={18} />,
                           color: "#10b981",
                         },
                         {
                           label: "Ingresos netos",
-                          value: stripeRevQ.data ? formatEur(stripeRevQ.data.netEur) : "—",
+                          value: revenueQ.data ? formatEur(revenueQ.data.netEur) : "—",
                           sub: "Brutos − reembolsos",
                           icon: <Zap size={18} />,
                           color: "#22c55e",
                         },
                         {
                           label: "Cobros en rango",
-                          value: stripeRevQ.data?.chargesCount ?? "—",
+                          value: revenueQ.data?.chargesCount ?? "—",
                           sub: `${billing.newSubsInRange} suscripciones nuevas`,
                           icon: <CreditCard size={18} />,
                           color: "#8b5cf6",
                         },
                         {
                           label: "Reembolsos",
-                          value: stripeRevQ.data ? formatEur(stripeRevQ.data.refundedEur) : "—",
-                          sub: `${stripeRevQ.data?.refundsCount ?? 0} reembolsos`,
+                          value: revenueQ.data ? formatEur(revenueQ.data.refundedEur) : "—",
+                          sub: `${revenueQ.data?.refundsCount ?? 0} reembolsos`,
                           icon: <RotateCcw size={18} />,
                           color: "#f59e0b",
                         },

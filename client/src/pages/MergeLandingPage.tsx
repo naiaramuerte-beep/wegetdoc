@@ -260,7 +260,7 @@ export default function MergeLandingPage() {
     setShowPaywall(true);
   };
 
-  // PaywallModal calls back here on Stripe/Sipay success.
+  // PaywallModal calls back here on payment success.
   // The merge already ran in browser, so we just trigger the download.
   const handlePaymentSuccess = (transactionId?: string) => {
     setShowPaywall(false);

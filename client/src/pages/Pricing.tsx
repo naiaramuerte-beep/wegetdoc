@@ -1,7 +1,7 @@
 /* =============================================================
    EditorPDF Pricing Page — Clean White design
    Two plans: Trial + Monthly, with feature comparison table
-   Stripe Embedded Checkout inline
+   Pago con el modal compartido (Sipay)
    ============================================================= */
 
 import { useState, useEffect, useCallback } from "react";
@@ -270,7 +270,7 @@ export default function Pricing() {
         </div>
       </section>
 
-      {/* Sipay paywall — replaces the old Stripe inline checkout */}
+      {/* Modal de pago de Sipay */}
       <PaywallModal
         isOpen={showCheckout && isAuthenticated}
         onClose={() => setShowCheckout(false)}
@@ -417,9 +417,7 @@ export default function Pricing() {
   );
 }
 
-// PricingPaymentForm (Stripe Elements wrapper) was removed in the Sipay
 // migration. The PaywallModal above handles the whole checkout now.
 
-// StripeInlineCheckout removed in the Stripe → Sipay migration. The
 // public Pricing page now routes any "Subscribe" action through the
 // shared PaywallModal (FastPay + Apple Pay + Google Pay + card).

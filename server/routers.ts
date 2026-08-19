@@ -66,15 +66,15 @@ import {
   getRecentSubsWithoutPayment,
   getRevenueByCountry,
   getStorageByUser,
-  getStripeChargesList,
+  getChargesList,
   getGclidConversions,
-  getStripeRevenue,
+  getRevenue,
   getDailyIntroCharges,
   getSubsAboutToCancel,
   getUserTimeline,
   getWebhookEvents,
   recordAuditEntry,
-  refundStripeCharge,
+  refundCharge,
   setCancelReason,
   setUserAdminNotes,
   getBlogPosts,
@@ -136,8 +136,8 @@ export const appRouter = router({
     /**
      * Active subscription pricing — read from `site_settings.subscription_price_eur`
      * with fallback to a default. Returns numeric eur + a few preformatted
-     * strings so consumers don't reimplement locale formatting. The Stripe
-     * Price ID used at checkout lives in `active_stripe_price_id` and is
+     * strings so consumers don't reimplement locale formatting. El importe que
+     * se cobra sale de aquí; no hay ningún identificador de precio externo, y
      * NOT exposed here (server-only — see `confirmSetup`).
      */
     pricing: publicProcedure.query(async () => {
@@ -174,23 +174,22 @@ export const appRouter = router({
      * the box but the admin can kill-switch a feature without deploy.
      */
     flags: publicProcedure.query(async () => {
-      const [converter, tour, blog, ads, provider] = await Promise.all([
+      const [converter, tour, blog, ads] = await Promise.all([
         getSiteSetting("flag_converter_enabled"),
         getSiteSetting("flag_product_tour_enabled"),
         getSiteSetting("flag_blog_enabled"),
         getSiteSetting("flag_ads_tracking"),
-        getSiteSetting("flag_payment_provider"),
       ]);
       // Default to enabled unless explicitly "false"
       const on = (v: string | null | undefined) => v !== "false";
-      // Default = stripe (existing prod). Admin can flip to "sipay" from Ajustes.
-      const paymentProvider: "stripe" | "sipay" = provider === "sipay" ? "sipay" : "stripe";
+      // La pasarela ya no es una bandera: sólo hay Sipay. Se devolvía un
+      // `paymentProvider` que por defecto valía "stripe" y que no leía nadie —
+      // el modal de pago lo tiene fijo.
       return {
         converterEnabled: on(converter),
         productTourEnabled: on(tour),
         blogEnabled: on(blog),
         adsTrackingEnabled: on(ads),
-        paymentProvider,
       };
     }),
   }),
@@ -451,7 +450,7 @@ export const appRouter = router({
           adminEmail: ctx.user.email ?? null,
           action: "upgrade_trial_now",
           targetType: "subscription",
-          targetId: sub?.stripeSubscriptionId ?? "",
+          targetId: String(sub?.id ?? ""),
           metadata: { chargedAmountEur: result.chargedAmountEur },
         });
       }
@@ -1511,7 +1510,7 @@ export const appRouter = router({
         await setSiteSetting(input.key, input.value);
         // Audit-log price-impacting changes — they affect what new customers
         // pay, so we want a record of who flipped them and when.
-        if (input.key === "subscription_price_eur" || input.key === "active_stripe_price_id") {
+        if (input.key === "subscription_price_eur") {
           await recordAuditEntry({
             adminId: ctx.user.id,
             adminEmail: ctx.user.email ?? null,
@@ -1545,7 +1544,7 @@ export const appRouter = router({
         }
       }),
 
-    stripeRevenue: adminProcedure
+    revenue: adminProcedure
       .input(z.object({
         from: z.string().datetime(),
         to: z.string().datetime(),
@@ -1553,14 +1552,14 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const t0 = Date.now();
         try {
-          const result = await getStripeRevenue({
+          const result = await getRevenue({
             from: new Date(input.from),
             to: new Date(input.to),
           });
-          console.log(`[admin.stripeRevenue] OK in ${Date.now() - t0}ms (charges: ${result.chargesCount})`);
+          console.log(`[admin.revenue] OK in ${Date.now() - t0}ms (charges: ${result.chargesCount})`);
           return result;
         } catch (err) {
-          console.error(`[admin.stripeRevenue] FAILED after ${Date.now() - t0}ms:`, err);
+          console.error(`[admin.revenue] FAILED after ${Date.now() - t0}ms:`, err);
           throw err;
         }
       }),
@@ -1605,10 +1604,10 @@ export const appRouter = router({
       return getStorageByUser();
     }),
 
-    stripeCharges: adminProcedure
+    charges: adminProcedure
       .input(z.object({ limit: z.number().optional() }).optional())
       .query(async ({ input }) => {
-        return getStripeChargesList({ limit: input?.limit });
+        return getChargesList({ limit: input?.limit });
       }),
 
     // Charges carrying a Google Ads click ID → offline conversion CSV export.
@@ -1623,12 +1622,12 @@ export const appRouter = router({
         reason: z.enum(["duplicate", "fraudulent", "requested_by_customer"]).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const result = await refundStripeCharge(input);
+        const result = await refundCharge(input);
         await recordAuditEntry({
           adminId: ctx.user.id,
           adminEmail: ctx.user.email ?? null,
           action: "refund_charge",
-          targetType: "stripe_charge",
+          targetType: "charge",
           targetId: input.chargeId,
           metadata: { amountEur: result.amountEur, reason: input.reason },
         });
@@ -1797,7 +1796,7 @@ export const appRouter = router({
       return r;
     }),
 
-    // QA only: spin up a fake trial sub in DB (no Stripe) so the admin can
+    // Solo QA: crea una suscripción de prueba en la base, sin cobrar, para que el admin
     // test the download gate end-to-end without paying €0,50.
     createFakeTrialSub: adminProcedure.mutation(async ({ ctx }) => {
       const { createFakeTrialSub } = await import("./db");
@@ -1826,7 +1825,6 @@ export const appRouter = router({
       return r;
     }),
 
-    // Coupons removed in the Stripe-removal sweep — Sipay doesn't expose
     // coupon objects. If we want promo codes again we'll model them in our
     // own DB and apply discounts client-side at checkout.
 

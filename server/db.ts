@@ -197,7 +197,6 @@ export async function getAllUsers(search?: string) {
     // Subscription info
     subStatus: subscriptions.status,
     subPlan: subscriptions.plan,
-    stripeCustomerId: subscriptions.stripeCustomerId,
     currentPeriodEnd: subscriptions.currentPeriodEnd,
     cancelAtPeriodEnd: subscriptions.cancelAtPeriodEnd,
   };
@@ -278,9 +277,6 @@ export async function setUserCountryIfEmpty(userId: number, country: string) {
 
 export async function upsertSubscription(data: {
   userId: number;
-  stripeCustomerId?: string;
-  stripeSubscriptionId?: string;
-  stripeSessionId?: string;
   sipayToken?: string;
   sipayOrder?: string;
   sipayTransactionId?: string;
@@ -320,14 +316,6 @@ export async function upsertSubscription(data: {
   } else {
     await db.insert(subscriptions).values(data);
   }
-}
-
-export async function getSubscriptionByStripeSubId(stripeSubscriptionId: string) {
-  const db = await getDb();
-  if (!db) return null;
-  const result = await db.select().from(subscriptions)
-    .where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId)).limit(1);
-  return result[0] ?? null;
 }
 
 // Phase 2: cancel is now DB-only. Sipay has no subscription concept on
@@ -940,9 +928,9 @@ export async function deleteEmailTemplate(id: number) {
 }
 
 // ─── Admin stats ──────────────────────────────────────────────
-// Active = status active + has a Sipay token. Legacy Stripe subs without a
-// Sipay token are zombies (we can't bill them since Stripe banned us) and
-// stay out of every stat / list the admin panel renders.
+// Activa = status active + tiene token de Sipay. Una suscripción sin token no
+// se puede cobrar, así que queda fuera de todas las cifras y listas del panel:
+// contarla como viva inflaría el MRR con dinero que no va a entrar.
 const sipayOnly = sql`${subscriptions.sipayToken} IS NOT NULL AND ${subscriptions.sipayToken} <> ''`;
 export async function getAdminStats() {
   const db = await getDb();
@@ -1043,9 +1031,9 @@ export async function setGoogleId(userId: number, googleId: string) {
 // MRR pricing constants. Monthly is read from site_settings on each
 // stats query so an admin price change reflects in MRR projections.
 // Caveat: existing subs may have been created at a different price; we
-// can't tell from the local row what they actually pay (Stripe knows but
-// we'd need to fetch per sub). The numbers below are best-effort
-// projections based on the *current* price.
+// desde la migración 0025 cada fila guarda su `recurringCents`, así que lo que
+// paga cada una SÍ se sabe. Las proyecciones de abajo usan el precio vigente;
+// afinarlas por fila es una mejora pendiente.
 const ANNUAL_PRICE_EUR = 99;
 const INTRO_PRICE_EUR = 0.50;
 
@@ -1090,8 +1078,8 @@ export async function getBillingStats(opts?: { from?: Date; to?: Date }) {
     newUsersMonth,
     newUsersInRange,
   ] = await Promise.all([
-    // Every sub query below requires sipayToken — legacy Stripe subs without
-    // one are invisible to the admin panel because they can't be billed.
+    // Todas las consultas exigen sipayToken: sin token no se puede cobrar, y
+    // una fila que no se puede cobrar no debe aparecer en las cifras.
     db.select().from(subscriptions).where(sql`${subscriptions.status} = 'active' AND ${sipayOnly}`),
     db.select().from(subscriptions).where(sql`${subscriptions.status} = 'trialing' AND ${sipayOnly}`),
     db.select({ count: sql<number>`count(*)` }).from(subscriptions).where(sql`${subscriptions.status} = 'canceled' AND ${sipayOnly}`),
@@ -1119,8 +1107,8 @@ export async function getBillingStats(opts?: { from?: Date; to?: Date }) {
   ]);
 
   // Real MRR: subs currently paying recurring (plan = monthly | annual).
-  // Trials (plan = 'trial') contribute 0 until Stripe charges them post-trial
-  // and the webhook transitions plan → 'monthly'.
+  // Las pruebas (plan = 'trial') suman 0 hasta que el cron les cobra al vencer
+  // y la fila pasa a plan = 'monthly'.
   const mrrPerSub = (plan: string | null) => {
     if (plan === "monthly") return MONTHLY_PRICE_EUR;
     if (plan === "annual") return ANNUAL_PRICE_EUR / 12;
@@ -1137,7 +1125,7 @@ export async function getBillingStats(opts?: { from?: Date; to?: Date }) {
   }
   // allTrialingSubs is rarely populated in this app (we use status='active' +
   // plan='trial' during the trial period), but count it defensively in case a
-  // sub lands in Stripe-native trialing state via webhook.
+  // alguna fila se quede en status='trialing'.
   for (const sub of allTrialingSubs) {
     mrrCommitted += sub.plan === "annual" ? ANNUAL_PRICE_EUR / 12 : MONTHLY_PRICE_EUR;
   }
@@ -1170,8 +1158,8 @@ export async function getBillingStats(opts?: { from?: Date; to?: Date }) {
   const canceledTotal = Number(allCanceledSubs[0]?.count ?? 0);
   const activeAndTrialingTotal = allActiveSubs.length + allTrialingSubs.length;
   // Subs currently in their trial window regardless of how we track status.
-  // In this app trials live as status='active' + plan='trial'; we also fold in
-  // Stripe-native status='trialing' for robustness.
+  // Aquí las pruebas viven como status='active' + plan='trial'; se suma también
+  // status='trialing' por si alguna fila quedó así.
   const subsOnTrial =
     allActiveSubs.filter((s) => s.plan === "trial").length + allTrialingSubs.length;
   const subsPayingRecurring =
@@ -1210,14 +1198,13 @@ export async function getBillingStats(opts?: { from?: Date; to?: Date }) {
   };
 }
 
-// In-memory cache for Stripe revenue queries — Stripe API can take 1-3s and
-// the same date range is often re-queried as the admin clicks around.
-const stripeRevenueCache = new Map<string, { data: any; expires: number }>();
-const STRIPE_REVENUE_CACHE_MS = 60 * 1000;
+// Caché en memoria de las consultas de ingresos: el admin repite el mismo rango
+// de fechas al moverse por el panel.
+const revenueCache = new Map<string, { data: any; expires: number }>();
+const REVENUE_CACHE_MS = 60 * 1000;
 
-// Stripe coupon helpers were deleted as part of the Sipay migration.
-// If we want promo codes again we'll model them in our own DB rather
-// than depending on a banned Stripe account.
+// No hay cupones: si algún día hacen falta códigos promocionales, se modelan en
+// nuestra propia base.
 
 /**
  * Insert a Sipay charge into the structured ledger. Called from the FastPay
@@ -1228,7 +1215,7 @@ const STRIPE_REVENUE_CACHE_MS = 60 * 1000;
  * Dunning v2 — subs cuyo cobro MIT toca ahora (cobro original o un reintento
  * programado). El cron itera estas y clasifica el código de cada respuesta.
  * Solo devuelve subs que:
- *   - tienen sipayToken (subs Stripe legacy se saltan)
+ *   - tienen sipayToken (sin token no hay forma de cobrar)
  *   - status in trialing / active / past_due
  *   - cancelAtPeriodEnd = false
  *   - currentPeriodEnd <= now (vencidas)
@@ -1558,7 +1545,7 @@ export async function getGclidConversions(opts?: { days?: number }) {
   }));
 }
 
-export async function getStripeChargesList(opts?: { limit?: number }) {
+export async function getChargesList(opts?: { limit?: number }) {
   const db = await getDb();
   if (!db) return [];
   const limit = Math.min(200, opts?.limit ?? 50);
@@ -1604,7 +1591,7 @@ export async function getStripeChargesList(opts?: { limit?: number }) {
  * `charges` row with refundedCents + status="refunded". Partial refunds
  * supported via amountEur (defaults to full refund).
  */
-export async function refundStripeCharge(opts: { chargeId: string; amountEur?: number; reason?: "duplicate" | "fraudulent" | "requested_by_customer" }) {
+export async function refundCharge(opts: { chargeId: string; amountEur?: number; reason?: "duplicate" | "fraudulent" | "requested_by_customer" }) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
   // chargeId from the admin UI is now our local charges.id (string).
@@ -1632,7 +1619,7 @@ export async function refundStripeCharge(opts: { chargeId: string; amountEur?: n
     refundedCents: newRefundedCents,
     status: newRefundedCents >= row.amountCents ? "refunded" : "ok",
   }).where(eq(charges.id, idNum));
-  stripeRevenueCache.clear();
+  revenueCache.clear();
   return {
     id: String(idNum),
     amountEur: refundCents / 100,
@@ -1643,13 +1630,12 @@ export async function refundStripeCharge(opts: { chargeId: string; amountEur?: n
 
 /**
  * Real cash revenue for a date range, summed from our local charges ledger.
- * Returns euros. Caching is kept for parity with the prior Stripe-backed
- * implementation, though queries on the local table are fast enough to
- * skip caching if we ever need fresher numbers.
+ * Devuelve euros. La caché se mantiene por comodidad, aunque la consulta local
+ * es lo bastante rápida para quitarla si hiciera falta el dato más fresco.
  */
-export async function getStripeRevenue(opts: { from: Date; to: Date }) {
+export async function getRevenue(opts: { from: Date; to: Date }) {
   const cacheKey = `${opts.from.getTime()}-${opts.to.getTime()}`;
-  const cached = stripeRevenueCache.get(cacheKey);
+  const cached = revenueCache.get(cacheKey);
   if (cached && cached.expires > Date.now()) return cached.data;
 
   const db = await getDb();
@@ -1682,7 +1668,7 @@ export async function getStripeRevenue(opts: { from: Date; to: Date }) {
     refundsCount,
     range: { from: opts.from.toISOString(), to: opts.to.toISOString() },
   };
-  stripeRevenueCache.set(cacheKey, { data, expires: Date.now() + STRIPE_REVENUE_CACHE_MS });
+  revenueCache.set(cacheKey, { data, expires: Date.now() + REVENUE_CACHE_MS });
   return data;
 }
 
@@ -1762,13 +1748,12 @@ export async function getStorageByUser(limit = 50) {
 }
 
 /**
- * List of subs whose recurring charge failed. Stripe is automatically
- * retrying these — if retries exhaust the sub gets canceled. Surfacing
- * them in admin lets the operator reach out before that happens.
+ * Suscripciones cuyo cobro recurrente falló. Nuestro cron las reintenta según
+ * el código de denegación; si se agotan los reintentos, se cancelan. Verlas en
+ * el panel permite avisar al cliente antes de llegar a eso.
  *
- * Each row is enriched with the decline reason from Stripe so the operator
- * can see exactly why the charge failed (insufficient_funds, card_declined,
- * expired_card, etc.) without jumping to the Stripe dashboard.
+ * Cada fila lleva el código y el motivo exactos que devolvió la pasarela (190,
+ * 174, 121…) para que el operador vea por qué falló sin salir del panel.
  */
 export async function getPastDueSubs() {
   const db = await getDb();
@@ -1983,7 +1968,7 @@ export async function deleteBlogPost(id: number) {
 
 /**
  * Liveness probe for the core integrations. Each check returns ok/error +
- * latency so the admin dashboard can spot outages quickly. Stripe and R2 do
+ * latency so the admin dashboard can spot outages quickly. Sipay and R2 do
  * lightweight read-only calls; DB just runs `SELECT 1`; CloudConvert / Resend
  * only verify that the API keys are present (no paid call made).
  */
@@ -2070,11 +2055,16 @@ export async function getUserTimeline(userId: number) {
   };
 }
 
+/** Marca de las suscripciones de prueba del QA. Va en `sipayOrder`, que es el
+ *  identificador de pedido real del sistema; antes se usaba un id sintético de
+ *  Stripe, que era el último sitio del código que escribía en aquellas columnas. */
+const QA_ORDER_PREFIX = "fake_qa_";
+
 /**
- * QA-only: create a fake trial sub in local DB without touching Stripe.
- * Lets the admin test the trial-limit gate end-to-end without paying €0,50.
- * The "Activar 19,99€" upgrade button will fail because the stripeSubscriptionId
- * is synthetic — admin should then click Reset to clean up.
+ * Solo para QA: crea una suscripción de prueba en la base local, sin cobrar.
+ * Permite al admin probar el límite de descargas de principio a fin sin pagar
+ * los 0,50 €. No tiene tarjeta guardada, así que el botón de mejorar al mensual
+ * fallará — para limpiarla está el botón de Reset.
  */
 export async function createFakeTrialSub(userId: number) {
   const db = await getDb();
@@ -2087,11 +2077,10 @@ export async function createFakeTrialSub(userId: number) {
   const now = new Date();
   const trialHours = await getTrialHours();
   const trialEnd = trialEndFrom(now, trialHours);
-  const syntheticSubId = `fake_sub_qa_${userId}_${Date.now()}`;
+  const syntheticOrder = `${QA_ORDER_PREFIX}${userId}_${Date.now()}`;
   await upsertSubscription({
     userId,
-    stripeCustomerId: `fake_cus_qa_${userId}`,
-    stripeSubscriptionId: syntheticSubId,
+    sipayOrder: syntheticOrder,
     plan: "trial",
     status: "active",
     currentPeriodStart: now,
@@ -2100,11 +2089,11 @@ export async function createFakeTrialSub(userId: number) {
     cancelAtPeriodEnd: false,
   });
   await markDocumentsPaid(userId);
-  return { success: true, stripeSubscriptionId: syntheticSubId, trialEnd: trialEnd.toISOString() };
+  return { success: true, fakeOrder: syntheticOrder, trialEnd: trialEnd.toISOString() };
 }
 
 /**
- * QA-only: delete the fake trial sub (identified by synthetic stripe id).
+ * Solo para QA: borra la suscripción de prueba, reconocida por su pedido `fake_qa_`.
  */
 export async function deleteFakeTrialSub(userId: number) {
   const db = await getDb();
@@ -2112,7 +2101,7 @@ export async function deleteFakeTrialSub(userId: number) {
   const result: any = await db.delete(subscriptions)
     .where(and(
       eq(subscriptions.userId, userId),
-      like(subscriptions.stripeSubscriptionId, "fake_sub_qa_%"),
+      like(subscriptions.sipayOrder, `${QA_ORDER_PREFIX}%`),
     ));
   return { success: true, affected: result.affectedRows ?? 0 };
 }
@@ -2366,7 +2355,7 @@ export async function upgradeTrialImmediately(userId: number) {
 // ─── Webhook events log (F2) ─────────────────────────────────────
 
 /**
- * Persist a webhook delivery so admins can audit what Stripe sent us
+ * Persist a webhook delivery so admins can audit what the gateway sent us
  * and whether our handler succeeded. Call from the webhook handler.
  */
 export async function recordWebhookEvent(opts: {
@@ -2382,7 +2371,7 @@ export async function recordWebhookEvent(opts: {
   if (!db) return;
   try {
     await db.insert(webhookEvents).values({
-      provider: opts.provider ?? "stripe",
+      provider: opts.provider ?? "sipay",
       eventId: opts.eventId ?? null,
       eventType: opts.eventType,
       status: opts.status,

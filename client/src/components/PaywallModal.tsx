@@ -1,7 +1,7 @@
 /*
  * PaywallModal — Sipay (FastPay + 3DS Redsys) payment with PDF preview.
  * Two-column layout: PDF preview (left) + payment form (right).
- * Stripe was retired from the public paywall.
+ * La pasarela es Sipay: FastPay (tarjeta), Apple Pay y Google Pay.
  */
 import { useState, useEffect, useCallback, useRef } from "react";
 import { colors } from "@/lib/brand";
@@ -98,7 +98,7 @@ function CardBrands() {
       </svg>
 
       {/* American Express — blue tile with white centered "AMEX" wordmark,
-          matching the compact version Stripe/Adyen use in their payment-method
+          matching the compact version the big gateways use in their payment-method
           selectors. The full "AMERICAN EXPRESS" arc is illegible at 36px so we
           use the shorter form people instantly recognize. */}
       <svg width="36" height="24" viewBox="0 0 750 471" xmlns="http://www.w3.org/2000/svg" aria-label="American Express">
@@ -1480,10 +1480,7 @@ export default function PaywallModal({
   const s = getAuthStrings(lang);
   const { price, withPrice } = usePricing();
   const { isAuthenticated } = useAuth();
-  // Stripe was retired from the public paywall. Sipay is now the only provider
-  // shown to customers; the backend Stripe code stays around so the admin
-  // panel keeps reading historical data + the cron still services subscribers
-  // that paid through Stripe before the migration.
+  // Sipay es la única pasarela: FastPay (tarjeta), Apple Pay y Google Pay.
   const paymentProvider: "sipay" = "sipay";
   const { savePdfToSession, setPendingPaywall, pendingFile, pendingEditedPdf, clearPendingEditedPdf, saveEditedPdfToSession } = usePdfFile();
   const [step, setStep] = useState<Step>(isAuthenticated ? "plans" : "auth-choice");
@@ -1846,14 +1843,14 @@ export default function PaywallModal({
         return;
       }
       // Server distinguishes recoverable card issues from everything else.
-      // Only fall back to the full Stripe checkout when entering a different
+      // Sólo se ofrece el formulario de tarjeta cuando meter otra tarjeta
       // card might actually fix the problem.
       const code = (r as any).code;
       if (code === "CARD_ERROR") {
         toast.error(r.error || "La tarjeta fue rechazada. Introduce otra.");
         setUpgradeFallbackToCheckout(true);
       } else {
-        // FAKE_QA_SUB / NO_SUB / NO_STRIPE_ID / STRIPE_ERROR → show inline.
+        // Sin suscripción, sin token o avería nuestra → se explica en el propio modal.
         setUpgradeError(r.error || "No pudimos activar tu suscripción ahora mismo.");
       }
     } catch (err) {
@@ -2050,7 +2047,7 @@ export default function PaywallModal({
           </div>
         )}
 
-        {/* ── Payment step ── Sipay only (Stripe retired) ── */}
+        {/* ── Paso del pago ── */}
         {(reason !== "trial-limit" || upgradeFallbackToCheckout) && currentStep === "plans" && (
           <SipayCheckoutForm
             onSuccess={handlePaymentSuccess}
