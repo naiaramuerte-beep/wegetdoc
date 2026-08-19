@@ -117,6 +117,8 @@ export async function notifySale(opts: {
   hora?: string;            // HH:mm Madrid
   device?: "mobile" | "desktop" | null;
   order?: string | null;    // sipay order — "mit-upgrade-…" marks a trial→monthly upgrade
+  /** Cobros de ESE ciclo que fueron rechazados antes de éste (solo recurrentes). */
+  fallosPrevios?: number;
 }): Promise<void> {
   const { method, kind } = saleLabels(opts.provider, opts.order);
   // Prefer real browser geo; fall back to the card's issuing country (present on
@@ -126,9 +128,13 @@ export async function notifySale(opts: {
   const cname = countryName(cc);
   const deviceLabel = opts.device === "mobile" ? "📱 Móvil" : opts.device === "desktop" ? "💻 PC" : "";
 
+  // Un cobro que entra al tercer intento no vale lo mismo que uno limpio: si la
+  // mayoría de los ingresos son rescates, el problema está en la pasarela.
+  const { etiquetaReintento } = await import("./saleRetryLabel");
+  const reintento = etiquetaReintento({ provider: opts.provider, fallosPrevios: opts.fallosPrevios ?? 0 });
   const lines = [
     `💰 <b>¡Nueva venta!</b>  <b>+${eur(opts.amountCents)}</b>`,
-    `${method} · ${kind}`,
+    `${method} · ${kind}${reintento ? ` · ${reintento}` : ""}`,
   ];
   const geoTime = [
     flag ? `${flag} ${cname}` : "",
