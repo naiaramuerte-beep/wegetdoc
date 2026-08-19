@@ -3,6 +3,7 @@
    Deep Navy Pro design system + i18n routing
    ============================================================= */
 
+import { lazySafe } from "@/lib/chunkReload";
 import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,34 +22,34 @@ import { isFastDoc } from "./lib/brand";
 import { TOOL_LANDINGS } from "./pages/ToolLanding";
 
 // Lazy-loaded pages — only downloaded when the user navigates to them
-const EditorPage = lazy(() => import("./pages/EditorPage"));
-const Pricing = lazy(() => import("./pages/Pricing"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const Admin = lazy(() => import("./pages/Admin"));
-const AdminMobile = lazy(() => import("./pages/AdminMobile"));
-const Tools = lazy(() => import("./pages/Tools"));
-const Login = lazy(() => import("./pages/Login"));
-const Signup = lazy(() => import("./pages/Signup"));
-const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
-const PaymentRetry = lazy(() => import("./pages/PaymentRetry"));
-const InternalTest = lazy(() => import("./pages/InternalTest"));
-const LegalPage = lazy(() => import("./pages/LegalPage"));
-const CancelSubscription = lazy(() => import("./pages/CancelSubscription"));
-const CookieBanner = lazy(() => import("./components/CookieBanner"));
-const AnnouncementBanner = lazy(() => import("./components/AnnouncementBanner"));
-const Blog = lazy(() => import("./pages/Blog"));
-const BlogPost = lazy(() => import("./pages/BlogPost"));
-const ToolLanding = lazy(() => import("./pages/ToolLanding"));
-const ConverterPage = lazy(() => import("./pages/ConverterPage"));
-const PdfConverterHub = lazy(() => import("./pages/PdfConverterHub"));
-const ConverterHubPage = lazy(() => import("./pages/ConverterHubPage"));
-const MergeLandingPage = lazy(() => import("./pages/MergeLandingPage"));
-const SplitLandingPage = lazy(() => import("./pages/SplitLandingPage"));
-const CompressLandingPage = lazy(() => import("./pages/CompressLandingPage"));
-const RotateLandingPage = lazy(() => import("./pages/RotateLandingPage"));
-const WatermarkLandingPage = lazy(() => import("./pages/WatermarkLandingPage"));
-const AdLandingPage = lazy(() => import("./pages/AdLanding"));
-const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const EditorPage = lazy(lazySafe(() => import("./pages/EditorPage")));
+const Pricing = lazy(lazySafe(() => import("./pages/Pricing")));
+const Dashboard = lazy(lazySafe(() => import("./pages/Dashboard")));
+const Admin = lazy(lazySafe(() => import("./pages/Admin")));
+const AdminMobile = lazy(lazySafe(() => import("./pages/AdminMobile")));
+const Tools = lazy(lazySafe(() => import("./pages/Tools")));
+const Login = lazy(lazySafe(() => import("./pages/Login")));
+const Signup = lazy(lazySafe(() => import("./pages/Signup")));
+const PaymentSuccess = lazy(lazySafe(() => import("./pages/PaymentSuccess")));
+const PaymentRetry = lazy(lazySafe(() => import("./pages/PaymentRetry")));
+const InternalTest = lazy(lazySafe(() => import("./pages/InternalTest")));
+const LegalPage = lazy(lazySafe(() => import("./pages/LegalPage")));
+const CancelSubscription = lazy(lazySafe(() => import("./pages/CancelSubscription")));
+const CookieBanner = lazy(lazySafe(() => import("./components/CookieBanner")));
+const AnnouncementBanner = lazy(lazySafe(() => import("./components/AnnouncementBanner")));
+const Blog = lazy(lazySafe(() => import("./pages/Blog")));
+const BlogPost = lazy(lazySafe(() => import("./pages/BlogPost")));
+const ToolLanding = lazy(lazySafe(() => import("./pages/ToolLanding")));
+const ConverterPage = lazy(lazySafe(() => import("./pages/ConverterPage")));
+const PdfConverterHub = lazy(lazySafe(() => import("./pages/PdfConverterHub")));
+const ConverterHubPage = lazy(lazySafe(() => import("./pages/ConverterHubPage")));
+const MergeLandingPage = lazy(lazySafe(() => import("./pages/MergeLandingPage")));
+const SplitLandingPage = lazy(lazySafe(() => import("./pages/SplitLandingPage")));
+const CompressLandingPage = lazy(lazySafe(() => import("./pages/CompressLandingPage")));
+const RotateLandingPage = lazy(lazySafe(() => import("./pages/RotateLandingPage")));
+const WatermarkLandingPage = lazy(lazySafe(() => import("./pages/WatermarkLandingPage")));
+const AdLandingPage = lazy(lazySafe(() => import("./pages/AdLanding")));
+const ResetPassword = lazy(lazySafe(() => import("./pages/ResetPassword")));
 
 // Slugs that route to the standalone PDF→X converter (not the editor).
 // Each maps to a CloudConvert target format.
@@ -82,7 +83,7 @@ const HEIC_SEO: Record<string, { h1: string; sub: string }> = {
   zh: { h1: "将 HEIC 转换为 PDF", sub: "几秒钟内将 iPhone 的 HEIC 照片转换为 PDF。" },
 };
 import { AD_PAGES } from "./pages/AdLanding";
-const LandingTest = lazy(() => import("./pages/LandingTest"));
+const LandingTest = lazy(lazySafe(() => import("./pages/LandingTest")));
 
 function LazyFallback() {
   return (
